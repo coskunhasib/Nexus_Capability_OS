@@ -1,0 +1,77 @@
+{
+  "capability_packs": [
+    {
+      "pack_id": "web-saas-mvp-pack",
+      "type": "capability-pack",
+      "status": "draft",
+      "summary": "Web tabanlı SaaS MVP geliştirmek için uçtan uca capability paketi.",
+      "for_intents": ["web saas", "dashboard app", "full-stack mvp"],
+      "macro_pipeline": "software-development",
+      "micro_pipelines": ["frontend-web", "backend-api", "database", "qa-automation", "devops"],
+      "profiles": [
+        "requirement-extractor",
+        "system-architect",
+        "frontend-web-engineer",
+        "backend-api-engineer",
+        "database-engineer",
+        "qa-automation-engineer",
+        "security-reviewer",
+        "release-agent",
+        "memory-curator"
+      ],
+      "skills": ["planning-gate", "spec-compliance-review", "code-quality-review", "verification-loop", "memory-curator"],
+      "tools": ["test-runner", "browser-preview", "api-client", "migration-checker"],
+      "quality_gates": ["spec-compliance", "api-contract-fit", "test-evidence", "security-review", "release-readiness"],
+      "memory_policy": "project-decision-memory",
+      "context_policy": "software-working-set-context"
+    },
+    {
+      "pack_id": "firmware-stm32-hvac-driver-pack",
+      "type": "capability-pack",
+      "status": "draft",
+      "summary": "STM32 tabanlı HVAC fan/compressor driver geliştirme paketi.",
+      "for_intents": ["stm32 firmware", "hvac driver", "embedded control"],
+      "macro_pipeline": "firmware-pcb-embedded-control",
+      "micro_pipelines": ["stm32-firmware", "hvac-driver-circuits", "bench-test-validation"],
+      "profiles": [
+        "requirement-extractor",
+        "embedded-architect",
+        "firmware-engineer",
+        "hardware-interface-reviewer",
+        "safety-reviewer",
+        "testbench-engineer",
+        "documentation-agent",
+        "memory-curator"
+      ],
+      "skills": ["planning-gate", "spec-compliance-review", "verification-loop", "fmea", "memory-curator"],
+      "tools": ["pin-map-checker", "test-log-parser", "bom-helper"],
+      "quality_gates": ["electrical-safety", "timing", "isolation", "bench-evidence", "release-readiness"],
+      "memory_policy": "engineering-decision-memory",
+      "context_policy": "embedded-working-set-context"
+    },
+    {
+      "pack_id": "agentic-system-pack",
+      "type": "capability-pack",
+      "status": "draft",
+      "summary": "Agentic system, tool, memory, context, eval ve guardrail geliştirme paketi.",
+      "for_intents": ["agentic system", "mcp tools", "ai agent platform", "automation agent"],
+      "macro_pipeline": "software-development",
+      "micro_pipelines": ["agentic-system", "ai-app-llm-app", "qa-automation"],
+      "profiles": [
+        "agent-architect",
+        "tool-designer",
+        "memory-engineer",
+        "context-engineer",
+        "eval-engineer",
+        "guardrail-engineer",
+        "prompt-safety-auditor",
+        "observability-engineer"
+      ],
+      "skills": ["context-budget-manager", "memory-curator", "spec-compliance-review", "tool-trust-audit", "eval-design"],
+      "tools": ["eval-runner", "context-stats", "tool-schema-linter", "memory-search"],
+      "quality_gates": ["tool-trust", "memory-policy-fit", "context-budget", "eval-coverage", "prompt-safety"],
+      "memory_policy": "agent-memory-policy",
+      "context_policy": "agent-context-budget-policy"
+    }
+  ]
+}
