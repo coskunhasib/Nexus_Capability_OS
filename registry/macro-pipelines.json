@@ -1,0 +1,84 @@
+{
+  "macro_pipelines": [
+    {
+      "id": "software-development",
+      "type": "macro-pipeline-family",
+      "title": "Software Development",
+      "summary": "Web, backend, mobile, database, DevOps, QA, docs/SDK, LLM app ve agentic system akışlarını kapsar.",
+      "status": "active",
+      "tags": ["software", "web", "backend", "mobile", "agentic"],
+      "micro_pipelines": ["frontend-web", "backend-api", "fullstack-web", "mobile", "desktop", "database", "integration-connector", "devops-platform", "qa-automation", "performance-engineering", "documentation-sdk", "ai-app-llm-app", "agentic-system", "browser-automation-rpa"],
+      "default_gates": ["spec-compliance", "test-evidence", "security-review", "memory-policy-fit"]
+    },
+    {
+      "id": "ai-automation-agent-workflows",
+      "type": "macro-pipeline-family",
+      "title": "AI Automation / n8n / Agent Workflows",
+      "summary": "Workflow-first AI otomasyonu; n8n, RAG, NL2SQL, voice assistant, ingestion, OSINT ve content automation akışlarını kapsar.",
+      "status": "active",
+      "tags": ["automation", "n8n", "rag", "workflow"],
+      "micro_pipelines": ["workflow-orchestration", "rag-knowledge-retrieval", "nl2sql", "voice-assistant", "ingestion", "osint-research-automation", "content-automation"],
+      "default_gates": ["eval-coverage", "tool-trust", "context-budget", "source-quality"]
+    },
+    {
+      "id": "firmware-pcb-embedded-control",
+      "type": "macro-pipeline-family",
+      "title": "Firmware / PCB / Embedded Control",
+      "summary": "STM32/ESP32 firmware, PCB, HVAC driver, peripheral map ve bench validation odaklı aile.",
+      "status": "active",
+      "tags": ["firmware", "pcb", "embedded", "stm32", "hvac"],
+      "micro_pipelines": ["stm32-firmware", "esp32-iot", "pcb-schematic", "hvac-driver-circuits", "bench-test-validation"],
+      "default_gates": ["electrical-safety", "timing", "bench-evidence", "fault-handling"]
+    },
+    {
+      "id": "optomechanical-laser-systems",
+      "type": "macro-pipeline-family",
+      "title": "Optomekanik / Lazer Sistemleri",
+      "summary": "DPSS, SHG/THG, QCW diode RFQ, Risley/wedge steering ve alignment/tolerance akışlarını kapsar.",
+      "status": "active",
+      "tags": ["dpss", "laser", "risley", "alignment"],
+      "micro_pipelines": ["dpss-chain-design", "shg-thg-optimization", "qcw-diode-stack-rfq", "risley-wedge-steering", "zoom-alignment-tolerance"],
+      "default_gates": ["physics-consistency", "spec-completeness", "range-fit"]
+    },
+    {
+      "id": "hvac-energy-systems",
+      "type": "macro-pipeline-family",
+      "title": "HVAC / Enerji Sistemleri",
+      "summary": "EEV, R290 cycle, sand battery, parabolic solar, AMR ve cascade thermal system akışlarını kapsar.",
+      "status": "active",
+      "tags": ["hvac", "energy", "thermal"],
+      "micro_pipelines": ["electronic-expansion-valve", "r290-cycle", "sand-battery", "parabolic-solar-collector", "amr-magnetic-refrigeration", "cascade-thermal-system"],
+      "default_gates": ["thermodynamics", "capacity-fit", "plausibility"]
+    },
+    {
+      "id": "water-treatment-boron-removal",
+      "type": "macro-pipeline-family",
+      "title": "Su Arıtma / Bor Arıtma",
+      "summary": "RO, bor selective filter, recirculation, pH/remineralization ve BOM/layout akışlarını kapsar.",
+      "status": "active",
+      "tags": ["water", "ro", "boron", "ph"],
+      "micro_pipelines": ["pretreatment", "ro-core", "boron-selective-filter", "tank-recirculation", "ph-remineralization", "bom-costing"],
+      "default_gates": ["drinking-safety", "sequence-fit", "contact-time", "pressure"]
+    },
+    {
+      "id": "product-mechanical-design",
+      "type": "macro-pipeline-family",
+      "title": "Ürün / Mekanik Tasarım",
+      "summary": "CAD/STEP, DFM/DFA, serviceability ve mechanical product design akışları.",
+      "status": "active",
+      "tags": ["mechanical", "cad", "dfm"],
+      "micro_pipelines": ["cad-step", "dfm-dfa", "serviceability", "vertical-farming-tower"],
+      "default_gates": ["manufacturability", "geometry", "serviceability"]
+    },
+    {
+      "id": "market-intelligence",
+      "type": "macro-pipeline-family",
+      "title": "Yatırım / Market Intelligence",
+      "summary": "Evren oluşturma, KAP tarama, makro/haber izleme ve risk log akışlarını kapsar.",
+      "status": "active",
+      "tags": ["market", "bist", "kap", "macro"],
+      "micro_pipelines": ["universe-screening", "kap-scanner", "macro-news-monitoring", "risk-log"],
+      "default_gates": ["source-freshness", "source-quality", "liquidity", "risk-clarity"]
+    }
+  ]
+}
