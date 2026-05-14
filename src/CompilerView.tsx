@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Boxes, BrainCircuit, CheckCircle2, Layers, Network, Search, ShieldCheck, Users } from 'lucide-react';
 import compilerRulesData from '../registry/compiler-rules.json';
 
@@ -64,11 +64,11 @@ function compileIntent(intent: string) {
     .sort((a, b) => b.score - a.score || (b.rule.priority ?? 0) - (a.rule.priority ?? 0));
 }
 
-function Pill({ children }: { children: React.ReactNode }) {
+function Pill({ children }: { children: ReactNode }) {
   return <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-neutral-300">{children}</span>;
 }
 
-function Section({ icon, title, items }: { icon: React.ReactNode; title: string; items?: string[] }) {
+function Section({ icon, title, items }: { icon: ReactNode; title: string; items?: string[] }) {
   return (
     <div className="rounded-xl border border-white/10 bg-[#0e0e0e] p-5">
       <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
@@ -98,7 +98,7 @@ export default function CompilerView() {
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">Capability Compiler</h1>
-              <p className="mt-1 text-sm text-neutral-400">Intent -> team profile -> pipeline -> pack -> gates</p>
+              <p className="mt-1 text-sm text-neutral-400">Intent -&gt; team profile -&gt; pipeline -&gt; pack -&gt; gates</p>
             </div>
           </div>
           <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-emerald-400">
