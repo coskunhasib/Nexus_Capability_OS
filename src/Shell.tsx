@@ -85,7 +85,7 @@ export default function Shell() {
 
       {view === 'explore' && <App />}
       {view === 'studio' && <CompilerView onSendTaskPacket={openRunnerWithPacket} />}
-      {view === 'trials' && <TrialScenarioView />}
+      {view === 'trials' && <TrialScenarioView onOpenCompiler={() => setView('studio')} />}
       {view === 'packs' && <CapabilityPackDetailView />}
       {view === 'builder' && <PackBuilderView />}
       {view === 'governance' && <RegistryGovernance />}
