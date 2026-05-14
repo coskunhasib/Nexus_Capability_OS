@@ -4,7 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "generate:tree": "node scripts/generate-tree-data.mjs",
+    "sync:tree": "node scripts/generate-tree-data.mjs && cp src/generated-tree-data.ts src/data.ts",
+    "predev": "npm run sync:tree",
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "prebuild": "npm run sync:tree",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
