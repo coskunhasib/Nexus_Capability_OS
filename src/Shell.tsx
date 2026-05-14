@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Boxes, BrainCircuit, Database, Hammer, ListChecks, Map as MapIcon, ShieldCheck } from 'lucide-react';
+import { Boxes, BrainCircuit, Database, FlaskConical, Hammer, ListChecks, Map as MapIcon, ShieldCheck } from 'lucide-react';
 import App from './App.tsx';
 import CapabilityPackDetailView from './CapabilityPackDetailView.tsx';
 import CompilerView from './CompilerView.tsx';
@@ -7,8 +7,9 @@ import PackBuilderView from './PackBuilderView.tsx';
 import RegistryGovernance from './RegistryGovernance.tsx';
 import RegistryInspector from './RegistryInspector.tsx';
 import TaskRunnerMock from './TaskRunnerMock.tsx';
+import TrialScenarioView from './TrialScenarioView.tsx';
 
-type ViewMode = 'explore' | 'studio' | 'packs' | 'builder' | 'runner' | 'governance' | 'inspector';
+type ViewMode = 'explore' | 'studio' | 'packs' | 'builder' | 'trials' | 'runner' | 'governance' | 'inspector';
 
 const primaryModes: Array<{ id: ViewMode; label: string; icon: React.ReactNode }> = [
   { id: 'explore', label: 'Explore', icon: <MapIcon size={16} /> },
@@ -19,6 +20,7 @@ const primaryModes: Array<{ id: ViewMode; label: string; icon: React.ReactNode }
 
 const studioModes: Array<{ id: ViewMode; label: string; icon: React.ReactNode }> = [
   { id: 'studio', label: 'Compiler', icon: <BrainCircuit size={16} /> },
+  { id: 'trials', label: 'Trials', icon: <FlaskConical size={16} /> },
   { id: 'packs', label: 'Packs', icon: <Boxes size={16} /> },
   { id: 'builder', label: 'Builder', icon: <Hammer size={16} /> },
 ];
@@ -38,7 +40,7 @@ export default function Shell() {
   };
 
   const isPrimaryActive = (mode: ViewMode) => {
-    if (mode === 'studio') return view === 'studio' || view === 'packs' || view === 'builder';
+    if (mode === 'studio') return view === 'studio' || view === 'packs' || view === 'builder' || view === 'trials';
     if (mode === 'governance') return view === 'governance' || view === 'inspector';
     return view === mode;
   };
@@ -59,7 +61,7 @@ export default function Shell() {
             </button>
           ))}
         </div>
-        {(view === 'studio' || view === 'packs' || view === 'builder') && (
+        {(view === 'studio' || view === 'packs' || view === 'builder' || view === 'trials') && (
           <div className="flex overflow-hidden rounded-xl border border-white/10 bg-black/70 p-1 shadow-2xl backdrop-blur-xl">
             {studioModes.map((mode) => (
               <button key={mode.id} onClick={() => setView(mode.id)} className={buttonClass(view === mode.id)}>
@@ -83,6 +85,7 @@ export default function Shell() {
 
       {view === 'explore' && <App />}
       {view === 'studio' && <CompilerView onSendTaskPacket={openRunnerWithPacket} />}
+      {view === 'trials' && <TrialScenarioView />}
       {view === 'packs' && <CapabilityPackDetailView />}
       {view === 'builder' && <PackBuilderView />}
       {view === 'governance' && <RegistryGovernance />}
