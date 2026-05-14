@@ -1,0 +1,18 @@
+{
+  "relationship_types": [
+    { "id": "contains", "description": "Üst entity alt entity taşır." },
+    { "id": "requires", "description": "Çalışmak için zorunlu dependency." },
+    { "id": "uses", "description": "Skill, tool, plugin, runtime veya policy kullanır." },
+    { "id": "produces", "description": "Belirli bir çıktı üretir." },
+    { "id": "reviews", "description": "Başka bir çıktı veya entity üzerinde review yapar." },
+    { "id": "hands_off_to", "description": "İş devri yapar." },
+    { "id": "blocked_by", "description": "Gate, eksik input veya risk nedeniyle durur." },
+    { "id": "compatible_with", "description": "Runtime/tool/plugin uyumluluğu belirtir." },
+    { "id": "specializes", "description": "Genel profilin veya pipeline'ın özel varyantıdır." },
+    { "id": "triggers", "description": "Belirli koşulda skill/gate/workflow tetikler." },
+    { "id": "writes_memory", "description": "Kalıcı hafızaya kayıt yazar." },
+    { "id": "reads_context", "description": "Geçici çalışma bağlamından okur." },
+    { "id": "validates", "description": "Gate'in doğruladığı unsur." },
+    { "id": "assembles", "description": "Compiler'ın pack/team/pipeline kurma ilişkisi." }
+  ]
+}
