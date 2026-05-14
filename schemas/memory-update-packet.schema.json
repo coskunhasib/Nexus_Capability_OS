@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/memory-update-packet.schema.json",
+  "title": "Nexus Memory Update Packet",
+  "type": "object",
+  "required": ["packet_type", "version", "objective", "release_ready", "durable_decisions", "accepted_constraints", "lessons_learned", "unresolved_blockers", "deprecated_assumptions", "completed_steps", "do_not_store"],
+  "properties": {
+    "packet_type": { "const": "nexus.memory_update_packet" },
+    "version": { "const": "0.1" },
+    "objective": { "type": "string", "minLength": 1 },
+    "source_compiler_rule": { "type": "string" },
+    "memory_policy": { "type": "string" },
+    "release_ready": { "type": "boolean" },
+    "durable_decisions": { "type": "array", "items": { "type": "string" } },
+    "accepted_constraints": { "type": "array", "items": { "type": "string" } },
+    "lessons_learned": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate", "step_id", "note"],
+        "properties": {
+          "gate": { "type": "string" },
+          "step_id": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "unresolved_blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "step_id", "message"],
+        "properties": {
+          "type": { "type": "string" },
+          "step_id": { "type": "string" },
+          "gate": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "deprecated_assumptions": { "type": "array", "items": { "type": "string" } },
+    "completed_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_id", "title", "owner"],
+        "properties": {
+          "step_id": { "type": "string" },
+          "title": { "type": "string" },
+          "owner": { "type": "string" }
+        }
+      }
+    },
+    "do_not_store": { "type": "array", "items": { "type": "string" } }
+  }
+}
