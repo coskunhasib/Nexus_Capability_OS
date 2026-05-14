@@ -1,0 +1,33 @@
+{
+  "kind": "nexus.execution_plan",
+  "version": "0.1",
+  "compiler_rule": {
+    "id": "rule-web-saas-mvp",
+    "title": "Web SaaS MVP"
+  },
+  "macro_pipeline": "software-development",
+  "capability_packs": ["web-saas-mvp-pack"],
+  "micro_pipelines": ["frontend-web", "backend-api", "database", "qa-automation"],
+  "team_profiles": ["requirement-extractor", "system-architect", "frontend-web-engineer", "backend-api-engineer", "qa-automation-engineer"],
+  "gates": ["spec-compliance", "api-contract-fit", "test-evidence", "release-readiness"],
+  "memory_policy": "project-decision-memory",
+  "context_policy": "software-working-set-context",
+  "steps": [
+    {
+      "id": "01-intake",
+      "title": "Intake / Requirement Lock",
+      "owner": "requirement-extractor",
+      "expectedOutputs": ["requirements", "acceptance_criteria"],
+      "gates": ["clarity", "scope-fit"],
+      "description": "Lock requirements before implementation."
+    },
+    {
+      "id": "02-architecture",
+      "title": "Architecture / Contract Setup",
+      "owner": "system-architect",
+      "expectedOutputs": ["architecture_outline", "interface_contracts"],
+      "gates": ["architecture-coherence"],
+      "description": "Define interfaces and system boundaries."
+    }
+  ]
+}
