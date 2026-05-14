@@ -207,6 +207,40 @@ function toTaskPacket(payload: ExportPayload) {
   };
 }
 
+function toNexusHandoff(payload: ExportPayload, packs: CapabilityPack[], taskPacket: unknown) {
+  const pack = packs[0];
+  const tools = unique([...(pack?.tools ?? []), 'runtime-bridge', 'artifact-reporter', 'gate-evidence-reporter']);
+  const artifactOutputs = unique(payload.steps.flatMap((step) => step.expectedOutputs));
+
+  return {
+    packet_type: 'nexus.handoff_packet',
+    version: '0.1',
+    objective: payload.compiler_rule.title,
+    capability_os: {
+      compiler_rule: payload.compiler_rule.id,
+      macro_pipeline: payload.macro_pipeline ?? 'unspecified',
+      memory_policy: payload.memory_policy ?? 'unspecified',
+      context_policy: payload.context_policy ?? 'unspecified',
+    },
+    selected_capability: {
+      pack_id: payload.capability_packs[0] ?? 'unspecified',
+      profiles: payload.team_profiles,
+      micro_pipelines: payload.micro_pipelines,
+      gates: payload.gates,
+    },
+    task_packet: taskPacket,
+    runtime_requirements: {
+      target_runtime: 'nexus-worker',
+      required_tools: tools,
+      artifact_outputs: artifactOutputs,
+    },
+    callback_contract: {
+      expected_events: ['step_started', 'step_completed', 'step_blocked', 'gate_checked', 'artifact_created', 'runtime_failed'],
+      required_payloads: ['step_status', 'gate_evidence', 'artifact_refs', 'blocker_reason'],
+    },
+  };
+}
+
 function downloadFile(filename: string, content: string, mime = 'text/plain') {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -240,6 +274,7 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
   const json = JSON.stringify(payload, null, 2);
   const taskPacketObject = toTaskPacket(payload);
   const taskPacket = JSON.stringify(taskPacketObject, null, 2);
+  const handoffPacket = JSON.stringify(toNexusHandoff(payload, packs, taskPacketObject), null, 2);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
@@ -253,8 +288,9 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
           <ActionButton icon={<PlayCircle size={14} />} label="Send Runner" onClick={() => onSendTaskPacket?.(taskPacketObject)} />
           <ActionButton icon={<Clipboard size={14} />} label="Copy MD" onClick={() => void copyText(markdown)} />
           <ActionButton icon={<Download size={14} />} label="Download MD" onClick={() => downloadFile('nexus-execution-plan.md', markdown, 'text/markdown')} />
-          <ActionButton icon={<FileJson size={14} />} label="Download JSON" onClick={() => downloadFile('nexus-execution-plan.json', json, 'application/json')} />
+          <ActionButton icon={<FileJson size={14} />} label="Plan JSON" onClick={() => downloadFile('nexus-execution-plan.json', json, 'application/json')} />
           <ActionButton icon={<UploadCloud size={14} />} label="Task Packet" onClick={() => downloadFile('nexus-task-packet.json', taskPacket, 'application/json')} />
+          <ActionButton icon={<UploadCloud size={14} />} label="Handoff" onClick={() => downloadFile('nexus-handoff-packet.json', handoffPacket, 'application/json')} />
         </div>
       </div>
 
@@ -292,7 +328,7 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><GitBranch size={16} className="mb-2 text-cyan-400" />Plan is generated from selected compiler rule, profiles, micro-pipelines and gates.</div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Layers size={16} className="mb-2 text-cyan-400" />Spec compliance and quality review stay separate by design.</div>
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><UploadCloud size={16} className="mb-2 text-cyan-400" />Memory and context handoff are explicit final steps.</div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><UploadCloud size={16} className="mb-2 text-cyan-400" />Task packet and Nexus handoff packet are both exportable.</div>
       </div>
     </section>
   );
