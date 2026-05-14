@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Boxes, BrainCircuit, Database, ListChecks, Map as MapIcon, ShieldCheck } from 'lucide-react';
+import { Boxes, BrainCircuit, Database, Hammer, ListChecks, Map as MapIcon, ShieldCheck } from 'lucide-react';
 import App from './App.tsx';
 import CapabilityPackDetailView from './CapabilityPackDetailView.tsx';
 import CompilerView from './CompilerView.tsx';
+import PackBuilderView from './PackBuilderView.tsx';
 import RegistryGovernance from './RegistryGovernance.tsx';
 import RegistryInspector from './RegistryInspector.tsx';
 import TaskRunnerMock from './TaskRunnerMock.tsx';
 
-type ViewMode = 'map' | 'compiler' | 'packs' | 'inspector' | 'governance' | 'runner';
+type ViewMode = 'map' | 'compiler' | 'packs' | 'builder' | 'inspector' | 'governance' | 'runner';
 
 export default function Shell() {
   const [view, setView] = useState<ViewMode>('map');
@@ -38,6 +39,10 @@ export default function Shell() {
           <Boxes size={16} />
           Packs
         </button>
+        <button onClick={() => setView('builder')} className={buttonClass('builder')}>
+          <Hammer size={16} />
+          Builder
+        </button>
         <button onClick={() => setView('inspector')} className={buttonClass('inspector')}>
           <Database size={16} />
           Inspector
@@ -55,6 +60,7 @@ export default function Shell() {
       {view === 'map' && <App />}
       {view === 'compiler' && <CompilerView onSendTaskPacket={openRunnerWithPacket} />}
       {view === 'packs' && <CapabilityPackDetailView />}
+      {view === 'builder' && <PackBuilderView />}
       {view === 'inspector' && <RegistryInspector />}
       {view === 'governance' && <RegistryGovernance />}
       {view === 'runner' && <TaskRunnerMock initialPacket={runnerPacket} />}
