@@ -8,12 +8,13 @@ const registryDir = path.join(root, 'registry');
 const srcDir = path.join(root, 'src');
 
 const readJson = (name) => JSON.parse(fs.readFileSync(path.join(registryDir, name), 'utf8'));
-const macro = readJson('macro-pipelines.json').macro_pipelines ?? [];
-const micro = readJson('micro-pipelines.json').micro_pipelines ?? [];
-const profiles = readJson('agent-profiles.json').agent_profiles ?? [];
-const gates = readJson('gates.json').gates ?? [];
-const packs = readJson('example-capability-packs.json').capability_packs ?? [];
-const rules = readJson('compiler-rules.json').compiler_rules ?? [];
+const readList = (file, key) => readJson(file)[key] ?? [];
+const macro = readList('macro-pipelines.json', 'macro_pipelines');
+const micro = [...readList('micro-pipelines.json', 'micro_pipelines'), ...readList('micro-pipelines-extra.json', 'micro_pipelines')];
+const profiles = [...readList('agent-profiles.json', 'agent_profiles'), ...readList('agent-profiles-extra.json', 'agent_profiles')];
+const gates = readList('gates.json', 'gates');
+const packs = [...readList('example-capability-packs.json', 'capability_packs'), ...readList('capability-packs-extra.json', 'capability_packs')];
+const rules = readList('compiler-rules.json', 'compiler_rules');
 
 const node = (id, type, title, summary, extra = {}) => ({
   id,
@@ -61,24 +62,18 @@ const treeData = node('root', 'Root', 'Nexus Capability OS', 'Registry-generated
         children: (microByParent[m.id] ?? []).map((x) => node(x.id, 'Micro Pipeline', x.title, x.summary, {
           tags: [x.parent_macro],
           gates: x.required_gates,
-          bullets: [
-            `profiles: ${(x.required_profiles ?? []).join(', ')}`,
-            `outputs: ${(x.outputs ?? []).join(', ')}`,
-          ],
+          bullets: [`profiles: ${(x.required_profiles ?? []).join(', ')}`, `outputs: ${(x.outputs ?? []).join(', ')}`],
         })),
       })),
     }),
-    node('profile-families', 'Architecture', 'Agent Profile Families', 'Concrete team profiles from registry/agent-profiles.json.', {
+    node('profile-families', 'Architecture', 'Agent Profile Families', 'Concrete team profiles from registry/agent-profiles*.json.', {
       tags: ['profiles'],
       children: Object.entries(profileByFamily).map(([family, items]) => node(`profile-family-${family}`, 'Profile Family', family, `${items.length} agent profiles`, {
         tags: [family],
         children: items.map((p) => node(p.id, 'Profile Family', p.title, p.summary, {
           tags: [p.family],
           gates: p.gates,
-          bullets: [
-            `does: ${(p.does ?? []).join(', ')}`,
-            `outputs: ${(p.outputs ?? []).join(', ')}`,
-          ],
+          bullets: [`does: ${(p.does ?? []).join(', ')}`, `outputs: ${(p.outputs ?? []).join(', ')}`],
         })),
       })),
     }),
@@ -88,22 +83,16 @@ const treeData = node('root', 'Root', 'Nexus Capability OS', 'Registry-generated
         tags: [family],
         children: items.map((g) => node(g.id, 'Gate', g.title, g.summary, {
           tags: [g.family, g.severity],
-          bullets: [
-            `pass: ${(g.pass_criteria ?? []).join(', ')}`,
-            `fail: ${(g.fail_criteria ?? []).join(', ')}`,
-          ],
+          bullets: [`pass: ${(g.pass_criteria ?? []).join(', ')}`, `fail: ${(g.fail_criteria ?? []).join(', ')}`],
         })),
       })),
     }),
-    node('capability-packs', 'Architecture', 'Capability Packs', 'Productizable bundles from registry/example-capability-packs.json.', {
+    node('capability-packs', 'Architecture', 'Capability Packs', 'Productizable bundles from registry/*capability-packs*.json.', {
       tags: ['packs'],
       children: packs.map((p) => node(p.pack_id, 'Layer', p.pack_id, p.summary, {
         tags: [p.macro_pipeline, p.status],
         gates: p.quality_gates,
-        bullets: [
-          `micro: ${(p.micro_pipelines ?? []).join(', ')}`,
-          `profiles: ${(p.profiles ?? []).join(', ')}`,
-        ],
+        bullets: [`micro: ${(p.micro_pipelines ?? []).join(', ')}`, `profiles: ${(p.profiles ?? []).join(', ')}`],
       })),
     }),
     node('compiler-rules', 'Architecture', 'Compiler Rules', 'Intent matching rules from registry/compiler-rules.json.', {
@@ -111,10 +100,7 @@ const treeData = node('root', 'Root', 'Nexus Capability OS', 'Registry-generated
       children: rules.map((r) => node(r.id, 'Stage', r.title, `priority ${r.priority}`, {
         tags: [r.status],
         gates: r.select?.gates ?? [],
-        bullets: [
-          `macro: ${r.select?.macro_pipeline ?? ''}`,
-          `pack: ${(r.select?.capability_packs ?? []).join(', ')}`,
-        ],
+        bullets: [`macro: ${r.select?.macro_pipeline ?? ''}`, `pack: ${(r.select?.capability_packs ?? []).join(', ')}`],
       })),
     }),
   ],
