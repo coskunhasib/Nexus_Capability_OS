@@ -1,0 +1,26 @@
+{
+  "event_type": "gate_checked",
+  "version": "0.1",
+  "task_packet_id": "web-saas-mvp-001",
+  "step_id": "01-intake",
+  "status": "done",
+  "timestamp": "2026-05-14T19:30:00Z",
+  "owner": "requirement-extractor",
+  "gate_evidence": [
+    {
+      "gate": "clarity",
+      "status": "pass",
+      "evidence_note": "Acceptance criteria are explicit and testable.",
+      "blocker_reason": ""
+    }
+  ],
+  "artifact_refs": [
+    {
+      "kind": "document",
+      "ref": "artifacts/requirements.md",
+      "summary": "Requirement and acceptance criteria draft."
+    }
+  ],
+  "blocker_reason": "",
+  "runtime_notes": "Initial intake step completed."
+}
