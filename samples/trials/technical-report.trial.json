@@ -1,0 +1,23 @@
+{
+  "scenario_id": "technical-report",
+  "version": "0.1",
+  "intent": "Create a technical report for a water treatment system with component assumptions, risks and validation gates.",
+  "tags": ["technical-report", "engineering", "water-treatment", "review"],
+  "expected": {
+    "capability_pack": "technical-report-pack",
+    "macro_pipeline": "technical-documentation",
+    "profiles": ["requirement-extractor", "domain-technical-writer", "spec-compliance-reviewer", "qa-automation-engineer"],
+    "micro_pipelines": ["technical-analysis", "technical-reporting", "review-verification"],
+    "gates": ["spec-compliance", "evidence-completeness", "risk-review"],
+    "packets": ["nexus.task_packet", "nexus.execution_review_report", "nexus.context_update_packet"]
+  },
+  "acceptance_criteria": [
+    "Compiler routes report request toward technical documentation or flags missing registry coverage.",
+    "Generated plan includes assumptions, risks and validation evidence.",
+    "Review report identifies missing evidence or unresolved blockers."
+  ],
+  "nexus_integration_notes": [
+    "Nexus can dispatch this to a research/review pipeline before document generation.",
+    "Runtime should return report artifact refs and evidence notes."
+  ]
+}
