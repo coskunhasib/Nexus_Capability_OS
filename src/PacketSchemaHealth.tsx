@@ -5,23 +5,40 @@ import runnerStateSchema from '../schemas/runner-state.schema.json';
 import reviewReportSchema from '../schemas/review-report.schema.json';
 import memoryUpdateSchema from '../schemas/memory-update-packet.schema.json';
 import contextUpdateSchema from '../schemas/context-update-packet.schema.json';
+import nexusHandoffSchema from '../schemas/nexus-handoff-packet.schema.json';
+import runtimeBridgeSchema from '../schemas/runtime-bridge.schema.json';
+import trialScenarioSchema from '../schemas/trial-scenario.schema.json';
 import executionPlanSample from '../samples/packets/execution-plan.sample.json';
 import taskPacketSample from '../samples/packets/task-packet.sample.json';
 import runnerStateSample from '../samples/packets/runner-state.sample.json';
 import reviewReportSample from '../samples/packets/review-report.sample.json';
 import memoryUpdateSample from '../samples/packets/memory-update-packet.sample.json';
 import contextUpdateSample from '../samples/packets/context-update-packet.sample.json';
+import nexusHandoffSample from '../samples/packets/nexus-handoff-packet.sample.json';
+import runtimeBridgeSample from '../samples/packets/runtime-bridge.sample.json';
+import webSaasTrial from '../samples/trials/web-saas-mvp.trial.json';
+import stm32Trial from '../samples/trials/stm32-firmware.trial.json';
+import agenticTrial from '../samples/trials/agentic-system.trial.json';
+import rfqTrial from '../samples/trials/rfq-generation.trial.json';
+import technicalReportTrial from '../samples/trials/technical-report.trial.json';
 
 type Schema = Record<string, unknown>;
 type ValidationResult = { valid: boolean; errors: string[] };
 
 const contracts = [
-  { id: 'execution-plan', title: 'Execution Plan', schema: executionPlanSchema as Schema, sample: executionPlanSample },
-  { id: 'task-packet', title: 'Task Packet', schema: taskPacketSchema as Schema, sample: taskPacketSample },
-  { id: 'runner-state', title: 'Runner State', schema: runnerStateSchema as Schema, sample: runnerStateSample },
-  { id: 'review-report', title: 'Review Report', schema: reviewReportSchema as Schema, sample: reviewReportSample },
-  { id: 'memory-update-packet', title: 'Memory Update Packet', schema: memoryUpdateSchema as Schema, sample: memoryUpdateSample },
-  { id: 'context-update-packet', title: 'Context Update Packet', schema: contextUpdateSchema as Schema, sample: contextUpdateSample },
+  { id: 'execution-plan', title: 'Execution Plan', schema: executionPlanSchema as Schema, sample: executionPlanSample, group: 'packet' },
+  { id: 'task-packet', title: 'Task Packet', schema: taskPacketSchema as Schema, sample: taskPacketSample, group: 'packet' },
+  { id: 'runner-state', title: 'Runner State', schema: runnerStateSchema as Schema, sample: runnerStateSample, group: 'packet' },
+  { id: 'review-report', title: 'Review Report', schema: reviewReportSchema as Schema, sample: reviewReportSample, group: 'packet' },
+  { id: 'memory-update-packet', title: 'Memory Update Packet', schema: memoryUpdateSchema as Schema, sample: memoryUpdateSample, group: 'packet' },
+  { id: 'context-update-packet', title: 'Context Update Packet', schema: contextUpdateSchema as Schema, sample: contextUpdateSample, group: 'packet' },
+  { id: 'nexus-handoff-packet', title: 'Nexus Handoff Packet', schema: nexusHandoffSchema as Schema, sample: nexusHandoffSample, group: 'nexus' },
+  { id: 'runtime-bridge', title: 'Runtime Bridge Event', schema: runtimeBridgeSchema as Schema, sample: runtimeBridgeSample, group: 'nexus' },
+  { id: 'trial-web-saas-mvp', title: 'Trial: Web SaaS MVP', schema: trialScenarioSchema as Schema, sample: webSaasTrial, group: 'trial' },
+  { id: 'trial-stm32-firmware', title: 'Trial: STM32 Firmware', schema: trialScenarioSchema as Schema, sample: stm32Trial, group: 'trial' },
+  { id: 'trial-agentic-system', title: 'Trial: Agentic System', schema: trialScenarioSchema as Schema, sample: agenticTrial, group: 'trial' },
+  { id: 'trial-rfq-generation', title: 'Trial: RFQ Generation', schema: trialScenarioSchema as Schema, sample: rfqTrial, group: 'trial' },
+  { id: 'trial-technical-report', title: 'Trial: Technical Report', schema: trialScenarioSchema as Schema, sample: technicalReportTrial, group: 'trial' },
 ];
 
 function typeOf(value: unknown) {
@@ -125,16 +142,20 @@ export default function PacketSchemaHealth() {
     version: String((contract.schema.properties as Record<string, unknown> | undefined)?.version ? '0.1' : 'n/a'),
   }));
   const invalidCount = rows.filter((row) => !row.result.valid).length;
+  const counts = rows.reduce((acc, row) => ({ ...acc, [row.group]: (acc[row.group] ?? 0) + 1 }), {} as Record<string, number>);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
           <ShieldCheck size={18} className="text-cyan-300" />
-          Packet Schema Health
+          Packet / Nexus / Trial Contract Health
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge tone="cyan">{rows.length} contracts</Badge>
+          <Badge>packets {counts.packet ?? 0}</Badge>
+          <Badge>nexus {counts.nexus ?? 0}</Badge>
+          <Badge>trials {counts.trial ?? 0}</Badge>
           <Badge tone={invalidCount ? 'red' : 'green'}>{invalidCount ? `${invalidCount} invalid` : 'all valid'}</Badge>
         </div>
       </div>
@@ -146,6 +167,7 @@ export default function PacketSchemaHealth() {
               <div>
                 <div className="mb-2 flex flex-wrap gap-2">
                   <Badge tone={row.result.valid ? 'green' : 'red'}>{row.result.valid ? 'valid' : 'invalid'}</Badge>
+                  <Badge tone={row.group === 'nexus' ? 'cyan' : row.group === 'trial' ? 'yellow' : 'neutral'}>{row.group}</Badge>
                   <Badge>{row.id}</Badge>
                   <Badge tone="cyan">v{row.version}</Badge>
                 </div>
@@ -153,7 +175,7 @@ export default function PacketSchemaHealth() {
                 <p className="mt-1 text-xs text-neutral-500">{String(row.schema.$id ?? row.schema.title ?? row.id)}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-[#050505] px-3 py-2 text-xs text-neutral-400">
-                sample: {row.id}.sample.json
+                sample: {row.id}
               </div>
             </div>
 
