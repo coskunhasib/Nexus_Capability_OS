@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, ShieldCheck, UploadCloud } from 'lucide-react';
+import ReviewReportPanel from './ReviewReportPanel.tsx';
 
 type WorkStatus = 'not_started' | 'in_progress' | 'blocked' | 'done';
 type GateStatus = 'not_checked' | 'pass' | 'fail';
@@ -320,6 +321,8 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
                 <button onClick={exportState} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export runner state</button>
               </div>
             </section>
+
+            <ReviewReportPanel packet={packet} statuses={statuses} evidence={evidence} />
 
             <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white"><ListChecks size={18} className="text-cyan-400" />Work order</div>
