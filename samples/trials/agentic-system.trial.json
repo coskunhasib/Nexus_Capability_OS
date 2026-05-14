@@ -1,0 +1,23 @@
+{
+  "scenario_id": "agentic-system",
+  "version": "0.1",
+  "intent": "Create an agentic system with tools, MCP, memory, context, evals and guardrails.",
+  "tags": ["agent", "mcp", "memory", "evals"],
+  "expected": {
+    "capability_pack": "agentic-system-pack",
+    "macro_pipeline": "agentic-system-development",
+    "profiles": ["agent-architect", "tool-integration-engineer", "memory-curator", "qa-automation-engineer"],
+    "micro_pipelines": ["agent-orchestration", "tool-integration", "memory-context", "evals-observability"],
+    "gates": ["tool-contract-fit", "memory-policy-fit", "eval-coverage", "guardrail-review"],
+    "packets": ["nexus.task_packet", "nexus.context_update_packet", "nexus.memory_update_packet"]
+  },
+  "acceptance_criteria": [
+    "Compiler routes to an agentic system capability pack or identifies missing coverage.",
+    "Generated plan separates tool integration, memory/context and eval gates.",
+    "Review report can identify missing eval evidence as a blocker."
+  ],
+  "nexus_integration_notes": [
+    "Nexus can use this scenario to test agent/tool registry compatibility.",
+    "Runtime bridge should return tool call evidence and eval results."
+  ]
+}
