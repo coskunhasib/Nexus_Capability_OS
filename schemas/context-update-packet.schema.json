@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/context-update-packet.schema.json",
+  "title": "Nexus Context Update Packet",
+  "type": "object",
+  "required": ["packet_type", "version", "active_objective", "release_ready", "current_blockers", "missing_evidence", "evidence_summaries", "next_execution_focus", "context_boundary"],
+  "properties": {
+    "packet_type": { "const": "nexus.context_update_packet" },
+    "version": { "const": "0.1" },
+    "active_objective": { "type": "string", "minLength": 1 },
+    "source_compiler_rule": { "type": "string" },
+    "context_policy": { "type": "string" },
+    "release_ready": { "type": "boolean" },
+    "current_blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_id", "message"],
+        "properties": {
+          "step_id": { "type": "string" },
+          "gate": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_id", "message"],
+        "properties": {
+          "step_id": { "type": "string" },
+          "gate": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "evidence_summaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_id", "gate_id", "status", "summary"],
+        "properties": {
+          "step_id": { "type": "string" },
+          "gate_id": { "type": "string" },
+          "status": { "enum": ["not_checked", "pass", "fail"] },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "next_execution_focus": { "type": "array", "items": { "type": "string" } },
+    "context_boundary": {
+      "type": "object",
+      "required": ["keep", "drop"],
+      "properties": {
+        "keep": { "type": "array", "items": { "type": "string" } },
+        "drop": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
