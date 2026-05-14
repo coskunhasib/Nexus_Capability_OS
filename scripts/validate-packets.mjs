@@ -12,6 +12,13 @@ const pairs = [
   ['schemas/review-report.schema.json', 'samples/packets/review-report.sample.json'],
   ['schemas/memory-update-packet.schema.json', 'samples/packets/memory-update-packet.sample.json'],
   ['schemas/context-update-packet.schema.json', 'samples/packets/context-update-packet.sample.json'],
+  ['schemas/nexus-handoff-packet.schema.json', 'samples/packets/nexus-handoff-packet.sample.json'],
+  ['schemas/runtime-bridge.schema.json', 'samples/packets/runtime-bridge.sample.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/web-saas-mvp.trial.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/stm32-firmware.trial.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/agentic-system.trial.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/rfq-generation.trial.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/technical-report.trial.json'],
 ];
 
 function readJson(relativePath) {
@@ -99,4 +106,4 @@ if (totalErrors > 0) {
   process.exit(1);
 }
 
-console.log('Packet validation passed.');
+console.log('Packet and trial validation passed.');
