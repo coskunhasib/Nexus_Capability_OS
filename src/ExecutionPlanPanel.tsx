@@ -1,4 +1,4 @@
-import { ClipboardList, FileText, GitBranch, Layers, ShieldCheck, UploadCloud } from 'lucide-react';
+import { Clipboard, ClipboardList, Download, FileJson, FileText, GitBranch, Layers, ShieldCheck, UploadCloud } from 'lucide-react';
 
 type Rule = {
   id: string;
@@ -27,6 +27,20 @@ type PlanStep = {
   gates: string[];
   related?: string;
   description: string;
+};
+
+type ExportPayload = {
+  kind: 'nexus.execution_plan';
+  version: '0.1';
+  compiler_rule: { id: string; title: string };
+  macro_pipeline?: string;
+  capability_packs: string[];
+  micro_pipelines: string[];
+  team_profiles: string[];
+  gates: string[];
+  memory_policy?: string;
+  context_policy?: string;
+  steps: PlanStep[];
 };
 
 function findProfile(profiles: AgentProfile[], preferred: string[], fallback?: string) {
@@ -67,6 +81,18 @@ function buildPlan(selected: Rule, profiles: AgentProfile[], gates: Gate[], micr
       description: 'Define system boundaries, interfaces, assumptions and decision points.',
     },
   ];
+
+  if (pack) {
+    steps.push({
+      id: '03-capability-pack-bind',
+      title: `Capability Pack Bind: ${pack.pack_id}`,
+      owner: architectureOwner,
+      expectedOutputs: ['selected_skills', 'selected_tools', 'pack_constraints'],
+      gates: pack.quality_gates?.filter((id) => gateIds.has(id)) ?? [],
+      related: pack.pack_id,
+      description: 'Bind the selected pack skills, tools and gates before micro-pipeline execution.',
+    });
+  }
 
   for (const pipeline of microPipelines) {
     const owner = pipeline.required_profiles?.find((id) => profileIds.has(id)) ?? profiles[0]?.id ?? 'unassigned';
@@ -118,19 +144,83 @@ function buildPlan(selected: Rule, profiles: AgentProfile[], gates: Gate[], micr
     },
   );
 
-  if (pack) {
-    steps.splice(2, 0, {
-      id: '03-capability-pack-bind',
-      title: `Capability Pack Bind: ${pack.pack_id}`,
-      owner: architectureOwner,
-      expectedOutputs: ['selected_skills', 'selected_tools', 'pack_constraints'],
-      gates: pack.quality_gates?.filter((id) => gateIds.has(id)) ?? [],
-      related: pack.pack_id,
-      description: 'Bind the selected pack skills, tools and gates before micro-pipeline execution.',
-    });
-  }
-
   return steps;
+}
+
+function createPayload(selected: Rule, profiles: AgentProfile[], gates: Gate[], microPipelines: MicroPipeline[], packs: CapabilityPack[], steps: PlanStep[]): ExportPayload {
+  return {
+    kind: 'nexus.execution_plan',
+    version: '0.1',
+    compiler_rule: { id: selected.id, title: selected.title },
+    macro_pipeline: selected.select?.macro_pipeline,
+    capability_packs: packs.map((pack) => pack.pack_id),
+    micro_pipelines: microPipelines.map((pipeline) => pipeline.id),
+    team_profiles: profiles.map((profile) => profile.id),
+    gates: gates.map((gate) => gate.id),
+    memory_policy: selected.select?.memory_policy,
+    context_policy: selected.select?.context_policy,
+    steps,
+  };
+}
+
+function toMarkdown(payload: ExportPayload) {
+  return `# Execution Plan: ${payload.compiler_rule.title}\n\n` +
+    `- Compiler rule: ${payload.compiler_rule.id}\n` +
+    `- Macro pipeline: ${payload.macro_pipeline ?? 'none'}\n` +
+    `- Capability packs: ${payload.capability_packs.join(', ') || 'none'}\n` +
+    `- Memory policy: ${payload.memory_policy ?? 'none'}\n` +
+    `- Context policy: ${payload.context_policy ?? 'none'}\n\n` +
+    `## Team Profiles\n${payload.team_profiles.map((id) => `- ${id}`).join('\n')}\n\n` +
+    `## Micro Pipelines\n${payload.micro_pipelines.map((id) => `- ${id}`).join('\n')}\n\n` +
+    `## Required Gates\n${payload.gates.map((id) => `- ${id}`).join('\n')}\n\n` +
+    `## Steps\n\n${payload.steps.map((step, index) => `### ${index + 1}. ${step.title}\n\n- Owner: ${step.owner}\n- Related: ${step.related ?? 'none'}\n- Expected outputs: ${step.expectedOutputs.join(', ') || 'none'}\n- Gates: ${step.gates.join(', ') || 'none'}\n\n${step.description}`).join('\n\n')}`;
+}
+
+function toTaskPacket(payload: ExportPayload) {
+  return {
+    packet_type: 'nexus.task_packet',
+    version: '0.1',
+    objective: payload.compiler_rule.title,
+    source_compiler_rule: payload.compiler_rule.id,
+    routing: {
+      macro_pipeline: payload.macro_pipeline,
+      micro_pipelines: payload.micro_pipelines,
+      capability_packs: payload.capability_packs,
+    },
+    team: payload.team_profiles.map((profile) => ({ profile, role: 'owner_or_reviewer' })),
+    gates: payload.gates.map((gate) => ({ gate, required: true })),
+    policies: {
+      memory: payload.memory_policy,
+      context: payload.context_policy,
+    },
+    work_order: payload.steps.map((step, index) => ({
+      order: index + 1,
+      id: step.id,
+      title: step.title,
+      owner: step.owner,
+      description: step.description,
+      expected_outputs: step.expectedOutputs,
+      required_gates: step.gates,
+      related: step.related,
+      status: 'not_started',
+    })),
+  };
+}
+
+function downloadFile(filename: string, content: string, mime = 'text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function copyText(content: string) {
+  await navigator.clipboard.writeText(content);
 }
 
 function Badge({ children, tone = 'neutral' }: { children: string; tone?: 'neutral' | 'cyan' | 'yellow' }) {
@@ -138,18 +228,32 @@ function Badge({ children, tone = 'neutral' }: { children: string; tone?: 'neutr
   return <span className={`rounded-md border px-2 py-1 text-[11px] ${cls}`}>{children}</span>;
 }
 
+function ActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return <button onClick={onClick} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 transition hover:border-cyan-500/30 hover:text-white">{icon}{label}</button>;
+}
+
 export default function ExecutionPlanPanel({ selected, profiles, gates, microPipelines, packs }: { selected?: Rule; profiles: AgentProfile[]; gates: Gate[]; microPipelines: MicroPipeline[]; packs: CapabilityPack[] }) {
   if (!selected) return null;
   const steps = buildPlan(selected, profiles, gates, microPipelines, packs);
+  const payload = createPayload(selected, profiles, gates, microPipelines, packs, steps);
+  const markdown = toMarkdown(payload);
+  const json = JSON.stringify(payload, null, 2);
+  const taskPacket = JSON.stringify(toTaskPacket(payload), null, 2);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
-      <div className="mb-5 flex items-center justify-between gap-4">
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
           <ClipboardList size={18} className="text-cyan-400" />
           Generated Execution Plan
         </div>
-        <Badge tone="cyan">{steps.length} steps</Badge>
+        <div className="flex flex-wrap gap-2">
+          <Badge tone="cyan">{steps.length} steps</Badge>
+          <ActionButton icon={<Clipboard size={14} />} label="Copy MD" onClick={() => void copyText(markdown)} />
+          <ActionButton icon={<Download size={14} />} label="Download MD" onClick={() => downloadFile('nexus-execution-plan.md', markdown, 'text/markdown')} />
+          <ActionButton icon={<FileJson size={14} />} label="Download JSON" onClick={() => downloadFile('nexus-execution-plan.json', json, 'application/json')} />
+          <ActionButton icon={<UploadCloud size={14} />} label="Task Packet" onClick={() => downloadFile('nexus-task-packet.json', taskPacket, 'application/json')} />
+        </div>
       </div>
 
       <div className="grid gap-4">
