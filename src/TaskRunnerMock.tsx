@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, UploadCloud } from 'lucide-react';
+import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, ShieldCheck, UploadCloud } from 'lucide-react';
 
 type WorkStatus = 'not_started' | 'in_progress' | 'blocked' | 'done';
+type GateStatus = 'not_checked' | 'pass' | 'fail';
+
 type WorkOrderStep = {
   order: number;
   id: string;
@@ -32,6 +34,14 @@ type TaskPacket = {
   };
   work_order: WorkOrderStep[];
 };
+
+type GateEvidence = {
+  status: GateStatus;
+  evidence_note: string;
+  blocker_reason: string;
+};
+
+type EvidenceState = Record<string, Record<string, GateEvidence>>;
 
 const samplePacket: TaskPacket = {
   packet_type: 'nexus.task_packet',
@@ -96,12 +106,19 @@ const samplePacket: TaskPacket = {
 };
 
 const statusOptions: WorkStatus[] = ['not_started', 'in_progress', 'blocked', 'done'];
+const gateStatusOptions: GateStatus[] = ['not_checked', 'pass', 'fail'];
 
 function statusTone(status: WorkStatus) {
   if (status === 'done') return 'border-emerald-500/20 bg-emerald-950/20 text-emerald-300';
   if (status === 'in_progress') return 'border-cyan-500/20 bg-cyan-950/20 text-cyan-300';
   if (status === 'blocked') return 'border-red-500/20 bg-red-950/20 text-red-200';
   return 'border-white/10 bg-white/5 text-neutral-300';
+}
+
+function gateTone(status: GateStatus) {
+  if (status === 'pass') return 'border-emerald-500/20 bg-emerald-950/20 text-emerald-300';
+  if (status === 'fail') return 'border-red-500/20 bg-red-950/20 text-red-200';
+  return 'border-yellow-500/20 bg-yellow-950/10 text-yellow-200';
 }
 
 function Pill({ children }: { children: string }) {
@@ -127,12 +144,24 @@ function initialStatuses(packet: TaskPacket) {
   return Object.fromEntries(packet.work_order.map((step) => [step.id, step.status ?? 'not_started'])) as Record<string, WorkStatus>;
 }
 
+function initialEvidence(packet: TaskPacket): EvidenceState {
+  return Object.fromEntries(
+    packet.work_order.map((step) => [
+      step.id,
+      Object.fromEntries(
+        (step.required_gates ?? []).map((gate) => [gate, { status: 'not_checked', evidence_note: '', blocker_reason: '' }]),
+      ),
+    ]),
+  ) as EvidenceState;
+}
+
 export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unknown }) {
   const bootPacket = isTaskPacket(initialPacket) ? initialPacket : samplePacket;
   const [rawPacket, setRawPacket] = useState(JSON.stringify(bootPacket, null, 2));
   const [packet, setPacket] = useState<TaskPacket>(bootPacket);
   const [error, setError] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, WorkStatus>>(() => initialStatuses(bootPacket));
+  const [evidence, setEvidence] = useState<EvidenceState>(() => initialEvidence(bootPacket));
 
   useEffect(() => {
     if (!isTaskPacket(initialPacket)) return;
@@ -140,6 +169,7 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
     setPacket(initialPacket);
     setRawPacket(JSON.stringify(initialPacket, null, 2));
     setStatuses(initialStatuses(initialPacket));
+    setEvidence(initialEvidence(initialPacket));
   }, [initialPacket]);
 
   const progress = useMemo(() => {
@@ -149,6 +179,15 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
     const inProgress = packet.work_order.filter((step) => statuses[step.id] === 'in_progress').length;
     return { total, done, blocked, inProgress, percent: Math.round((done / total) * 100) };
   }, [packet, statuses]);
+
+  const gateProgress = useMemo(() => {
+    const entries = Object.values(evidence).flatMap((stepEvidence) => Object.values(stepEvidence));
+    const total = entries.length || 1;
+    const passed = entries.filter((item) => item.status === 'pass').length;
+    const failed = entries.filter((item) => item.status === 'fail').length;
+    const notChecked = entries.filter((item) => item.status === 'not_checked').length;
+    return { total, passed, failed, notChecked, percent: Math.round((passed / total) * 100) };
+  }, [evidence]);
 
   const loadPacket = (text = rawPacket) => {
     const result = parsePacket(text);
@@ -160,26 +199,51 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
     setPacket(result.packet);
     setRawPacket(JSON.stringify(result.packet, null, 2));
     setStatuses(initialStatuses(result.packet));
+    setEvidence(initialEvidence(result.packet));
   };
 
   const updateStatus = (id: string, status: WorkStatus) => {
     setStatuses((current) => ({ ...current, [id]: status }));
   };
 
+  const updateGateEvidence = (stepId: string, gateId: string, patch: Partial<GateEvidence>) => {
+    setEvidence((current) => ({
+      ...current,
+      [stepId]: {
+        ...(current[stepId] ?? {}),
+        [gateId]: {
+          ...(current[stepId]?.[gateId] ?? { status: 'not_checked', evidence_note: '', blocker_reason: '' }),
+          ...patch,
+        },
+      },
+    }));
+
+    if (patch.status === 'fail') {
+      setStatuses((current) => ({ ...current, [stepId]: 'blocked' }));
+    }
+  };
+
   const resetStatuses = () => {
     setStatuses(Object.fromEntries(packet.work_order.map((step) => [step.id, 'not_started'])));
+    setEvidence(initialEvidence(packet));
   };
 
   const exportState = () => {
     const output = {
       ...packet,
       work_order: packet.work_order.map((step) => ({ ...step, status: statuses[step.id] ?? 'not_started' })),
+      gate_evidence: evidence,
       runner_state: {
         total_steps: progress.total,
         done_steps: progress.done,
         blocked_steps: progress.blocked,
         in_progress_steps: progress.inProgress,
         progress_percent: progress.percent,
+        total_gate_checks: gateProgress.total,
+        passed_gate_checks: gateProgress.passed,
+        failed_gate_checks: gateProgress.failed,
+        not_checked_gate_checks: gateProgress.notChecked,
+        gate_pass_percent: gateProgress.percent,
       },
     };
     const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
@@ -203,7 +267,7 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">Task Packet Runner Mock</h1>
-              <p className="mt-1 text-sm text-neutral-400">Reads nexus-task-packet.json and tracks work_order steps without running real agents.</p>
+              <p className="mt-1 text-sm text-neutral-400">Tracks work_order status and gate evidence without running real agents.</p>
             </div>
           </div>
         </header>
@@ -245,14 +309,14 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-center md:grid-cols-4">
                   <div className="rounded-xl border border-white/10 bg-black/40 p-4"><div className="text-2xl text-white">{progress.percent}%</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">progress</div></div>
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-4"><div className="text-2xl text-white">{progress.inProgress}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">active</div></div>
                   <div className="rounded-xl border border-white/10 bg-black/40 p-4"><div className="text-2xl text-white">{progress.blocked}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">blocked</div></div>
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-4"><div className="text-2xl text-white">{progress.done}/{progress.total}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">done</div></div>
+                  <div className="rounded-xl border border-white/10 bg-black/40 p-4"><div className="text-2xl text-white">{gateProgress.percent}%</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">gate pass</div></div>
+                  <div className="rounded-xl border border-white/10 bg-black/40 p-4"><div className="text-2xl text-white">{gateProgress.failed}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">gate fail</div></div>
                 </div>
               </div>
               <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-cyan-500 transition-all" style={{ width: `${progress.percent}%` }} /></div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={resetStatuses} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><RotateCcw size={14} />Reset statuses</button>
+                <button onClick={resetStatuses} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><RotateCcw size={14} />Reset statuses + evidence</button>
                 <button onClick={exportState} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export runner state</button>
               </div>
             </section>
@@ -262,7 +326,14 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
               <div className="space-y-4">
                 {packet.work_order.map((step) => {
                   const status = statuses[step.id] ?? step.status ?? 'not_started';
-                  return <div key={step.id} className="rounded-xl border border-white/10 bg-[#0e0e0e] p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><div className="mb-2 flex flex-wrap gap-2"><Pill>{String(step.order).padStart(2, '0')}</Pill>{step.related && <Pill>{step.related}</Pill>}<span className={`rounded-md border px-2 py-1 text-[11px] ${statusTone(status)}`}>{status}</span></div><h3 className="text-base font-semibold text-white">{step.title}</h3><p className="mt-2 text-sm leading-relaxed text-neutral-400">{step.description}</p><div className="mt-3 text-xs text-neutral-500">Owner: <span className="text-neutral-300">{step.owner}</span></div></div><select value={status} onChange={(event) => updateStatus(step.id, event.target.value as WorkStatus)} className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs text-neutral-300 outline-none">{statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></div><div className="mt-4 grid gap-4 md:grid-cols-2"><div><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">expected outputs</div><div className="flex flex-wrap gap-2">{(step.expected_outputs ?? []).map((item) => <Pill key={item}>{item}</Pill>)}</div></div><div><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">required gates</div><div className="flex flex-wrap gap-2">{(step.required_gates ?? []).map((item) => <Pill key={item}>{item}</Pill>)}</div></div></div></div>;
+                  const gateIds = step.required_gates ?? [];
+                  return <div key={step.id} className="rounded-xl border border-white/10 bg-[#0e0e0e] p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><div className="mb-2 flex flex-wrap gap-2"><Pill>{String(step.order).padStart(2, '0')}</Pill>{step.related && <Pill>{step.related}</Pill>}<span className={`rounded-md border px-2 py-1 text-[11px] ${statusTone(status)}`}>{status}</span></div><h3 className="text-base font-semibold text-white">{step.title}</h3><p className="mt-2 text-sm leading-relaxed text-neutral-400">{step.description}</p><div className="mt-3 text-xs text-neutral-500">Owner: <span className="text-neutral-300">{step.owner}</span></div></div><select value={status} onChange={(event) => updateStatus(step.id, event.target.value as WorkStatus)} className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs text-neutral-300 outline-none">{statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></div><div className="mt-4 grid gap-4 md:grid-cols-2"><div><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">expected outputs</div><div className="flex flex-wrap gap-2">{(step.expected_outputs ?? []).map((item) => <Pill key={item}>{item}</Pill>)}</div></div><div><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">required gates</div><div className="flex flex-wrap gap-2">{gateIds.map((item) => <Pill key={item}>{item}</Pill>)}</div></div></div>
+
+                    {gateIds.length > 0 && <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4"><div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-400"><ShieldCheck size={15} className="text-cyan-400" />Gate evidence</div><div className="grid gap-3">{gateIds.map((gateId) => {
+                      const item = evidence[step.id]?.[gateId] ?? { status: 'not_checked', evidence_note: '', blocker_reason: '' };
+                      return <div key={gateId} className="rounded-xl border border-white/10 bg-[#050505] p-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div className="flex flex-wrap items-center gap-2"><Pill>{gateId}</Pill><span className={`rounded-md border px-2 py-1 text-[11px] ${gateTone(item.status)}`}>{item.status}</span></div><select value={item.status} onChange={(event) => updateGateEvidence(step.id, gateId, { status: event.target.value as GateStatus })} className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs text-neutral-300 outline-none">{gateStatusOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></div><div className="mt-3 grid gap-3 md:grid-cols-2"><textarea value={item.evidence_note} onChange={(event) => updateGateEvidence(step.id, gateId, { evidence_note: event.target.value })} placeholder="Evidence note / test result / review note" className="min-h-[76px] rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-neutral-300 outline-none focus:border-cyan-500/40" /><textarea value={item.blocker_reason} onChange={(event) => updateGateEvidence(step.id, gateId, { blocker_reason: event.target.value })} placeholder="Blocker reason if failed or blocked" className="min-h-[76px] rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-neutral-300 outline-none focus:border-red-500/40" /></div></div>;
+                    })}</div></div>}
+                  </div>;
                 })}
               </div>
             </section>
