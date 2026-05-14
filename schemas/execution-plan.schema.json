@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/execution-plan.schema.json",
+  "title": "Nexus Execution Plan",
+  "type": "object",
+  "required": ["kind", "version", "compiler_rule", "capability_packs", "micro_pipelines", "team_profiles", "gates", "steps"],
+  "properties": {
+    "kind": { "const": "nexus.execution_plan" },
+    "version": { "const": "0.1" },
+    "compiler_rule": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 }
+      }
+    },
+    "macro_pipeline": { "type": "string" },
+    "capability_packs": { "type": "array", "items": { "type": "string" } },
+    "micro_pipelines": { "type": "array", "items": { "type": "string" } },
+    "team_profiles": { "type": "array", "items": { "type": "string" } },
+    "gates": { "type": "array", "items": { "type": "string" } },
+    "memory_policy": { "type": "string" },
+    "context_policy": { "type": "string" },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "owner", "expectedOutputs", "gates", "description"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "expectedOutputs": { "type": "array", "items": { "type": "string" } },
+          "gates": { "type": "array", "items": { "type": "string" } },
+          "related": { "type": "string" },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
