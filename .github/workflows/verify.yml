@@ -22,7 +22,7 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci
+        run: npm install
 
       - name: Validate packets and trials
         run: npm run validate:packets
