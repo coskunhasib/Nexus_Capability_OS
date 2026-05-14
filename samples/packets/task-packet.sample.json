@@ -1,0 +1,45 @@
+{
+  "packet_type": "nexus.task_packet",
+  "version": "0.1",
+  "objective": "Web SaaS MVP",
+  "source_compiler_rule": "rule-web-saas-mvp",
+  "routing": {
+    "macro_pipeline": "software-development",
+    "micro_pipelines": ["frontend-web", "backend-api", "database", "qa-automation"],
+    "capability_packs": ["web-saas-mvp-pack"]
+  },
+  "team": [
+    { "profile": "requirement-extractor", "role": "owner_or_reviewer" },
+    { "profile": "system-architect", "role": "owner_or_reviewer" }
+  ],
+  "gates": [
+    { "gate": "spec-compliance", "required": true },
+    { "gate": "test-evidence", "required": true }
+  ],
+  "policies": {
+    "memory": "project-decision-memory",
+    "context": "software-working-set-context"
+  },
+  "work_order": [
+    {
+      "order": 1,
+      "id": "01-intake",
+      "title": "Intake / Requirement Lock",
+      "owner": "requirement-extractor",
+      "description": "Lock requirements before implementation.",
+      "expected_outputs": ["requirements", "acceptance_criteria"],
+      "required_gates": ["clarity", "scope-fit"],
+      "status": "not_started"
+    },
+    {
+      "order": 2,
+      "id": "02-architecture",
+      "title": "Architecture / Contract Setup",
+      "owner": "system-architect",
+      "description": "Define interfaces and system boundaries.",
+      "expected_outputs": ["architecture_outline", "interface_contracts"],
+      "required_gates": ["architecture-coherence"],
+      "status": "not_started"
+    }
+  ]
+}
