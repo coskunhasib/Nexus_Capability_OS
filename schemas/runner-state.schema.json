@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/runner-state.schema.json",
+  "title": "Nexus Runner State",
+  "type": "object",
+  "required": ["packet_type", "version", "objective", "work_order", "gate_evidence", "runner_state"],
+  "properties": {
+    "packet_type": { "const": "nexus.task_packet" },
+    "version": { "const": "0.1" },
+    "objective": { "type": "string", "minLength": 1 },
+    "work_order": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["order", "id", "title", "owner", "description", "status"],
+        "properties": {
+          "order": { "type": "number" },
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "status": { "enum": ["not_started", "in_progress", "blocked", "done"] }
+        }
+      }
+    },
+    "gate_evidence": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "required": ["status", "evidence_note", "blocker_reason"],
+          "properties": {
+            "status": { "enum": ["not_checked", "pass", "fail"] },
+            "evidence_note": { "type": "string" },
+            "blocker_reason": { "type": "string" }
+          }
+        }
+      }
+    },
+    "runner_state": {
+      "type": "object",
+      "required": ["total_steps", "done_steps", "blocked_steps", "in_progress_steps", "progress_percent", "total_gate_checks", "passed_gate_checks", "failed_gate_checks", "not_checked_gate_checks", "gate_pass_percent"],
+      "properties": {
+        "total_steps": { "type": "number" },
+        "done_steps": { "type": "number" },
+        "blocked_steps": { "type": "number" },
+        "in_progress_steps": { "type": "number" },
+        "progress_percent": { "type": "number" },
+        "total_gate_checks": { "type": "number" },
+        "passed_gate_checks": { "type": "number" },
+        "failed_gate_checks": { "type": "number" },
+        "not_checked_gate_checks": { "type": "number" },
+        "gate_pass_percent": { "type": "number" }
+      }
+    }
+  }
+}
