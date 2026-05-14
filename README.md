@@ -16,6 +16,151 @@ Intent
 → Memory + Context Update Packets
 ```
 
+## Current checkpoint
+
+The current end-to-end trial path is:
+
+```text
+Trial Scenario
+→ Load in Compiler
+→ Execution Plan
+→ Task Packet
+→ Nexus Handoff Packet
+→ Runner
+→ Review Report
+→ Memory / Context Packet
+```
+
+What currently works:
+
+```text
+Studio → Trials
+  → select scenario
+  → Load in Compiler
+  → selected intent is loaded into Compiler automatically
+
+Studio → Compiler
+  → match intent against compiler rules
+  → generate execution plan
+  → export execution plan JSON
+  → export task packet JSON
+  → export nexus handoff packet JSON
+  → send task packet to Runner
+
+Runner
+  → simulate work_order status
+  → enter gate evidence
+  → generate review report
+  → export memory_update_packet.json
+  → export context_update_packet.json
+
+Governance
+  → registry health
+  → packet contract health
+  → Nexus bridge contract health
+  → trial scenario contract health
+```
+
+Next hardening pass:
+
+```bash
+npm run validate:packets
+npm run audit:registry
+npm run lint
+npm run build
+```
+
+## ABC status
+
+Current policy:
+
+```text
+A — Trial-ready features
+B — Nexus integration features
+C — Labs/backlog features
+```
+
+### A — Trial-ready
+
+Status: **active / mostly implemented for first manual trials**
+
+Implemented:
+
+```text
+trial-scenario.schema.json
+samples/trials/web-saas-mvp.trial.json
+samples/trials/stm32-firmware.trial.json
+samples/trials/agentic-system.trial.json
+samples/trials/rfq-generation.trial.json
+samples/trials/technical-report.trial.json
+TrialScenarioView.tsx
+Trials → Load in Compiler flow
+validate-packets coverage for trial scenarios
+README trial runbook
+```
+
+Still needed:
+
+```text
+run npm validation/build commands
+fix TypeScript/build errors if any
+compare compiler output against expected trial fields
+add pass/fail trial result summary UI later
+```
+
+### B — Nexus integration
+
+Status: **contract layer implemented; real runtime bridge not implemented yet**
+
+Implemented:
+
+```text
+schemas/nexus-handoff-packet.schema.json
+schemas/runtime-bridge.schema.json
+samples/packets/nexus-handoff-packet.sample.json
+samples/packets/runtime-bridge.sample.json
+ExecutionPlanPanel → Handoff export
+Governance → Nexus contract health visibility
+validate-packets coverage for handoff/runtime bridge samples
+```
+
+Still needed:
+
+```text
+real Nexus bridge adapter
+runtime callback ingestion
+artifact refs ingestion
+review report generation from real runtime events
+Nexus-side API boundary decision
+```
+
+### C — Labs / backlog
+
+Status: **tracked, not built into main workflow yet**
+
+Tracked in:
+
+```text
+labs/feature-backlog.json
+```
+
+Currently deferred items:
+
+```text
+marketplace-view
+graph-editor
+drag-drop-workflow-builder
+multi-user-workspace
+billing-and-marketplace-packaging
+```
+
+Rule:
+
+```text
+C items are not deleted.
+They move into active development only when A/B trials prove a real need.
+```
+
 ## What this is for
 
 Use this when you want to avoid giving raw, ambiguous work directly to an AI agent.
@@ -42,6 +187,7 @@ Explore
 
 Studio
   → Intent Compiler
+  → Trial Scenarios
   → Capability Packs
   → Pack Builder
 
@@ -79,23 +225,35 @@ npm run build
 
 Use this exact flow to test whether the product is useful.
 
-### 1. Start in Studio
+### 1. Start in Studio → Trials
 
-Open `Studio`.
+Open `Studio`, then `Trials`.
 
-Try one of these intents:
-
-```text
-Build a web SaaS MVP with React frontend, backend API, database, tests and release gates.
-```
+Select one of these scenarios:
 
 ```text
-Design STM32 HVAC fan driver firmware for 220V control with safety, timing and bench evidence.
+web-saas-mvp
+stm32-firmware
+agentic-system
+rfq-generation
+technical-report
 ```
 
+Click:
+
 ```text
-Create an agentic system with tools, MCP, memory, context, evals and guardrails.
+Load in Compiler
 ```
+
+Expected result:
+
+```text
+Compiler opens
+selected trial intent is loaded into the intent textarea
+compiler match runs automatically
+```
+
+### 2. Review Compiler output
 
 Expected result:
 
@@ -108,7 +266,15 @@ Compiler match
 → generated execution plan
 ```
 
-### 2. Send the generated plan to Runner
+Export options:
+
+```text
+nexus-execution-plan.json
+nexus-task-packet.json
+nexus-handoff-packet.json
+```
+
+### 3. Send the generated plan to Runner
 
 In the generated execution plan panel, click:
 
@@ -125,7 +291,7 @@ work_order steps appear
 required gates appear under each step
 ```
 
-### 3. Simulate execution
+### 4. Simulate execution
 
 In Runner:
 
@@ -144,7 +310,7 @@ Gate Evidence updates
 Execution Review Report updates live
 ```
 
-### 4. Export outputs
+### 5. Export outputs
 
 Export these files from the UI:
 
