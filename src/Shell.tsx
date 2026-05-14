@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { BrainCircuit, Database, Map as MapIcon } from 'lucide-react';
+import { BrainCircuit, Database, Map as MapIcon, ShieldCheck } from 'lucide-react';
 import App from './App.tsx';
 import CompilerView from './CompilerView.tsx';
+import RegistryGovernance from './RegistryGovernance.tsx';
 import RegistryInspector from './RegistryInspector.tsx';
 
-type ViewMode = 'map' | 'compiler' | 'inspector';
+type ViewMode = 'map' | 'compiler' | 'inspector' | 'governance';
 
 export default function Shell() {
   const [view, setView] = useState<ViewMode>('map');
@@ -29,11 +30,16 @@ export default function Shell() {
           <Database size={16} />
           Inspector
         </button>
+        <button onClick={() => setView('governance')} className={buttonClass('governance')}>
+          <ShieldCheck size={16} />
+          Governance
+        </button>
       </div>
 
       {view === 'map' && <App />}
       {view === 'compiler' && <CompilerView />}
       {view === 'inspector' && <RegistryInspector />}
+      {view === 'governance' && <RegistryGovernance />}
     </div>
   );
 }
