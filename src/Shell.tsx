@@ -10,6 +10,12 @@ type ViewMode = 'map' | 'compiler' | 'inspector' | 'governance' | 'runner';
 
 export default function Shell() {
   const [view, setView] = useState<ViewMode>('map');
+  const [runnerPacket, setRunnerPacket] = useState<unknown>();
+
+  const openRunnerWithPacket = (packet: unknown) => {
+    setRunnerPacket(packet);
+    setView('runner');
+  };
 
   const buttonClass = (mode: ViewMode) =>
     `flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
@@ -42,10 +48,10 @@ export default function Shell() {
       </div>
 
       {view === 'map' && <App />}
-      {view === 'compiler' && <CompilerView />}
+      {view === 'compiler' && <CompilerView onSendTaskPacket={openRunnerWithPacket} />}
       {view === 'inspector' && <RegistryInspector />}
       {view === 'governance' && <RegistryGovernance />}
-      {view === 'runner' && <TaskRunnerMock />}
+      {view === 'runner' && <TaskRunnerMock initialPacket={runnerPacket} />}
     </div>
   );
 }
