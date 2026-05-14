@@ -1,0 +1,41 @@
+{
+  "objective": "Web SaaS MVP",
+  "source_compiler_rule": "rule-web-saas-mvp",
+  "macro_pipeline": "software-development",
+  "capability_packs": ["web-saas-mvp-pack"],
+  "micro_pipelines": ["frontend-web", "backend-api"],
+  "memory_policy": "project-decision-memory",
+  "context_policy": "software-working-set-context",
+  "completed_steps": 1,
+  "total_steps": 2,
+  "blocked_steps": 1,
+  "incomplete_steps": 1,
+  "failed_gates": 1,
+  "missing_evidence": 0,
+  "release_ready": false,
+  "recommendation": "Do not release yet. Resolve failed gates first.",
+  "memory_update_recommendation": "Record only blocker facts and unresolved decisions.",
+  "context_update_recommendation": "Keep active blockers and next-step context.",
+  "findings": [
+    {
+      "type": "failed_gate",
+      "step_id": "02-architecture",
+      "step_title": "Architecture / Contract Setup",
+      "gate": "architecture-coherence",
+      "message": "Backend response model not defined."
+    }
+  ],
+  "gate_evidence": {
+    "02-architecture": {
+      "architecture-coherence": {
+        "status": "fail",
+        "evidence_note": "Interface contract incomplete.",
+        "blocker_reason": "Backend response model not defined."
+      }
+    }
+  },
+  "step_statuses": {
+    "01-intake": "done",
+    "02-architecture": "blocked"
+  }
+}
