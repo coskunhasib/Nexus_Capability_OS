@@ -1,0 +1,29 @@
+{
+  "packet_type": "nexus.context_update_packet",
+  "version": "0.1",
+  "active_objective": "Web SaaS MVP",
+  "source_compiler_rule": "rule-web-saas-mvp",
+  "context_policy": "software-working-set-context",
+  "release_ready": false,
+  "current_blockers": [
+    {
+      "step_id": "02-architecture",
+      "gate": "architecture-coherence",
+      "message": "Backend response model not defined."
+    }
+  ],
+  "missing_evidence": [],
+  "evidence_summaries": [
+    {
+      "step_id": "01-intake",
+      "gate_id": "clarity",
+      "status": "pass",
+      "summary": "Acceptance criteria written and reviewed."
+    }
+  ],
+  "next_execution_focus": ["Resolve 02-architecture: Architecture / Contract Setup (blocked)."],
+  "context_boundary": {
+    "keep": ["active blockers", "failed gates", "next incomplete steps"],
+    "drop": ["raw completed step chatter", "duplicate UI state"]
+  }
+}
