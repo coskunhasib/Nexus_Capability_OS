@@ -26,7 +26,7 @@ type TrialScenario = {
 const scenarios = [webSaasTrial, stm32Trial, agenticTrial, rfqTrial, technicalReportTrial] as TrialScenario[];
 const pendingTrialIntentKey = 'nexus.pendingTrialIntent';
 
-function Badge({ children, tone = 'neutral' }: { children: string | number; tone?: 'neutral' | 'cyan' | 'green' | 'yellow' }) {
+function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'cyan' | 'green' | 'yellow' }) {
   const cls = {
     neutral: 'border-white/10 bg-white/5 text-neutral-300',
     cyan: 'border-cyan-500/20 bg-cyan-950/20 text-cyan-300',
