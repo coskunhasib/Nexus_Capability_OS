@@ -8,6 +8,7 @@ const registryDir = path.join(root, 'registry');
 
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(registryDir, file), 'utf8'));
 const readList = (file, key) => readJson(file)[key] ?? [];
+const readListIfExists = (file, key) => fs.existsSync(path.join(registryDir, file)) ? readList(file, key) : [];
 const ids = (items, key = 'id') => new Set(items.map((item) => item[key]).filter(Boolean));
 const addMissing = (missing, kind, id, source) => {
   if (!id) return;
@@ -23,7 +24,10 @@ const profiles = [
   ...readList('agent-profiles.json', 'agent_profiles'),
   ...readList('agent-profiles-extra.json', 'agent_profiles'),
 ];
-const gates = readList('gates.json', 'gates');
+const gates = [
+  ...readList('gates.json', 'gates'),
+  ...readListIfExists('gates-extra.json', 'gates'),
+];
 const packs = [
   ...readList('example-capability-packs.json', 'capability_packs'),
   ...readList('capability-packs-extra.json', 'capability_packs'),
