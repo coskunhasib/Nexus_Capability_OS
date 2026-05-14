@@ -1,0 +1,127 @@
+{
+  "entities": [
+    {
+      "id": "nexus-capability-os",
+      "type": "capability-os",
+      "title": "Nexus Capability OS",
+      "summary": "Capability Compiler tabanlı skill, tool, plugin, agent, memory, context ve gate işletim katmanı.",
+      "status": "active",
+      "owner_layer": "compiler",
+      "tags": ["capability-os", "compiler", "profiles", "pipelines"],
+      "relationships": [
+        { "type": "contains", "target": "capability-compiler", "reason": "Merkez derleme katmanı." },
+        { "type": "contains", "target": "software-development", "reason": "Başlangıç macro pipeline ailesi." },
+        { "type": "contains", "target": "memory-curator", "reason": "Kalıcı bilgi yönetişimi." }
+      ]
+    },
+    {
+      "id": "capability-compiler",
+      "type": "capability-compiler",
+      "title": "Capability Compiler",
+      "summary": "Intent'i alır; team, pipeline, capability pack ve gate seti derler.",
+      "status": "active",
+      "owner_layer": "compiler",
+      "tags": ["compiler", "team-builder"],
+      "inputs": ["intent", "constraints", "target_output"],
+      "outputs": ["compiled_team", "selected_pipeline", "capability_pack"],
+      "relationships": [
+        { "type": "assembles", "target": "web-saas-mvp-pack", "reason": "Web SaaS intent için pack derler." },
+        { "type": "assembles", "target": "firmware-stm32-hvac-driver-pack", "reason": "STM32 HVAC driver intent için pack derler." }
+      ]
+    },
+    {
+      "id": "software-development",
+      "type": "macro-pipeline-family",
+      "title": "Software Development",
+      "summary": "Web, backend, mobile, database, DevOps, QA, LLM app ve agentic system akışlarını kapsayan macro pipeline.",
+      "status": "active",
+      "owner_layer": "pipeline",
+      "tags": ["software", "web", "backend", "agentic"],
+      "relationships": [
+        { "type": "contains", "target": "frontend-web", "reason": "Web UI micro pipeline." },
+        { "type": "contains", "target": "backend-api", "reason": "API micro pipeline." },
+        { "type": "contains", "target": "agentic-system", "reason": "Agentic system micro pipeline." }
+      ]
+    },
+    {
+      "id": "frontend-web",
+      "type": "micro-pipeline",
+      "title": "Frontend Web",
+      "summary": "Component tree, state modeli, API contract, responsive davranış ve UI quality gates ile web arayüzü üretir.",
+      "status": "active",
+      "owner_layer": "pipeline",
+      "tags": ["frontend", "web", "ui"],
+      "inputs": ["product_brief", "ux_flow", "api_contract"],
+      "outputs": ["component_tree", "implemented_ui", "ui_review_report"],
+      "gates": ["spec-compliance", "ui-state-coverage", "accessibility-baseline"],
+      "relationships": [
+        { "type": "requires", "target": "frontend-web-engineer", "reason": "Ana implementer profili." },
+        { "type": "requires", "target": "spec-compliance", "reason": "Gereksinim uyumu kontrolü." }
+      ]
+    },
+    {
+      "id": "backend-api",
+      "type": "micro-pipeline",
+      "title": "Backend / API",
+      "summary": "API contract, data model, validation, auth, business logic, tests ve docs üretir.",
+      "status": "active",
+      "owner_layer": "pipeline",
+      "tags": ["backend", "api", "service"],
+      "inputs": ["domain_model", "requirements", "security_constraints"],
+      "outputs": ["api_contract", "service_code", "api_docs"],
+      "gates": ["spec-compliance", "security-review", "test-evidence"]
+    },
+    {
+      "id": "agentic-system",
+      "type": "micro-pipeline",
+      "title": "Agentic System",
+      "summary": "Agent boundaries, tool map, memory/context policy, orchestration, eval ve guardrail akışını yönetir.",
+      "status": "active",
+      "owner_layer": "pipeline",
+      "tags": ["agentic", "llm", "tools", "memory", "context"],
+      "inputs": ["agent_goal", "tool_capabilities", "risk_constraints"],
+      "outputs": ["agent_architecture", "tool_contracts", "eval_plan"],
+      "gates": ["tool-trust", "context-budget", "memory-policy-fit", "eval-coverage"],
+      "relationships": [
+        { "type": "requires", "target": "tool-designer", "reason": "Tool capability ve schema sahibi." },
+        { "type": "requires", "target": "eval-engineer", "reason": "Eval coverage sahibi." }
+      ]
+    },
+    {
+      "id": "frontend-web-engineer",
+      "type": "agent-profile",
+      "title": "Frontend Web Engineer",
+      "summary": "Ürün gereksinimini web UI bileşenleri, state ve interaction davranışına çevirir.",
+      "status": "active",
+      "owner_layer": "profile",
+      "tags": ["frontend", "web", "implementation"],
+      "inputs": ["product_brief", "ux_flow", "api_contract"],
+      "outputs": ["implemented_ui", "ui_state_matrix", "frontend_handoff"],
+      "gates": ["ui-state-coverage", "accessibility-baseline"],
+      "failure_modes": ["Mock data ile çalışıp gerçek API ile kırılma", "Loading/empty/error state eksikliği"]
+    },
+    {
+      "id": "spec-compliance",
+      "type": "quality-gate",
+      "title": "Spec Compliance Gate",
+      "summary": "Üretilen çıktının gereksinimi eksiksiz ve fazlasız karşıladığını doğrular.",
+      "status": "active",
+      "owner_layer": "gate",
+      "tags": ["spec", "review", "blocking"],
+      "inputs": ["requirements", "output", "acceptance_criteria"],
+      "outputs": ["spec_compliance_report"]
+    },
+    {
+      "id": "memory-curator",
+      "type": "agent-profile",
+      "title": "Memory Curator",
+      "summary": "Kalıcı kararları, tercihleri, dersleri ve deprecated bilgileri hafıza sözleşmesine göre yönetir.",
+      "status": "active",
+      "owner_layer": "memory",
+      "tags": ["memory", "curation", "traceability"],
+      "relationships": [
+        { "type": "writes_memory", "target": "project-decision-memory", "reason": "Kalıcı karar kayıtlarını yönetir." }
+      ]
+    }
+  ]
+}
