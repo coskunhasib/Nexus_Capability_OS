@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, UploadCloud } from 'lucide-react';
 
 type WorkStatus = 'not_started' | 'in_progress' | 'blocked' | 'done';
@@ -108,22 +108,39 @@ function Pill({ children }: { children: string }) {
   return <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-300">{children}</span>;
 }
 
+function isTaskPacket(value: unknown): value is TaskPacket {
+  const packet = value as TaskPacket;
+  return Boolean(packet && packet.packet_type === 'nexus.task_packet' && Array.isArray(packet.work_order));
+}
+
 function parsePacket(text: string): { packet?: TaskPacket; error?: string } {
   try {
     const parsed = JSON.parse(text) as TaskPacket;
-    if (!parsed || parsed.packet_type !== 'nexus.task_packet') return { error: 'packet_type must be nexus.task_packet' };
-    if (!Array.isArray(parsed.work_order)) return { error: 'work_order must be an array' };
+    if (!isTaskPacket(parsed)) return { error: 'packet_type must be nexus.task_packet and work_order must be an array' };
     return { packet: parsed };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Invalid JSON' };
   }
 }
 
-export default function TaskRunnerMock() {
-  const [rawPacket, setRawPacket] = useState(JSON.stringify(samplePacket, null, 2));
-  const [packet, setPacket] = useState<TaskPacket>(samplePacket);
+function initialStatuses(packet: TaskPacket) {
+  return Object.fromEntries(packet.work_order.map((step) => [step.id, step.status ?? 'not_started'])) as Record<string, WorkStatus>;
+}
+
+export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unknown }) {
+  const bootPacket = isTaskPacket(initialPacket) ? initialPacket : samplePacket;
+  const [rawPacket, setRawPacket] = useState(JSON.stringify(bootPacket, null, 2));
+  const [packet, setPacket] = useState<TaskPacket>(bootPacket);
   const [error, setError] = useState<string | null>(null);
-  const [statuses, setStatuses] = useState<Record<string, WorkStatus>>(() => Object.fromEntries(samplePacket.work_order.map((step) => [step.id, step.status ?? 'not_started'])));
+  const [statuses, setStatuses] = useState<Record<string, WorkStatus>>(() => initialStatuses(bootPacket));
+
+  useEffect(() => {
+    if (!isTaskPacket(initialPacket)) return;
+    setError(null);
+    setPacket(initialPacket);
+    setRawPacket(JSON.stringify(initialPacket, null, 2));
+    setStatuses(initialStatuses(initialPacket));
+  }, [initialPacket]);
 
   const progress = useMemo(() => {
     const total = packet.work_order.length || 1;
@@ -142,7 +159,7 @@ export default function TaskRunnerMock() {
     setError(null);
     setPacket(result.packet);
     setRawPacket(JSON.stringify(result.packet, null, 2));
-    setStatuses(Object.fromEntries(result.packet.work_order.map((step) => [step.id, step.status ?? 'not_started'])));
+    setStatuses(initialStatuses(result.packet));
   };
 
   const updateStatus = (id: string, status: WorkStatus) => {
