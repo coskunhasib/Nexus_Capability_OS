@@ -1,0 +1,62 @@
+{
+  "version": "0.1",
+  "policy": "Controlled feature intake. Build A and B first; keep C isolated until validated by trials.",
+  "classes": {
+    "A_trial_ready": [
+      {
+        "id": "trial-scenario-library",
+        "status": "implemented",
+        "why": "Makes the product testable against repeatable intents."
+      },
+      {
+        "id": "packet-validation",
+        "status": "implemented",
+        "why": "Prevents exported artifacts from becoming loose JSON blobs."
+      },
+      {
+        "id": "trial-readme-runbook",
+        "status": "implemented",
+        "why": "Makes first run repeatable by humans and Nexus integrators."
+      }
+    ],
+    "B_nexus_integration": [
+      {
+        "id": "nexus-handoff-packet",
+        "status": "implemented",
+        "why": "Defines the object Nexus can receive from Capability OS."
+      },
+      {
+        "id": "runtime-bridge-contract",
+        "status": "implemented",
+        "why": "Defines how Nexus/runtime reports execution state, evidence and artifacts back."
+      }
+    ],
+    "C_labs_backlog": [
+      {
+        "id": "marketplace-view",
+        "status": "deferred",
+        "why": "Useful after packs prove value across trials."
+      },
+      {
+        "id": "graph-editor",
+        "status": "deferred",
+        "why": "Too much UI surface before runtime bridge is validated."
+      },
+      {
+        "id": "drag-drop-workflow-builder",
+        "status": "deferred",
+        "why": "Should wait until task packet semantics stabilize."
+      },
+      {
+        "id": "multi-user-workspace",
+        "status": "deferred",
+        "why": "Org/team concepts belong after Nexus integration is proven."
+      },
+      {
+        "id": "billing-and-marketplace-packaging",
+        "status": "deferred",
+        "why": "Commercial layer should follow pilot usage."
+      }
+    ]
+  }
+}
