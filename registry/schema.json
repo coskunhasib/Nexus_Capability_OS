@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-capability-os.local/schema.json",
+  "title": "Nexus Capability OS Registry Schema",
+  "type": "object",
+  "required": ["id", "type", "title", "summary", "status", "owner_layer"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "capability-os",
+        "capability-compiler",
+        "macro-pipeline-family",
+        "micro-pipeline",
+        "task-pipeline",
+        "profile-family",
+        "agent-profile",
+        "skill",
+        "tool",
+        "plugin",
+        "runtime-adapter",
+        "quality-gate",
+        "workflow-stage",
+        "memory-policy",
+        "context-policy",
+        "capability-pack",
+        "team-template",
+        "eval-case"
+      ]
+    },
+    "title": { "type": "string" },
+    "summary": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "active", "deprecated"] },
+    "owner_layer": {
+      "type": "string",
+      "enum": ["compiler", "pipeline", "profile", "skill", "tool", "gate", "memory", "context", "runtime", "workflow", "pack"]
+    },
+    "tags": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "inputs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "outputs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "gates": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "target"],
+        "properties": {
+          "type": { "type": "string" },
+          "target": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "memory_policy": { "type": "string" },
+    "context_policy": { "type": "string" },
+    "failure_modes": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "eval_cases": { "type": "array", "items": { "type": "string" }, "default": [] }
+  },
+  "additionalProperties": true
+}
