@@ -31,7 +31,7 @@ jobs:
         run: npm run audit:registry
 
       - name: Typecheck
-        run: npm run lint
+        run: npx tsc --noEmit
 
       - name: Build
         run: npm run build

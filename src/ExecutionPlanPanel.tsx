@@ -257,7 +257,7 @@ async function copyText(content: string) {
   await navigator.clipboard.writeText(content);
 }
 
-function Badge({ children, tone = 'neutral' }: { children: string; tone?: 'neutral' | 'cyan' | 'yellow' }) {
+function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'cyan' | 'yellow' }) {
   const cls = tone === 'cyan' ? 'border-cyan-500/20 bg-cyan-950/20 text-cyan-300' : tone === 'yellow' ? 'border-yellow-500/20 bg-yellow-950/20 text-yellow-200' : 'border-white/10 bg-white/5 text-neutral-300';
   return <span className={`rounded-md border px-2 py-1 text-[11px] ${cls}`}>{children}</span>;
 }

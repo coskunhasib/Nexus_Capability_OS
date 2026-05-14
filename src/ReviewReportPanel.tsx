@@ -220,7 +220,7 @@ function toMarkdown(report: ReturnType<typeof buildReview>) {
     `## Findings\n\n${report.findings.length ? report.findings.map((finding) => `- [${finding.type}] ${finding.step_id}${finding.gate ? ` / ${finding.gate}` : ''}: ${finding.message}`).join('\n') : '- No findings.'}\n`;
 }
 
-function Badge({ children, tone = 'neutral' }: { children: string | number; tone?: 'neutral' | 'green' | 'yellow' | 'red' | 'cyan' }) {
+function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'green' | 'yellow' | 'red' | 'cyan' }) {
   const cls = {
     neutral: 'border-white/10 bg-white/5 text-neutral-300',
     green: 'border-emerald-500/20 bg-emerald-950/20 text-emerald-300',

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { FileJson, ListChecks, ShieldCheck } from 'lucide-react';
 import executionPlanSchema from '../schemas/execution-plan.schema.json';
 import taskPacketSchema from '../schemas/task-packet.schema.json';
@@ -122,7 +123,7 @@ function enumPaths(schema: Schema, pointer = '$'): string[] {
   return paths;
 }
 
-function Badge({ children, tone = 'neutral' }: { children: string | number; tone?: 'neutral' | 'green' | 'yellow' | 'red' | 'cyan' }) {
+function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'green' | 'yellow' | 'red' | 'cyan' }) {
   const cls = {
     neutral: 'border-white/10 bg-white/5 text-neutral-300',
     green: 'border-emerald-500/20 bg-emerald-950/20 text-emerald-300',
