@@ -1,4 +1,4 @@
-import { Clipboard, ClipboardList, Download, FileJson, FileText, GitBranch, Layers, ShieldCheck, UploadCloud } from 'lucide-react';
+import { Clipboard, ClipboardList, Download, FileJson, FileText, GitBranch, Layers, PlayCircle, ShieldCheck, UploadCloud } from 'lucide-react';
 
 type Rule = {
   id: string;
@@ -232,13 +232,14 @@ function ActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: 
   return <button onClick={onClick} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 transition hover:border-cyan-500/30 hover:text-white">{icon}{label}</button>;
 }
 
-export default function ExecutionPlanPanel({ selected, profiles, gates, microPipelines, packs }: { selected?: Rule; profiles: AgentProfile[]; gates: Gate[]; microPipelines: MicroPipeline[]; packs: CapabilityPack[] }) {
+export default function ExecutionPlanPanel({ selected, profiles, gates, microPipelines, packs, onSendTaskPacket }: { selected?: Rule; profiles: AgentProfile[]; gates: Gate[]; microPipelines: MicroPipeline[]; packs: CapabilityPack[]; onSendTaskPacket?: (packet: unknown) => void }) {
   if (!selected) return null;
   const steps = buildPlan(selected, profiles, gates, microPipelines, packs);
   const payload = createPayload(selected, profiles, gates, microPipelines, packs, steps);
   const markdown = toMarkdown(payload);
   const json = JSON.stringify(payload, null, 2);
-  const taskPacket = JSON.stringify(toTaskPacket(payload), null, 2);
+  const taskPacketObject = toTaskPacket(payload);
+  const taskPacket = JSON.stringify(taskPacketObject, null, 2);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
@@ -249,6 +250,7 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge tone="cyan">{steps.length} steps</Badge>
+          <ActionButton icon={<PlayCircle size={14} />} label="Send Runner" onClick={() => onSendTaskPacket?.(taskPacketObject)} />
           <ActionButton icon={<Clipboard size={14} />} label="Copy MD" onClick={() => void copyText(markdown)} />
           <ActionButton icon={<Download size={14} />} label="Download MD" onClick={() => downloadFile('nexus-execution-plan.md', markdown, 'text/markdown')} />
           <ActionButton icon={<FileJson size={14} />} label="Download JSON" onClick={() => downloadFile('nexus-execution-plan.json', json, 'application/json')} />
