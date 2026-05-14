@@ -9,6 +9,8 @@ Intent
 → Capability Pack
 → Execution Plan
 → Task Packet
+→ Nexus Handoff Packet
+→ Runtime Bridge Events
 → Runner / Gate Evidence
 → Review Report
 → Memory + Context Update Packets
@@ -164,9 +166,9 @@ Suggested integration boundary:
 ```text
 Nexus receives user/project intent
 → calls Capability OS compiler
-→ receives task packet
+→ receives nexus.handoff_packet or nexus.task_packet
 → dispatches task packet to real workers/tools
-→ sends execution state/evidence back
+→ sends runtime bridge events back
 → receives review + memory/context packets
 ```
 
@@ -179,19 +181,22 @@ Input:
   optional preferred capability pack
 
 Output:
+  nexus.handoff_packet
   nexus.task_packet
   required gates
   memory/context policy
+  callback contract
 ```
 
 Runtime feedback contract:
 
 ```text
 Input from Nexus/runtime:
+  runtime bridge event
   step status
   gate evidence
   blocker reason
-  generated artifacts
+  artifact refs
 
 Output from Capability OS:
   review report
@@ -212,6 +217,9 @@ schemas/
   review-report.schema.json
   memory-update-packet.schema.json
   context-update-packet.schema.json
+  nexus-handoff-packet.schema.json
+  runtime-bridge.schema.json
+  trial-scenario.schema.json
 ```
 
 Sample packets live in:
@@ -220,10 +228,67 @@ Sample packets live in:
 samples/packets/
 ```
 
-Validate them with:
+Trial scenarios live in:
+
+```text
+samples/trials/
+  web-saas-mvp.trial.json
+  stm32-firmware.trial.json
+  agentic-system.trial.json
+  rfq-generation.trial.json
+  technical-report.trial.json
+```
+
+Validate packets and trials with:
 
 ```bash
 npm run validate:packets
+```
+
+## Trial scenario library
+
+The trial library is the product's test bench. Each scenario defines:
+
+```text
+input intent
+expected capability pack
+expected macro pipeline
+expected profiles
+expected micro-pipelines
+expected gates
+expected packet outputs
+acceptance criteria
+Nexus integration notes
+```
+
+Use trial scenarios to check whether the compiler, pack registry and runner outputs are actually useful before adding more UI.
+
+## Feature intake policy
+
+Feature development is not frozen, but it is gated.
+
+```text
+A — Trial-ready features
+  Must make the product easier to test or validate.
+
+B — Nexus integration features
+  Must make Nexus handoff, runtime callbacks or memory/context feedback clearer.
+
+C — Labs/backlog features
+  Useful later, but isolated until trials prove the need.
+```
+
+Backlog manifest:
+
+```text
+labs/feature-backlog.json
+```
+
+Current rule:
+
+```text
+Build A and B directly.
+Track C in Labs until validated by trial usage.
 ```
 
 ## Registry
@@ -258,6 +323,7 @@ Which AI profiles are needed?
 Which micro-pipelines are needed?
 Which gates must pass?
 What task packet should Nexus/runtime receive?
+What runtime bridge callbacks are expected?
 What evidence is missing?
 Is the result release-ready?
 What should be remembered?
@@ -268,11 +334,12 @@ What should be carried into the next context?
 
 Runner is still a mock. It does not call real agents or tools yet.
 
-The next product step is not more UI. It is a real runtime bridge:
+The next product step is not more standalone UI. It is a real runtime bridge:
 
 ```text
-nexus.task_packet
+nexus.handoff_packet / nexus.task_packet
 → Nexus / OpenHands / Claude Code / Codex / n8n worker
-→ execution state + gate evidence
+→ runtime bridge events
+→ gate evidence + artifact refs
 → review + memory/context packets
 ```
