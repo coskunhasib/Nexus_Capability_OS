@@ -1,0 +1,23 @@
+{
+  "scenario_id": "rfq-generation",
+  "version": "0.1",
+  "intent": "Prepare a QCW 808 diode stack RFQ for Nd:YAG vendor outreach.",
+  "tags": ["rfq", "vendor", "laser", "procurement"],
+  "expected": {
+    "capability_pack": "technical-rfq-pack",
+    "macro_pipeline": "technical-documentation",
+    "profiles": ["requirement-extractor", "domain-technical-writer", "spec-compliance-reviewer"],
+    "micro_pipelines": ["technical-specification", "vendor-rfq", "review-verification"],
+    "gates": ["spec-compliance", "missing-parameter-check", "vendor-readiness"],
+    "packets": ["nexus.task_packet", "nexus.execution_review_report", "nexus.memory_update_packet"]
+  },
+  "acceptance_criteria": [
+    "Compiler routes RFQ request toward technical documentation or flags missing registry coverage.",
+    "Generated plan includes parameter extraction, vendor message drafting and spec review.",
+    "Review report identifies missing technical parameters before release."
+  ],
+  "nexus_integration_notes": [
+    "Nexus can dispatch this to a document writer agent plus a technical review agent.",
+    "Runtime should return the RFQ draft and a missing-parameters checklist."
+  ]
+}
