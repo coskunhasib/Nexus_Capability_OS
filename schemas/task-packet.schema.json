@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/task-packet.schema.json",
+  "title": "Nexus Task Packet",
+  "type": "object",
+  "required": ["packet_type", "version", "objective", "routing", "team", "gates", "policies", "work_order"],
+  "properties": {
+    "packet_type": { "const": "nexus.task_packet" },
+    "version": { "const": "0.1" },
+    "objective": { "type": "string", "minLength": 1 },
+    "source_compiler_rule": { "type": "string" },
+    "routing": {
+      "type": "object",
+      "required": ["micro_pipelines", "capability_packs"],
+      "properties": {
+        "macro_pipeline": { "type": "string" },
+        "micro_pipelines": { "type": "array", "items": { "type": "string" } },
+        "capability_packs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "team": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["profile"],
+        "properties": {
+          "profile": { "type": "string", "minLength": 1 },
+          "role": { "type": "string" }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate", "required"],
+        "properties": {
+          "gate": { "type": "string", "minLength": 1 },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "policies": {
+      "type": "object",
+      "properties": {
+        "memory": { "type": "string" },
+        "context": { "type": "string" }
+      }
+    },
+    "work_order": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["order", "id", "title", "owner", "description", "expected_outputs", "required_gates", "status"],
+        "properties": {
+          "order": { "type": "number" },
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "expected_outputs": { "type": "array", "items": { "type": "string" } },
+          "required_gates": { "type": "array", "items": { "type": "string" } },
+          "related": { "type": "string" },
+          "status": { "enum": ["not_started", "in_progress", "blocked", "done"] }
+        }
+      }
+    }
+  }
+}
