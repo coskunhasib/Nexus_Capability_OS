@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/review-report.schema.json",
+  "title": "Nexus Execution Review Report",
+  "type": "object",
+  "required": ["objective", "completed_steps", "total_steps", "blocked_steps", "incomplete_steps", "failed_gates", "missing_evidence", "release_ready", "recommendation", "memory_update_recommendation", "context_update_recommendation", "findings", "gate_evidence", "step_statuses"],
+  "properties": {
+    "objective": { "type": "string", "minLength": 1 },
+    "source_compiler_rule": { "type": "string" },
+    "macro_pipeline": { "type": "string" },
+    "capability_packs": { "type": "array", "items": { "type": "string" } },
+    "micro_pipelines": { "type": "array", "items": { "type": "string" } },
+    "memory_policy": { "type": "string" },
+    "context_policy": { "type": "string" },
+    "completed_steps": { "type": "number" },
+    "total_steps": { "type": "number" },
+    "blocked_steps": { "type": "number" },
+    "incomplete_steps": { "type": "number" },
+    "failed_gates": { "type": "number" },
+    "missing_evidence": { "type": "number" },
+    "release_ready": { "type": "boolean" },
+    "recommendation": { "type": "string", "minLength": 1 },
+    "memory_update_recommendation": { "type": "string", "minLength": 1 },
+    "context_update_recommendation": { "type": "string", "minLength": 1 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "step_id", "step_title", "message"],
+        "properties": {
+          "type": { "enum": ["failed_gate", "missing_evidence", "blocked_step", "incomplete_step"] },
+          "step_id": { "type": "string" },
+          "step_title": { "type": "string" },
+          "gate": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "gate_evidence": { "type": "object" },
+    "step_statuses": { "type": "object" }
+  }
+}
