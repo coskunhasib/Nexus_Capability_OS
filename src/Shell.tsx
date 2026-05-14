@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { BrainCircuit, Database, Map as MapIcon, ShieldCheck } from 'lucide-react';
+import { BrainCircuit, Database, ListChecks, Map as MapIcon, ShieldCheck } from 'lucide-react';
 import App from './App.tsx';
 import CompilerView from './CompilerView.tsx';
 import RegistryGovernance from './RegistryGovernance.tsx';
 import RegistryInspector from './RegistryInspector.tsx';
+import TaskRunnerMock from './TaskRunnerMock.tsx';
 
-type ViewMode = 'map' | 'compiler' | 'inspector' | 'governance';
+type ViewMode = 'map' | 'compiler' | 'inspector' | 'governance' | 'runner';
 
 export default function Shell() {
   const [view, setView] = useState<ViewMode>('map');
@@ -34,12 +35,17 @@ export default function Shell() {
           <ShieldCheck size={16} />
           Governance
         </button>
+        <button onClick={() => setView('runner')} className={buttonClass('runner')}>
+          <ListChecks size={16} />
+          Runner
+        </button>
       </div>
 
       {view === 'map' && <App />}
       {view === 'compiler' && <CompilerView />}
       {view === 'inspector' && <RegistryInspector />}
       {view === 'governance' && <RegistryGovernance />}
+      {view === 'runner' && <TaskRunnerMock />}
     </div>
   );
 }
