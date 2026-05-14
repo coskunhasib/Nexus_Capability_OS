@@ -1,0 +1,24 @@
+{
+  "scenario_id": "web-saas-mvp",
+  "version": "0.1",
+  "intent": "Build a web SaaS MVP with React frontend, backend API, database, tests and release gates.",
+  "tags": ["software", "web", "saas", "mvp"],
+  "expected": {
+    "capability_pack": "web-saas-mvp-pack",
+    "macro_pipeline": "software-development",
+    "profiles": ["requirement-extractor", "system-architect", "frontend-web-engineer", "backend-api-engineer", "qa-automation-engineer"],
+    "micro_pipelines": ["frontend-web", "backend-api", "database", "qa-automation"],
+    "gates": ["spec-compliance", "api-contract-fit", "test-evidence", "release-readiness"],
+    "packets": ["nexus.task_packet", "nexus.memory_update_packet", "nexus.context_update_packet"]
+  },
+  "acceptance_criteria": [
+    "Compiler selects a web SaaS capability pack or equivalent web software pack.",
+    "Generated task packet includes frontend, backend, database and QA work_order steps.",
+    "Runner can collect at least one passing and one failing gate evidence item.",
+    "Review report marks release not ready when a required gate fails."
+  ],
+  "nexus_integration_notes": [
+    "Nexus can dispatch this packet to OpenHands, Claude Code, Codex or a custom worker.",
+    "Runtime must return step status and gate evidence callbacks."
+  ]
+}
