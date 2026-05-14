@@ -1,0 +1,23 @@
+{
+  "scenario_id": "stm32-firmware",
+  "version": "0.1",
+  "intent": "Design STM32 HVAC fan driver firmware for 220V control with safety, timing and bench evidence.",
+  "tags": ["embedded", "firmware", "stm32", "hvac"],
+  "expected": {
+    "capability_pack": "embedded-firmware-pack",
+    "macro_pipeline": "software-development",
+    "profiles": ["requirement-extractor", "embedded-firmware-engineer", "qa-automation-engineer"],
+    "micro_pipelines": ["embedded-firmware", "qa-automation"],
+    "gates": ["spec-compliance", "test-evidence", "safety-review"],
+    "packets": ["nexus.task_packet", "nexus.execution_review_report", "nexus.memory_update_packet"]
+  },
+  "acceptance_criteria": [
+    "Compiler routes the intent toward embedded firmware or flags missing registry coverage.",
+    "Generated plan includes bench evidence and safety-oriented gates.",
+    "Runner captures blocker reason if bench evidence is missing."
+  ],
+  "nexus_integration_notes": [
+    "Nexus runtime may need hardware-in-the-loop callback support later.",
+    "Evidence artifacts should support logs, measurements and firmware build outputs."
+  ]
+}
