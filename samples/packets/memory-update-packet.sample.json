@@ -1,0 +1,34 @@
+{
+  "packet_type": "nexus.memory_update_packet",
+  "version": "0.1",
+  "objective": "Web SaaS MVP",
+  "source_compiler_rule": "rule-web-saas-mvp",
+  "memory_policy": "project-decision-memory",
+  "release_ready": false,
+  "durable_decisions": [],
+  "accepted_constraints": ["Capability packs: web-saas-mvp-pack", "Micro pipelines: frontend-web, backend-api"],
+  "lessons_learned": [
+    {
+      "gate": "clarity",
+      "step_id": "01-intake",
+      "note": "Acceptance criteria were sufficient for intake."
+    }
+  ],
+  "unresolved_blockers": [
+    {
+      "type": "failed_gate",
+      "step_id": "02-architecture",
+      "gate": "architecture-coherence",
+      "message": "Backend response model not defined."
+    }
+  ],
+  "deprecated_assumptions": [],
+  "completed_steps": [
+    {
+      "step_id": "01-intake",
+      "title": "Intake / Requirement Lock",
+      "owner": "requirement-extractor"
+    }
+  ],
+  "do_not_store": ["raw transient UI state", "temporary not_checked gate placeholders"]
+}
