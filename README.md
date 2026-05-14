@@ -59,9 +59,40 @@ Governance
   → packet contract health
   → Nexus bridge contract health
   → trial scenario contract health
+
+Labs
+  → marketplace concept surface
+  → graph editor concept surface
+  → workflow builder concept surface
+  → workspace concept surface
+  → billing/package concept surface
 ```
 
-Next hardening pass:
+## Current UI surface
+
+Core workflow:
+
+```text
+Explore
+Studio
+Runner
+Governance
+```
+
+Labs workflow:
+
+```text
+Labs
+  → Marketplace
+  → Graph
+  → Workflow
+  → Workspace
+  → Billing
+```
+
+The Labs area makes C-class ideas visible without mixing them into the core execution path.
+
+Next verification pass:
 
 ```bash
 npm run validate:packets
@@ -136,29 +167,37 @@ Nexus-side API boundary decision
 
 ### C — Labs / backlog
 
-Status: **tracked, not built into main workflow yet**
+Status: **visible in Labs; not part of the core execution path yet**
 
-Tracked in:
+Implemented:
 
 ```text
 labs/feature-backlog.json
+src/LabsView.tsx
+Shell → Labs primary navigation
+Labs → Marketplace
+Labs → Graph
+Labs → Workflow
+Labs → Workspace
+Labs → Billing
 ```
 
-Currently deferred items:
+Still needed:
 
 ```text
-marketplace-view
-graph-editor
-drag-drop-workflow-builder
-multi-user-workspace
-billing-and-marketplace-packaging
+validate whether Marketplace should become a real pack catalog
+validate whether Graph should become a mutable registry editor
+validate whether Workflow should become a real drag-drop builder
+validate whether Workspace should become a real org/team system
+validate whether Billing should become a real commercial packaging layer
 ```
 
 Rule:
 
 ```text
-C items are not deleted.
-They move into active development only when A/B trials prove a real need.
+C ideas are not deleted.
+They are visible in Labs.
+They become core only after A/B trials prove a real need.
 ```
 
 ## What this is for
@@ -179,7 +218,7 @@ what should be carried into the next context
 
 ## Trial MVP navigation
 
-The UI is intentionally grouped into four top-level areas.
+The UI is intentionally grouped into five top-level areas.
 
 ```text
 Explore
@@ -202,6 +241,9 @@ Governance
   → registry health
   → packet schema health
   → inspector
+
+Labs
+  → marketplace / graph / workflow / workspace / billing concepts
 ```
 
 ## Run locally
