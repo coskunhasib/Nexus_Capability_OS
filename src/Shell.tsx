@@ -3,19 +3,21 @@ import { Boxes, BrainCircuit, Database, FlaskConical, Hammer, ListChecks, Map as
 import App from './App.tsx';
 import CapabilityPackDetailView from './CapabilityPackDetailView.tsx';
 import CompilerView from './CompilerView.tsx';
+import LabsView from './LabsView.tsx';
 import PackBuilderView from './PackBuilderView.tsx';
 import RegistryGovernance from './RegistryGovernance.tsx';
 import RegistryInspector from './RegistryInspector.tsx';
 import TaskRunnerMock from './TaskRunnerMock.tsx';
 import TrialScenarioView from './TrialScenarioView.tsx';
 
-type ViewMode = 'explore' | 'studio' | 'packs' | 'builder' | 'trials' | 'runner' | 'governance' | 'inspector';
+type ViewMode = 'explore' | 'studio' | 'packs' | 'builder' | 'trials' | 'runner' | 'governance' | 'inspector' | 'labs';
 
 const primaryModes: Array<{ id: ViewMode; label: string; icon: React.ReactNode }> = [
   { id: 'explore', label: 'Explore', icon: <MapIcon size={16} /> },
   { id: 'studio', label: 'Studio', icon: <BrainCircuit size={16} /> },
   { id: 'runner', label: 'Runner', icon: <ListChecks size={16} /> },
   { id: 'governance', label: 'Governance', icon: <ShieldCheck size={16} /> },
+  { id: 'labs', label: 'Labs', icon: <FlaskConical size={16} /> },
 ];
 
 const studioModes: Array<{ id: ViewMode; label: string; icon: React.ReactNode }> = [
@@ -91,6 +93,7 @@ export default function Shell() {
       {view === 'governance' && <RegistryGovernance />}
       {view === 'inspector' && <RegistryInspector />}
       {view === 'runner' && <TaskRunnerMock initialPacket={runnerPacket} />}
+      {view === 'labs' && <LabsView />}
     </div>
   );
 }
