@@ -1,0 +1,51 @@
+{
+  "packet_type": "nexus.task_packet",
+  "version": "0.1",
+  "objective": "Web SaaS MVP",
+  "work_order": [
+    {
+      "order": 1,
+      "id": "01-intake",
+      "title": "Intake / Requirement Lock",
+      "owner": "requirement-extractor",
+      "description": "Lock requirements before implementation.",
+      "status": "done"
+    },
+    {
+      "order": 2,
+      "id": "02-architecture",
+      "title": "Architecture / Contract Setup",
+      "owner": "system-architect",
+      "description": "Define interfaces and system boundaries.",
+      "status": "blocked"
+    }
+  ],
+  "gate_evidence": {
+    "01-intake": {
+      "clarity": {
+        "status": "pass",
+        "evidence_note": "Acceptance criteria written and reviewed.",
+        "blocker_reason": ""
+      }
+    },
+    "02-architecture": {
+      "architecture-coherence": {
+        "status": "fail",
+        "evidence_note": "Interface contract incomplete.",
+        "blocker_reason": "Backend response model not defined."
+      }
+    }
+  },
+  "runner_state": {
+    "total_steps": 2,
+    "done_steps": 1,
+    "blocked_steps": 1,
+    "in_progress_steps": 0,
+    "progress_percent": 50,
+    "total_gate_checks": 2,
+    "passed_gate_checks": 1,
+    "failed_gate_checks": 1,
+    "not_checked_gate_checks": 0,
+    "gate_pass_percent": 50
+  }
+}
