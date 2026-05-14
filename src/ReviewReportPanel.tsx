@@ -1,4 +1,4 @@
-import { Download, FileJson, FileText, ShieldAlert } from 'lucide-react';
+import { Brain, Database, FileJson, FileText, ShieldAlert } from 'lucide-react';
 
 type WorkStatus = 'not_started' | 'in_progress' | 'blocked' | 'done';
 type GateStatus = 'not_checked' | 'pass' | 'fail';
@@ -94,6 +94,10 @@ function buildReview(packet: TaskPacket, statuses: Record<string, WorkStatus>, e
     objective: packet.objective,
     source_compiler_rule: packet.source_compiler_rule,
     macro_pipeline: packet.routing?.macro_pipeline,
+    capability_packs: packet.routing?.capability_packs ?? [],
+    micro_pipelines: packet.routing?.micro_pipelines ?? [],
+    memory_policy: packet.policies?.memory,
+    context_policy: packet.policies?.context,
     completed_steps: completedSteps.length,
     total_steps: packet.work_order.length,
     blocked_steps: blockedSteps.length,
@@ -111,6 +115,92 @@ function buildReview(packet: TaskPacket, statuses: Record<string, WorkStatus>, e
     findings,
     gate_evidence: evidence,
     step_statuses: statuses,
+  };
+}
+
+function buildEvidenceSummaries(evidence: EvidenceState) {
+  return Object.entries(evidence).flatMap(([stepId, gates]) =>
+    Object.entries(gates).map(([gateId, item]) => ({
+      step_id: stepId,
+      gate_id: gateId,
+      status: item.status,
+      evidence_note: item.evidence_note,
+      blocker_reason: item.blocker_reason,
+    })),
+  );
+}
+
+function buildMemoryPacket(report: ReturnType<typeof buildReview>, packet: TaskPacket) {
+  const evidenceSummaries = buildEvidenceSummaries(report.gate_evidence);
+  const blockers = report.findings.filter((finding) => finding.type === 'failed_gate' || finding.type === 'blocked_step');
+  const completedStepTitles = packet.work_order
+    .filter((step) => report.step_statuses[step.id] === 'done')
+    .map((step) => ({ step_id: step.id, title: step.title, owner: step.owner }));
+
+  return {
+    packet_type: 'nexus.memory_update_packet',
+    version: '0.1',
+    objective: report.objective,
+    source_compiler_rule: report.source_compiler_rule,
+    memory_policy: report.memory_policy,
+    release_ready: report.release_ready,
+    durable_decisions: report.release_ready
+      ? [`Execution review accepted for ${report.objective}.`, `Release/handoff marked ready under ${report.macro_pipeline ?? 'unknown macro pipeline'}.`]
+      : [],
+    accepted_constraints: [
+      ...(report.capability_packs.length ? [`Capability packs: ${report.capability_packs.join(', ')}`] : []),
+      ...(report.micro_pipelines.length ? [`Micro pipelines: ${report.micro_pipelines.join(', ')}`] : []),
+    ],
+    lessons_learned: evidenceSummaries
+      .filter((item) => item.status === 'pass' && item.evidence_note.trim())
+      .map((item) => ({ gate: item.gate_id, step_id: item.step_id, note: item.evidence_note })),
+    unresolved_blockers: blockers.map((finding) => ({
+      type: finding.type,
+      step_id: finding.step_id,
+      gate: finding.gate,
+      message: finding.message,
+    })),
+    deprecated_assumptions: report.release_ready ? ['Temporary runner context can be compacted after memory update.'] : [],
+    completed_steps: completedStepTitles,
+    do_not_store: [
+      'raw transient UI state',
+      'temporary not_checked gate placeholders',
+      'draft evidence notes with no decision value',
+    ],
+  };
+}
+
+function buildContextPacket(report: ReturnType<typeof buildReview>, packet: TaskPacket) {
+  const evidenceSummaries = buildEvidenceSummaries(report.gate_evidence);
+  const activeFindings = report.findings.filter((finding) => finding.type !== 'missing_evidence' || !report.release_ready);
+  const nextIncomplete = packet.work_order
+    .filter((step) => report.step_statuses[step.id] !== 'done')
+    .slice(0, 5)
+    .map((step) => ({ step_id: step.id, title: step.title, owner: step.owner, status: report.step_statuses[step.id] }));
+
+  return {
+    packet_type: 'nexus.context_update_packet',
+    version: '0.1',
+    active_objective: report.objective,
+    source_compiler_rule: report.source_compiler_rule,
+    context_policy: report.context_policy,
+    release_ready: report.release_ready,
+    current_blockers: activeFindings
+      .filter((finding) => finding.type === 'failed_gate' || finding.type === 'blocked_step')
+      .map((finding) => ({ step_id: finding.step_id, gate: finding.gate, message: finding.message })),
+    missing_evidence: activeFindings
+      .filter((finding) => finding.type === 'missing_evidence')
+      .map((finding) => ({ step_id: finding.step_id, gate: finding.gate, message: finding.message })),
+    evidence_summaries: evidenceSummaries
+      .filter((item) => item.status !== 'not_checked' || item.evidence_note.trim() || item.blocker_reason.trim())
+      .map((item) => ({ step_id: item.step_id, gate_id: item.gate_id, status: item.status, summary: item.evidence_note || item.blocker_reason })),
+    next_execution_focus: report.release_ready
+      ? ['Finalize handoff.', 'Write durable memory packet.', 'Start next objective with compact context.']
+      : nextIncomplete.map((step) => `Resolve ${step.step_id}: ${step.title} (${step.status}).`),
+    context_boundary: {
+      keep: ['active blockers', 'failed gates', 'missing evidence', 'next incomplete steps', 'release readiness decision'],
+      drop: ['raw completed step chatter', 'duplicate UI state', 'not_checked placeholders with no evidence'],
+    },
   };
 }
 
@@ -143,8 +233,12 @@ function Badge({ children, tone = 'neutral' }: { children: string | number; tone
 
 export default function ReviewReportPanel({ packet, statuses, evidence }: { packet: TaskPacket; statuses: Record<string, WorkStatus>; evidence: EvidenceState }) {
   const report = buildReview(packet, statuses, evidence);
+  const memoryPacket = buildMemoryPacket(report, packet);
+  const contextPacket = buildContextPacket(report, packet);
   const json = JSON.stringify(report, null, 2);
   const markdown = toMarkdown(report);
+  const memoryJson = JSON.stringify(memoryPacket, null, 2);
+  const contextJson = JSON.stringify(contextPacket, null, 2);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
@@ -155,8 +249,10 @@ export default function ReviewReportPanel({ packet, statuses, evidence }: { pack
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge tone={report.release_ready ? 'green' : 'red'}>{report.release_ready ? 'release ready' : 'not ready'}</Badge>
-          <button onClick={() => downloadFile('nexus-execution-review-report.md', markdown, 'text/markdown')} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileText size={14} />Download MD</button>
-          <button onClick={() => downloadFile('nexus-execution-review-report.json', json, 'application/json')} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Download JSON</button>
+          <button onClick={() => downloadFile('nexus-execution-review-report.md', markdown, 'text/markdown')} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileText size={14} />Review MD</button>
+          <button onClick={() => downloadFile('nexus-execution-review-report.json', json, 'application/json')} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Review JSON</button>
+          <button onClick={() => downloadFile('memory_update_packet.json', memoryJson, 'application/json')} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><Database size={14} />Memory Packet</button>
+          <button onClick={() => downloadFile('context_update_packet.json', contextJson, 'application/json')} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><Brain size={14} />Context Packet</button>
         </div>
       </div>
 
@@ -173,6 +269,17 @@ export default function ReviewReportPanel({ packet, statuses, evidence }: { pack
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm leading-relaxed text-neutral-300"><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">recommendation</div>{report.recommendation}</div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm leading-relaxed text-neutral-300"><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">memory update</div>{report.memory_update_recommendation}</div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm leading-relaxed text-neutral-300"><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">context update</div>{report.context_update_recommendation}</div>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500"><Database size={14} />memory packet preview</div>
+          <div className="flex flex-wrap gap-2"><Badge tone="cyan">{memoryPacket.durable_decisions.length} decisions</Badge><Badge tone="yellow">{memoryPacket.unresolved_blockers.length} blockers</Badge><Badge>{memoryPacket.lessons_learned.length} lessons</Badge></div>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500"><Brain size={14} />context packet preview</div>
+          <div className="flex flex-wrap gap-2"><Badge tone="yellow">{contextPacket.current_blockers.length} blockers</Badge><Badge tone="cyan">{contextPacket.evidence_summaries.length} evidence summaries</Badge><Badge>{contextPacket.next_execution_focus.length} next focus</Badge></div>
+        </div>
       </div>
 
       <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4">
