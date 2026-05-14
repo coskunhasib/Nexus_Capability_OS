@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/nexus-handoff-packet.schema.json",
+  "title": "Nexus Handoff Packet",
+  "type": "object",
+  "required": ["packet_type", "version", "objective", "capability_os", "selected_capability", "task_packet", "runtime_requirements", "callback_contract"],
+  "properties": {
+    "packet_type": { "const": "nexus.handoff_packet" },
+    "version": { "const": "0.1" },
+    "objective": { "type": "string", "minLength": 1 },
+    "capability_os": {
+      "type": "object",
+      "required": ["compiler_rule", "macro_pipeline", "memory_policy", "context_policy"],
+      "properties": {
+        "compiler_rule": { "type": "string" },
+        "macro_pipeline": { "type": "string" },
+        "memory_policy": { "type": "string" },
+        "context_policy": { "type": "string" }
+      }
+    },
+    "selected_capability": {
+      "type": "object",
+      "required": ["pack_id", "profiles", "micro_pipelines", "gates"],
+      "properties": {
+        "pack_id": { "type": "string" },
+        "profiles": { "type": "array", "items": { "type": "string" } },
+        "micro_pipelines": { "type": "array", "items": { "type": "string" } },
+        "gates": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "task_packet": {
+      "type": "object",
+      "required": ["packet_type", "version", "objective", "work_order"],
+      "properties": {
+        "packet_type": { "const": "nexus.task_packet" },
+        "version": { "const": "0.1" },
+        "objective": { "type": "string" },
+        "work_order": { "type": "array", "minItems": 1 }
+      }
+    },
+    "runtime_requirements": {
+      "type": "object",
+      "required": ["target_runtime", "required_tools", "artifact_outputs"],
+      "properties": {
+        "target_runtime": { "type": "string" },
+        "required_tools": { "type": "array", "items": { "type": "string" } },
+        "artifact_outputs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "callback_contract": {
+      "type": "object",
+      "required": ["expected_events", "required_payloads"],
+      "properties": {
+        "expected_events": { "type": "array", "items": { "type": "string" } },
+        "required_payloads": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
