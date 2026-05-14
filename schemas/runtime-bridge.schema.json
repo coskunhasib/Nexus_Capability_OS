@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/runtime-bridge.schema.json",
+  "title": "Nexus Runtime Bridge Event",
+  "type": "object",
+  "required": ["event_type", "version", "task_packet_id", "step_id", "status", "timestamp"],
+  "properties": {
+    "event_type": { "enum": ["step_started", "step_completed", "step_blocked", "gate_checked", "artifact_created", "runtime_failed"] },
+    "version": { "const": "0.1" },
+    "task_packet_id": { "type": "string", "minLength": 1 },
+    "step_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["not_started", "in_progress", "blocked", "done"] },
+    "timestamp": { "type": "string" },
+    "owner": { "type": "string" },
+    "gate_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate", "status", "evidence_note"],
+        "properties": {
+          "gate": { "type": "string" },
+          "status": { "enum": ["not_checked", "pass", "fail"] },
+          "evidence_note": { "type": "string" },
+          "blocker_reason": { "type": "string" }
+        }
+      }
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "ref"],
+        "properties": {
+          "kind": { "type": "string" },
+          "ref": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "blocker_reason": { "type": "string" },
+    "runtime_notes": { "type": "string" }
+  }
+}
