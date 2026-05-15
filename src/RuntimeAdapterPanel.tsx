@@ -3,7 +3,6 @@ import { Cpu, FileJson, Network, PlayCircle } from 'lucide-react';
 import {
   applyRuntimeEventsToRunnerState,
   buildRuntimeAdapterRequest,
-  runMockRuntimeAdapter,
   summarizeRuntimeAdapterResponse,
   type EvidenceState,
   type RuntimeAdapterRequest,
@@ -11,6 +10,14 @@ import {
   type TaskPacket,
   type WorkStatus,
 } from './runtimeAdapter.ts';
+import { createRuntimeAdapterProviderRegistry, dispatchRuntimeAdapterRequest, getRuntimeAdapterProvider } from './runtimeAdapterProvider.ts';
+import { mockRuntimeAdapterProvider } from './runtimeAdapters/mockRuntimeAdapterProvider.ts';
+import { createHttpRuntimeAdapterProvider } from './runtimeAdapters/httpRuntimeAdapterProvider.ts';
+
+const providerRegistry = createRuntimeAdapterProviderRegistry([
+  mockRuntimeAdapterProvider,
+  createHttpRuntimeAdapterProvider({ endpoint_url: '', timeout_ms: 30000 }),
+]);
 
 function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'cyan' | 'green' | 'yellow' | 'red' }) {
   const cls = {
@@ -43,20 +50,34 @@ type Props = {
 };
 
 export default function RuntimeAdapterPanel({ packet, statuses, evidence, onApplyRuntimeState }: Props) {
+  const [providerId, setProviderId] = useState('mock');
   const [request, setRequest] = useState<RuntimeAdapterRequest | null>(null);
   const [response, setResponse] = useState<RuntimeAdapterResponse | null>(null);
   const [lastAppliedEventCount, setLastAppliedEventCount] = useState(0);
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
+  const [isDispatching, setIsDispatching] = useState(false);
 
+  const provider = useMemo(() => getRuntimeAdapterProvider(providerRegistry, providerId), [providerId]);
   const summary = useMemo(() => (response ? summarizeRuntimeAdapterResponse(response) : null), [response]);
 
-  const dispatchMockAdapter = () => {
-    const nextRequest = buildRuntimeAdapterRequest(packet, 'mock');
-    const nextResponse = runMockRuntimeAdapter(nextRequest);
-    const patch = applyRuntimeEventsToRunnerState(statuses, evidence, nextResponse.events);
+  const dispatchAdapter = async () => {
+    setIsDispatching(true);
+    setDispatchError(null);
+    const nextRequest = buildRuntimeAdapterRequest(packet, provider.mode === 'mock' ? 'mock' : 'real');
     setRequest(nextRequest);
-    setResponse(nextResponse);
-    setLastAppliedEventCount(patch.applied_events.length);
-    onApplyRuntimeState({ statuses: patch.statuses, evidence: patch.evidence });
+    try {
+      const nextResponse = await dispatchRuntimeAdapterRequest(provider, nextRequest);
+      const patch = applyRuntimeEventsToRunnerState(statuses, evidence, nextResponse.events);
+      setResponse(nextResponse);
+      setLastAppliedEventCount(patch.applied_events.length);
+      onApplyRuntimeState({ statuses: patch.statuses, evidence: patch.evidence });
+    } catch (error) {
+      setResponse(null);
+      setLastAppliedEventCount(0);
+      setDispatchError(error instanceof Error ? error.message : 'Runtime adapter dispatch failed.');
+    } finally {
+      setIsDispatching(false);
+    }
   };
 
   return (
@@ -64,12 +85,28 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-cyan-100"><Network size={18} />Runtime Adapter Bridge</div>
-          <p className="text-sm text-neutral-400">Generates a runtime adapter request, calls the mock adapter, then ingests runtime bridge events into Runner state.</p>
+          <p className="text-sm text-neutral-400">Generates a runtime adapter request, dispatches through the selected provider, then ingests runtime bridge events into Runner state.</p>
         </div>
-        <button onClick={dispatchMockAdapter} className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-900/30">
-          <PlayCircle size={14} /> Dispatch mock adapter
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={providerId} onChange={(event) => setProviderId(event.target.value)} className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs text-neutral-300 outline-none">
+            {Object.values(providerRegistry).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+          <button onClick={() => void dispatchAdapter()} disabled={isDispatching} className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-900/30 disabled:cursor-not-allowed disabled:opacity-50">
+            <PlayCircle size={14} /> {isDispatching ? 'Dispatching...' : 'Dispatch adapter'}
+          </button>
+        </div>
       </div>
+
+      <div className="mb-4 rounded-xl border border-white/10 bg-black/30 p-4">
+        <div className="mb-2 flex flex-wrap gap-2">
+          <Badge tone={provider.mode === 'mock' ? 'green' : provider.mode === 'http' ? 'yellow' : 'cyan'}>{provider.id}</Badge>
+          <Badge>{provider.mode}</Badge>
+          {provider.mode === 'http' && <Badge tone="yellow">endpoint required</Badge>}
+        </div>
+        <p className="text-sm text-neutral-400">{provider.description}</p>
+      </div>
+
+      {dispatchError && <div className="mb-4 rounded-xl border border-red-500/20 bg-red-950/10 p-4 text-sm text-red-100">{dispatchError}</div>}
 
       <div className="grid gap-3 md:grid-cols-4">
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{summary?.event_count ?? '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">events</div></div>
@@ -97,7 +134,7 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
       )}
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Cpu size={16} className="mb-2 text-cyan-400" />This is still a mock adapter, but it uses the same request/response boundary intended for a real Nexus worker.</div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Cpu size={16} className="mb-2 text-cyan-400" />Mock provider runs in-process; HTTP provider is the skeleton boundary for a real Nexus worker endpoint.</div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Network size={16} className="mb-2 text-cyan-400" />Runtime bridge events update Runner step status and gate evidence, so review/memory/context panels react to adapter output.</div>
       </div>
     </section>
