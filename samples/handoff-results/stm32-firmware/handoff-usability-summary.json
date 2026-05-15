@@ -1,0 +1,29 @@
+{
+  "trial_id": "stm32-firmware.nexus-handoff-usability",
+  "scenario_id": "stm32-firmware",
+  "status": "pass",
+  "assertions": [
+    { "name": "objective is present", "pass": true },
+    { "name": "selected capability has pack id", "pass": true },
+    { "name": "selected capability has profiles", "pass": true },
+    { "name": "required skills are present", "pass": true },
+    { "name": "required tools are present", "pass": true },
+    { "name": "artifact outputs are concrete", "pass": true },
+    { "name": "callback events are sufficient", "pass": true },
+    { "name": "callback payloads are sufficient", "pass": true },
+    { "name": "blockers are carried when not release ready", "pass": true },
+    { "name": "missing evidence is carried when not release ready", "pass": true },
+    { "name": "next execution focus is present", "pass": true }
+  ],
+  "handoff_summary": {
+    "objective": "stm32-firmware skill-aware trial",
+    "pack_id": "firmware-stm32-hvac-driver-pack",
+    "profile_count": 8,
+    "required_skill_count": 5,
+    "required_tool_count": 8,
+    "artifact_output_count": 7,
+    "blocker_count": 2,
+    "missing_evidence_count": 3,
+    "release_ready": false
+  }
+}
