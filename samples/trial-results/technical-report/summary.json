@@ -1,16 +1,39 @@
 {
   "trial_id": "technical-report.skill-aware-run",
-  "scenario_id": "technical-report",
   "status": "pass",
   "assertions": [
-    { "name": "expected skills are selected", "pass": true },
-    { "name": "required skill flags are active", "pass": true },
-    { "name": "release is blocked", "pass": true },
-    { "name": "failed gate is visible", "pass": true },
-    { "name": "missing evidence is visible", "pass": true },
-    { "name": "blocked step is visible", "pass": true },
-    { "name": "memory packet carries do_not_store", "pass": true },
-    { "name": "context packet preserves blockers", "pass": true }
+    {
+      "name": "expected skills are selected",
+      "pass": true
+    },
+    {
+      "name": "required skill flags are active",
+      "pass": true
+    },
+    {
+      "name": "release is blocked",
+      "pass": true
+    },
+    {
+      "name": "failed gate is visible",
+      "pass": true
+    },
+    {
+      "name": "missing evidence is visible",
+      "pass": true
+    },
+    {
+      "name": "blocked step is visible",
+      "pass": true
+    },
+    {
+      "name": "memory packet carries do_not_store",
+      "pass": true
+    },
+    {
+      "name": "context packet preserves blockers",
+      "pass": true
+    }
   ],
   "report_summary": {
     "release_ready": false,
@@ -18,7 +41,14 @@
     "total_steps": 2,
     "blocked_steps": 1,
     "failed_gates": 1,
-    "missing_evidence": 4,
-    "active_skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "ultrareview-skill", "context-mode-skill", "memory-skill"]
+    "missing_evidence": 5,
+    "active_skills": [
+      "superpowered-planning-skill",
+      "review-skill",
+      "quality-assurance-skill",
+      "ultrareview-skill",
+      "context-mode-skill",
+      "memory-skill"
+    ]
   }
 }

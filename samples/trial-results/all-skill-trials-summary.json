@@ -4,89 +4,40 @@
   "summaries": [
     {
       "trial_id": "agentic-system.skill-aware-run",
-      "scenario_id": "agentic-system",
       "status": "pass",
       "assertions": [
-        { "name": "expected skills are selected", "pass": true },
-        { "name": "required skill flags are active", "pass": true },
-        { "name": "release is blocked", "pass": true },
-        { "name": "failed gate is visible", "pass": true },
-        { "name": "missing evidence is visible", "pass": true },
-        { "name": "blocked step is visible", "pass": true },
-        { "name": "memory packet carries do_not_store", "pass": true },
-        { "name": "context packet preserves blockers", "pass": true }
-      ],
-      "report_summary": {
-        "release_ready": false,
-        "completed_steps": 1,
-        "total_steps": 2,
-        "blocked_steps": 1,
-        "failed_gates": 1,
-        "missing_evidence": 3,
-        "active_skills": ["context-mode-skill", "memory-skill", "review-skill", "ultrareview-skill", "quality-assurance-skill"]
-      }
-    },
-    {
-      "trial_id": "stm32-firmware.skill-aware-run",
-      "scenario_id": "stm32-firmware",
-      "status": "pass",
-      "assertions": [
-        { "name": "expected skills are selected", "pass": true },
-        { "name": "required skill flags are active", "pass": true },
-        { "name": "release is blocked", "pass": true },
-        { "name": "failed gate is visible", "pass": true },
-        { "name": "missing evidence is visible", "pass": true },
-        { "name": "blocked step is visible", "pass": true },
-        { "name": "memory packet carries do_not_store", "pass": true },
-        { "name": "context packet preserves blockers", "pass": true }
-      ],
-      "report_summary": {
-        "release_ready": false,
-        "completed_steps": 1,
-        "total_steps": 2,
-        "blocked_steps": 1,
-        "failed_gates": 1,
-        "missing_evidence": 3,
-        "active_skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "ultrareview-skill", "memory-skill"]
-      }
-    },
-    {
-      "trial_id": "rfq-generation.skill-aware-run",
-      "scenario_id": "rfq-generation",
-      "status": "pass",
-      "assertions": [
-        { "name": "expected skills are selected", "pass": true },
-        { "name": "required skill flags are active", "pass": true },
-        { "name": "release is blocked", "pass": true },
-        { "name": "failed gate is visible", "pass": true },
-        { "name": "missing evidence is visible", "pass": true },
-        { "name": "blocked step is visible", "pass": true },
-        { "name": "memory packet carries do_not_store", "pass": true },
-        { "name": "context packet preserves blockers", "pass": true }
-      ],
-      "report_summary": {
-        "release_ready": false,
-        "completed_steps": 1,
-        "total_steps": 2,
-        "blocked_steps": 1,
-        "failed_gates": 1,
-        "missing_evidence": 2,
-        "active_skills": ["superpowered-planning-skill", "review-skill", "ultrareview-skill", "memory-skill"]
-      }
-    },
-    {
-      "trial_id": "technical-report.skill-aware-run",
-      "scenario_id": "technical-report",
-      "status": "pass",
-      "assertions": [
-        { "name": "expected skills are selected", "pass": true },
-        { "name": "required skill flags are active", "pass": true },
-        { "name": "release is blocked", "pass": true },
-        { "name": "failed gate is visible", "pass": true },
-        { "name": "missing evidence is visible", "pass": true },
-        { "name": "blocked step is visible", "pass": true },
-        { "name": "memory packet carries do_not_store", "pass": true },
-        { "name": "context packet preserves blockers", "pass": true }
+        {
+          "name": "expected skills are selected",
+          "pass": true
+        },
+        {
+          "name": "required skill flags are active",
+          "pass": true
+        },
+        {
+          "name": "release is blocked",
+          "pass": true
+        },
+        {
+          "name": "failed gate is visible",
+          "pass": true
+        },
+        {
+          "name": "missing evidence is visible",
+          "pass": true
+        },
+        {
+          "name": "blocked step is visible",
+          "pass": true
+        },
+        {
+          "name": "memory packet carries do_not_store",
+          "pass": true
+        },
+        {
+          "name": "context packet preserves blockers",
+          "pass": true
+        }
       ],
       "report_summary": {
         "release_ready": false,
@@ -95,7 +46,172 @@
         "blocked_steps": 1,
         "failed_gates": 1,
         "missing_evidence": 4,
-        "active_skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "ultrareview-skill", "context-mode-skill", "memory-skill"]
+        "active_skills": [
+          "context-mode-skill",
+          "memory-skill",
+          "review-skill",
+          "ultrareview-skill",
+          "quality-assurance-skill"
+        ]
+      }
+    },
+    {
+      "trial_id": "stm32-firmware.skill-aware-run",
+      "status": "pass",
+      "assertions": [
+        {
+          "name": "expected skills are selected",
+          "pass": true
+        },
+        {
+          "name": "required skill flags are active",
+          "pass": true
+        },
+        {
+          "name": "release is blocked",
+          "pass": true
+        },
+        {
+          "name": "failed gate is visible",
+          "pass": true
+        },
+        {
+          "name": "missing evidence is visible",
+          "pass": true
+        },
+        {
+          "name": "blocked step is visible",
+          "pass": true
+        },
+        {
+          "name": "memory packet carries do_not_store",
+          "pass": true
+        },
+        {
+          "name": "context packet preserves blockers",
+          "pass": true
+        }
+      ],
+      "report_summary": {
+        "release_ready": false,
+        "completed_steps": 1,
+        "total_steps": 2,
+        "blocked_steps": 1,
+        "failed_gates": 1,
+        "missing_evidence": 4,
+        "active_skills": [
+          "superpowered-planning-skill",
+          "review-skill",
+          "quality-assurance-skill",
+          "ultrareview-skill",
+          "memory-skill"
+        ]
+      }
+    },
+    {
+      "trial_id": "rfq-generation.skill-aware-run",
+      "status": "pass",
+      "assertions": [
+        {
+          "name": "expected skills are selected",
+          "pass": true
+        },
+        {
+          "name": "required skill flags are active",
+          "pass": true
+        },
+        {
+          "name": "release is blocked",
+          "pass": true
+        },
+        {
+          "name": "failed gate is visible",
+          "pass": true
+        },
+        {
+          "name": "missing evidence is visible",
+          "pass": true
+        },
+        {
+          "name": "blocked step is visible",
+          "pass": true
+        },
+        {
+          "name": "memory packet carries do_not_store",
+          "pass": true
+        },
+        {
+          "name": "context packet preserves blockers",
+          "pass": true
+        }
+      ],
+      "report_summary": {
+        "release_ready": false,
+        "completed_steps": 1,
+        "total_steps": 2,
+        "blocked_steps": 1,
+        "failed_gates": 1,
+        "missing_evidence": 3,
+        "active_skills": [
+          "superpowered-planning-skill",
+          "review-skill",
+          "ultrareview-skill",
+          "memory-skill"
+        ]
+      }
+    },
+    {
+      "trial_id": "technical-report.skill-aware-run",
+      "status": "pass",
+      "assertions": [
+        {
+          "name": "expected skills are selected",
+          "pass": true
+        },
+        {
+          "name": "required skill flags are active",
+          "pass": true
+        },
+        {
+          "name": "release is blocked",
+          "pass": true
+        },
+        {
+          "name": "failed gate is visible",
+          "pass": true
+        },
+        {
+          "name": "missing evidence is visible",
+          "pass": true
+        },
+        {
+          "name": "blocked step is visible",
+          "pass": true
+        },
+        {
+          "name": "memory packet carries do_not_store",
+          "pass": true
+        },
+        {
+          "name": "context packet preserves blockers",
+          "pass": true
+        }
+      ],
+      "report_summary": {
+        "release_ready": false,
+        "completed_steps": 1,
+        "total_steps": 2,
+        "blocked_steps": 1,
+        "failed_gates": 1,
+        "missing_evidence": 5,
+        "active_skills": [
+          "superpowered-planning-skill",
+          "review-skill",
+          "quality-assurance-skill",
+          "ultrareview-skill",
+          "context-mode-skill",
+          "memory-skill"
+        ]
       }
     }
   ]

@@ -3,14 +3,38 @@
   "scenario_id": "web-saas-mvp",
   "status": "pass",
   "assertions": [
-    { "name": "expected skills are selected", "pass": true },
-    { "name": "release is blocked", "pass": true },
-    { "name": "failed gate is visible", "pass": true },
-    { "name": "missing evidence is visible", "pass": true },
-    { "name": "QA skill creates blocker missing evidence", "pass": true },
-    { "name": "frontend skill flags are active", "pass": true },
-    { "name": "memory packet carries do_not_store", "pass": true },
-    { "name": "context packet preserves blockers", "pass": true }
+    {
+      "name": "expected skills are selected",
+      "pass": true
+    },
+    {
+      "name": "release is blocked",
+      "pass": true
+    },
+    {
+      "name": "failed gate is visible",
+      "pass": true
+    },
+    {
+      "name": "missing evidence is visible",
+      "pass": true
+    },
+    {
+      "name": "QA skill creates blocker missing evidence",
+      "pass": true
+    },
+    {
+      "name": "frontend skill flags are active",
+      "pass": true
+    },
+    {
+      "name": "memory packet carries do_not_store",
+      "pass": true
+    },
+    {
+      "name": "context packet preserves blockers",
+      "pass": true
+    }
   ],
   "report_summary": {
     "release_ready": false,
@@ -18,7 +42,13 @@
     "total_steps": 3,
     "blocked_steps": 1,
     "failed_gates": 1,
-    "missing_evidence": 7,
-    "active_skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "frontend-skill", "memory-skill"]
+    "missing_evidence": 9,
+    "active_skills": [
+      "superpowered-planning-skill",
+      "review-skill",
+      "quality-assurance-skill",
+      "frontend-skill",
+      "memory-skill"
+    ]
   }
 }
