@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-1/15 completed
-Current item: 2/15 — Mock + HTTP provider hardening
-Next item: 3/15 — Runtime Adapter Config Panel
+2/15 completed
+Current item: 3/15 — Runtime Adapter Config Panel
+Next item: 4/15 — Runtime Callback Ingest
 ```
 
 ## Current state
@@ -32,7 +32,7 @@ Mock adapter-driven Runner loop: implemented
 Runtime adapter loop CI verification: implemented
 Runtime adapter provider interface: implemented
 Mock provider: implemented
-HTTP provider skeleton: implemented
+HTTP provider: hardened boundary implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -66,35 +66,42 @@ Real external worker execution: not implemented yet
 ✅ Adapter request → response → events → Runner state ingest
 ✅ Runtime adapter loop verification
 ✅ 1/15 — Adapter Provider Interface
+✅ 2/15 — Mock + HTTP provider hardening
 ```
 
 ## Next recommended item
 
 ```text
-PR #31 — Mock + HTTP provider hardening
+PR #32 — Runtime Adapter Config Panel
 ```
 
 Why this is next:
 
 ```text
-The provider interface now exists and Runner dispatches through it.
-The next step is to make the HTTP provider more useful without jumping straight into OpenHands/Codex.
+The HTTP provider boundary is now hardened, but Runner still uses static provider configuration.
+The next step is to let the operator set endpoint, timeout, retry and dispatch mode from the UI.
 ```
 
 Target:
 
 ```text
-HTTP endpoint config object
-request/response schema guard at provider boundary
-clear HTTP error mapping
-timeout/retry policy baseline
-provider health check skeleton
+provider selector
+endpoint_url
+healthcheck_url
+timeout_ms
+retry policy
+priority
+callback_url
+idempotency_key
+dry_run / mock / real mode
+health check action
 ```
 
 Expected files:
 
 ```text
-src/runtimeAdapters/httpRuntimeAdapterProvider.ts
+src/RuntimeAdapterPanel.tsx
+src/runtimeAdapterProvider.ts
 scripts/verify-runtime-adapter-provider.ts
 docs/verification-contract.md update
 ```
@@ -121,19 +128,19 @@ Runner dispatch through selected provider
 
 ### 2. Mock + HTTP provider hardening
 
-Status: next
+Status: done
 
 ```text
 HTTP endpoint config
-request/response validation at provider boundary
-clear error mapping
+response validation at provider boundary
+clear provider error mapping
 basic timeout/retry policy
 provider health check skeleton
 ```
 
 ### 3. Runtime Adapter Config Panel
 
-Status: pending
+Status: next
 
 ```text
 provider
@@ -143,6 +150,7 @@ priority
 callback url
 idempotency key
 dry_run / mock / real mode
+health check action
 ```
 
 ### 4. Runtime Callback Ingest
@@ -348,8 +356,8 @@ Commercial Packaging
 
 ```text
 1. Adapter Provider Interface — done
-2. Mock + HTTP provider hardening — next
-3. Runtime Adapter Config Panel
+2. Mock + HTTP provider hardening — done
+3. Runtime Adapter Config Panel — next
 4. Runtime callback ingest
 5. Job state model
 6. Event timeline UI
