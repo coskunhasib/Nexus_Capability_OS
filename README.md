@@ -16,6 +16,14 @@ Intent
 → Memory + Context Update Packets
 ```
 
+## Verification contract
+
+For the exact local/CI verification chain, generated artifact policy, bundle budget and failure policy, see:
+
+```text
+docs/verification-contract.md
+```
+
 ## Current checkpoint
 
 The current end-to-end trial path is:
