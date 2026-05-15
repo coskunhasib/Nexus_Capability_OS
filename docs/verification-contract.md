@@ -14,6 +14,7 @@ install determinism
 → Nexus runtime bridge event coverage
 → runtime adapter request/response contract validity
 → runtime adapter loop behavior
+→ runtime adapter provider interface behavior
 → snapshot sync
 → tree data sync
 → production build
@@ -46,6 +47,7 @@ npm run trial:all-skills
 npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
+npm run verify:adapter-provider
 npm run sync:trial-results
 npm run sync:tree
 ```
@@ -75,6 +77,7 @@ npm run trial:all-skills
 npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
+npm run verify:adapter-provider
 npm run check:bundle
 ```
 
@@ -91,6 +94,7 @@ npm run check:bundle
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
 | `verify:adapter-loop` | Runtime adapter request, mock response, event stream and Runner ingest behavior work together. |
+| `verify:adapter-provider` | Runtime adapter provider registry, mock provider and HTTP provider skeleton behavior work through the shared dispatch interface. |
 | `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
 | `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
 | `check:bundle` | Production bundle stays within defined JS/CSS budgets. |
@@ -104,7 +108,8 @@ The runtime adapter boundary is the next layer after `nexus.handoff_packet`.
 ```text
 Capability OS / Nexus side
 → nexus.runtime_adapter_request
-→ real or mock worker
+→ RuntimeAdapterProvider
+→ mock/http/external worker
 → nexus.runtime_adapter_response
 → runtime_bridge events
 → Runner state ingest
@@ -123,8 +128,22 @@ Living code path:
 
 ```text
 src/runtimeAdapter.ts
+src/runtimeAdapterProvider.ts
+src/runtimeAdapters/mockRuntimeAdapterProvider.ts
+src/runtimeAdapters/httpRuntimeAdapterProvider.ts
 src/RuntimeAdapterPanel.tsx
 scripts/verify-runtime-adapter-loop.ts
+scripts/verify-runtime-adapter-provider.ts
+```
+
+The provider interface guarantees:
+
+```text
+Runner can dispatch through a selected provider instead of calling mock runtime code directly.
+Mock provider uses the in-process adapter.
+HTTP provider defines the endpoint boundary for real local or remote workers.
+Provider registry rejects unknown provider ids clearly.
+HTTP provider rejects missing endpoint_url clearly.
 ```
 
 The request carries:
@@ -207,13 +226,14 @@ Do not raise bundle limits unless the new size is intentional and justified.
 
 ## Trial and Nexus runtime contract
 
-A scenario is considered healthy only when all four layers pass:
+A scenario is considered healthy only when all five layers pass:
 
 ```text
 Trial result: pass
 Nexus handoff usability: pass
 Nexus runtime bridge: pass
 Runtime adapter loop: pass
+Runtime adapter provider: pass
 ```
 
 This means:
@@ -223,6 +243,7 @@ The compiler can route the intent.
 The handoff packet contains enough information for Nexus/runtime to start work.
 The mock runtime can emit expected callback events and payloads.
 The adapter request/response/event ingest loop works end-to-end inside Runner.
+The adapter dispatch boundary can swap mock/http/external providers without changing Runner core logic.
 ```
 
 ## Failure policy
@@ -241,13 +262,13 @@ Preferred order:
 
 ## Current known limitation
 
-The runtime adapter is still a mock verification layer. It proves request/response/event ingest contract behavior, not real external agent execution.
+The runtime adapter provider layer still uses mock behavior and an HTTP skeleton. It proves provider dispatch boundaries, not real external agent execution.
 
 The next integration milestone is:
 
 ```text
 nexus.runtime_adapter_request
-→ real runtime adapter provider
+→ real HTTP runtime adapter endpoint
 → real worker execution
 → nexus.runtime_adapter_response
 → runtime_bridge events
