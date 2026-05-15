@@ -29,6 +29,7 @@ const gates = [
   ...readListIfExists('gates-extra.json', 'gates'),
 ];
 const skills = readListIfExists('skills.json', 'skills');
+const skillResearchReviews = readListIfExists('skill-research-reviews.json', 'skill_research_reviews');
 const packs = [
   ...readList('example-capability-packs.json', 'capability_packs'),
   ...readList('capability-packs-extra.json', 'capability_packs'),
@@ -40,6 +41,7 @@ const microIds = ids(micro);
 const profileIds = ids(profiles);
 const gateIds = ids(gates);
 const skillIds = ids(skills);
+const skillReviewIds = ids(skillResearchReviews, 'skill_id');
 const packIds = ids(packs, 'pack_id');
 const missing = [];
 const duplicates = [];
@@ -59,9 +61,15 @@ checkDuplicates(micro, 'id', 'micro');
 checkDuplicates(profiles, 'id', 'profile');
 checkDuplicates(gates, 'id', 'gate');
 checkDuplicates(skills, 'id', 'skill');
+checkDuplicates(skillResearchReviews, 'skill_id', 'skill-research-review');
 checkDuplicates(packs, 'pack_id', 'pack');
 
+for (const review of skillResearchReviews) {
+  if (!skillIds.has(review.skill_id)) addMissing(missing, 'skill', review.skill_id, 'skill-research-review');
+}
+
 for (const s of skills) {
+  if (s.research_policy?.requires_current_research && !skillReviewIds.has(s.id)) addMissing(missing, 'skill-research-review', s.id, `skill:${s.id}`);
   for (const id of s.quality_gates ?? []) if (!gateIds.has(id)) addMissing(missing, 'gate', id, `skill:${s.id}`);
   for (const id of s.related_profiles ?? []) if (!profileIds.has(id)) addMissing(missing, 'profile', id, `skill:${s.id}`);
   for (const id of s.compatible_packs ?? []) if (!packIds.has(id)) addMissing(missing, 'pack', id, `skill:${s.id}`);
@@ -106,6 +114,7 @@ const summary = {
     profiles: profiles.length,
     gates: gates.length,
     skills: skills.length,
+    skill_research_reviews: skillResearchReviews.length,
     packs: packs.length,
     rules: rules.length,
   },
