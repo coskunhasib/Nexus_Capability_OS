@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/runtime-adapter-response.schema.json",
+  "title": "Nexus Runtime Adapter Response",
+  "type": "object",
+  "required": ["packet_type", "version", "request_id", "accepted", "status", "job", "events"],
+  "properties": {
+    "packet_type": { "const": "nexus.runtime_adapter_response" },
+    "version": { "const": "0.1" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "accepted": { "type": "boolean" },
+    "status": { "enum": ["accepted", "rejected", "queued", "running", "failed"] },
+    "job": {
+      "type": "object",
+      "required": ["job_id", "target_worker", "started_at"],
+      "properties": {
+        "job_id": { "type": "string", "minLength": 1 },
+        "target_worker": { "type": "string", "minLength": 1 },
+        "started_at": { "type": "string" },
+        "estimated_next_callback": { "type": "string" }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event_type", "version", "task_packet_id", "step_id", "status", "timestamp"],
+        "properties": {
+          "event_type": { "enum": ["step_started", "step_completed", "step_blocked", "gate_checked", "artifact_created", "runtime_failed"] },
+          "version": { "const": "0.1" },
+          "task_packet_id": { "type": "string", "minLength": 1 },
+          "step_id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["not_started", "in_progress", "blocked", "done"] },
+          "timestamp": { "type": "string" },
+          "owner": { "type": "string" },
+          "runtime_notes": { "type": "string" }
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      }
+    }
+  }
+}
