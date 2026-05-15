@@ -16,6 +16,14 @@ Intent
 → Memory + Context Update Packets
 ```
 
+## Roadmap progress
+
+For the living implementation tracker and updated next-step order, see:
+
+```text
+docs/roadmap-progress.md
+```
+
 ## Verification contract
 
 For the exact local/CI verification chain, generated artifact policy, bundle budget and failure policy, see:
