@@ -17,6 +17,11 @@
         "id": "trial-readme-runbook",
         "status": "implemented",
         "why": "Makes first run repeatable by humans and Nexus integrators."
+      },
+      {
+        "id": "skill-aware-trial-measurement",
+        "status": "implemented",
+        "why": "Defines pass/fail checks for validating whether skills change Runner, Review, Memory and Context behavior."
       }
     ],
     "B_nexus_integration": [
