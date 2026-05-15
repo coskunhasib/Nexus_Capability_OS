@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Boxes, BrainCircuit, Database, FlaskConical, Hammer, ListChecks, Map as MapIcon, ShieldCheck, Wrench } from 'lucide-react';
-import App from './App.tsx';
-import CapabilityPackDetailView from './CapabilityPackDetailView.tsx';
-import CompilerView from './CompilerView.tsx';
-import LabsView from './LabsView.tsx';
-import PackBuilderView from './PackBuilderView.tsx';
-import RegistryGovernance from './RegistryGovernance.tsx';
-import RegistryInspector from './RegistryInspector.tsx';
-import SkillInspectorView from './SkillInspectorView.tsx';
-import TaskRunnerMock from './TaskRunnerMock.tsx';
-import TrialScenarioView from './TrialScenarioView.tsx';
+
+const App = lazy(() => import('./App.tsx'));
+const CapabilityPackDetailView = lazy(() => import('./CapabilityPackDetailView.tsx'));
+const CompilerView = lazy(() => import('./CompilerView.tsx'));
+const LabsView = lazy(() => import('./LabsView.tsx'));
+const PackBuilderView = lazy(() => import('./PackBuilderView.tsx'));
+const RegistryGovernance = lazy(() => import('./RegistryGovernance.tsx'));
+const RegistryInspector = lazy(() => import('./RegistryInspector.tsx'));
+const SkillInspectorView = lazy(() => import('./SkillInspectorView.tsx'));
+const TaskRunnerMock = lazy(() => import('./TaskRunnerMock.tsx'));
+const TrialScenarioView = lazy(() => import('./TrialScenarioView.tsx'));
 
 type ViewMode = 'explore' | 'studio' | 'packs' | 'skills' | 'builder' | 'trials' | 'runner' | 'governance' | 'inspector' | 'labs';
 
@@ -33,6 +34,16 @@ const governanceModes: Array<{ id: ViewMode; label: string; icon: React.ReactNod
   { id: 'governance', label: 'Health', icon: <ShieldCheck size={16} /> },
   { id: 'inspector', label: 'Inspector', icon: <Database size={16} /> },
 ];
+
+function ViewLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#050505] text-neutral-300">
+      <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] px-5 py-4 text-sm shadow-2xl">
+        Loading view...
+      </div>
+    </div>
+  );
+}
 
 export default function Shell() {
   const [view, setView] = useState<ViewMode>('studio');
@@ -87,16 +98,18 @@ export default function Shell() {
         )}
       </div>
 
-      {view === 'explore' && <App />}
-      {view === 'studio' && <CompilerView onSendTaskPacket={openRunnerWithPacket} />}
-      {view === 'trials' && <TrialScenarioView onOpenCompiler={() => setView('studio')} />}
-      {view === 'packs' && <CapabilityPackDetailView />}
-      {view === 'skills' && <SkillInspectorView />}
-      {view === 'builder' && <PackBuilderView />}
-      {view === 'governance' && <RegistryGovernance />}
-      {view === 'inspector' && <RegistryInspector />}
-      {view === 'runner' && <TaskRunnerMock initialPacket={runnerPacket} />}
-      {view === 'labs' && <LabsView />}
+      <Suspense fallback={<ViewLoading />}>
+        {view === 'explore' && <App />}
+        {view === 'studio' && <CompilerView onSendTaskPacket={openRunnerWithPacket} />}
+        {view === 'trials' && <TrialScenarioView onOpenCompiler={() => setView('studio')} />}
+        {view === 'packs' && <CapabilityPackDetailView />}
+        {view === 'skills' && <SkillInspectorView />}
+        {view === 'builder' && <PackBuilderView />}
+        {view === 'governance' && <RegistryGovernance />}
+        {view === 'inspector' && <RegistryInspector />}
+        {view === 'runner' && <TaskRunnerMock initialPacket={runnerPacket} />}
+        {view === 'labs' && <LabsView />}
+      </Suspense>
     </div>
   );
 }
