@@ -14,6 +14,8 @@ const pairs = [
   ['schemas/context-update-packet.schema.json', 'samples/packets/context-update-packet.sample.json'],
   ['schemas/nexus-handoff-packet.schema.json', 'samples/packets/nexus-handoff-packet.sample.json'],
   ['schemas/runtime-bridge.schema.json', 'samples/packets/runtime-bridge.sample.json'],
+  ['schemas/runtime-adapter-request.schema.json', 'samples/packets/runtime-adapter-request.sample.json'],
+  ['schemas/runtime-adapter-response.schema.json', 'samples/packets/runtime-adapter-response.sample.json'],
   ['schemas/trial-scenario.schema.json', 'samples/trials/web-saas-mvp.trial.json'],
   ['schemas/trial-scenario.schema.json', 'samples/trials/stm32-firmware.trial.json'],
   ['schemas/trial-scenario.schema.json', 'samples/trials/agentic-system.trial.json'],
