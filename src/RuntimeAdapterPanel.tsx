@@ -2,11 +2,16 @@ import { useMemo, useState } from 'react';
 import { Activity, Cpu, FileJson, Network, PlayCircle, RotateCcw, Settings2 } from 'lucide-react';
 import {
   applyRuntimeEventsToRunnerState,
+  buildMockRuntimeCallbackPayload,
   buildRuntimeAdapterRequest,
+  ingestRuntimeCallback,
+  runtimeEventKey,
   summarizeRuntimeAdapterResponse,
+  validateRuntimeCallbackPayload,
   type EvidenceState,
   type RuntimeAdapterRequest,
   type RuntimeAdapterResponse,
+  type RuntimeCallbackPayload,
   type TaskPacket,
   type WorkStatus,
 } from './runtimeAdapter.ts';
@@ -109,8 +114,15 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
   const [operatorNotes, setOperatorNotes] = useState(defaultAdapterConfig.operatorNotes);
   const [request, setRequest] = useState<RuntimeAdapterRequest | null>(null);
   const [response, setResponse] = useState<RuntimeAdapterResponse | null>(null);
+  const [callbackPayload, setCallbackPayload] = useState<RuntimeCallbackPayload | null>(null);
+  const [callbackSequence, setCallbackSequence] = useState(0);
+  const [seenEventKeys, setSeenEventKeys] = useState<string[]>([]);
   const [lastAppliedEventCount, setLastAppliedEventCount] = useState(0);
+  const [lastCallbackAcceptedCount, setLastCallbackAcceptedCount] = useState(0);
+  const [lastCallbackDuplicateCount, setLastCallbackDuplicateCount] = useState(0);
+  const [totalCallbackAcceptedCount, setTotalCallbackAcceptedCount] = useState(0);
   const [dispatchError, setDispatchError] = useState<string | null>(null);
+  const [callbackError, setCallbackError] = useState<string | null>(null);
   const [healthResult, setHealthResult] = useState<RuntimeAdapterProviderHealth | null>(null);
   const [isDispatching, setIsDispatching] = useState(false);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
@@ -156,21 +168,67 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
   const dispatchAdapter = async () => {
     setIsDispatching(true);
     setDispatchError(null);
+    setCallbackError(null);
     const nextRequest = buildConfiguredRequest();
     setRequest(nextRequest);
     try {
       const nextResponse = await dispatchRuntimeAdapterRequest(provider, nextRequest);
       const patch = applyRuntimeEventsToRunnerState(statuses, evidence, nextResponse.events);
       setResponse(nextResponse);
+      setCallbackPayload(null);
+      setCallbackSequence(0);
+      setSeenEventKeys(nextResponse.events.map(runtimeEventKey));
+      setLastCallbackAcceptedCount(0);
+      setLastCallbackDuplicateCount(0);
+      setTotalCallbackAcceptedCount(0);
       setLastAppliedEventCount(patch.applied_events.length);
       onApplyRuntimeState({ statuses: patch.statuses, evidence: patch.evidence });
     } catch (error) {
       setResponse(null);
+      setCallbackPayload(null);
+      setSeenEventKeys([]);
       setLastAppliedEventCount(0);
+      setLastCallbackAcceptedCount(0);
+      setLastCallbackDuplicateCount(0);
+      setTotalCallbackAcceptedCount(0);
       setDispatchError(error instanceof Error ? error.message : 'Runtime adapter dispatch failed.');
     } finally {
       setIsDispatching(false);
     }
+  };
+
+  const ingestCallbackPayload = (payload: RuntimeCallbackPayload, advanceSequence: boolean) => {
+    const validation = validateRuntimeCallbackPayload(payload);
+    if (!validation.valid || !validation.payload) {
+      setCallbackError(validation.errors.join('; '));
+      return;
+    }
+    const result = ingestRuntimeCallback(statuses, evidence, validation.payload, seenEventKeys);
+    setCallbackPayload(validation.payload);
+    setSeenEventKeys(result.seen_event_keys);
+    setLastAppliedEventCount(result.applied_events.length);
+    setLastCallbackAcceptedCount(result.accepted_events.length);
+    setLastCallbackDuplicateCount(result.duplicate_events.length);
+    setTotalCallbackAcceptedCount((current) => current + result.accepted_events.length);
+    setCallbackError(null);
+    if (advanceSequence) setCallbackSequence((current) => current + 1);
+    onApplyRuntimeState({ statuses: result.statuses, evidence: result.evidence });
+  };
+
+  const simulateCallback = () => {
+    if (!request || !response) {
+      setCallbackError('Dispatch a runtime adapter request before simulating callbacks.');
+      return;
+    }
+    ingestCallbackPayload(buildMockRuntimeCallbackPayload(request, response, callbackSequence), true);
+  };
+
+  const replayLastCallback = () => {
+    if (!callbackPayload) {
+      setCallbackError('No callback payload has been ingested yet.');
+      return;
+    }
+    ingestCallbackPayload(callbackPayload, false);
   };
 
   const checkHealth = async () => {
@@ -210,6 +268,7 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
     setOperatorNotes(defaultAdapterConfig.operatorNotes);
     setHealthResult(null);
     setDispatchError(null);
+    setCallbackError(null);
   };
 
   return (
@@ -335,12 +394,15 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
       )}
 
       {dispatchError && <div className="mb-4 rounded-xl border border-red-500/20 bg-red-950/10 p-4 text-sm text-red-100">{dispatchError}</div>}
+      {callbackError && <div className="mb-4 rounded-xl border border-red-500/20 bg-red-950/10 p-4 text-sm text-red-100">{callbackError}</div>}
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{summary?.event_count ?? '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">events</div></div>
+      <div className="grid gap-3 md:grid-cols-6">
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{summary?.event_count ?? '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">initial events</div></div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{summary?.accepted ? 'yes' : response ? 'no' : '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">accepted</div></div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{summary?.event_types.length ?? '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">event types</div></div>
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{lastAppliedEventCount || '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">applied</div></div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{lastAppliedEventCount || '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">last applied</div></div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{totalCallbackAcceptedCount || '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">callback accepted</div></div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-center"><div className="text-2xl text-white">{lastCallbackDuplicateCount || '-'}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">duplicates</div></div>
       </div>
 
       {request && (
@@ -367,16 +429,42 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
         </div>
       )}
 
-      {(request || response) && (
+      {response && request && (
+        <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-1 text-xs font-semibold text-cyan-100">Runtime Callback Ingest</div>
+              <p className="text-xs text-neutral-500">Simulates later worker callbacks after the initial adapter response. Duplicate callback replay is deduped by event key.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={simulateCallback} className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-900/30">
+                <Activity size={14} /> Simulate callback
+              </button>
+              <button onClick={replayLastCallback} disabled={!callbackPayload} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                <RotateCcw size={14} /> Replay last callback
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge tone="cyan">seen keys: {seenEventKeys.length}</Badge>
+            <Badge tone="green">accepted last: {lastCallbackAcceptedCount}</Badge>
+            <Badge tone={lastCallbackDuplicateCount ? 'yellow' : 'neutral'}>duplicate last: {lastCallbackDuplicateCount}</Badge>
+            {callbackPayload && <Badge>{callbackPayload.packet_type}</Badge>}
+          </div>
+        </div>
+      )}
+
+      {(request || response || callbackPayload) && (
         <div className="mt-4 flex flex-wrap gap-2">
           {request && <button onClick={() => downloadJson('runtime-adapter-request.json', request)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export request</button>}
           {response && <button onClick={() => downloadJson('runtime-adapter-response.json', response)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export response</button>}
+          {callbackPayload && <button onClick={() => downloadJson('runtime-callback.json', callbackPayload)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export callback</button>}
         </div>
       )}
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Cpu size={16} className="mb-2 text-cyan-400" />Mock provider runs in-process; HTTP provider now uses the panel config for endpoint, timeout, retry and auth boundaries.</div>
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Network size={16} className="mb-2 text-cyan-400" />Dispatch metadata is written into the runtime adapter request before events update Runner step status and gate evidence.</div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Network size={16} className="mb-2 text-cyan-400" />Initial response events and later callback events both update Runner state, while duplicate callback events are ignored.</div>
       </div>
     </section>
   );
