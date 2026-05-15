@@ -11,6 +11,7 @@
     "verify:handoff": "node scripts/verify-nexus-handoff-usability.mjs",
     "verify:runtime-bridge": "node scripts/verify-nexus-runtime-bridge.mjs",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
+    "summary:ci": "node scripts/write-ci-summary.mjs",
     "sync:trial-results": "node scripts/sync-trial-result-snapshots.mjs",
     "generate:tree": "node scripts/generate-tree-data.mjs",
     "sync:tree": "node scripts/generate-tree-data.mjs",
