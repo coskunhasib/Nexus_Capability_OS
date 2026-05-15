@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-2/15 completed
-Current item: 3/15 — Runtime Adapter Config Panel
-Next item: 4/15 — Runtime Callback Ingest
+3/15 completed
+Current item: 4/15 — Runtime Callback Ingest
+Next item: 5/15 — Job State Model
 ```
 
 ## Current state
@@ -33,6 +33,7 @@ Runtime adapter loop CI verification: implemented
 Runtime adapter provider interface: implemented
 Mock provider: implemented
 HTTP provider: hardened boundary implemented
+Runtime adapter config panel: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -67,41 +68,38 @@ Real external worker execution: not implemented yet
 ✅ Runtime adapter loop verification
 ✅ 1/15 — Adapter Provider Interface
 ✅ 2/15 — Mock + HTTP provider hardening
+✅ 3/15 — Runtime Adapter Config Panel
 ```
 
 ## Next recommended item
 
 ```text
-PR #32 — Runtime Adapter Config Panel
+PR #33 — Runtime Callback Ingest
 ```
 
 Why this is next:
 
 ```text
-The HTTP provider boundary is now hardened, but Runner still uses static provider configuration.
-The next step is to let the operator set endpoint, timeout, retry and dispatch mode from the UI.
+The operator can now configure the adapter request from the UI.
+The next step is to stop assuming every runtime event arrives inside the initial response.
 ```
 
 Target:
 
 ```text
-provider selector
-endpoint_url
-healthcheck_url
-timeout_ms
-retry policy
-priority
-callback_url
-idempotency_key
-dry_run / mock / real mode
-health check action
+callback ingest function
+callback event validation boundary
+append-later runtime event path
+idempotent event application
+manual callback simulation action
 ```
 
 Expected files:
 
 ```text
+src/runtimeAdapter.ts
 src/RuntimeAdapterPanel.tsx
-src/runtimeAdapterProvider.ts
+scripts/verify-runtime-adapter-loop.ts
 scripts/verify-runtime-adapter-provider.ts
 docs/verification-contract.md update
 ```
@@ -109,7 +107,7 @@ docs/verification-contract.md update
 Expected NPM script:
 
 ```text
-verify:adapter-provider
+verify:adapter-loop
 ```
 
 ## Remaining roadmap
@@ -140,22 +138,26 @@ provider health check skeleton
 
 ### 3. Runtime Adapter Config Panel
 
-Status: next
+Status: done
 
 ```text
-provider
-endpoint
-timeout
+provider selector
+endpoint_url
+healthcheck_url
+timeout_ms
+retry policy
 priority
-callback url
-idempotency key
+callback_url
+idempotency_key
 dry_run / mock / real mode
 health check action
+operator_notes
+request/response export after configured dispatch
 ```
 
 ### 4. Runtime Callback Ingest
 
-Status: pending
+Status: next
 
 Current behavior:
 
@@ -357,8 +359,8 @@ Commercial Packaging
 ```text
 1. Adapter Provider Interface — done
 2. Mock + HTTP provider hardening — done
-3. Runtime Adapter Config Panel — next
-4. Runtime callback ingest
+3. Runtime Adapter Config Panel — done
+4. Runtime callback ingest — next
 5. Job state model
 6. Event timeline UI
 7. Artifact registry
