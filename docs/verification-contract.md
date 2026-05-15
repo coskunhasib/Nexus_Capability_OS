@@ -18,6 +18,7 @@ install determinism
 → HTTP provider hardening behavior
 → runtime adapter operator config surface
 → runtime callback ingest behavior
+→ runtime job state model behavior
 → snapshot sync
 → tree data sync
 → production build
@@ -96,7 +97,7 @@ npm run check:bundle
 | `trial:all-skills` | All current trial scenarios pass skill-aware assertions. |
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
-| `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest and Runner state behavior work together. |
+| `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest, runtime job state and Runner state behavior work together. |
 | `verify:adapter-provider` | Runtime adapter provider registry, mock provider and hardened HTTP provider behavior work through the shared dispatch interface. |
 | `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
 | `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
@@ -217,6 +218,23 @@ received_at
 events[]
 ```
 
+The runtime job state carries:
+
+```text
+job_id
+request_id
+provider_id
+target_worker
+status
+started_at
+last_event_at
+events[]
+artifacts[]
+errors[]
+callback counters
+seen_event_keys[]
+```
+
 The loop verification guarantees:
 
 ```text
@@ -230,6 +248,11 @@ later runtime callbacks validate before ingest
 later callback events update Runner state
 replayed callback events are deduped
 invalid callback payloads are rejected
+runtime adapter response creates runtime job state
+initial events/artifacts/errors are captured in job state
+callbacks increment runtime job counters
+replayed callbacks increment duplicate counters
+rejected adapter response creates rejected job state with adapter error
 empty work_order reject path returns EMPTY_WORK_ORDER
 ```
 
@@ -299,6 +322,7 @@ The adapter dispatch boundary can swap mock/http/external providers without chan
 The HTTP provider fails closed when remote worker output is invalid.
 The operator can configure dispatch metadata before sending a runtime adapter request.
 Later runtime callbacks can be validated, deduped and applied without re-dispatching the job.
+The runtime job can be represented independently from the visual Runner controls.
 ```
 
 ## Failure policy
@@ -317,13 +341,14 @@ Preferred order:
 
 ## Current known limitation
 
-The runtime adapter provider layer still uses mock behavior and a hardened HTTP boundary. The Runtime Adapter Panel can configure that boundary and simulate later callbacks, but it still does not execute a real external agent by itself.
+The runtime job state model is implemented in the core runtime adapter layer and covered by CI. The current panel-level job state export/display was deferred because the panel update needs to be split into smaller UI files to avoid large monolithic UI patches.
 
 The next integration milestone is:
 
 ```text
 nexus.runtime_adapter_request
-→ job state model
+→ event store + replay
+→ runtime timeline UI
 → real HTTP runtime adapter endpoint
 → real worker execution
 → nexus.runtime_adapter_response
