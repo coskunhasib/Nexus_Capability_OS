@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/runtime-adapter-request.schema.json",
+  "title": "Nexus Runtime Adapter Request",
+  "type": "object",
+  "required": ["packet_type", "version", "request_id", "handoff_packet", "dispatch"],
+  "properties": {
+    "packet_type": { "const": "nexus.runtime_adapter_request" },
+    "version": { "const": "0.1" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "handoff_packet": {
+      "type": "object",
+      "required": ["packet_type", "version", "objective", "selected_capability", "task_packet", "runtime_requirements", "callback_contract"],
+      "properties": {
+        "packet_type": { "const": "nexus.handoff_packet" },
+        "version": { "const": "0.1" },
+        "objective": { "type": "string", "minLength": 1 },
+        "selected_capability": { "type": "object" },
+        "task_packet": { "type": "object" },
+        "runtime_requirements": { "type": "object" },
+        "callback_contract": { "type": "object" }
+      }
+    },
+    "dispatch": {
+      "type": "object",
+      "required": ["mode", "target_worker", "priority", "idempotency_key", "callback_url"],
+      "properties": {
+        "mode": { "enum": ["dry_run", "mock", "real"] },
+        "target_worker": { "type": "string", "minLength": 1 },
+        "priority": { "enum": ["low", "normal", "high"] },
+        "idempotency_key": { "type": "string", "minLength": 1 },
+        "callback_url": { "type": "string", "minLength": 1 },
+        "timeout_seconds": { "type": "number" }
+      }
+    },
+    "operator_notes": { "type": "string" }
+  }
+}
