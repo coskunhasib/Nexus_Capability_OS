@@ -15,6 +15,7 @@ install determinism
 → runtime adapter request/response contract validity
 → runtime adapter loop behavior
 → runtime adapter provider interface behavior
+→ HTTP provider hardening behavior
 → snapshot sync
 → tree data sync
 → production build
@@ -94,7 +95,7 @@ npm run check:bundle
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
 | `verify:adapter-loop` | Runtime adapter request, mock response, event stream and Runner ingest behavior work together. |
-| `verify:adapter-provider` | Runtime adapter provider registry, mock provider and HTTP provider skeleton behavior work through the shared dispatch interface. |
+| `verify:adapter-provider` | Runtime adapter provider registry, mock provider and hardened HTTP provider behavior work through the shared dispatch interface. |
 | `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
 | `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
 | `check:bundle` | Production bundle stays within defined JS/CSS budgets. |
@@ -144,6 +145,18 @@ Mock provider uses the in-process adapter.
 HTTP provider defines the endpoint boundary for real local or remote workers.
 Provider registry rejects unknown provider ids clearly.
 HTTP provider rejects missing endpoint_url clearly.
+```
+
+The HTTP provider hardening guarantees:
+
+```text
+explicit provider error codes
+timeout boundary
+retry policy for retryable HTTP statuses
+invalid JSON rejection
+invalid runtime_adapter_response shape rejection
+healthy / unconfigured / unreachable / failed health check status
+optional auth bearer header
 ```
 
 The request carries:
@@ -244,6 +257,7 @@ The handoff packet contains enough information for Nexus/runtime to start work.
 The mock runtime can emit expected callback events and payloads.
 The adapter request/response/event ingest loop works end-to-end inside Runner.
 The adapter dispatch boundary can swap mock/http/external providers without changing Runner core logic.
+The HTTP provider fails closed when remote worker output is invalid.
 ```
 
 ## Failure policy
@@ -262,12 +276,13 @@ Preferred order:
 
 ## Current known limitation
 
-The runtime adapter provider layer still uses mock behavior and an HTTP skeleton. It proves provider dispatch boundaries, not real external agent execution.
+The runtime adapter provider layer still uses mock behavior and a hardened HTTP boundary. It proves provider dispatch, HTTP failure mapping and response guarding, not real external agent execution.
 
 The next integration milestone is:
 
 ```text
 nexus.runtime_adapter_request
+→ runtime adapter config panel
 → real HTTP runtime adapter endpoint
 → real worker execution
 → nexus.runtime_adapter_response
