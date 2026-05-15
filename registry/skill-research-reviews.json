@@ -1,0 +1,200 @@
+{
+  "skill_research_reviews": [
+    {
+      "skill_id": "superpowered-planning-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "Claude Skills-style systems use modular instruction/script/resource bundles that are selected as needed.",
+        "MCP/tool security research shows descriptor and metadata manipulation can affect planning/tool selection.",
+        "Recent delegation reliability reporting shows long workflows need checkpoints and evidence controls."
+      ],
+      "research_findings": [
+        "Plan quality must include gate/evidence mapping, not only step sequencing.",
+        "Skill/tool selection needs an auditable trigger trace.",
+        "Plans need rollback or handoff boundaries for delegated workflows."
+      ],
+      "applied_upgrades": [
+        "Add skill_trigger_trace as an output expectation.",
+        "Add skill/tool vetting to edge cases.",
+        "Add risk-clarity and rollback/handoff checks."
+      ],
+      "remaining_risks": [
+        "Need trial dataset for measuring gap-catching quality.",
+        "Need automated planned-gate vs actual-evidence comparison."
+      ],
+      "sources": ["turn147870news5", "turn147870academia1", "turn147870academia3", "turn147870news0"]
+    },
+    {
+      "skill_id": "quality-assurance-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "Delegated LLM workflows can silently corrupt artifacts, so QA must require evidence checkpoints.",
+        "Frontend/API workflows need state and contract coverage, not only happy-path snapshots."
+      ],
+      "research_findings": [
+        "Missing evidence must block release separately from failed evidence.",
+        "Evidence strength should be explicit because generated claims are not proof.",
+        "Regression risk must be tied to changed paths and core user flows."
+      ],
+      "applied_upgrades": [
+        "Add evidence_strength_score concept.",
+        "Separate failed vs missing evidence.",
+        "Add traceability gate emphasis."
+      ],
+      "remaining_risks": [
+        "No automatic artifact verifier yet.",
+        "Evidence scoring remains heuristic until trials calibrate it."
+      ],
+      "sources": ["turn147870news0", "turn147870news7"]
+    },
+    {
+      "skill_id": "execution-acceleration-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "AI-assisted work benefits from fast iteration, but delegated workflows can damage artifacts without oversight.",
+        "Lean execution principles support minimal useful increments when scope cuts remain visible."
+      ],
+      "research_findings": [
+        "Execution speed needs explicit scope-cut traceability.",
+        "Fast path must preserve safety, evidence and rollback gates.",
+        "Blockers should become next actions or escalations, not disappear."
+      ],
+      "applied_upgrades": [
+        "Add cut_scope_list output expectation.",
+        "Add safety-preserving execution step.",
+        "Add silent scope loss as edge case."
+      ],
+      "remaining_risks": [
+        "Could still push too fast before discovery.",
+        "Needs Runner behavior that turns blockers into suggested next actions."
+      ],
+      "sources": ["turn147870news0", "turn147870news8"]
+    },
+    {
+      "skill_id": "review-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "LLM delegation studies show plausible outputs can contain sparse but severe errors.",
+        "Review practice needs separation of spec conformance, implementation quality, severity and evidence."
+      ],
+      "research_findings": [
+        "Review needs claim-to-evidence mapping for high-impact outputs.",
+        "Severity classification prevents review noise from blocking all progress.",
+        "Review should run before memory update to avoid storing bad conclusions."
+      ],
+      "applied_upgrades": [
+        "Add claim_evidence_map output expectation.",
+        "Add severity classification to procedure.",
+        "Add memory timing rule."
+      ],
+      "remaining_risks": [
+        "Needs automated claim extraction.",
+        "Needs calibration for severity thresholds."
+      ],
+      "sources": ["turn147870news0", "turn147870academia4"]
+    },
+    {
+      "skill_id": "ultrareview-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "MCP security research documents tool poisoning, shadowing and descriptor-level manipulation.",
+        "MCP Security Bench evaluates attacks across planning, invocation and response handling.",
+        "Skill/plugin mechanisms with executable resources create source-trust concerns."
+      ],
+      "research_findings": [
+        "Ultra review must check tool/skill metadata trust, not only output correctness.",
+        "Memory/context side effects are safety-relevant.",
+        "Findings need prioritization to avoid over-blocking useful progress."
+      ],
+      "applied_upgrades": [
+        "Add security_vetting_notes concept.",
+        "Add tool/skill metadata checks.",
+        "Add descriptor poisoning and untrusted skill source edge cases.",
+        "Add tool-trust gate."
+      ],
+      "remaining_risks": [
+        "Needs automated descriptor scanner.",
+        "Needs severity model for security vs delivery tradeoffs."
+      ],
+      "sources": ["turn147870academia1", "turn147870academia3", "turn147870search6", "turn147870news7"]
+    },
+    {
+      "skill_id": "context-mode-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "Agent memory surveys model memory as write-manage-read loops with contradiction handling and privacy governance.",
+        "Experience-following behavior can propagate errors and replay irrelevant old memories."
+      ],
+      "research_findings": [
+        "Context mode must manage visible drop lists, not only summarize.",
+        "Similar memories can mislead; conflict detection is required.",
+        "Working-set selection should be tied to next action rather than full history."
+      ],
+      "applied_upgrades": [
+        "Add context_conflict_report concept.",
+        "Add conflict detection and visible drop_list steps.",
+        "Add misaligned memory replay failure mode."
+      ],
+      "remaining_risks": [
+        "No automated similarity-conflict detector yet.",
+        "Needs benchmark for critical-constraint preservation."
+      ],
+      "sources": ["turn147870academia2", "turn147870academia4"]
+    },
+    {
+      "skill_id": "frontend-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "Frontend skill work should include state coverage, accessibility baseline, responsive behavior and API error handling.",
+        "Agent-generated UIs often miss non-happy-path states unless those states are explicit."
+      ],
+      "research_findings": [
+        "Frontend skill needs explicit state matrix output.",
+        "Accessibility must be a gate, not later polish.",
+        "API error, permission and latency states belong in default edge-case set."
+      ],
+      "applied_upgrades": [
+        "Add accessibility_notes concept.",
+        "Add partial, latency and permission-denied edge cases.",
+        "Add data ownership and validation procedure emphasis."
+      ],
+      "remaining_risks": [
+        "Needs automated accessibility checker integration.",
+        "Needs browser-state snapshot evidence in Runner."
+      ],
+      "sources": ["turn147870news7"]
+    },
+    {
+      "skill_id": "memory-skill",
+      "reviewed_at": "2026-05-15",
+      "maturity_decision": "experimental",
+      "source_basis": [
+        "Agent memory research shows naive memory growth can propagate errors and replay irrelevant experiences.",
+        "Memory surveys emphasize deletion, contradiction handling, latency budgets and privacy governance."
+      ],
+      "research_findings": [
+        "Memory skill must include deletion/deprecation, not only addition.",
+        "Conflict handling is mandatory before durable storage.",
+        "Memory update packets need do_not_store and privacy-aware retention."
+      ],
+      "applied_upgrades": [
+        "Add memory_conflict_report concept.",
+        "Add conflict/supersession procedure step.",
+        "Add error propagation and memory growth failure modes.",
+        "Add risk-clarity gate."
+      ],
+      "remaining_risks": [
+        "No automated deduplication yet.",
+        "Needs policy for sensitive personal/project data classes."
+      ],
+      "sources": ["turn147870academia2", "turn147870academia4"]
+    }
+  ]
+}
