@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, ShieldCheck, UploadCloud, Wrench } from 'lucide-react';
 import ReviewReportPanel from './ReviewReportPanel.tsx';
+import RuntimeAdapterPanel from './RuntimeAdapterPanel.tsx';
 import { buildSkillDirectives, getPacketSkillIds, skillCoverageWarnings } from './skillRuntime.ts';
 
 type WorkStatus = 'not_started' | 'in_progress' | 'blocked' | 'done';
@@ -245,6 +246,11 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
     setEvidence(initialEvidence(packet));
   };
 
+  const applyRuntimeState = (next: { statuses: Record<string, WorkStatus>; evidence: EvidenceState }) => {
+    setStatuses(next.statuses);
+    setEvidence(next.evidence);
+  };
+
   const exportState = () => {
     const output = {
       ...packet,
@@ -280,14 +286,14 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] px-4 py-8 text-neutral-200 sm:px-6">
+    <div className="min-h-screen bg-[#050505] px-4 py-8 text-neutral-200">
       <div className="mx-auto flex max-w-[1500px] flex-col gap-6">
         <header className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-2xl">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500 text-black"><PlayCircle size={26} strokeWidth={2.5} /></div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">Task Packet Runner Mock</h1>
-              <p className="mt-1 text-sm text-neutral-400">Tracks work_order status, gate evidence and active skill runtime directives.</p>
+              <p className="mt-1 text-sm text-neutral-400">Tracks work_order status, gate evidence, skill runtime directives and runtime adapter events.</p>
             </div>
           </div>
         </header>
@@ -338,6 +344,8 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
                 <button onClick={exportState} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export runner state</button>
               </div>
             </section>
+
+            <RuntimeAdapterPanel packet={packet} statuses={statuses} evidence={evidence} onApplyRuntimeState={applyRuntimeState} />
 
             {skillIds.length > 0 && <section className="rounded-2xl border border-yellow-500/20 bg-yellow-950/10 p-6"><div className="mb-4 flex items-center gap-2 text-sm font-semibold text-yellow-100"><Wrench size={18} />Skill runtime directives</div><div className="mb-4 flex flex-wrap gap-2">{skillIds.map((skill) => <Pill key={skill}>{skill}</Pill>)}</div><div className="grid gap-3 lg:grid-cols-2">{skillDirectives.map((directive) => <div key={directive.skill} className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="mb-2 text-sm font-semibold text-white">{directive.skill}</div><p className="text-sm text-neutral-300">{directive.effect}</p><p className="mt-2 text-xs text-yellow-100">Runner hint: {directive.runner_hint}</p></div>)}</div>{skillWarnings.length > 0 && <div className="mt-4 rounded-xl border border-red-500/20 bg-red-950/10 p-4"><div className="mb-2 text-xs font-semibold text-red-200">Skill coverage warnings</div><div className="space-y-1 text-sm text-red-100">{skillWarnings.map((warning) => <div key={warning}>{warning}</div>)}</div></div>}</section>}
 
