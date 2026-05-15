@@ -12,6 +12,7 @@ install determinism
 → skill-aware trial execution
 → Nexus handoff usability
 → Nexus runtime bridge event coverage
+→ runtime adapter request/response contract validity
 → snapshot sync
 → tree data sync
 → production build
@@ -79,7 +80,7 @@ npm run check:bundle
 | Check | Guarantee |
 |---|---|
 | `npm ci` | `package.json` and `package-lock.json` are synchronized and installation is reproducible. |
-| `validate:packets` | Packet samples and trial scenarios match their JSON schemas. |
+| `validate:packets` | Packet samples, runtime adapter request/response samples and trial scenarios match their JSON schemas. |
 | `audit:registry` | Registry files have required sections, no missing references and no duplicate ids. |
 | `npx tsc --noEmit` | TypeScript is type-correct without emitting build files. |
 | `trial:web-saas-skill` | The reference web SaaS scenario selects expected skills and produces review/memory/context outputs. |
@@ -91,6 +92,50 @@ npm run check:bundle
 | `check:bundle` | Production bundle stays within defined JS/CSS budgets. |
 | `check:generated` | Generated tracked and untracked artifacts are committed and not drifting. |
 | `summary:ci` | GitHub Actions gets a readable matrix summary of trial/handoff/runtime/bundle status. |
+
+## Runtime adapter boundary
+
+The runtime adapter boundary is the next layer after `nexus.handoff_packet`.
+
+```text
+Capability OS / Nexus side
+→ nexus.runtime_adapter_request
+→ real or mock worker
+→ nexus.runtime_adapter_response
+→ runtime_bridge events
+```
+
+Contracts:
+
+```text
+schemas/runtime-adapter-request.schema.json
+schemas/runtime-adapter-response.schema.json
+samples/packets/runtime-adapter-request.sample.json
+samples/packets/runtime-adapter-response.sample.json
+```
+
+The request carries:
+
+```text
+request_id
+handoff_packet
+dispatch mode
+target_worker
+priority
+idempotency_key
+callback_url
+timeout_seconds
+```
+
+The response carries:
+
+```text
+request_id
+accepted/status
+job metadata
+initial runtime bridge events
+optional error object
+```
 
 ## Generated artifacts
 
@@ -174,9 +219,11 @@ The runtime bridge is still a mock verification layer. It proves event/payload c
 The next integration milestone is:
 
 ```text
-nexus.handoff_packet
+nexus.runtime_adapter_request
 → real runtime adapter
-→ real runtime_bridge events
+→ real worker execution
+→ nexus.runtime_adapter_response
+→ runtime_bridge events
 → gate evidence + artifact refs
 → review report + memory/context packets
 ```
