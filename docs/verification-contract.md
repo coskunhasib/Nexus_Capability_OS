@@ -17,6 +17,7 @@ install determinism
 → runtime adapter provider interface behavior
 → HTTP provider hardening behavior
 → runtime adapter operator config surface
+→ runtime callback ingest behavior
 → snapshot sync
 → tree data sync
 → production build
@@ -95,7 +96,7 @@ npm run check:bundle
 | `trial:all-skills` | All current trial scenarios pass skill-aware assertions. |
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
-| `verify:adapter-loop` | Runtime adapter request, mock response, event stream and Runner ingest behavior work together. |
+| `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest and Runner state behavior work together. |
 | `verify:adapter-provider` | Runtime adapter provider registry, mock provider and hardened HTTP provider behavior work through the shared dispatch interface. |
 | `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
 | `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
@@ -160,7 +161,7 @@ healthy / unconfigured / unreachable / failed health check status
 optional auth bearer header
 ```
 
-The Runtime Adapter Panel now exposes operator-controlled config:
+The Runtime Adapter Panel exposes operator-controlled config:
 
 ```text
 provider selector
@@ -178,6 +179,7 @@ operator_notes
 health check action
 configured request export
 configured response export
+callback payload export
 ```
 
 The request carries:
@@ -204,15 +206,30 @@ initial runtime bridge events
 optional error object
 ```
 
+The runtime callback payload carries:
+
+```text
+packet_type: nexus.runtime_callback
+request_id
+job_id
+provider_id
+received_at
+events[]
+```
+
 The loop verification guarantees:
 
 ```text
 request packet_type is correct
 response accepted path works
 step_started / gate_checked / artifact_created / step_completed are emitted
-Runner status is updated from events
+Runner status is updated from initial response events
 gate evidence is ingested
 artifact refs are produced
+later runtime callbacks validate before ingest
+later callback events update Runner state
+replayed callback events are deduped
+invalid callback payloads are rejected
 empty work_order reject path returns EMPTY_WORK_ORDER
 ```
 
@@ -281,6 +298,7 @@ The adapter request/response/event ingest loop works end-to-end inside Runner.
 The adapter dispatch boundary can swap mock/http/external providers without changing Runner core logic.
 The HTTP provider fails closed when remote worker output is invalid.
 The operator can configure dispatch metadata before sending a runtime adapter request.
+Later runtime callbacks can be validated, deduped and applied without re-dispatching the job.
 ```
 
 ## Failure policy
@@ -299,17 +317,17 @@ Preferred order:
 
 ## Current known limitation
 
-The runtime adapter provider layer still uses mock behavior and a hardened HTTP boundary. The Runtime Adapter Panel now makes that boundary configurable, but it still does not execute a real external agent by itself.
+The runtime adapter provider layer still uses mock behavior and a hardened HTTP boundary. The Runtime Adapter Panel can configure that boundary and simulate later callbacks, but it still does not execute a real external agent by itself.
 
 The next integration milestone is:
 
 ```text
 nexus.runtime_adapter_request
-→ runtime callback ingest
+→ job state model
 → real HTTP runtime adapter endpoint
 → real worker execution
 → nexus.runtime_adapter_response
-→ runtime_bridge events
+→ runtime_callback events
 → gate evidence + artifact refs
 → review report + memory/context packets
 ```
