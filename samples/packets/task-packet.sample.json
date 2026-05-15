@@ -6,8 +6,16 @@
   "routing": {
     "macro_pipeline": "software-development",
     "micro_pipelines": ["frontend-web", "backend-api", "database", "qa-automation"],
-    "capability_packs": ["web-saas-mvp-pack"]
+    "capability_packs": ["web-saas-mvp-pack"],
+    "skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "frontend-skill", "memory-skill"]
   },
+  "skills": [
+    { "skill": "superpowered-planning-skill", "required": true },
+    { "skill": "review-skill", "required": true },
+    { "skill": "quality-assurance-skill", "required": true },
+    { "skill": "frontend-skill", "required": true },
+    { "skill": "memory-skill", "required": true }
+  ],
   "team": [
     { "profile": "requirement-extractor", "role": "owner_or_reviewer" },
     { "profile": "system-architect", "role": "owner_or_reviewer" }
