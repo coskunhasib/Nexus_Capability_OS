@@ -2,9 +2,12 @@ import {
   applyRuntimeEventsToRunnerState,
   buildMockRuntimeCallbackPayload,
   buildRuntimeAdapterRequest,
+  createRuntimeJobState,
   ingestRuntimeCallback,
   runMockRuntimeAdapter,
   summarizeRuntimeAdapterResponse,
+  summarizeRuntimeJobState,
+  updateRuntimeJobStateFromCallback,
   validateRuntimeCallbackPayload,
   type EvidenceState,
   type TaskPacket,
@@ -92,6 +95,8 @@ function verifyHappyPath() {
   const response = runMockRuntimeAdapter(request);
   const patch = applyRuntimeEventsToRunnerState(initialStatuses(samplePacket), initialEvidence(samplePacket), response.events);
   const summary = summarizeRuntimeAdapterResponse(response);
+  const job = createRuntimeJobState(request, response, 'mock');
+  const jobSummary = summarizeRuntimeJobState(job);
   const firstStepId = samplePacket.work_order[0].id;
   const firstStepGates = samplePacket.work_order[0].required_gates ?? [];
   const types = eventTypes(response.events);
@@ -102,6 +107,8 @@ function verifyHappyPath() {
     response,
     patch,
     summary,
+    job,
+    jobSummary,
     assertions: [
       assert('request packet_type is correct', request.packet_type === 'nexus.runtime_adapter_request', { packet_type: request.packet_type }),
       assert('request carries handoff packet', request.handoff_packet.packet_type === 'nexus.handoff_packet', { handoff_type: request.handoff_packet.packet_type }),
@@ -118,6 +125,10 @@ function verifyHappyPath() {
       assert('gate evidence is ingested as pass', firstStepGates.every((gate) => patch.evidence[firstStepId]?.[gate]?.status === 'pass'), { evidence: patch.evidence[firstStepId] }),
       assert('artifact refs are produced', Boolean(artifactEvent?.artifact_refs?.length), { artifact_refs: artifactEvent?.artifact_refs ?? [] }),
       assert('summary reflects event count', summary.event_count === response.events.length, { summary_event_count: summary.event_count, response_event_count: response.events.length }),
+      assert('job state carries ids', job.job_id === response.job.job_id && job.request_id === request.request_id, { job_id: job.job_id, request_id: job.request_id }),
+      assert('job state stores initial events', job.events.length === response.events.length, { job_events: job.events.length, response_events: response.events.length }),
+      assert('job state stores artifacts', job.artifacts.length > 0, { artifacts: job.artifacts.length }),
+      assert('job summary reflects counters', jobSummary.event_count === job.events.length && jobSummary.artifact_count === job.artifacts.length, jobSummary),
     ],
   };
 }
@@ -126,18 +137,24 @@ function verifyCallbackIngest() {
   const request = buildRuntimeAdapterRequest(samplePacket, 'mock');
   const response = runMockRuntimeAdapter(request);
   const initialPatch = applyRuntimeEventsToRunnerState(initialStatuses(samplePacket), initialEvidence(samplePacket), response.events);
-  const seenKeys = response.events.map((event) => event.event_id ?? `${event.event_type}:${event.task_packet_id}:${event.step_id}:${event.status}:${event.timestamp}`);
+  const initialJob = createRuntimeJobState(request, response, 'mock');
   const callback = buildMockRuntimeCallbackPayload(request, response, 7);
   const validation = validateRuntimeCallbackPayload(callback);
-  const ingest = ingestRuntimeCallback(initialPatch.statuses, initialPatch.evidence, callback, seenKeys);
+  const ingest = ingestRuntimeCallback(initialPatch.statuses, initialPatch.evidence, callback, initialJob.seen_event_keys);
+  const jobAfterCallback = updateRuntimeJobStateFromCallback(initialJob, callback, ingest.accepted_events, ingest.duplicate_events);
   const duplicateIngest = ingestRuntimeCallback(ingest.statuses, ingest.evidence, callback, ingest.seen_event_keys);
+  const jobAfterReplay = updateRuntimeJobStateFromCallback(jobAfterCallback, callback, duplicateIngest.accepted_events, duplicateIngest.duplicate_events);
   const invalidValidation = validateRuntimeCallbackPayload({ ...callback, packet_type: 'wrong.type' });
+  const jobSummary = summarizeRuntimeJobState(jobAfterReplay);
   const secondStepId = samplePacket.work_order[1].id;
 
   return {
     callback,
     ingest,
     duplicateIngest,
+    jobAfterCallback,
+    jobAfterReplay,
+    jobSummary,
     validation,
     invalidValidation,
     assertions: [
@@ -148,6 +165,10 @@ function verifyCallbackIngest() {
       assert('callback updates runner state', ingest.statuses[secondStepId] === 'done', { status: ingest.statuses[secondStepId] }),
       assert('callback replay is deduped', duplicateIngest.accepted_events.length === 0 && duplicateIngest.duplicate_events.length === 1, { accepted: duplicateIngest.accepted_events.length, duplicates: duplicateIngest.duplicate_events.length }),
       assert('callback seen keys are retained', duplicateIngest.seen_event_keys.length === ingest.seen_event_keys.length, { seen_after_ingest: ingest.seen_event_keys.length, seen_after_replay: duplicateIngest.seen_event_keys.length }),
+      assert('job state records callback received', jobAfterCallback.callbacks.received === 1 && jobAfterCallback.callbacks.accepted_events === 1, { callbacks: jobAfterCallback.callbacks }),
+      assert('job state records duplicate replay', jobAfterReplay.callbacks.received === 2 && jobAfterReplay.callbacks.duplicate_events === 1, { callbacks: jobAfterReplay.callbacks }),
+      assert('job state reaches completed after callback', jobAfterCallback.status === 'completed', { status: jobAfterCallback.status }),
+      assert('job summary carries callback counters', jobSummary.callback_count === 2 && jobSummary.callback_duplicate_events === 1, jobSummary),
     ],
   };
 }
@@ -160,13 +181,16 @@ function verifyRejectPath() {
   };
   const request = buildRuntimeAdapterRequest(emptyPacket, 'mock');
   const response = runMockRuntimeAdapter(request);
+  const job = createRuntimeJobState(request, response, 'mock');
   return {
     request,
     response,
+    job,
     assertions: [
       assert('empty work_order response is rejected', response.accepted === false && response.status === 'rejected', { accepted: response.accepted, status: response.status }),
       assert('empty work_order returns error code', response.error?.code === 'EMPTY_WORK_ORDER', { error: response.error }),
       assert('empty work_order emits no events', response.events.length === 0, { event_count: response.events.length }),
+      assert('rejected response creates rejected job state', job.status === 'rejected' && job.errors.length === 1, { status: job.status, errors: job.errors }),
     ],
   };
 }
@@ -189,6 +213,7 @@ const result = {
     runner_statuses: happyPath.patch.statuses,
     first_step_evidence: happyPath.patch.evidence[samplePacket.work_order[0].id],
   },
+  job_state: happyPath.jobSummary,
   callback_ingest: {
     packet_type: callbackIngest.callback.packet_type,
     event_count: callbackIngest.callback.events.length,
@@ -196,12 +221,14 @@ const result = {
     duplicate_events_on_replay: callbackIngest.duplicateIngest.duplicate_events.length,
     seen_event_keys: callbackIngest.ingest.seen_event_keys.length,
     status_after_callback: callbackIngest.ingest.statuses[samplePacket.work_order[1].id],
+    job_summary_after_replay: callbackIngest.jobSummary,
   },
   reject_path: {
     request_id: rejectPath.request.request_id,
     response_status: rejectPath.response.status,
     error: rejectPath.response.error,
     event_count: rejectPath.response.events.length,
+    job_status: rejectPath.job.status,
   },
 };
 
