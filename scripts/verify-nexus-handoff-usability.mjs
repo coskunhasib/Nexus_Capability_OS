@@ -91,6 +91,8 @@ function buildHandoff(trialId, taskPacket, report, memoryPacket, contextPacket) 
       missing_evidence: missingEvidence,
       next_execution_focus: contextPacket.next_execution_focus ?? [],
       current_blockers: contextPacket.current_blockers ?? [],
+      step_statuses: report.step_statuses ?? {},
+      gate_evidence: report.gate_evidence ?? {},
     },
     callback_contract: {
       expected_events: defaultCallbackEvents,
@@ -112,6 +114,8 @@ function assertHandoff(handoff) {
     { name: 'blockers are carried when not release ready', pass: handoff.execution_context.release_ready || handoff.execution_context.blockers.length > 0 },
     { name: 'missing evidence is carried when not release ready', pass: handoff.execution_context.release_ready || handoff.execution_context.missing_evidence.length > 0 },
     { name: 'next execution focus is present', pass: handoff.execution_context.next_execution_focus.length > 0 },
+    { name: 'step statuses are carried', pass: Object.keys(handoff.execution_context.step_statuses).length > 0 },
+    { name: 'gate evidence map is carried', pass: Object.keys(handoff.execution_context.gate_evidence).length > 0 },
   ];
   return {
     status: assertions.every((item) => item.pass) ? 'pass' : 'fail',
