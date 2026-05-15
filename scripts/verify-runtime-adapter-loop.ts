@@ -1,8 +1,11 @@
 import {
   applyRuntimeEventsToRunnerState,
+  buildMockRuntimeCallbackPayload,
   buildRuntimeAdapterRequest,
+  ingestRuntimeCallback,
   runMockRuntimeAdapter,
   summarizeRuntimeAdapterResponse,
+  validateRuntimeCallbackPayload,
   type EvidenceState,
   type TaskPacket,
   type WorkStatus,
@@ -119,6 +122,36 @@ function verifyHappyPath() {
   };
 }
 
+function verifyCallbackIngest() {
+  const request = buildRuntimeAdapterRequest(samplePacket, 'mock');
+  const response = runMockRuntimeAdapter(request);
+  const initialPatch = applyRuntimeEventsToRunnerState(initialStatuses(samplePacket), initialEvidence(samplePacket), response.events);
+  const seenKeys = response.events.map((event) => event.event_id ?? `${event.event_type}:${event.task_packet_id}:${event.step_id}:${event.status}:${event.timestamp}`);
+  const callback = buildMockRuntimeCallbackPayload(request, response, 7);
+  const validation = validateRuntimeCallbackPayload(callback);
+  const ingest = ingestRuntimeCallback(initialPatch.statuses, initialPatch.evidence, callback, seenKeys);
+  const duplicateIngest = ingestRuntimeCallback(ingest.statuses, ingest.evidence, callback, ingest.seen_event_keys);
+  const invalidValidation = validateRuntimeCallbackPayload({ ...callback, packet_type: 'wrong.type' });
+  const secondStepId = samplePacket.work_order[1].id;
+
+  return {
+    callback,
+    ingest,
+    duplicateIngest,
+    validation,
+    invalidValidation,
+    assertions: [
+      assert('callback payload validates', validation.valid === true, { errors: validation.errors }),
+      assert('invalid callback payload is rejected', invalidValidation.valid === false && invalidValidation.errors.length > 0, { errors: invalidValidation.errors }),
+      assert('callback accepted one new event', ingest.accepted_events.length === 1, { accepted: ingest.accepted_events.length }),
+      assert('callback duplicate count is zero on first ingest', ingest.duplicate_events.length === 0, { duplicates: ingest.duplicate_events.length }),
+      assert('callback updates runner state', ingest.statuses[secondStepId] === 'done', { status: ingest.statuses[secondStepId] }),
+      assert('callback replay is deduped', duplicateIngest.accepted_events.length === 0 && duplicateIngest.duplicate_events.length === 1, { accepted: duplicateIngest.accepted_events.length, duplicates: duplicateIngest.duplicate_events.length }),
+      assert('callback seen keys are retained', duplicateIngest.seen_event_keys.length === ingest.seen_event_keys.length, { seen_after_ingest: ingest.seen_event_keys.length, seen_after_replay: duplicateIngest.seen_event_keys.length }),
+    ],
+  };
+}
+
 function verifyRejectPath() {
   const emptyPacket: TaskPacket = {
     ...samplePacket,
@@ -139,8 +172,9 @@ function verifyRejectPath() {
 }
 
 const happyPath = verifyHappyPath();
+const callbackIngest = verifyCallbackIngest();
 const rejectPath = verifyRejectPath();
-const assertions = [...happyPath.assertions, ...rejectPath.assertions];
+const assertions = [...happyPath.assertions, ...callbackIngest.assertions, ...rejectPath.assertions];
 const status = assertions.every((item) => item.pass) ? 'pass' : 'fail';
 
 const result = {
@@ -154,6 +188,14 @@ const result = {
     event_types: eventTypes(happyPath.response.events),
     runner_statuses: happyPath.patch.statuses,
     first_step_evidence: happyPath.patch.evidence[samplePacket.work_order[0].id],
+  },
+  callback_ingest: {
+    packet_type: callbackIngest.callback.packet_type,
+    event_count: callbackIngest.callback.events.length,
+    accepted_events: callbackIngest.ingest.accepted_events.length,
+    duplicate_events_on_replay: callbackIngest.duplicateIngest.duplicate_events.length,
+    seen_event_keys: callbackIngest.ingest.seen_event_keys.length,
+    status_after_callback: callbackIngest.ingest.statuses[samplePacket.work_order[1].id],
   },
   reject_path: {
     request_id: rejectPath.request.request_id,
