@@ -11,6 +11,7 @@
   "selected_capability": {
     "pack_id": "web-saas-mvp-pack",
     "profiles": ["requirement-extractor", "system-architect", "frontend-web-engineer", "backend-api-engineer"],
+    "skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "frontend-skill", "memory-skill"],
     "micro_pipelines": ["frontend-web", "backend-api", "database", "qa-automation"],
     "gates": ["spec-compliance", "api-contract-fit", "test-evidence", "release-readiness"]
   },
@@ -18,6 +19,13 @@
     "packet_type": "nexus.task_packet",
     "version": "0.1",
     "objective": "Web SaaS MVP",
+    "skills": [
+      { "skill": "superpowered-planning-skill", "required": true },
+      { "skill": "review-skill", "required": true },
+      { "skill": "quality-assurance-skill", "required": true },
+      { "skill": "frontend-skill", "required": true },
+      { "skill": "memory-skill", "required": true }
+    ],
     "work_order": [
       {
         "order": 1,
@@ -34,6 +42,7 @@
   "runtime_requirements": {
     "target_runtime": "nexus-worker",
     "required_tools": ["repo-reader", "file-editor", "test-runner"],
+    "required_skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "frontend-skill", "memory-skill"],
     "artifact_outputs": ["implementation_summary", "test_evidence", "handoff_notes"]
   },
   "callback_contract": {
