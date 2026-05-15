@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/skill.schema.json",
+  "title": "Nexus Skill",
+  "type": "object",
+  "required": ["id", "type", "title", "summary", "status", "source_lineage", "when_to_use", "inputs", "outputs", "procedure", "edge_cases", "quality_gates", "failure_modes", "related_profiles", "compatible_packs", "research_policy", "improvement_notes"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "type": { "const": "skill" },
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["draft", "active", "experimental", "deprecated"] },
+    "source_lineage": {
+      "type": "object",
+      "required": ["origin", "source_type", "notes"],
+      "properties": {
+        "origin": { "type": "string" },
+        "source_type": { "enum": ["internal", "external_reference", "hybrid"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "when_to_use": { "type": "array", "items": { "type": "string" } },
+    "inputs": { "type": "array", "items": { "type": "string" } },
+    "outputs": { "type": "array", "items": { "type": "string" } },
+    "procedure": { "type": "array", "items": { "type": "string" } },
+    "edge_cases": { "type": "array", "items": { "type": "string" } },
+    "quality_gates": { "type": "array", "items": { "type": "string" } },
+    "failure_modes": { "type": "array", "items": { "type": "string" } },
+    "related_profiles": { "type": "array", "items": { "type": "string" } },
+    "related_tools": { "type": "array", "items": { "type": "string" } },
+    "compatible_packs": { "type": "array", "items": { "type": "string" } },
+    "research_policy": {
+      "type": "object",
+      "required": ["requires_current_research", "required_sources", "research_questions"],
+      "properties": {
+        "requires_current_research": { "type": "boolean" },
+        "required_sources": { "type": "array", "items": { "type": "string" } },
+        "research_questions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "improvement_notes": { "type": "array", "items": { "type": "string" } },
+    "eval_hooks": { "type": "array", "items": { "type": "string" } }
+  }
+}
