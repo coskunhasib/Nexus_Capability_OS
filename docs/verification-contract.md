@@ -13,6 +13,7 @@ install determinism
 → Nexus handoff usability
 → Nexus runtime bridge event coverage
 → runtime adapter request/response contract validity
+→ runtime adapter loop behavior
 → snapshot sync
 → tree data sync
 → production build
@@ -44,6 +45,7 @@ npm run trial:web-saas-skill
 npm run trial:all-skills
 npm run verify:handoff
 npm run verify:runtime-bridge
+npm run verify:adapter-loop
 npm run sync:trial-results
 npm run sync:tree
 ```
@@ -72,6 +74,7 @@ npm run audit:registry
 npm run trial:all-skills
 npm run verify:handoff
 npm run verify:runtime-bridge
+npm run verify:adapter-loop
 npm run check:bundle
 ```
 
@@ -87,6 +90,7 @@ npm run check:bundle
 | `trial:all-skills` | All current trial scenarios pass skill-aware assertions. |
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
+| `verify:adapter-loop` | Runtime adapter request, mock response, event stream and Runner ingest behavior work together. |
 | `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
 | `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
 | `check:bundle` | Production bundle stays within defined JS/CSS budgets. |
@@ -103,6 +107,7 @@ Capability OS / Nexus side
 → real or mock worker
 → nexus.runtime_adapter_response
 → runtime_bridge events
+→ Runner state ingest
 ```
 
 Contracts:
@@ -112,6 +117,14 @@ schemas/runtime-adapter-request.schema.json
 schemas/runtime-adapter-response.schema.json
 samples/packets/runtime-adapter-request.sample.json
 samples/packets/runtime-adapter-response.sample.json
+```
+
+Living code path:
+
+```text
+src/runtimeAdapter.ts
+src/RuntimeAdapterPanel.tsx
+scripts/verify-runtime-adapter-loop.ts
 ```
 
 The request carries:
@@ -135,6 +148,18 @@ accepted/status
 job metadata
 initial runtime bridge events
 optional error object
+```
+
+The loop verification guarantees:
+
+```text
+request packet_type is correct
+response accepted path works
+step_started / gate_checked / artifact_created / step_completed are emitted
+Runner status is updated from events
+gate evidence is ingested
+artifact refs are produced
+empty work_order reject path returns EMPTY_WORK_ORDER
 ```
 
 ## Generated artifacts
@@ -182,12 +207,13 @@ Do not raise bundle limits unless the new size is intentional and justified.
 
 ## Trial and Nexus runtime contract
 
-A scenario is considered healthy only when all three layers pass:
+A scenario is considered healthy only when all four layers pass:
 
 ```text
 Trial result: pass
 Nexus handoff usability: pass
 Nexus runtime bridge: pass
+Runtime adapter loop: pass
 ```
 
 This means:
@@ -196,6 +222,7 @@ This means:
 The compiler can route the intent.
 The handoff packet contains enough information for Nexus/runtime to start work.
 The mock runtime can emit expected callback events and payloads.
+The adapter request/response/event ingest loop works end-to-end inside Runner.
 ```
 
 ## Failure policy
@@ -214,13 +241,13 @@ Preferred order:
 
 ## Current known limitation
 
-The runtime bridge is still a mock verification layer. It proves event/payload contract coverage, not real external agent execution.
+The runtime adapter is still a mock verification layer. It proves request/response/event ingest contract behavior, not real external agent execution.
 
 The next integration milestone is:
 
 ```text
 nexus.runtime_adapter_request
-→ real runtime adapter
+→ real runtime adapter provider
 → real worker execution
 → nexus.runtime_adapter_response
 → runtime_bridge events
