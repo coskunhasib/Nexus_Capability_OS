@@ -16,6 +16,7 @@ install determinism
 → runtime adapter loop behavior
 → runtime adapter provider interface behavior
 → HTTP provider hardening behavior
+→ runtime adapter operator config surface
 → snapshot sync
 → tree data sync
 → production build
@@ -159,6 +160,26 @@ healthy / unconfigured / unreachable / failed health check status
 optional auth bearer header
 ```
 
+The Runtime Adapter Panel now exposes operator-controlled config:
+
+```text
+provider selector
+dispatch mode selector
+endpoint_url
+healthcheck_url
+auth token boundary
+timeout_ms
+retry max/delay/statuses
+target_worker
+priority
+callback_url
+idempotency_key
+operator_notes
+health check action
+configured request export
+configured response export
+```
+
 The request carries:
 
 ```text
@@ -170,6 +191,7 @@ priority
 idempotency_key
 callback_url
 timeout_seconds
+operator_notes
 ```
 
 The response carries:
@@ -258,6 +280,7 @@ The mock runtime can emit expected callback events and payloads.
 The adapter request/response/event ingest loop works end-to-end inside Runner.
 The adapter dispatch boundary can swap mock/http/external providers without changing Runner core logic.
 The HTTP provider fails closed when remote worker output is invalid.
+The operator can configure dispatch metadata before sending a runtime adapter request.
 ```
 
 ## Failure policy
@@ -276,13 +299,13 @@ Preferred order:
 
 ## Current known limitation
 
-The runtime adapter provider layer still uses mock behavior and a hardened HTTP boundary. It proves provider dispatch, HTTP failure mapping and response guarding, not real external agent execution.
+The runtime adapter provider layer still uses mock behavior and a hardened HTTP boundary. The Runtime Adapter Panel now makes that boundary configurable, but it still does not execute a real external agent by itself.
 
 The next integration milestone is:
 
 ```text
 nexus.runtime_adapter_request
-→ runtime adapter config panel
+→ runtime callback ingest
 → real HTTP runtime adapter endpoint
 → real worker execution
 → nexus.runtime_adapter_response
