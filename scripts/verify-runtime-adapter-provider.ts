@@ -117,11 +117,10 @@ const fakeHttpProvider: RuntimeAdapterProvider = {
 };
 const fakeHttpResponse = await dispatchRuntimeAdapterRequest(fakeHttpProvider, { ...request, dispatch: { ...request.dispatch, mode: 'real' } });
 
-let capturedHttpMethod = '';
-let capturedHttpBody: unknown = null;
+const httpCalls: Array<{ method: string; body?: unknown }> = [];
 const successfulHttpFetch: typeof fetch = async (_input, init) => {
-  capturedHttpMethod = init?.method ?? '';
-  capturedHttpBody = JSON.parse(String(init?.body ?? '{}'));
+  const bodyText = init?.body ? String(init.body) : '';
+  httpCalls.push({ method: init?.method ?? '', body: bodyText ? JSON.parse(bodyText) : undefined });
   return jsonResponse(acceptedResponse(request.request_id, request.dispatch.target_worker));
 };
 const successfulHttpProvider = createHttpRuntimeAdapterProvider({
@@ -132,6 +131,8 @@ const successfulHttpProvider = createHttpRuntimeAdapterProvider({
 });
 const successfulHttpResponse = await dispatchRuntimeAdapterRequest(successfulHttpProvider, { ...request, dispatch: { ...request.dispatch, mode: 'real' } });
 const successfulHealth = await successfulHttpProvider.healthCheck?.();
+const dispatchCall = httpCalls.find((call) => call.method === 'POST');
+const healthCall = httpCalls.find((call) => call.method === 'GET');
 
 const invalidShapeProvider = createHttpRuntimeAdapterProvider({
   endpoint_url: 'https://runtime.local/dispatch',
@@ -197,8 +198,9 @@ const assertions = [
   httpMissingEndpointCheck,
   assert('fake http provider captures runtime adapter request', Boolean(capturedRequest), { captured: Boolean(capturedRequest) }),
   assert('fake http provider returns accepted response', fakeHttpResponse.accepted === true && fakeHttpResponse.status === 'accepted', { accepted: fakeHttpResponse.accepted, status: fakeHttpResponse.status }),
-  assert('http provider sends POST request', capturedHttpMethod === 'POST', { capturedHttpMethod }),
-  assert('http provider sends runtime adapter request body', (capturedHttpBody as { packet_type?: string })?.packet_type === 'nexus.runtime_adapter_request', { packet_type: (capturedHttpBody as { packet_type?: string })?.packet_type }),
+  assert('http provider sends POST request', dispatchCall?.method === 'POST', { calls: httpCalls.map((call) => call.method) }),
+  assert('http provider sends runtime adapter request body', (dispatchCall?.body as { packet_type?: string })?.packet_type === 'nexus.runtime_adapter_request', { packet_type: (dispatchCall?.body as { packet_type?: string })?.packet_type }),
+  assert('http provider health check sends GET request', healthCall?.method === 'GET', { calls: httpCalls.map((call) => call.method) }),
   assert('http provider accepts valid response shape', successfulHttpResponse.accepted === true && isRuntimeAdapterResponse(successfulHttpResponse), { accepted: successfulHttpResponse.accepted, status: successfulHttpResponse.status }),
   assert('http provider health check can be healthy', successfulHealth?.ok === true && successfulHealth.status === 'healthy', { successfulHealth }),
   invalidShapeCheck,
