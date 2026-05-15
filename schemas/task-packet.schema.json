@@ -15,7 +15,19 @@
       "properties": {
         "macro_pipeline": { "type": "string" },
         "micro_pipelines": { "type": "array", "items": { "type": "string" } },
-        "capability_packs": { "type": "array", "items": { "type": "string" } }
+        "capability_packs": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skill", "required"],
+        "properties": {
+          "skill": { "type": "string", "minLength": 1 },
+          "required": { "type": "boolean" }
+        }
       }
     },
     "team": {
