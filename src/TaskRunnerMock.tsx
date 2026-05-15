@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, ShieldCheck, UploadCloud } from 'lucide-react';
+import { ClipboardList, FileJson, ListChecks, PlayCircle, RotateCcw, ShieldCheck, UploadCloud, Wrench } from 'lucide-react';
 import ReviewReportPanel from './ReviewReportPanel.tsx';
+import { buildSkillDirectives, getPacketSkillIds, skillCoverageWarnings } from './skillRuntime.ts';
 
 type WorkStatus = 'not_started' | 'in_progress' | 'blocked' | 'done';
 type GateStatus = 'not_checked' | 'pass' | 'fail';
@@ -26,8 +27,10 @@ type TaskPacket = {
     macro_pipeline?: string;
     micro_pipelines?: string[];
     capability_packs?: string[];
+    skills?: string[];
   };
-  team?: Array<{ profile: string; role?: string }>;
+  skills?: Array<{ skill: string; required?: boolean }>;
+  team?: Array<{ profile: string; role?: boolean | string }>;
   gates?: Array<{ gate: string; required?: boolean }>;
   policies?: {
     memory?: string;
@@ -53,7 +56,15 @@ const samplePacket: TaskPacket = {
     macro_pipeline: 'software-development',
     micro_pipelines: ['frontend-web', 'backend-api', 'database', 'qa-automation', 'devops-platform'],
     capability_packs: ['web-saas-mvp-pack'],
+    skills: ['superpowered-planning-skill', 'review-skill', 'quality-assurance-skill', 'frontend-skill', 'memory-skill'],
   },
+  skills: [
+    { skill: 'superpowered-planning-skill', required: true },
+    { skill: 'review-skill', required: true },
+    { skill: 'quality-assurance-skill', required: true },
+    { skill: 'frontend-skill', required: true },
+    { skill: 'memory-skill', required: true },
+  ],
   team: [
     { profile: 'requirement-extractor', role: 'owner_or_reviewer' },
     { profile: 'system-architect', role: 'owner_or_reviewer' },
@@ -122,7 +133,7 @@ function gateTone(status: GateStatus) {
   return 'border-yellow-500/20 bg-yellow-950/10 text-yellow-200';
 }
 
-function Pill({ children }: { children: string }) {
+function Pill({ children }: { children: React.ReactNode }) {
   return <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-300">{children}</span>;
 }
 
@@ -172,6 +183,11 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
     setStatuses(initialStatuses(initialPacket));
     setEvidence(initialEvidence(initialPacket));
   }, [initialPacket]);
+
+  const skillIds = useMemo(() => getPacketSkillIds(packet), [packet]);
+  const skillDirectives = useMemo(() => buildSkillDirectives(packet), [packet]);
+  const allGateIds = useMemo(() => Array.from(new Set(packet.work_order.flatMap((step) => step.required_gates ?? []))), [packet]);
+  const skillWarnings = useMemo(() => skillCoverageWarnings(packet, allGateIds), [packet, allGateIds]);
 
   const progress = useMemo(() => {
     const total = packet.work_order.length || 1;
@@ -234,6 +250,11 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
       ...packet,
       work_order: packet.work_order.map((step) => ({ ...step, status: statuses[step.id] ?? 'not_started' })),
       gate_evidence: evidence,
+      skill_runtime: {
+        active_skills: skillIds,
+        directives: skillDirectives,
+        coverage_warnings: skillWarnings,
+      },
       runner_state: {
         total_steps: progress.total,
         done_steps: progress.done,
@@ -263,12 +284,10 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
       <div className="mx-auto flex max-w-[1500px] flex-col gap-6">
         <header className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-2xl">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500 text-black">
-              <PlayCircle size={26} strokeWidth={2.5} />
-            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500 text-black"><PlayCircle size={26} strokeWidth={2.5} /></div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white">Task Packet Runner Mock</h1>
-              <p className="mt-1 text-sm text-neutral-400">Tracks work_order status and gate evidence without running real agents.</p>
+              <p className="mt-1 text-sm text-neutral-400">Tracks work_order status, gate evidence and active skill runtime directives.</p>
             </div>
           </div>
         </header>
@@ -301,9 +320,7 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="mb-2 flex flex-wrap gap-2">
-                    <Pill>{packet.packet_type}</Pill>
-                    <Pill>{packet.version}</Pill>
-                    {packet.source_compiler_rule && <Pill>{packet.source_compiler_rule}</Pill>}
+                    <Pill>{packet.packet_type}</Pill><Pill>{packet.version}</Pill>{packet.source_compiler_rule && <Pill>{packet.source_compiler_rule}</Pill>}
                   </div>
                   <h2 className="text-3xl font-light text-white">{packet.objective}</h2>
                   <p className="mt-3 text-sm text-neutral-500">{packet.routing?.macro_pipeline ?? 'no macro pipeline'}</p>
@@ -322,6 +339,8 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
               </div>
             </section>
 
+            {skillIds.length > 0 && <section className="rounded-2xl border border-yellow-500/20 bg-yellow-950/10 p-6"><div className="mb-4 flex items-center gap-2 text-sm font-semibold text-yellow-100"><Wrench size={18} />Skill runtime directives</div><div className="mb-4 flex flex-wrap gap-2">{skillIds.map((skill) => <Pill key={skill}>{skill}</Pill>)}</div><div className="grid gap-3 lg:grid-cols-2">{skillDirectives.map((directive) => <div key={directive.skill} className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="mb-2 text-sm font-semibold text-white">{directive.skill}</div><p className="text-sm text-neutral-300">{directive.effect}</p><p className="mt-2 text-xs text-yellow-100">Runner hint: {directive.runner_hint}</p></div>)}</div>{skillWarnings.length > 0 && <div className="mt-4 rounded-xl border border-red-500/20 bg-red-950/10 p-4"><div className="mb-2 text-xs font-semibold text-red-200">Skill coverage warnings</div><div className="space-y-1 text-sm text-red-100">{skillWarnings.map((warning) => <div key={warning}>{warning}</div>)}</div></div>}</section>}
+
             <ReviewReportPanel packet={packet} statuses={statuses} evidence={evidence} />
 
             <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
@@ -331,7 +350,6 @@ export default function TaskRunnerMock({ initialPacket }: { initialPacket?: unkn
                   const status = statuses[step.id] ?? step.status ?? 'not_started';
                   const gateIds = step.required_gates ?? [];
                   return <div key={step.id} className="rounded-xl border border-white/10 bg-[#0e0e0e] p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><div className="mb-2 flex flex-wrap gap-2"><Pill>{String(step.order).padStart(2, '0')}</Pill>{step.related && <Pill>{step.related}</Pill>}<span className={`rounded-md border px-2 py-1 text-[11px] ${statusTone(status)}`}>{status}</span></div><h3 className="text-base font-semibold text-white">{step.title}</h3><p className="mt-2 text-sm leading-relaxed text-neutral-400">{step.description}</p><div className="mt-3 text-xs text-neutral-500">Owner: <span className="text-neutral-300">{step.owner}</span></div></div><select value={status} onChange={(event) => updateStatus(step.id, event.target.value as WorkStatus)} className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs text-neutral-300 outline-none">{statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></div><div className="mt-4 grid gap-4 md:grid-cols-2"><div><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">expected outputs</div><div className="flex flex-wrap gap-2">{(step.expected_outputs ?? []).map((item) => <Pill key={item}>{item}</Pill>)}</div></div><div><div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">required gates</div><div className="flex flex-wrap gap-2">{gateIds.map((item) => <Pill key={item}>{item}</Pill>)}</div></div></div>
-
                     {gateIds.length > 0 && <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4"><div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-400"><ShieldCheck size={15} className="text-cyan-400" />Gate evidence</div><div className="grid gap-3">{gateIds.map((gateId) => {
                       const item = evidence[step.id]?.[gateId] ?? { status: 'not_checked', evidence_note: '', blocker_reason: '' };
                       return <div key={gateId} className="rounded-xl border border-white/10 bg-[#050505] p-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div className="flex flex-wrap items-center gap-2"><Pill>{gateId}</Pill><span className={`rounded-md border px-2 py-1 text-[11px] ${gateTone(item.status)}`}>{item.status}</span></div><select value={item.status} onChange={(event) => updateGateEvidence(step.id, gateId, { status: event.target.value as GateStatus })} className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs text-neutral-300 outline-none">{gateStatusOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></div><div className="mt-3 grid gap-3 md:grid-cols-2"><textarea value={item.evidence_note} onChange={(event) => updateGateEvidence(step.id, gateId, { evidence_note: event.target.value })} placeholder="Evidence note / test result / review note" className="min-h-[76px] rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-neutral-300 outline-none focus:border-cyan-500/40" /><textarea value={item.blocker_reason} onChange={(event) => updateGateEvidence(step.id, gateId, { blocker_reason: event.target.value })} placeholder="Blocker reason if failed or blocked" className="min-h-[76px] rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-neutral-300 outline-none focus:border-red-500/40" /></div></div>;
