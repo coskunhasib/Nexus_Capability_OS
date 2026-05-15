@@ -23,7 +23,12 @@
         "Need trial dataset for measuring gap-catching quality.",
         "Need automated planned-gate vs actual-evidence comparison."
       ],
-      "sources": ["turn147870news5", "turn147870academia1", "turn147870academia3", "turn147870news0"]
+      "sources": [
+        "Claude Skills coverage: folder-based instructions/scripts/resources",
+        "MCP security: tool poisoning, shadowing, rug-pull and descriptor manipulation research",
+        "MCP Security Bench: planning, invocation and response-handling attack taxonomy",
+        "LLM delegation reliability reporting"
+      ]
     },
     {
       "skill_id": "quality-assurance-skill",
@@ -47,7 +52,10 @@
         "No automatic artifact verifier yet.",
         "Evidence scoring remains heuristic until trials calibrate it."
       ],
-      "sources": ["turn147870news0", "turn147870news7"]
+      "sources": [
+        "LLM delegation reliability reporting",
+        "Frontend/UI state coverage and accessibility testing practice"
+      ]
     },
     {
       "skill_id": "execution-acceleration-skill",
@@ -71,7 +79,10 @@
         "Could still push too fast before discovery.",
         "Needs Runner behavior that turns blockers into suggested next actions."
       ],
-      "sources": ["turn147870news0", "turn147870news8"]
+      "sources": [
+        "LLM delegation reliability reporting",
+        "Lean delivery / minimal useful increment practice"
+      ]
     },
     {
       "skill_id": "review-skill",
@@ -95,7 +106,10 @@
         "Needs automated claim extraction.",
         "Needs calibration for severity thresholds."
       ],
-      "sources": ["turn147870news0", "turn147870academia4"]
+      "sources": [
+        "LLM delegation reliability reporting",
+        "LLM evaluation and software review practice"
+      ]
     },
     {
       "skill_id": "ultrareview-skill",
@@ -121,7 +135,12 @@
         "Needs automated descriptor scanner.",
         "Needs severity model for security vs delivery tradeoffs."
       ],
-      "sources": ["turn147870academia1", "turn147870academia3", "turn147870search6", "turn147870news7"]
+      "sources": [
+        "MCP security: tool poisoning, shadowing, rug-pull and descriptor manipulation research",
+        "MCPTox benchmark: tool poisoning against real MCP servers",
+        "MCP Security Bench: planning, invocation and response-handling attack taxonomy",
+        "Claude Skills / executable skill safety coverage"
+      ]
     },
     {
       "skill_id": "context-mode-skill",
@@ -145,7 +164,10 @@
         "No automated similarity-conflict detector yet.",
         "Needs benchmark for critical-constraint preservation."
       ],
-      "sources": ["turn147870academia2", "turn147870academia4"]
+      "sources": [
+        "Agent memory survey / write-manage-read memory loop literature",
+        "Experience-following memory reliability research"
+      ]
     },
     {
       "skill_id": "frontend-skill",
@@ -169,7 +191,10 @@
         "Needs automated accessibility checker integration.",
         "Needs browser-state snapshot evidence in Runner."
       ],
-      "sources": ["turn147870news7"]
+      "sources": [
+        "WCAG/accessibility and frontend testing practice",
+        "Agent-generated UI state coverage risk"
+      ]
     },
     {
       "skill_id": "memory-skill",
@@ -194,7 +219,10 @@
         "No automated deduplication yet.",
         "Needs policy for sensitive personal/project data classes."
       ],
-      "sources": ["turn147870academia2", "turn147870academia4"]
+      "sources": [
+        "Agent memory survey / write-manage-read memory loop literature",
+        "Experience-following memory reliability research"
+      ]
     }
   ]
 }
