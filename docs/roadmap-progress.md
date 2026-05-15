@@ -10,6 +10,15 @@ After each completed PR, update this file:
 - update Current state
 - update Next recommended item
 - reorder Remaining roadmap if needed
+- report progress as X/15 completed
+```
+
+## Roadmap progress
+
+```text
+1/15 completed
+Current item: 2/15 — Mock + HTTP provider hardening
+Next item: 3/15 — Runtime Adapter Config Panel
 ```
 
 ## Current state
@@ -21,6 +30,9 @@ Runtime bridge contract: implemented
 Runtime adapter request/response contract: implemented
 Mock adapter-driven Runner loop: implemented
 Runtime adapter loop CI verification: implemented
+Runtime adapter provider interface: implemented
+Mock provider: implemented
+HTTP provider skeleton: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -53,44 +65,35 @@ Real external worker execution: not implemented yet
 ✅ Runtime Adapter Panel in Runner
 ✅ Adapter request → response → events → Runner state ingest
 ✅ Runtime adapter loop verification
+✅ 1/15 — Adapter Provider Interface
 ```
 
 ## Next recommended item
 
 ```text
-PR #30 — Add runtime adapter provider interface
+PR #31 — Mock + HTTP provider hardening
 ```
 
 Why this is next:
 
 ```text
-The adapter loop works, but it is still directly coupled to runMockRuntimeAdapter().
-Before adding HTTP/OpenHands/Codex/Claude Code adapters, the adapter boundary needs a provider interface.
+The provider interface now exists and Runner dispatches through it.
+The next step is to make the HTTP provider more useful without jumping straight into OpenHands/Codex.
 ```
 
-Target shape:
-
-```ts
-export type RuntimeAdapterProvider = {
-  id: string;
-  label: string;
-  mode: 'mock' | 'http' | 'external';
-  dispatch(request: RuntimeAdapterRequest): Promise<RuntimeAdapterResponse>;
-};
-```
-
-Minimum providers:
+Target:
 
 ```text
-mock provider
-http provider skeleton
+HTTP endpoint config object
+request/response schema guard at provider boundary
+clear HTTP error mapping
+timeout/retry policy baseline
+provider health check skeleton
 ```
 
 Expected files:
 
 ```text
-src/runtimeAdapterProvider.ts
-src/runtimeAdapters/mockRuntimeAdapterProvider.ts
 src/runtimeAdapters/httpRuntimeAdapterProvider.ts
 scripts/verify-runtime-adapter-provider.ts
 docs/verification-contract.md update
@@ -106,35 +109,26 @@ verify:adapter-provider
 
 ### 1. Adapter Provider Interface
 
-Status: next
+Status: done
 
 ```text
 RuntimeAdapterProvider interface
 mock provider
 http provider skeleton
 provider verification script
+Runner dispatch through selected provider
 ```
 
-### 2. HTTP Runtime Adapter
+### 2. Mock + HTTP provider hardening
 
-Status: pending
-
-```text
-runtime_adapter_request
-→ HTTP POST
-→ runtime_adapter_response
-→ runtime_bridge events
-→ Runner ingest
-```
-
-Needed:
+Status: next
 
 ```text
-endpoint_url
-auth mode
-timeout
-retry policy
-provider id
+HTTP endpoint config
+request/response validation at provider boundary
+clear error mapping
+basic timeout/retry policy
+provider health check skeleton
 ```
 
 ### 3. Runtime Adapter Config Panel
@@ -337,122 +331,25 @@ same RuntimeAdapterProvider interface
 different provider implementation
 ```
 
-### 16. Local Agent Worker Adapter
-
-Status: pending
+### Later backlog
 
 ```text
-local LLM
-shell worker
-Python worker
-CAD/script worker
-browser worker
-file worker
-```
-
-### 17. Security / Permissions Model
-
-Status: pending
-
-```text
-read files
-write files
-run shell
-network access
-repo access
-secrets access
-artifact upload
-callback permission
-```
-
-### 18. Error / Retry / Timeout Policy
-
-Status: pending
-
-```text
-timeout
-worker unavailable
-invalid response
-schema mismatch
-partial event stream
-duplicate callback
-stale job
-retryable error
-non-retryable error
-```
-
-### 19. Idempotency + Duplicate Event Handling
-
-Status: pending
-
-```text
-event_id
-idempotency_key
-dedupe policy
-last_processed_event
-event ordering
-```
-
-### 20. Observability / Eval Dashboard
-
-Status: pending
-
-```text
-success rate
-failed gates
-missing evidence trend
-adapter latency
-worker failure rate
-artifact count
-trial pass/fail history
-```
-
-### 21. Workspace / Team Layer
-
-Status: later
-
-```text
-workspace
-project
-team members
-roles
-permissions
-runs
-jobs
-artifacts
-history
-```
-
-### 22. Marketplace / Capability Pack Catalog
-
-Status: later
-
-```text
-pack select
-provider select
-trial run
-result compare
-```
-
-### 23. Commercial Packaging
-
-Status: later
-
-```text
-local plan
-cloud plan
-team plan
-enterprise/self-hosted
-adapter marketplace
-capability pack marketplace
+Local Agent Worker Adapter
+Security / Permissions Model
+Error / Retry / Timeout Policy expansion
+Idempotency + Duplicate Event Handling
+Observability / Eval Dashboard
+Workspace / Team Layer
+Marketplace / Capability Pack Catalog
+Commercial Packaging
 ```
 
 ## Current priority stack
 
 ```text
-1. Adapter Provider Interface
-2. Mock + HTTP provider
-3. Provider verification
+1. Adapter Provider Interface — done
+2. Mock + HTTP provider hardening — next
+3. Runtime Adapter Config Panel
 4. Runtime callback ingest
 5. Job state model
 6. Event timeline UI
