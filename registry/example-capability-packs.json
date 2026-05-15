@@ -19,7 +19,7 @@
         "release-agent",
         "memory-curator"
       ],
-      "skills": ["planning-gate", "spec-compliance-review", "code-quality-review", "verification-loop", "memory-curator"],
+      "skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "frontend-skill", "memory-skill"],
       "tools": ["test-runner", "browser-preview", "api-client", "migration-checker"],
       "quality_gates": ["spec-compliance", "api-contract-fit", "test-evidence", "security-review", "release-readiness"],
       "memory_policy": "project-decision-memory",
@@ -43,7 +43,7 @@
         "documentation-agent",
         "memory-curator"
       ],
-      "skills": ["planning-gate", "spec-compliance-review", "verification-loop", "fmea", "memory-curator"],
+      "skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "ultrareview-skill", "memory-skill"],
       "tools": ["pin-map-checker", "test-log-parser", "bom-helper"],
       "quality_gates": ["electrical-safety", "timing", "isolation", "bench-evidence", "release-readiness"],
       "memory_policy": "engineering-decision-memory",
@@ -67,7 +67,7 @@
         "prompt-safety-auditor",
         "observability-engineer"
       ],
-      "skills": ["context-budget-manager", "memory-curator", "spec-compliance-review", "tool-trust-audit", "eval-design"],
+      "skills": ["context-mode-skill", "memory-skill", "review-skill", "ultrareview-skill", "quality-assurance-skill"],
       "tools": ["eval-runner", "context-stats", "tool-schema-linter", "memory-search"],
       "quality_gates": ["tool-trust", "memory-policy-fit", "context-budget", "eval-coverage", "prompt-safety"],
       "memory_policy": "agent-memory-policy",
