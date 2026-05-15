@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-4/15 completed
-Current item: 5/15 — Job State Model
-Next item: 6/15 — Event Store + Replay
+5/15 completed
+Current item: 6/15 — Event Store + Replay
+Next item: 7/15 — Runtime Timeline UI
 ```
 
 ## Current state
@@ -35,6 +35,7 @@ Mock provider: implemented
 HTTP provider: hardened boundary implemented
 Runtime adapter config panel: implemented
 Runtime callback ingest: implemented
+Runtime job state model: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -71,42 +72,38 @@ Real external worker execution: not implemented yet
 ✅ 2/15 — Mock + HTTP provider hardening
 ✅ 3/15 — Runtime Adapter Config Panel
 ✅ 4/15 — Runtime Callback Ingest
+✅ 5/15 — Job State Model
 ```
 
 ## Next recommended item
 
 ```text
-PR #34 — Job State Model
+PR #35 — Event Store + Replay
 ```
 
 Why this is next:
 
 ```text
-Initial response events and later callbacks now update Runner state.
-The next step is to represent the runtime job itself instead of only patching statuses/evidence.
+Runtime job state now exists in the core runtime adapter layer.
+The next step is to store ordered runtime events separately and replay them deterministically.
 ```
 
 Target:
 
 ```text
-job_id
-request_id
-provider_id
-target_worker
-status
-started_at
-last_event_at
-events[]
-artifacts[]
-errors[]
-callback counters
+event store entries
+source: adapter_response / callback
+received_at
+raw event log
+ordered replay
+duplicate tracking
+replay summary
 ```
 
 Expected files:
 
 ```text
-src/runtimeAdapter.ts
-src/RuntimeAdapterPanel.tsx
+src/runtimeEventStore.ts
 scripts/verify-runtime-adapter-loop.ts
 docs/verification-contract.md update
 ```
@@ -177,9 +174,7 @@ replay duplicate detection
 
 ### 5. Job State Model
 
-Status: next
-
-Needed model:
+Status: done
 
 ```text
 job_id
@@ -192,11 +187,20 @@ last_event_at
 events[]
 artifacts[]
 errors[]
+callback counters
+seen_event_keys[]
+```
+
+Note:
+
+```text
+Core job state model is implemented and CI-covered.
+Panel-level job state display/export is deferred to the smaller-file event/timeline UI work.
 ```
 
 ### 6. Event Store + Replay
 
-Status: pending
+Status: next
 
 ```text
 events[]
@@ -359,8 +363,8 @@ Commercial Packaging
 2. Mock + HTTP provider hardening — done
 3. Runtime Adapter Config Panel — done
 4. Runtime callback ingest — done
-5. Job state model — next
-6. Event store + replay
+5. Job state model — done
+6. Event store + replay — next
 7. Event timeline UI
 8. Artifact registry
 9. Adapter trials
