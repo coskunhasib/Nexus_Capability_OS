@@ -157,6 +157,47 @@ export type RuntimeCallbackIngestResult = RunnerStatePatch & {
   seen_event_keys: string[];
 };
 
+export type RuntimeJobStatus = 'accepted' | 'rejected' | 'queued' | 'running' | 'completed' | 'blocked' | 'failed';
+
+export type RuntimeJobArtifactRef = {
+  artifact_id: string;
+  kind: string;
+  ref: string;
+  summary: string;
+  step_id: string;
+  event_id?: string;
+  created_at: string;
+};
+
+export type RuntimeJobError = {
+  code: string;
+  message: string;
+  retryable: boolean;
+  source: 'adapter_response' | 'runtime_event' | 'callback_validation';
+  event_id?: string;
+  timestamp: string;
+};
+
+export type RuntimeJobState = {
+  job_id: string;
+  request_id: string;
+  provider_id: string;
+  target_worker: string;
+  status: RuntimeJobStatus;
+  started_at: string;
+  last_event_at: string;
+  events: RuntimeBridgeEvent[];
+  artifacts: RuntimeJobArtifactRef[];
+  errors: RuntimeJobError[];
+  callbacks: {
+    received: number;
+    accepted_events: number;
+    duplicate_events: number;
+    last_received_at?: string;
+  };
+  seen_event_keys: string[];
+};
+
 export type RunnerStatePatch = {
   statuses: Record<string, WorkStatus>;
   evidence: EvidenceState;
@@ -501,6 +542,141 @@ export function ingestRuntimeCallback(
     accepted_events: acceptedEvents,
     duplicate_events: duplicateEvents,
     seen_event_keys: Array.from(seen),
+  };
+}
+
+function lastTimestamp(events: RuntimeBridgeEvent[], fallback: string) {
+  return events.reduce((latest, event) => (event.timestamp > latest ? event.timestamp : latest), fallback);
+}
+
+function uniqueEvents(events: RuntimeBridgeEvent[]) {
+  const seen = new Set<string>();
+  const output: RuntimeBridgeEvent[] = [];
+  for (const event of events) {
+    const key = runtimeEventKey(event);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(event);
+  }
+  return output;
+}
+
+function collectArtifacts(events: RuntimeBridgeEvent[]) {
+  const artifacts = new Map<string, RuntimeJobArtifactRef>();
+  for (const event of events) {
+    for (const artifact of event.artifact_refs ?? []) {
+      const artifactId = `${event.step_id}:${artifact.kind}:${artifact.ref}`;
+      if (artifacts.has(artifactId)) continue;
+      artifacts.set(artifactId, {
+        artifact_id: artifactId,
+        kind: artifact.kind,
+        ref: artifact.ref,
+        summary: artifact.summary,
+        step_id: event.step_id,
+        event_id: event.event_id,
+        created_at: event.timestamp,
+      });
+    }
+  }
+  return Array.from(artifacts.values());
+}
+
+function collectRuntimeErrors(events: RuntimeBridgeEvent[]) {
+  return events
+    .filter((event) => event.event_type === 'runtime_failed')
+    .map((event) => ({
+      code: 'RUNTIME_FAILED',
+      message: event.runtime_notes ?? event.blocker_reason ?? `Runtime failed at step ${event.step_id}.`,
+      retryable: false,
+      source: 'runtime_event' as const,
+      event_id: event.event_id,
+      timestamp: event.timestamp,
+    }));
+}
+
+function adapterError(response: RuntimeAdapterResponse): RuntimeJobError[] {
+  if (!response.error) return [];
+  return [{
+    code: response.error.code,
+    message: response.error.message,
+    retryable: response.error.retryable,
+    source: 'adapter_response',
+    timestamp: response.job.started_at,
+  }];
+}
+
+function deriveJobStatus(responseStatus: RuntimeAdapterResponse['status'] | undefined, accepted: boolean, events: RuntimeBridgeEvent[]): RuntimeJobStatus {
+  if (!accepted) return 'rejected';
+  if (responseStatus === 'failed' || events.some((event) => event.event_type === 'runtime_failed')) return 'failed';
+  if (events.some((event) => event.event_type === 'step_blocked' || event.status === 'blocked')) return 'blocked';
+  const latest = events.at(-1);
+  if (latest?.event_type === 'step_completed' && latest.status === 'done') return 'completed';
+  if (events.length > 0 || responseStatus === 'running' || responseStatus === 'accepted') return 'running';
+  if (responseStatus === 'queued') return 'queued';
+  return 'accepted';
+}
+
+export function createRuntimeJobState(request: RuntimeAdapterRequest, response: RuntimeAdapterResponse, providerId: string): RuntimeJobState {
+  const events = uniqueEvents(response.events);
+  const seenEventKeys = events.map(runtimeEventKey);
+  return {
+    job_id: response.job.job_id,
+    request_id: request.request_id,
+    provider_id: providerId,
+    target_worker: response.job.target_worker,
+    status: deriveJobStatus(response.status, response.accepted, events),
+    started_at: response.job.started_at,
+    last_event_at: lastTimestamp(events, response.job.started_at),
+    events,
+    artifacts: collectArtifacts(events),
+    errors: [...adapterError(response), ...collectRuntimeErrors(events)],
+    callbacks: {
+      received: 0,
+      accepted_events: 0,
+      duplicate_events: 0,
+    },
+    seen_event_keys: seenEventKeys,
+  };
+}
+
+export function updateRuntimeJobStateFromCallback(
+  job: RuntimeJobState,
+  callback: RuntimeCallbackPayload,
+  acceptedEvents: RuntimeBridgeEvent[],
+  duplicateEvents: RuntimeBridgeEvent[],
+): RuntimeJobState {
+  const events = uniqueEvents([...job.events, ...acceptedEvents]);
+  return {
+    ...job,
+    status: deriveJobStatus(undefined, true, events),
+    last_event_at: lastTimestamp(acceptedEvents, job.last_event_at),
+    events,
+    artifacts: collectArtifacts(events),
+    errors: [...job.errors, ...collectRuntimeErrors(acceptedEvents)],
+    callbacks: {
+      received: job.callbacks.received + 1,
+      accepted_events: job.callbacks.accepted_events + acceptedEvents.length,
+      duplicate_events: job.callbacks.duplicate_events + duplicateEvents.length,
+      last_received_at: callback.received_at,
+    },
+    seen_event_keys: events.map(runtimeEventKey),
+  };
+}
+
+export function summarizeRuntimeJobState(job: RuntimeJobState) {
+  return {
+    job_id: job.job_id,
+    request_id: job.request_id,
+    provider_id: job.provider_id,
+    target_worker: job.target_worker,
+    status: job.status,
+    event_count: job.events.length,
+    artifact_count: job.artifacts.length,
+    error_count: job.errors.length,
+    callback_count: job.callbacks.received,
+    callback_accepted_events: job.callbacks.accepted_events,
+    callback_duplicate_events: job.callbacks.duplicate_events,
+    last_event_at: job.last_event_at,
   };
 }
 
