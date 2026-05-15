@@ -223,6 +223,7 @@ const assertions = [
 
 const summary = {
   trial_id: 'web-saas-mvp.skill-aware-run',
+  scenario_id: 'web-saas-mvp',
   status: assertions.every((item) => item.pass) ? 'pass' : 'fail',
   assertions,
   report_summary: {
@@ -242,6 +243,8 @@ writeJson('generated/trial-runs/web-saas-mvp/review-report.json', report);
 writeJson('generated/trial-runs/web-saas-mvp/memory-update-packet.json', memoryPacket);
 writeJson('generated/trial-runs/web-saas-mvp/context-update-packet.json', contextPacket);
 writeJson('generated/trial-runs/web-saas-mvp/summary.json', summary);
+ensureDir('samples/trial-results/web-saas-mvp');
+writeJson('samples/trial-results/web-saas-mvp/summary.json', summary);
 
 console.log(JSON.stringify(summary, null, 2));
 
