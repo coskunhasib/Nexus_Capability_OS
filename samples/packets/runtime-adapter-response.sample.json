@@ -1,0 +1,25 @@
+{
+  "packet_type": "nexus.runtime_adapter_response",
+  "version": "0.1",
+  "request_id": "runtime-adapter-request-web-saas-001",
+  "accepted": true,
+  "status": "accepted",
+  "job": {
+    "job_id": "nexus-job-web-saas-001",
+    "target_worker": "nexus-worker/mock-web-saas",
+    "started_at": "2026-05-15T00:00:00.000Z",
+    "estimated_next_callback": "2026-05-15T00:00:05.000Z"
+  },
+  "events": [
+    {
+      "event_type": "step_started",
+      "version": "0.1",
+      "task_packet_id": "web-saas-mvp.skill-aware-run",
+      "step_id": "01-intake",
+      "status": "in_progress",
+      "timestamp": "2026-05-15T00:00:00.000Z",
+      "owner": "requirement-extractor",
+      "runtime_notes": "Runtime accepted the handoff and started the first step."
+    }
+  ]
+}
