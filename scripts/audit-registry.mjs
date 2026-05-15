@@ -28,6 +28,7 @@ const gates = [
   ...readList('gates.json', 'gates'),
   ...readListIfExists('gates-extra.json', 'gates'),
 ];
+const skills = readListIfExists('skills.json', 'skills');
 const packs = [
   ...readList('example-capability-packs.json', 'capability_packs'),
   ...readList('capability-packs-extra.json', 'capability_packs'),
@@ -38,6 +39,7 @@ const macroIds = ids(macro);
 const microIds = ids(micro);
 const profileIds = ids(profiles);
 const gateIds = ids(gates);
+const skillIds = ids(skills);
 const packIds = ids(packs, 'pack_id');
 const missing = [];
 const duplicates = [];
@@ -56,7 +58,14 @@ checkDuplicates(macro, 'id', 'macro');
 checkDuplicates(micro, 'id', 'micro');
 checkDuplicates(profiles, 'id', 'profile');
 checkDuplicates(gates, 'id', 'gate');
+checkDuplicates(skills, 'id', 'skill');
 checkDuplicates(packs, 'pack_id', 'pack');
+
+for (const s of skills) {
+  for (const id of s.quality_gates ?? []) if (!gateIds.has(id)) addMissing(missing, 'gate', id, `skill:${s.id}`);
+  for (const id of s.related_profiles ?? []) if (!profileIds.has(id)) addMissing(missing, 'profile', id, `skill:${s.id}`);
+  for (const id of s.compatible_packs ?? []) if (!packIds.has(id)) addMissing(missing, 'pack', id, `skill:${s.id}`);
+}
 
 for (const m of macro) {
   for (const id of m.micro_pipelines ?? []) if (!microIds.has(id)) addMissing(missing, 'micro', id, `macro:${m.id}`);
@@ -78,6 +87,7 @@ for (const p of packs) {
   for (const id of p.micro_pipelines ?? []) if (!microIds.has(id)) addMissing(missing, 'micro', id, `pack:${p.pack_id}`);
   for (const id of p.profiles ?? []) if (!profileIds.has(id)) addMissing(missing, 'profile', id, `pack:${p.pack_id}`);
   for (const id of p.quality_gates ?? []) if (!gateIds.has(id)) addMissing(missing, 'gate', id, `pack:${p.pack_id}`);
+  for (const id of p.skills ?? []) if (skillIds.size > 0 && !skillIds.has(id)) addMissing(missing, 'skill', id, `pack:${p.pack_id}`);
 }
 
 for (const r of rules) {
@@ -95,6 +105,7 @@ const summary = {
     micro: micro.length,
     profiles: profiles.length,
     gates: gates.length,
+    skills: skills.length,
     packs: packs.length,
     rules: rules.length,
   },
