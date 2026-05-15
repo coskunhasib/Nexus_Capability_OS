@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-3/15 completed
-Current item: 4/15 — Runtime Callback Ingest
-Next item: 5/15 — Job State Model
+4/15 completed
+Current item: 5/15 — Job State Model
+Next item: 6/15 — Event Store + Replay
 ```
 
 ## Current state
@@ -34,6 +34,7 @@ Runtime adapter provider interface: implemented
 Mock provider: implemented
 HTTP provider: hardened boundary implemented
 Runtime adapter config panel: implemented
+Runtime callback ingest: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -69,29 +70,36 @@ Real external worker execution: not implemented yet
 ✅ 1/15 — Adapter Provider Interface
 ✅ 2/15 — Mock + HTTP provider hardening
 ✅ 3/15 — Runtime Adapter Config Panel
+✅ 4/15 — Runtime Callback Ingest
 ```
 
 ## Next recommended item
 
 ```text
-PR #33 — Runtime Callback Ingest
+PR #34 — Job State Model
 ```
 
 Why this is next:
 
 ```text
-The operator can now configure the adapter request from the UI.
-The next step is to stop assuming every runtime event arrives inside the initial response.
+Initial response events and later callbacks now update Runner state.
+The next step is to represent the runtime job itself instead of only patching statuses/evidence.
 ```
 
 Target:
 
 ```text
-callback ingest function
-callback event validation boundary
-append-later runtime event path
-idempotent event application
-manual callback simulation action
+job_id
+request_id
+provider_id
+target_worker
+status
+started_at
+last_event_at
+events[]
+artifacts[]
+errors[]
+callback counters
 ```
 
 Expected files:
@@ -100,7 +108,6 @@ Expected files:
 src/runtimeAdapter.ts
 src/RuntimeAdapterPanel.tsx
 scripts/verify-runtime-adapter-loop.ts
-scripts/verify-runtime-adapter-provider.ts
 docs/verification-contract.md update
 ```
 
@@ -157,29 +164,20 @@ request/response export after configured dispatch
 
 ### 4. Runtime Callback Ingest
 
-Status: next
-
-Current behavior:
+Status: done
 
 ```text
-response contains events directly
-Runner ingests those events immediately
-```
-
-Target behavior:
-
-```text
-dispatch
-→ accepted
-→ later callback: step_started
-→ later callback: gate_checked
-→ later callback: artifact_created
-→ later callback: step_completed
+nexus.runtime_callback payload
+callback validation boundary
+append-later runtime event path
+idempotent event application
+manual callback simulation action
+replay duplicate detection
 ```
 
 ### 5. Job State Model
 
-Status: pending
+Status: next
 
 Needed model:
 
@@ -360,16 +358,16 @@ Commercial Packaging
 1. Adapter Provider Interface — done
 2. Mock + HTTP provider hardening — done
 3. Runtime Adapter Config Panel — done
-4. Runtime callback ingest — next
-5. Job state model
-6. Event timeline UI
-7. Artifact registry
-8. Adapter trials
-9. Local HTTP worker skeleton
-10. Real worker vertical slice
-11. OpenHands adapter
-12. Codex / Claude Code adapter
-13. Security / permissions
-14. Observability
-15. Workspace / marketplace / commercial layers
+4. Runtime callback ingest — done
+5. Job state model — next
+6. Event store + replay
+7. Event timeline UI
+8. Artifact registry
+9. Adapter trials
+10. Local HTTP worker skeleton
+11. Real worker vertical slice
+12. OpenHands adapter
+13. Codex / Claude Code adapter
+14. Security / permissions
+15. Observability / workspace / marketplace / commercial layers
 ```
