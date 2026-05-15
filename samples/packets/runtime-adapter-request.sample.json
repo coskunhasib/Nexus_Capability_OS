@@ -1,0 +1,50 @@
+{
+  "packet_type": "nexus.runtime_adapter_request",
+  "version": "0.1",
+  "request_id": "runtime-adapter-request-web-saas-001",
+  "handoff_packet": {
+    "packet_type": "nexus.handoff_packet",
+    "version": "0.1",
+    "objective": "Build and validate a web SaaS MVP task packet through Nexus runtime.",
+    "selected_capability": {
+      "pack_id": "web-saas-mvp-pack",
+      "profiles": ["requirement-extractor", "frontend-web-engineer", "backend-api-engineer", "qa-automation-engineer"],
+      "skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill", "frontend-skill", "memory-skill"],
+      "micro_pipelines": ["frontend-web", "backend-api", "qa-automation"],
+      "gates": ["spec-compliance", "ui-state-coverage", "test-evidence", "memory-policy-fit"]
+    },
+    "task_packet": {
+      "packet_type": "nexus.task_packet",
+      "version": "0.1",
+      "objective": "Build and validate a web SaaS MVP task packet through Nexus runtime.",
+      "work_order": [
+        {
+          "id": "01-intake",
+          "title": "Intake / Requirement Lock",
+          "owner": "requirement-extractor",
+          "required_gates": ["clarity", "scope-fit"],
+          "expected_outputs": ["requirements", "acceptance_criteria"]
+        }
+      ]
+    },
+    "runtime_requirements": {
+      "target_runtime": "nexus-worker",
+      "required_tools": ["runtime-bridge", "artifact-reporter", "gate-evidence-reporter", "review-reporter"],
+      "required_skills": ["superpowered-planning-skill", "review-skill", "quality-assurance-skill"],
+      "artifact_outputs": ["requirements", "review_report", "memory_update_packet", "context_update_packet"]
+    },
+    "callback_contract": {
+      "expected_events": ["step_started", "gate_checked", "artifact_created", "step_completed", "step_blocked"],
+      "required_payloads": ["step_status", "gate_evidence", "artifact_refs", "blocker_reason", "missing_evidence"]
+    }
+  },
+  "dispatch": {
+    "mode": "mock",
+    "target_worker": "nexus-worker/mock-web-saas",
+    "priority": "normal",
+    "idempotency_key": "web-saas-mvp-001",
+    "callback_url": "https://capability-os.local/runtime/callbacks",
+    "timeout_seconds": 900
+  },
+  "operator_notes": "Adapter boundary sample for Nexus runtime dispatch."
+}
