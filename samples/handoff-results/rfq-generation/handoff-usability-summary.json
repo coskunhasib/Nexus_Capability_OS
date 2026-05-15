@@ -1,0 +1,29 @@
+{
+  "trial_id": "rfq-generation.nexus-handoff-usability",
+  "scenario_id": "rfq-generation",
+  "status": "pass",
+  "assertions": [
+    { "name": "objective is present", "pass": true },
+    { "name": "selected capability has pack id", "pass": true },
+    { "name": "selected capability has profiles", "pass": true },
+    { "name": "required skills are present", "pass": true },
+    { "name": "required tools are present", "pass": true },
+    { "name": "artifact outputs are concrete", "pass": true },
+    { "name": "callback events are sufficient", "pass": true },
+    { "name": "callback payloads are sufficient", "pass": true },
+    { "name": "blockers are carried when not release ready", "pass": true },
+    { "name": "missing evidence is carried when not release ready", "pass": true },
+    { "name": "next execution focus is present", "pass": true }
+  ],
+  "handoff_summary": {
+    "objective": "rfq-generation skill-aware trial",
+    "pack_id": "qcw-diode-rfq-pack",
+    "profile_count": 5,
+    "required_skill_count": 4,
+    "required_tool_count": 7,
+    "artifact_output_count": 7,
+    "blocker_count": 2,
+    "missing_evidence_count": 2,
+    "release_ready": false
+  }
+}
