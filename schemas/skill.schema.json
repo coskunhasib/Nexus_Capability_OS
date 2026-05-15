@@ -3,7 +3,7 @@
   "$id": "https://nexus.local/schemas/skill.schema.json",
   "title": "Nexus Skill",
   "type": "object",
-  "required": ["id", "type", "title", "summary", "status", "source_lineage", "when_to_use", "inputs", "outputs", "procedure", "edge_cases", "quality_gates", "failure_modes", "related_profiles", "compatible_packs", "research_policy", "research_review", "improvement_notes"],
+  "required": ["id", "type", "title", "summary", "status", "source_lineage", "when_to_use", "inputs", "outputs", "procedure", "edge_cases", "quality_gates", "failure_modes", "related_profiles", "compatible_packs", "research_policy", "improvement_notes"],
   "properties": {
     "id": { "type": "string", "minLength": 1 },
     "type": { "const": "skill" },
@@ -38,18 +38,7 @@
         "research_questions": { "type": "array", "items": { "type": "string" } }
       }
     },
-    "research_review": {
-      "type": "object",
-      "required": ["reviewed_at", "source_basis", "research_findings", "applied_upgrades", "remaining_risks", "maturity_decision"],
-      "properties": {
-        "reviewed_at": { "type": "string" },
-        "source_basis": { "type": "array", "items": { "type": "string" } },
-        "research_findings": { "type": "array", "items": { "type": "string" } },
-        "applied_upgrades": { "type": "array", "items": { "type": "string" } },
-        "remaining_risks": { "type": "array", "items": { "type": "string" } },
-        "maturity_decision": { "enum": ["draft", "experimental", "active", "deprecated"] }
-      }
-    },
+    "research_review_ref": { "type": "string" },
     "improvement_notes": { "type": "array", "items": { "type": "string" } },
     "eval_hooks": { "type": "array", "items": { "type": "string" } }
   }
