@@ -11,12 +11,17 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+permissions:
+  contents: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -25,7 +30,16 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "ci: sync package lock"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi
+          npm ci
 
       - name: Validate packets and trials
         run: npm run validate:packets
