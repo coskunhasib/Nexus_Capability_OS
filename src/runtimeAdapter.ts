@@ -91,6 +91,7 @@ export type RuntimeAdapterRequest = {
 export type RuntimeBridgeEventType = 'step_started' | 'step_completed' | 'step_blocked' | 'gate_checked' | 'artifact_created' | 'runtime_failed';
 
 export type RuntimeBridgeEvent = {
+  event_id?: string;
   event_type: RuntimeBridgeEventType;
   version: '0.1';
   task_packet_id: string;
@@ -133,6 +134,29 @@ export type RuntimeAdapterResponse = {
   };
 };
 
+export type RuntimeCallbackPayload = {
+  packet_type: 'nexus.runtime_callback';
+  version: '0.1';
+  request_id: string;
+  job_id: string;
+  provider_id?: string;
+  received_at: string;
+  events: RuntimeBridgeEvent[];
+};
+
+export type RuntimeCallbackValidation = {
+  valid: boolean;
+  errors: string[];
+  payload?: RuntimeCallbackPayload;
+};
+
+export type RuntimeCallbackIngestResult = RunnerStatePatch & {
+  callback: RuntimeCallbackPayload;
+  accepted_events: RuntimeBridgeEvent[];
+  duplicate_events: RuntimeBridgeEvent[];
+  seen_event_keys: string[];
+};
+
 export type RunnerStatePatch = {
   statuses: Record<string, WorkStatus>;
   evidence: EvidenceState;
@@ -149,6 +173,80 @@ function nowIso() {
 
 function stableSlug(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 48) || 'task';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isWorkStatus(value: unknown): value is WorkStatus {
+  return value === 'not_started' || value === 'in_progress' || value === 'blocked' || value === 'done';
+}
+
+function isGateStatus(value: unknown): value is GateStatus {
+  return value === 'not_checked' || value === 'pass' || value === 'fail';
+}
+
+function isRuntimeBridgeEventType(value: unknown): value is RuntimeBridgeEventType {
+  return value === 'step_started' || value === 'step_completed' || value === 'step_blocked' || value === 'gate_checked' || value === 'artifact_created' || value === 'runtime_failed';
+}
+
+export function runtimeEventKey(event: RuntimeBridgeEvent) {
+  return event.event_id ?? `${event.event_type}:${event.task_packet_id}:${event.step_id}:${event.status}:${event.timestamp}`;
+}
+
+export function isRuntimeBridgeEvent(value: unknown): value is RuntimeBridgeEvent {
+  if (!isRecord(value)) return false;
+  if (value.event_id !== undefined && typeof value.event_id !== 'string') return false;
+  if (!isRuntimeBridgeEventType(value.event_type)) return false;
+  if (value.version !== '0.1') return false;
+  if (typeof value.task_packet_id !== 'string') return false;
+  if (typeof value.step_id !== 'string') return false;
+  if (!isWorkStatus(value.status)) return false;
+  if (typeof value.timestamp !== 'string') return false;
+  if (value.owner !== undefined && typeof value.owner !== 'string') return false;
+  if (value.blocker_reason !== undefined && typeof value.blocker_reason !== 'string') return false;
+  if (value.runtime_notes !== undefined && typeof value.runtime_notes !== 'string') return false;
+  if (value.gate_evidence !== undefined) {
+    if (!Array.isArray(value.gate_evidence)) return false;
+    for (const item of value.gate_evidence) {
+      if (!isRecord(item)) return false;
+      if (typeof item.gate !== 'string') return false;
+      if (!isGateStatus(item.status)) return false;
+      if (typeof item.evidence_note !== 'string') return false;
+      if (typeof item.blocker_reason !== 'string') return false;
+    }
+  }
+  if (value.artifact_refs !== undefined) {
+    if (!Array.isArray(value.artifact_refs)) return false;
+    for (const item of value.artifact_refs) {
+      if (!isRecord(item)) return false;
+      if (typeof item.kind !== 'string') return false;
+      if (typeof item.ref !== 'string') return false;
+      if (typeof item.summary !== 'string') return false;
+    }
+  }
+  return true;
+}
+
+export function validateRuntimeCallbackPayload(value: unknown): RuntimeCallbackValidation {
+  const errors: string[] = [];
+  if (!isRecord(value)) return { valid: false, errors: ['callback payload must be an object'] };
+  if (value.packet_type !== 'nexus.runtime_callback') errors.push('packet_type must be nexus.runtime_callback');
+  if (value.version !== '0.1') errors.push('version must be 0.1');
+  if (typeof value.request_id !== 'string') errors.push('request_id must be a string');
+  if (typeof value.job_id !== 'string') errors.push('job_id must be a string');
+  if (value.provider_id !== undefined && typeof value.provider_id !== 'string') errors.push('provider_id must be a string when present');
+  if (typeof value.received_at !== 'string') errors.push('received_at must be a string');
+  if (!Array.isArray(value.events)) {
+    errors.push('events must be an array');
+  } else {
+    value.events.forEach((event, index) => {
+      if (!isRuntimeBridgeEvent(event)) errors.push(`events[${index}] must be a runtime bridge event`);
+    });
+  }
+  if (errors.length) return { valid: false, errors };
+  return { valid: true, errors: [], payload: value as RuntimeCallbackPayload };
 }
 
 export function buildNexusHandoffFromTaskPacket(packet: TaskPacket): NexusHandoffPacket {
@@ -232,6 +330,10 @@ function artifactRefsFor(packet: TaskPacket, step: WorkOrderStep): NonNullable<R
   }));
 }
 
+function eventIdFor(packet: TaskPacket, step: WorkOrderStep, eventType: RuntimeBridgeEventType, sequence: number) {
+  return `${stableSlug(packet.objective)}:${step.id}:${eventType}:${sequence}`;
+}
+
 export function runMockRuntimeAdapter(request: RuntimeAdapterRequest): RuntimeAdapterResponse {
   const packet = request.handoff_packet.task_packet;
   const firstStep = packet.work_order[0];
@@ -262,6 +364,7 @@ export function runMockRuntimeAdapter(request: RuntimeAdapterRequest): RuntimeAd
   }
 
   events.push({
+    event_id: eventIdFor(packet, firstStep, 'step_started', 0),
     event_type: 'step_started',
     version: '0.1',
     task_packet_id: taskId,
@@ -273,6 +376,7 @@ export function runMockRuntimeAdapter(request: RuntimeAdapterRequest): RuntimeAd
   });
 
   events.push({
+    event_id: eventIdFor(packet, firstStep, 'gate_checked', 1),
     event_type: 'gate_checked',
     version: '0.1',
     task_packet_id: taskId,
@@ -285,6 +389,7 @@ export function runMockRuntimeAdapter(request: RuntimeAdapterRequest): RuntimeAd
   });
 
   events.push({
+    event_id: eventIdFor(packet, firstStep, 'artifact_created', 2),
     event_type: 'artifact_created',
     version: '0.1',
     task_packet_id: taskId,
@@ -297,6 +402,7 @@ export function runMockRuntimeAdapter(request: RuntimeAdapterRequest): RuntimeAd
   });
 
   events.push({
+    event_id: eventIdFor(packet, firstStep, 'step_completed', 3),
     event_type: 'step_completed',
     version: '0.1',
     task_packet_id: taskId,
@@ -310,6 +416,7 @@ export function runMockRuntimeAdapter(request: RuntimeAdapterRequest): RuntimeAd
 
   if (secondStep && secondStep.id !== firstStep.id) {
     events.push({
+      event_id: eventIdFor(packet, secondStep, 'step_started', 4),
       event_type: 'step_started',
       version: '0.1',
       task_packet_id: taskId,
@@ -365,6 +472,74 @@ export function applyRuntimeEventsToRunnerState(statuses: Record<string, WorkSta
   }
 
   return { statuses: nextStatuses, evidence: nextEvidence, applied_events: events };
+}
+
+export function ingestRuntimeCallback(
+  statuses: Record<string, WorkStatus>,
+  evidence: EvidenceState,
+  payload: RuntimeCallbackPayload,
+  seenEventKeys: string[] = [],
+): RuntimeCallbackIngestResult {
+  const seen = new Set(seenEventKeys);
+  const acceptedEvents: RuntimeBridgeEvent[] = [];
+  const duplicateEvents: RuntimeBridgeEvent[] = [];
+
+  for (const event of payload.events) {
+    const key = runtimeEventKey(event);
+    if (seen.has(key)) {
+      duplicateEvents.push(event);
+      continue;
+    }
+    seen.add(key);
+    acceptedEvents.push(event);
+  }
+
+  const patch = applyRuntimeEventsToRunnerState(statuses, evidence, acceptedEvents);
+  return {
+    ...patch,
+    callback: payload,
+    accepted_events: acceptedEvents,
+    duplicate_events: duplicateEvents,
+    seen_event_keys: Array.from(seen),
+  };
+}
+
+export function buildMockRuntimeCallbackPayload(request: RuntimeAdapterRequest, response: RuntimeAdapterResponse, sequence: number): RuntimeCallbackPayload {
+  const packet = request.handoff_packet.task_packet;
+  const steps = packet.work_order.length ? packet.work_order : [];
+  const step = steps[Math.min(Math.floor(sequence / 4), Math.max(steps.length - 1, 0))];
+  const receivedAt = nowIso();
+  const taskId = `${stableSlug(packet.objective)}.adapter-run`;
+  const events: RuntimeBridgeEvent[] = [];
+
+  if (step) {
+    const phase = sequence % 4;
+    const eventType: RuntimeBridgeEventType = phase === 0 ? 'step_started' : phase === 1 ? 'gate_checked' : phase === 2 ? 'artifact_created' : 'step_completed';
+    const status: WorkStatus = eventType === 'step_started' || eventType === 'gate_checked' ? 'in_progress' : 'done';
+    events.push({
+      event_id: eventIdFor(packet, step, eventType, 100 + sequence),
+      event_type: eventType,
+      version: '0.1',
+      task_packet_id: taskId,
+      step_id: step.id,
+      status,
+      timestamp: receivedAt,
+      owner: step.owner,
+      gate_evidence: eventType === 'gate_checked' ? gateEvidenceFor(step) : undefined,
+      artifact_refs: eventType === 'artifact_created' || eventType === 'step_completed' ? artifactRefsFor(packet, step) : undefined,
+      runtime_notes: `Mock callback ${eventType} for ${step.title}.`,
+    });
+  }
+
+  return {
+    packet_type: 'nexus.runtime_callback',
+    version: '0.1',
+    request_id: request.request_id,
+    job_id: response.job.job_id,
+    provider_id: response.job.target_worker,
+    received_at: receivedAt,
+    events,
+  };
 }
 
 export function summarizeRuntimeAdapterResponse(response: RuntimeAdapterResponse) {
