@@ -35,6 +35,7 @@ type ExportPayload = {
   compiler_rule: { id: string; title: string };
   macro_pipeline?: string;
   capability_packs: string[];
+  skills: string[];
   micro_pipelines: string[];
   team_profiles: string[];
   gates: string[];
@@ -154,6 +155,7 @@ function createPayload(selected: Rule, profiles: AgentProfile[], gates: Gate[], 
     compiler_rule: { id: selected.id, title: selected.title },
     macro_pipeline: selected.select?.macro_pipeline,
     capability_packs: packs.map((pack) => pack.pack_id),
+    skills: unique(packs.flatMap((pack) => pack.skills ?? [])),
     micro_pipelines: microPipelines.map((pipeline) => pipeline.id),
     team_profiles: profiles.map((profile) => profile.id),
     gates: gates.map((gate) => gate.id),
@@ -168,9 +170,11 @@ function toMarkdown(payload: ExportPayload) {
     `- Compiler rule: ${payload.compiler_rule.id}\n` +
     `- Macro pipeline: ${payload.macro_pipeline ?? 'none'}\n` +
     `- Capability packs: ${payload.capability_packs.join(', ') || 'none'}\n` +
+    `- Skills: ${payload.skills.join(', ') || 'none'}\n` +
     `- Memory policy: ${payload.memory_policy ?? 'none'}\n` +
     `- Context policy: ${payload.context_policy ?? 'none'}\n\n` +
     `## Team Profiles\n${payload.team_profiles.map((id) => `- ${id}`).join('\n')}\n\n` +
+    `## Skills\n${payload.skills.map((id) => `- ${id}`).join('\n') || '- none'}\n\n` +
     `## Micro Pipelines\n${payload.micro_pipelines.map((id) => `- ${id}`).join('\n')}\n\n` +
     `## Required Gates\n${payload.gates.map((id) => `- ${id}`).join('\n')}\n\n` +
     `## Steps\n\n${payload.steps.map((step, index) => `### ${index + 1}. ${step.title}\n\n- Owner: ${step.owner}\n- Related: ${step.related ?? 'none'}\n- Expected outputs: ${step.expectedOutputs.join(', ') || 'none'}\n- Gates: ${step.gates.join(', ') || 'none'}\n\n${step.description}`).join('\n\n')}`;
@@ -186,7 +190,9 @@ function toTaskPacket(payload: ExportPayload) {
       macro_pipeline: payload.macro_pipeline,
       micro_pipelines: payload.micro_pipelines,
       capability_packs: payload.capability_packs,
+      skills: payload.skills,
     },
+    skills: payload.skills.map((skill) => ({ skill, required: true })),
     team: payload.team_profiles.map((profile) => ({ profile, role: 'owner_or_reviewer' })),
     gates: payload.gates.map((gate) => ({ gate, required: true })),
     policies: {
@@ -225,6 +231,7 @@ function toNexusHandoff(payload: ExportPayload, packs: CapabilityPack[], taskPac
     selected_capability: {
       pack_id: payload.capability_packs[0] ?? 'unspecified',
       profiles: payload.team_profiles,
+      skills: payload.skills,
       micro_pipelines: payload.micro_pipelines,
       gates: payload.gates,
     },
@@ -232,6 +239,7 @@ function toNexusHandoff(payload: ExportPayload, packs: CapabilityPack[], taskPac
     runtime_requirements: {
       target_runtime: 'nexus-worker',
       required_tools: tools,
+      required_skills: payload.skills,
       artifact_outputs: artifactOutputs,
     },
     callback_contract: {
@@ -285,6 +293,7 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge tone="cyan">{steps.length} steps</Badge>
+          <Badge tone="yellow">{payload.skills.length} skills</Badge>
           <ActionButton icon={<PlayCircle size={14} />} label="Send Runner" onClick={() => onSendTaskPacket?.(taskPacketObject)} />
           <ActionButton icon={<Clipboard size={14} />} label="Copy MD" onClick={() => void copyText(markdown)} />
           <ActionButton icon={<Download size={14} />} label="Download MD" onClick={() => downloadFile('nexus-execution-plan.md', markdown, 'text/markdown')} />
@@ -293,6 +302,13 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
           <ActionButton icon={<UploadCloud size={14} />} label="Handoff" onClick={() => downloadFile('nexus-handoff-packet.json', handoffPacket, 'application/json')} />
         </div>
       </div>
+
+      {payload.skills.length > 0 && (
+        <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-950/10 p-4">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-yellow-200">selected canonical skills</div>
+          <div className="flex flex-wrap gap-2">{payload.skills.map((skill) => <Badge key={skill} tone="yellow">{skill}</Badge>)}</div>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {steps.map((step, index) => (
@@ -326,8 +342,8 @@ export default function ExecutionPlanPanel({ selected, profiles, gates, microPip
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><GitBranch size={16} className="mb-2 text-cyan-400" />Plan is generated from selected compiler rule, profiles, micro-pipelines and gates.</div>
-        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Layers size={16} className="mb-2 text-cyan-400" />Spec compliance and quality review stay separate by design.</div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><GitBranch size={16} className="mb-2 text-cyan-400" />Plan is generated from selected compiler rule, profiles, micro-pipelines, skills and gates.</div>
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><Layers size={16} className="mb-2 text-cyan-400" />Canonical skills now travel into Task Packet and Nexus Handoff.</div>
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-neutral-400"><UploadCloud size={16} className="mb-2 text-cyan-400" />Task packet and Nexus handoff packet are both exportable.</div>
       </div>
     </section>
