@@ -20,10 +20,11 @@
     },
     "selected_capability": {
       "type": "object",
-      "required": ["pack_id", "profiles", "micro_pipelines", "gates"],
+      "required": ["pack_id", "profiles", "skills", "micro_pipelines", "gates"],
       "properties": {
         "pack_id": { "type": "string" },
         "profiles": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
         "micro_pipelines": { "type": "array", "items": { "type": "string" } },
         "gates": { "type": "array", "items": { "type": "string" } }
       }
@@ -35,15 +36,17 @@
         "packet_type": { "const": "nexus.task_packet" },
         "version": { "const": "0.1" },
         "objective": { "type": "string" },
-        "work_order": { "type": "array", "minItems": 1 }
+        "work_order": { "type": "array", "minItems": 1 },
+        "skills": { "type": "array" }
       }
     },
     "runtime_requirements": {
       "type": "object",
-      "required": ["target_runtime", "required_tools", "artifact_outputs"],
+      "required": ["target_runtime", "required_tools", "required_skills", "artifact_outputs"],
       "properties": {
         "target_runtime": { "type": "string" },
         "required_tools": { "type": "array", "items": { "type": "string" } },
+        "required_skills": { "type": "array", "items": { "type": "string" } },
         "artifact_outputs": { "type": "array", "items": { "type": "string" } }
       }
     },
