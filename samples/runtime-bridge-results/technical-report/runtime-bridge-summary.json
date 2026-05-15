@@ -3,21 +3,63 @@
   "scenario_id": "technical-report",
   "status": "pass",
   "assertions": [
-    { "name": "event stream is not empty", "pass": true },
-    { "name": "all events have required base fields", "pass": true },
-    { "name": "step_started is emitted", "pass": true },
-    { "name": "gate_checked is emitted", "pass": true },
-    { "name": "artifact_created or step_completed is emitted for done work", "pass": true },
-    { "name": "step_blocked is emitted when blockers exist", "pass": true },
-    { "name": "callback expected events covered enough", "pass": true },
-    { "name": "required payload step_status covered", "pass": true },
-    { "name": "required payload gate_evidence covered", "pass": true },
-    { "name": "required payload artifact_refs covered", "pass": true },
-    { "name": "required payload blocker_reason covered", "pass": true },
-    { "name": "missing evidence is surfaced", "pass": true }
+    {
+      "name": "event stream is not empty",
+      "pass": true
+    },
+    {
+      "name": "all events have required base fields",
+      "pass": true
+    },
+    {
+      "name": "step_started is emitted",
+      "pass": true
+    },
+    {
+      "name": "gate_checked is emitted",
+      "pass": true
+    },
+    {
+      "name": "artifact_created or step_completed is emitted for done work",
+      "pass": true
+    },
+    {
+      "name": "step_blocked is emitted when blockers exist",
+      "pass": true
+    },
+    {
+      "name": "callback expected events covered enough",
+      "pass": true
+    },
+    {
+      "name": "required payload step_status covered",
+      "pass": true
+    },
+    {
+      "name": "required payload gate_evidence covered",
+      "pass": true
+    },
+    {
+      "name": "required payload artifact_refs covered",
+      "pass": true
+    },
+    {
+      "name": "required payload blocker_reason covered",
+      "pass": true
+    },
+    {
+      "name": "missing evidence is surfaced",
+      "pass": true
+    }
   ],
   "event_count": 7,
-  "event_types": ["step_started", "gate_checked", "artifact_created", "step_completed", "step_blocked"],
+  "event_types": [
+    "step_started",
+    "gate_checked",
+    "artifact_created",
+    "step_completed",
+    "step_blocked"
+  ],
   "payload_coverage": {
     "step_status": true,
     "gate_evidence": true,

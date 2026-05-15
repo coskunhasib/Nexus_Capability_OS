@@ -3,27 +3,68 @@
   "scenario_id": "web-saas-mvp",
   "status": "pass",
   "assertions": [
-    { "name": "objective is present", "pass": true },
-    { "name": "selected capability has pack id", "pass": true },
-    { "name": "selected capability has profiles", "pass": true },
-    { "name": "required skills are present", "pass": true },
-    { "name": "required tools are present", "pass": true },
-    { "name": "artifact outputs are concrete", "pass": true },
-    { "name": "callback events are sufficient", "pass": true },
-    { "name": "callback payloads are sufficient", "pass": true },
-    { "name": "blockers are carried when not release ready", "pass": true },
-    { "name": "missing evidence is carried when not release ready", "pass": true },
-    { "name": "next execution focus is present", "pass": true }
+    {
+      "name": "objective is present",
+      "pass": true
+    },
+    {
+      "name": "selected capability has pack id",
+      "pass": true
+    },
+    {
+      "name": "selected capability has profiles",
+      "pass": true
+    },
+    {
+      "name": "required skills are present",
+      "pass": true
+    },
+    {
+      "name": "required tools are present",
+      "pass": true
+    },
+    {
+      "name": "artifact outputs are concrete",
+      "pass": true
+    },
+    {
+      "name": "callback events are sufficient",
+      "pass": true
+    },
+    {
+      "name": "callback payloads are sufficient",
+      "pass": true
+    },
+    {
+      "name": "blockers are carried when not release ready",
+      "pass": true
+    },
+    {
+      "name": "missing evidence is carried when not release ready",
+      "pass": true
+    },
+    {
+      "name": "next execution focus is present",
+      "pass": true
+    },
+    {
+      "name": "step statuses are carried",
+      "pass": true
+    },
+    {
+      "name": "gate evidence map is carried",
+      "pass": true
+    }
   ],
   "handoff_summary": {
     "objective": "Web SaaS MVP skill-aware trial",
     "pack_id": "web-saas-mvp-pack",
     "profile_count": 9,
     "required_skill_count": 5,
-    "required_tool_count": 7,
-    "artifact_output_count": 13,
-    "blocker_count": 2,
-    "missing_evidence_count": 8,
+    "required_tool_count": 8,
+    "artifact_output_count": 12,
+    "blocker_count": 3,
+    "missing_evidence_count": 9,
     "release_ready": false
   }
 }
