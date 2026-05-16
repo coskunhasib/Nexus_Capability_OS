@@ -12,8 +12,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 20. Dev command cleanup — done, PR #52
 21. Local controlled worker v2 — done, PR #53
 22. OpenHands real integration plan — done, PR #54
-23. Code Agent real integration plan — done
-24. UI/runtime adapter polish — pending
+23. Code Agent real integration plan — done, PR #55
+24. UI/runtime adapter polish — done
 ```
 
 ## Priority buckets
@@ -100,15 +100,13 @@ Policy is documented in docs/dev-command-policy.md.
 
 ### 24. UI/runtime adapter polish
 
-Status: pending.
+Status: done.
 
-Definition of done:
+Outcome:
 
 ```text
-Identify panel-level job-state export/display gaps.
-Identify adapter result visibility gaps.
-Identify unclear operator copy/actions.
-Create focused implementation checklist.
+Panel-level job-state visibility, controlled worker manifest visibility, external runtime envelope clarity, memory/context continuity visibility, artifact registry visibility and operator action copy improvements are documented in docs/ui-runtime-adapter-polish.md.
+Implementation should proceed as focused follow-up PRs.
 ```
 
 ## P2 items
@@ -126,7 +124,7 @@ Direct runtime invocation remains intentionally unimplemented.
 
 ### 23. Code Agent real integration plan
 
-Status: done.
+Status: done, PR #55.
 
 Outcome:
 
@@ -146,18 +144,24 @@ Keep runtime output behind response-shape validation.
 Keep network development exposure opt-in.
 ```
 
-## Recommended execution order
+## Recommended next phase
 
 ```text
-24. UI/runtime adapter polish
+1. Implement job-state view/export.
+2. Implement artifact registry card.
+3. Implement controlled worker manifest preview/export.
+4. Implement external runtime mode explanation card.
+5. Implement memory/context preview/export.
+6. Rename unclear operator actions.
+7. Then decide first real external runtime wiring PR.
 ```
 
 ## Completion rule
 
-Each item should update this file before merge:
+Each future item should update this file or create a follow-up backlog before merge:
 
 ```text
-move item status from pending/in progress to done
-add the merged PR number when available
+state the implementation target
+state verification commands
 keep any new follow-up as a lower-priority backlog entry
 ```
