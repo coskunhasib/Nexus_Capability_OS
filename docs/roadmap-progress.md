@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-7/15 completed
-Current item: 8/15 — Artifact Registry / Artifact Refs
-Next item: 9/15 — Review Report Hardening
+8/15 completed
+Current item: 9/15 — Review Report Hardening
+Next item: 10/15 — Memory / Context Packet Hardening
 ```
 
 ## Current state
@@ -38,6 +38,7 @@ Runtime callback ingest: implemented
 Runtime job state model: implemented
 Runtime event store + replay: implemented
 Runtime timeline UI: implemented
+Runtime artifact registry: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -77,49 +78,47 @@ Real external worker execution: not implemented yet
 ✅ 5/15 — Job State Model
 ✅ 6/15 — Event Store + Replay
 ✅ 7/15 — Runtime Timeline UI
+✅ 8/15 — Artifact Registry / Artifact Refs
 ```
 
 ## Next recommended item
 
 ```text
-PR #38 — Artifact Registry / Artifact Refs
+PR #39 — Review Report Hardening
 ```
 
 Why this is next:
 
 ```text
-Runtime events can now be stored, replayed and displayed as timeline rows.
-The next step is to normalize artifact refs into a registry instead of leaving them embedded only inside runtime events.
+Runtime artifact refs are now normalized into a registry.
+The next step is to make review reports distinguish human evidence, runtime evidence, artifact-backed proof, missing evidence and release blockers.
 ```
 
 Target:
 
 ```text
-artifact_id
-kind
-ref
-summary
-step_id
-event_id
-created_at
-source event
-dedupe policy
-registry summary
+human-entered evidence
+runtime-reported evidence
+artifact-backed evidence
+missing evidence
+failed gates
+release blockers
+review evidence summary
 ```
 
 Expected files:
 
 ```text
-src/runtimeArtifactRegistry.ts
-scripts/verify-runtime-artifact-registry.ts
-docs/runtime-artifact-registry.md
+src/reviewReportHardening.ts
+scripts/verify-review-report-hardening.ts
+docs/review-report-hardening.md
 package.json update
 ```
 
 Expected NPM script:
 
 ```text
-verify:artifacts
+verify:review-hardening
 ```
 
 ## Remaining roadmap
@@ -235,22 +234,24 @@ repeated event counter
 
 ### 8. Artifact Registry / Artifact Refs
 
-Status: next
+Status: done
 
 ```text
 artifact_id
 kind
-uri/ref
-created_by
-step_id
-checksum optional
+ref
 summary
-metadata
+step_id
+event_id
+created_at
+stable dedupe key
+registry summary
+verify:artifacts
 ```
 
 ### 9. Review Report Hardening
 
-Status: pending
+Status: next
 
 Separate:
 
@@ -375,8 +376,8 @@ Commercial Packaging
 5. Job state model — done
 6. Event store + replay — done
 7. Event timeline UI — done
-8. Artifact registry — next
-9. Review report hardening
+8. Artifact registry — done
+9. Review report hardening — next
 10. Memory / context packet hardening
 11. Adapter trials
 12. Local HTTP worker skeleton
