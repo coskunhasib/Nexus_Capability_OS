@@ -7,10 +7,11 @@ Read these files before changing code or designing integrations:
 ```text
 1. AGENTS.md
 2. docs/ai-entrypoint.md
-3. docs/nexus-data-contract-roadmap.md
-4. docs/post-roadmap-backlog.md
-5. docs/verification-contract.md
-6. docs/runtime-security-policy.md
+3. docs/nexus-unknown-mode.md
+4. docs/nexus-data-contract-roadmap.md
+5. docs/post-roadmap-backlog.md
+6. docs/verification-contract.md
+7. docs/runtime-security-policy.md
 ```
 
 Current active item:
@@ -19,12 +20,10 @@ Current active item:
 33. Nexus data contract discovery
 ```
 
-Current rule:
+Current mode:
 
 ```text
-Build the Nexus-owned data contract before implementing result ingestion.
-Do not guess hidden Nexus fields.
-Do not let external tool output define the Nexus contract.
+Treat real Nexus details as unknown until item 33 creates docs/nexus-data-contract-inventory.md.
 ```
 
 Next expected output:
