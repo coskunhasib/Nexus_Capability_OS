@@ -21,6 +21,8 @@ const pairs = [
   ['schemas/trial-scenario.schema.json', 'samples/trials/agentic-system.trial.json'],
   ['schemas/trial-scenario.schema.json', 'samples/trials/rfq-generation.trial.json'],
   ['schemas/trial-scenario.schema.json', 'samples/trials/technical-report.trial.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/adapter-mock-runtime.trial.json'],
+  ['schemas/trial-scenario.schema.json', 'samples/trials/adapter-http-dry-run.trial.json'],
 ];
 
 function readJson(relativePath) {
