@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-9/15 completed
-Current item: 10/15 — Memory / Context Packet Hardening
-Next item: 11/15 — Adapter Trials
+10/15 completed
+Current item: 11/15 — Adapter Trials
+Next item: 12/15 — Local HTTP Worker Server Skeleton
 ```
 
 ## Current state
@@ -40,6 +40,7 @@ Runtime event store + replay: implemented
 Runtime timeline UI: implemented
 Runtime artifact registry: implemented
 Review report hardening: implemented
+Memory/context packet hardening: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -81,46 +82,47 @@ Real external worker execution: not implemented yet
 ✅ 7/15 — Runtime Timeline UI
 ✅ 8/15 — Artifact Registry / Artifact Refs
 ✅ 9/15 — Review Report Hardening
+✅ 10/15 — Memory / Context Packet Hardening
 ```
 
 ## Next recommended item
 
 ```text
-PR #40 — Memory / Context Packet Hardening
+Adapter Trials
 ```
 
 Why this is next:
 
 ```text
-Review reports now separate human evidence, runtime evidence, artifact-backed evidence, missing evidence and blockers.
-The next step is to feed those hardened buckets into memory/context packets with runtime/job/artifact metadata.
+Memory/context packets now convert hardened review buckets into accepted decisions, runtime blockers, artifact summaries, open questions, provider/job metadata and bounded next-run context.
+The next step is to prove this full adapter-driven loop across realistic trial scenarios instead of a single synthetic verification fixture.
 ```
 
 Target:
 
 ```text
-accepted decisions
-runtime blockers
-artifact summaries
-open questions
-next run context
-provider/job metadata
-do-not-store policy
+adapter trial scenarios
+mock provider trial result snapshots
+HTTP provider dry-run boundary scenario
+memory/context packet assertions per trial
+review → memory/context → next-run follow-up continuity
+trial dashboard visibility for adapter/memory-context status
 ```
 
 Expected files:
 
 ```text
-src/memoryContextHardening.ts
-scripts/verify-memory-context-hardening.ts
-docs/memory-context-hardening.md
+samples/trials/*adapter*.trial.json
+samples/adapter-trial-results/*.json
+scripts/run-adapter-trials.ts
+src/AdapterTrialResultsPanel.tsx or existing dashboard extension
 package.json update
 ```
 
 Expected NPM script:
 
 ```text
-verify:memory-context
+trial:adapter
 ```
 
 ## Remaining roadmap
@@ -135,8 +137,8 @@ verify:memory-context
 7. Runtime Timeline UI — done
 8. Artifact Registry / Artifact Refs — done
 9. Review Report Hardening — done
-10. Memory / Context Packet Hardening — next
-11. Adapter Trials — pending
+10. Memory / Context Packet Hardening — done
+11. Adapter Trials — next
 12. Local HTTP Worker Server Skeleton — pending
 13. Minimum Real Worker Vertical Slice — pending
 14. OpenHands Adapter — pending
@@ -155,8 +157,8 @@ verify:memory-context
 7. Event timeline UI — done
 8. Artifact registry — done
 9. Review report hardening — done
-10. Memory / context packet hardening — next
-11. Adapter trials
+10. Memory / context packet hardening — done
+11. Adapter trials — next
 12. Local HTTP worker skeleton
 13. Real worker vertical slice
 14. OpenHands adapter
