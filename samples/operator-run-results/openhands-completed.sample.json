@@ -1,0 +1,28 @@
+{
+  "packet_type": "nexus.openhands.operator_run_result",
+  "version": "0.1",
+  "request_id": "operator-run-openhands-fixture",
+  "source_adapter": "openhands",
+  "operator_run_id": "openhands-run-completed-001",
+  "status": "completed",
+  "artifacts": [
+    {
+      "step_id": "01-openhands-result",
+      "kind": "work_request",
+      "ref": "operator-run/openhands/work-request.md",
+      "summary": "Operator-run OpenHands completed work request artifact."
+    },
+    {
+      "step_id": "01-openhands-result",
+      "kind": "artifact_manifest",
+      "ref": "operator-run/openhands/artifact-manifest.json",
+      "summary": "Operator-run OpenHands completed artifact manifest."
+    }
+  ],
+  "notes": [
+    "Operator provided completed OpenHands result file.",
+    "No direct runtime invocation was performed by Nexus."
+  ],
+  "diagnostics": [],
+  "created_at": "2026-05-16T00:00:00.000Z"
+}
