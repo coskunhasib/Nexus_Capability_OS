@@ -12,6 +12,30 @@ Current phase: post-roadmap hardening
 Authoritative local command: npm run build && npm run check:generated
 ```
 
+## Post-roadmap execution queue
+
+The next sequence extends the completed 15-step roadmap without changing the completed roadmap count.
+
+```text
+16. Final verification contract refresh — in progress
+17. Post-roadmap backlog — next
+18. Release notes / implementation summary
+19. Runtime security policy
+20. Dev command cleanup
+21. Local controlled worker v2
+22. OpenHands real integration plan
+23. Code Agent real integration plan
+24. UI/runtime adapter polish
+```
+
+Status policy:
+
+```text
+When each item is completed, update this section before merge.
+Keep 16-24 visible until the post-roadmap hardening cycle is complete.
+Do not wire a real external runtime before items 16-21 are documented and verified.
+```
+
 ## Verification layers
 
 ```text
@@ -402,10 +426,13 @@ The default dev command is local-only: vite --port=3000.
 ## Next integration milestone
 
 ```text
-final roadmap verification
-→ post-roadmap backlog
-→ runtime security policy
-→ local controlled worker v2
-→ external runtime wiring decision
-→ UI/runtime adapter polish
+16. final roadmap verification
+17. post-roadmap backlog
+18. release notes / implementation summary
+19. runtime security policy
+20. dev command cleanup
+21. local controlled worker v2
+22. OpenHands real integration plan
+23. Code Agent real integration plan
+24. UI/runtime adapter polish
 ```
