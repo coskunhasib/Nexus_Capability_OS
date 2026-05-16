@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-8/15 completed
-Current item: 9/15 — Review Report Hardening
-Next item: 10/15 — Memory / Context Packet Hardening
+9/15 completed
+Current item: 10/15 — Memory / Context Packet Hardening
+Next item: 11/15 — Adapter Trials
 ```
 
 ## Current state
@@ -39,6 +39,7 @@ Runtime job state model: implemented
 Runtime event store + replay: implemented
 Runtime timeline UI: implemented
 Runtime artifact registry: implemented
+Review report hardening: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -79,196 +80,23 @@ Real external worker execution: not implemented yet
 ✅ 6/15 — Event Store + Replay
 ✅ 7/15 — Runtime Timeline UI
 ✅ 8/15 — Artifact Registry / Artifact Refs
+✅ 9/15 — Review Report Hardening
 ```
 
 ## Next recommended item
 
 ```text
-PR #39 — Review Report Hardening
+PR #40 — Memory / Context Packet Hardening
 ```
 
 Why this is next:
 
 ```text
-Runtime artifact refs are now normalized into a registry.
-The next step is to make review reports distinguish human evidence, runtime evidence, artifact-backed proof, missing evidence and release blockers.
+Review reports now separate human evidence, runtime evidence, artifact-backed evidence, missing evidence and blockers.
+The next step is to feed those hardened buckets into memory/context packets with runtime/job/artifact metadata.
 ```
 
 Target:
-
-```text
-human-entered evidence
-runtime-reported evidence
-artifact-backed evidence
-missing evidence
-failed gates
-release blockers
-review evidence summary
-```
-
-Expected files:
-
-```text
-src/reviewReportHardening.ts
-scripts/verify-review-report-hardening.ts
-docs/review-report-hardening.md
-package.json update
-```
-
-Expected NPM script:
-
-```text
-verify:review-hardening
-```
-
-## Remaining roadmap
-
-### 1. Adapter Provider Interface
-
-Status: done
-
-```text
-RuntimeAdapterProvider interface
-mock provider
-http provider skeleton
-provider verification script
-Runner dispatch through selected provider
-```
-
-### 2. Mock + HTTP provider hardening
-
-Status: done
-
-```text
-HTTP endpoint config
-response validation at provider boundary
-clear provider error mapping
-basic timeout/retry policy
-provider health check skeleton
-```
-
-### 3. Runtime Adapter Config Panel
-
-Status: done
-
-```text
-provider selector
-endpoint_url
-healthcheck_url
-timeout_ms
-retry policy
-priority
-callback_url
-idempotency_key
-dry_run / mock / real mode
-health check action
-operator_notes
-request/response export after configured dispatch
-```
-
-### 4. Runtime Callback Ingest
-
-Status: done
-
-```text
-nexus.runtime_callback payload
-callback validation boundary
-append-later runtime event path
-idempotent event application
-manual callback simulation action
-replay duplicate detection
-```
-
-### 5. Job State Model
-
-Status: done
-
-```text
-job_id
-request_id
-provider_id
-target_worker
-status
-started_at
-last_event_at
-events[]
-artifacts[]
-errors[]
-callback counters
-seen_event_keys[]
-```
-
-Note:
-
-```text
-Core job state model is implemented and CI-covered.
-Panel-level job state display/export is deferred to the smaller-file event/timeline UI work.
-```
-
-### 6. Event Store + Replay
-
-Status: done
-
-```text
-entries[]
-repeated[]
-source: adapter_response / callback
-ordered replay
-replay summary
-timeline rows
-verify:event-store
-```
-
-### 7. Runtime Timeline UI
-
-Status: done
-
-```text
-RuntimeTimelinePanel.tsx
-summary cards
-adapter response vs callback source labels
-ordered event table
-status labels
-repeated event counter
-```
-
-### 8. Artifact Registry / Artifact Refs
-
-Status: done
-
-```text
-artifact_id
-kind
-ref
-summary
-step_id
-event_id
-created_at
-stable dedupe key
-registry summary
-verify:artifacts
-```
-
-### 9. Review Report Hardening
-
-Status: next
-
-Separate:
-
-```text
-human-entered evidence
-runtime-reported evidence
-artifact-backed evidence
-missing evidence
-failed gates
-release blockers
-```
-
-### 10. Memory / Context Packet Hardening
-
-Status: pending
-
-Include:
 
 ```text
 accepted decisions
@@ -277,93 +105,42 @@ artifact summaries
 open questions
 next run context
 provider/job metadata
+do-not-store policy
 ```
 
-### 11. Adapter Trials
-
-Status: pending
-
-New trial layer:
+Expected files:
 
 ```text
-adapter_trial
+src/memoryContextHardening.ts
+scripts/verify-memory-context-hardening.ts
+docs/memory-context-hardening.md
+package.json update
 ```
 
-Expected checks:
+Expected NPM script:
 
 ```text
-provider selection
-request generation
-dispatch
-response handling
-event ingest
-artifact refs
-review output
-memory/context output
+verify:memory-context
 ```
 
-### 12. Local HTTP Worker Server Skeleton
-
-Status: pending
-
-Endpoints:
+## Remaining roadmap
 
 ```text
-POST /runtime/dispatch
-POST /runtime/callbacks
-GET /runtime/jobs/:job_id
-```
-
-### 13. Minimum Real Worker Vertical Slice
-
-Status: pending
-
-```text
-web-saas-mvp trial
-→ compiler
-→ task packet
-→ adapter request
-→ local HTTP worker
-→ worker fake file artifact produces
-→ callback event returns
-→ Runner ingest
-→ review report
-```
-
-### 14. OpenHands Adapter
-
-Status: pending
-
-```text
-runtime_adapter_request
-→ OpenHands task/session
-→ repo/context input
-→ OpenHands execution
-→ files/tests/logs
-→ runtime_bridge events
-→ artifact refs
-```
-
-### 15. Codex / Claude Code Adapter
-
-Status: pending
-
-```text
-same RuntimeAdapterProvider interface
-different provider implementation
-```
-
-### Later backlog
-
-```text
-Local Agent Worker Adapter
-Security / Permissions Model
-Error / Retry / Timeout Policy expansion
-Idempotency + Duplicate Event Handling
-Observability / Eval Dashboard
-Workspace / Team Layer
-Marketplace / Capability Pack Catalog
-Commercial Packaging
+1. Adapter Provider Interface — done
+2. Mock + HTTP provider hardening — done
+3. Runtime Adapter Config Panel — done
+4. Runtime Callback Ingest — done
+5. Job State Model — done
+6. Event Store + Replay — done
+7. Runtime Timeline UI — done
+8. Artifact Registry / Artifact Refs — done
+9. Review Report Hardening — done
+10. Memory / Context Packet Hardening — next
+11. Adapter Trials — pending
+12. Local HTTP Worker Server Skeleton — pending
+13. Minimum Real Worker Vertical Slice — pending
+14. OpenHands Adapter — pending
+15. Codex / Claude Code Adapter — pending
 ```
 
 ## Current priority stack
@@ -377,8 +154,8 @@ Commercial Packaging
 6. Event store + replay — done
 7. Event timeline UI — done
 8. Artifact registry — done
-9. Review report hardening — next
-10. Memory / context packet hardening
+9. Review report hardening — done
+10. Memory / context packet hardening — next
 11. Adapter trials
 12. Local HTTP worker skeleton
 13. Real worker vertical slice
