@@ -58,8 +58,11 @@ const response = await runMinimumRealWorkerSlice(request, {
   now: '2026-05-16T00:00:00.000Z',
 });
 
-const artifactEvents = response.events.filter((event) => event.event_type === 'artifact_created');
-const artifactRefs = artifactEvents.flatMap((event) => event.artifact_refs ?? []);
+const artifactCreatedEvents = response.events.filter((event) => event.event_type === 'artifact_created');
+const completionArtifactRefs = response.events
+  .filter((event) => event.event_type === 'step_completed')
+  .flatMap((event) => event.artifact_refs ?? []);
+const artifactRefs = artifactCreatedEvents.flatMap((event) => event.artifact_refs ?? []);
 const artifactFilePaths = artifactRefs
   .filter((artifact) => artifact.ref.startsWith('file://'))
   .map((artifact) => artifact.ref.replace('file://', ''));
@@ -71,7 +74,8 @@ const assertions = [
   assert('runtime adapter response shape is valid', isRuntimeAdapterResponse(response), { packet_type: response.packet_type, status: response.status }),
   assert('real worker target is carried in job metadata', response.job.target_worker === 'minimum-real-worker', { target_worker: response.job.target_worker }),
   assert('runtime events include started, gate, artifact and completion', response.events.length === 4, { event_types: response.events.map((event) => event.event_type) }),
-  assert('artifact refs are emitted', artifactRefs.length === 2, { artifactRefs }),
+  assert('artifact-created event emits one artifact ref', artifactRefs.length === 1, { artifactRefs }),
+  assert('completion event carries artifact ref', completionArtifactRefs.length === 1, { completionArtifactRefs }),
   assert('artifact files exist inside output directory', artifactFilesExist, { artifactFilePaths, outputDir }),
   assert('artifact payload marks arbitrary command execution as false', artifactPayloads.every((payload) => payload.safety?.arbitrary_command_execution === false), { artifactPayloads }),
   assert('gate evidence is generated from artifact', response.events.some((event) => event.event_type === 'gate_checked' && (event.gate_evidence ?? []).length === 2), { gateEvents: response.events.filter((event) => event.event_type === 'gate_checked') }),
@@ -88,6 +92,7 @@ const result = {
     status: response.status,
     event_count: response.events.length,
     artifact_ref_count: artifactRefs.length,
+    completion_artifact_ref_count: completionArtifactRefs.length,
     target_worker: response.job.target_worker,
   },
 };
