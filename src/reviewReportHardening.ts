@@ -104,7 +104,7 @@ export function buildHardenedReviewReport(
         source: isRuntimeEvidence(note) ? 'runtime_reported' : 'human_entered',
       };
 
-      if (note || blockerReason) {
+      if (note) {
         if (evidenceItem.source === 'runtime_reported') runtime.push(evidenceItem);
         else human.push(evidenceItem);
       }
