@@ -1,0 +1,120 @@
+{
+  "trial_suite": "adapter-trials",
+  "generated_at": "2026-05-16T00:00:00.000Z",
+  "status": "pass",
+  "summaries": [
+    {
+      "trial_id": "adapter-mock-runtime",
+      "provider": "mock",
+      "status": "pass",
+      "assertions": [
+        {
+          "name": "adapter response accepted",
+          "pass": true
+        },
+        {
+          "name": "runtime job created",
+          "pass": true
+        },
+        {
+          "name": "artifacts collected",
+          "pass": true
+        },
+        {
+          "name": "hardened review created",
+          "pass": true
+        },
+        {
+          "name": "memory context created",
+          "pass": true
+        },
+        {
+          "name": "do-not-store policy present",
+          "pass": true
+        }
+      ],
+      "runtime_job_summary": {
+        "job_id": "job-run-a-mock-adapter-backed-implementation-loop-an",
+        "status": "running",
+        "event_count": 5,
+        "artifact_count": 2,
+        "callback_count": 0
+      },
+      "review_summary": {
+        "required_gates": 3,
+        "human_entered_evidence": 0,
+        "runtime_reported_evidence": 2,
+        "artifact_backed_evidence": 2,
+        "missing_evidence": 1,
+        "failed_gates": 0,
+        "release_blockers": 2
+      },
+      "memory_summary": {
+        "accepted_decisions": 4,
+        "runtime_blockers": 2,
+        "artifact_summaries": 2,
+        "open_questions": 2
+      }
+    },
+    {
+      "trial_id": "adapter-http-dry-run",
+      "provider": "http",
+      "status": "pass",
+      "assertions": [
+        {
+          "name": "http health boundary checked",
+          "pass": true,
+          "details": {
+            "health": {
+              "ok": true,
+              "provider_id": "http",
+              "status": "healthy",
+              "message": "HTTP runtime adapter endpoint is reachable."
+            }
+          }
+        },
+        {
+          "name": "http response shape guard checked",
+          "pass": true,
+          "details": {
+            "invalidShapeCode": "INVALID_RUNTIME_ADAPTER_RESPONSE"
+          }
+        },
+        {
+          "name": "runtime job created from valid http response",
+          "pass": true
+        },
+        {
+          "name": "memory context created",
+          "pass": true
+        },
+        {
+          "name": "artifact summaries retained",
+          "pass": true
+        }
+      ],
+      "runtime_job_summary": {
+        "job_id": "job-prove-the-http-provider-boundary-can-dispatch-a-",
+        "status": "running",
+        "event_count": 5,
+        "artifact_count": 2,
+        "callback_count": 0
+      },
+      "review_summary": {
+        "required_gates": 3,
+        "human_entered_evidence": 0,
+        "runtime_reported_evidence": 2,
+        "artifact_backed_evidence": 2,
+        "missing_evidence": 1,
+        "failed_gates": 0,
+        "release_blockers": 2
+      },
+      "memory_summary": {
+        "accepted_decisions": 4,
+        "runtime_blockers": 2,
+        "artifact_summaries": 2,
+        "open_questions": 2
+      }
+    }
+  ]
+}
