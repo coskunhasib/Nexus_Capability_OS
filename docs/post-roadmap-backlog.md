@@ -9,8 +9,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 17. Post-roadmap backlog — done, PR #49
 18. Release notes / implementation summary — done, PR #50
 19. Runtime security policy — done, PR #51
-20. Dev command cleanup — done
-21. Local controlled worker v2 — pending
+20. Dev command cleanup — done, PR #52
+21. Local controlled worker v2 — done
 22. OpenHands real integration plan — pending
 23. Code Agent real integration plan — pending
 24. UI/runtime adapter polish — pending
@@ -61,16 +61,16 @@ Runtime trust boundaries, sensitive-data handling rules, artifact/output rules, 
 
 ### 21. Local controlled worker v2
 
-Status: pending.
+Status: done.
 
-Definition of done:
+Outcome:
 
 ```text
-Add a manifest-driven worker path.
-Keep actions allowlisted.
-Keep output bounded.
-Add deterministic verification.
-Produce runtime events from action results.
+Manifest-driven controlled worker path is implemented in server/controlled-worker-v2.ts.
+Actions remain allowlisted.
+Outputs are bounded.
+Deterministic verification is available through npm run verify:controlled-worker.
+Runtime events are produced from manifest action results.
 ```
 
 ## P1 items
@@ -88,7 +88,7 @@ Verification commands, safe boundaries, known limitations and next integration o
 
 ### 20. Dev command cleanup
 
-Status: done.
+Status: done, PR #52.
 
 Outcome:
 
@@ -153,7 +153,6 @@ Keep network development exposure opt-in.
 ## Recommended execution order
 
 ```text
-21. Local controlled worker v2
 22. OpenHands real integration plan
 23. Code Agent real integration plan
 24. UI/runtime adapter polish
