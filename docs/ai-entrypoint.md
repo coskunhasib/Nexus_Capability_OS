@@ -23,12 +23,13 @@ Read these before proposing or editing implementation code:
 1. AGENTS.md
 2. AI_ENTRYPOINT.md
 3. docs/nexus-unknown-mode.md
-4. docs/nexus-data-contract-roadmap.md
-5. docs/post-roadmap-backlog.md
-6. docs/verification-contract.md
-7. docs/runtime-security-policy.md
-8. docs/operator-run-result-ingestion-plan.md
-9. docs/ui-runtime-implementation-plan.md
+4. docs/nexus-capability-runtime-philosophy.md
+5. docs/nexus-data-contract-roadmap.md
+6. docs/post-roadmap-backlog.md
+7. docs/verification-contract.md
+8. docs/runtime-security-policy.md
+9. docs/operator-run-result-ingestion-plan.md
+10. docs/ui-runtime-implementation-plan.md
 ```
 
 ## Current project state
@@ -38,7 +39,7 @@ Read these before proposing or editing implementation code:
 16-24 post-roadmap hardening: complete
 25-31 UI/runtime implementation: complete
 32 operator-run result ingestion plan: complete
-33 Nexus data contract discovery: next
+33 Capability Runtime data model discovery: next
 ```
 
 ## Current operating mode
@@ -46,30 +47,43 @@ Read these before proposing or editing implementation code:
 ```text
 Nexus Unknown Mode is active.
 Real Nexus details are not assumed.
-The next step is inventory, not ingestion implementation.
+Nexus Capability Runtime is the embedded wisdom / experience / operating-discipline layer.
+The next step is runtime data model discovery, not ingestion implementation.
 ```
 
 See:
 
 ```text
 docs/nexus-unknown-mode.md
+docs/nexus-capability-runtime-philosophy.md
 ```
+
+## Core philosophy
+
+```text
+LLM = reasoning intelligence
+Nexus Capability Runtime = wisdom, experience and operating discipline
+```
+
+The LLM thinks. The runtime provides skills, tools, agents/sub-agents, memory, context, evaluation and learned operating discipline.
 
 ## Correct order
 
 ```text
-Nexus data contract discovery
-→ Nexus canonical result envelope
-→ Nexus result ingestion prototype
-→ shared result guard and fixtures
-→ Code Agent / custom agent mapping
-→ first runtime wiring decision
+Capability runtime data model discovery
+→ Skill-Tool-Agent execution contract
+→ Skill package standard
+→ Tool permission model
+→ Agent / sub-agent delegation model
+→ Memory/context distillation model
+→ Evaluation and observation model
+→ Runtime loop prototype
 ```
 
 ## Current next item
 
 ```text
-33. Nexus data contract discovery
+33. Capability runtime data model discovery
 ```
 
 Expected output:
@@ -78,7 +92,7 @@ Expected output:
 docs/nexus-data-contract-inventory.md
 ```
 
-The inventory should list existing repository types, files and fields that already touch Nexus-facing data.
+The inventory should list existing repository types, files and fields that already touch Nexus-facing capability runtime data.
 
 ## What item 33 must inventory
 
@@ -92,6 +106,9 @@ HardenedReviewReport
 MemoryUpdatePacket
 ContextUpdatePacket
 ControlledWorkerManifest
+Skill registry
+Tool surfaces
+Agent / profile surfaces
 schemas under schemas/
 samples under samples/
 RuntimeAdapterPanel exports
@@ -138,8 +155,9 @@ The active roadmap source is:
 docs/post-roadmap-backlog.md
 ```
 
-The current data-contract roadmap is:
+The current philosophy and data-contract roadmap are:
 
 ```text
+docs/nexus-capability-runtime-philosophy.md
 docs/nexus-data-contract-roadmap.md
 ```
