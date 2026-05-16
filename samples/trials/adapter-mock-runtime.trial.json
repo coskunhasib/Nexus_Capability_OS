@@ -1,0 +1,15 @@
+{
+  "trial_id": "adapter-mock-runtime",
+  "title": "Adapter Trial / Mock Runtime",
+  "intent": "Run a mock adapter-backed implementation loop and prove review to memory/context continuity.",
+  "expected_provider": "mock",
+  "dispatch_mode": "mock",
+  "expected_status": "pass",
+  "required_checks": [
+    "adapter_response_accepted",
+    "runtime_job_created",
+    "artifacts_collected",
+    "hardened_review_created",
+    "memory_context_created"
+  ]
+}
