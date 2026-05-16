@@ -1,15 +1,45 @@
 {
-  "trial_id": "adapter-mock-runtime",
-  "title": "Adapter Trial / Mock Runtime",
+  "scenario_id": "adapter-mock-runtime",
+  "version": "0.1",
   "intent": "Run a mock adapter-backed implementation loop and prove review to memory/context continuity.",
-  "expected_provider": "mock",
-  "dispatch_mode": "mock",
-  "expected_status": "pass",
-  "required_checks": [
-    "adapter_response_accepted",
-    "runtime_job_created",
-    "artifacts_collected",
-    "hardened_review_created",
-    "memory_context_created"
+  "tags": [
+    "adapter-trial",
+    "mock-provider",
+    "memory-context"
+  ],
+  "expected": {
+    "capability_pack": "adapter-trial-pack",
+    "macro_pipeline": "software-development",
+    "profiles": [
+      "runtime-adapter-engineer",
+      "qa-automation-engineer",
+      "memory-curator"
+    ],
+    "micro_pipelines": [
+      "runtime-adapter",
+      "review-hardening",
+      "memory-context"
+    ],
+    "gates": [
+      "adapter-response",
+      "artifact-ref",
+      "memory-context-continuity"
+    ],
+    "packets": [
+      "nexus.runtime_adapter_request",
+      "nexus.runtime_adapter_response",
+      "nexus.memory_update_packet",
+      "nexus.context_update_packet"
+    ]
+  },
+  "acceptance_criteria": [
+    "The mock provider returns an accepted runtime adapter response.",
+    "The runtime job state captures runtime events and artifact refs.",
+    "The hardened review report separates blockers and artifact-backed evidence.",
+    "The memory/context hardening layer produces accepted decisions, blockers, artifact summaries and next-run context."
+  ],
+  "nexus_integration_notes": [
+    "This scenario proves the in-process adapter path before real worker execution.",
+    "Raw runtime events must not be persisted into memory packets."
   ]
 }
