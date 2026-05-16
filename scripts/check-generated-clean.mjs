@@ -6,6 +6,7 @@ const generatedPaths = [
   'samples/trial-results',
   'samples/handoff-results',
   'samples/runtime-bridge-results',
+  'samples/adapter-trial-results',
 ];
 
 function runGit(args) {
