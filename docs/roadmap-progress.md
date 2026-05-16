@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-14/15 completed
-Current item: 15/15 — Codex / Claude Code Adapter
-Next item: Final roadmap verification
+15/15 completed
+Current item: Final roadmap verification
+Next item: Post-roadmap hardening and integration backlog
 ```
 
 ## Current state
@@ -45,7 +45,7 @@ Adapter trials: implemented
 Local HTTP worker skeleton: implemented
 Minimum real worker vertical slice: implemented
 OpenHands adapter: implemented
-Codex / Claude Code adapter: not implemented yet
+Code agent adapter: implemented
 ```
 
 ## Done
@@ -91,47 +91,45 @@ Codex / Claude Code adapter: not implemented yet
 ✅ 12/15 — Local HTTP Worker Server Skeleton
 ✅ 13/15 — Minimum Real Worker Vertical Slice
 ✅ 14/15 — OpenHands Adapter
+✅ 15/15 — Code Agent Adapter
 ```
 
 ## Next recommended item
 
 ```text
-Codex / Claude Code Adapter
+Post-roadmap hardening and integration backlog
 ```
 
 Why this is next:
 
 ```text
-The OpenHands adapter now defines a safe envelope and result-normalization layer without coupling the worker to an installed OpenHands runtime.
-The final roadmap step is to add the same explicit envelope/normalization boundary for Codex and Claude Code style coding agents.
+The 15-step adapter/runtime roadmap is now implemented through verified contract layers.
+The next phase should harden final integration documentation, reconcile known developer workflow changes, and decide which external runtime should be wired first.
 ```
 
 Target:
 
 ```text
-code-agent request adapter
-agent kind selector: codex | claude-code
-safe prompt/workspace envelope
-expected artifact mapping
-result normalization
-blocked result normalization
-focused verification script
-adapter documentation
+final roadmap verification
+verification contract refresh
+release notes / implementation summary
+external runtime wiring decision
+dev command host decision
 ```
 
 Expected files:
 
 ```text
-server/adapters/code-agent-adapter.ts
-scripts/verify-code-agent-adapter.ts
-docs/codex-claude-adapter.md
-package.json update
+docs/verification-contract.md
+docs/post-roadmap-backlog.md
+docs/release-notes.md
+package.json optional cleanup
 ```
 
-Expected NPM script:
+Expected NPM scripts:
 
 ```text
-verify:code-agent-adapter
+existing verification chain remains authoritative
 ```
 
 ## Remaining roadmap
@@ -151,7 +149,7 @@ verify:code-agent-adapter
 12. Local HTTP Worker Server Skeleton — done
 13. Minimum Real Worker Vertical Slice — done
 14. OpenHands Adapter — done
-15. Codex / Claude Code Adapter — next
+15. Code Agent Adapter — done
 ```
 
 ## Current priority stack
@@ -171,5 +169,8 @@ verify:code-agent-adapter
 12. Local HTTP worker skeleton — done
 13. Real worker vertical slice — done
 14. OpenHands adapter — done
-15. Codex / Claude Code adapter — next
+15. Code agent adapter — done
+16. Final verification contract refresh
+17. External runtime wiring decision
+18. UI/runtime adapter polish
 ```
