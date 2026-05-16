@@ -23,6 +23,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const generatedAt = '2026-05-16T00:00:00.000Z';
 
+type AdapterTrialConfig = {
+  scenario_id: string;
+  intent: string;
+};
+
 function readJson(relativePath: string) {
   return JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
 }
@@ -140,8 +145,8 @@ function pass(name: string, passValue: boolean, details?: Record<string, unknown
 }
 
 async function runMockAdapterTrial() {
-  const config = readJson('samples/trials/adapter-mock-runtime.trial.json');
-  const packet = makeTaskPacket(config.trial_id, config.intent);
+  const config = readJson('samples/trials/adapter-mock-runtime.trial.json') as AdapterTrialConfig;
+  const packet = makeTaskPacket(config.scenario_id, config.intent);
   const request = buildRuntimeAdapterRequest(packet, 'mock');
   const response = await dispatchRuntimeAdapterRequest(mockRuntimeAdapterProvider, request);
   const built = buildReviewAndMemory(packet, 'mock', request, response);
@@ -156,7 +161,7 @@ async function runMockAdapterTrial() {
   ];
 
   return {
-    trial_id: config.trial_id,
+    trial_id: config.scenario_id,
     provider: 'mock',
     status: assertions.every((item) => item.pass) ? 'pass' : 'fail',
     assertions,
@@ -182,8 +187,8 @@ function responseFromRequest(request: RuntimeAdapterRequest) {
 }
 
 async function runHttpAdapterDryRunTrial() {
-  const config = readJson('samples/trials/adapter-http-dry-run.trial.json');
-  const packet = makeTaskPacket(config.trial_id, config.intent);
+  const config = readJson('samples/trials/adapter-http-dry-run.trial.json') as AdapterTrialConfig;
+  const packet = makeTaskPacket(config.scenario_id, config.intent);
   const request = buildRuntimeAdapterRequest(packet, 'dry_run');
 
   const validHttpProvider = createHttpRuntimeAdapterProvider({
@@ -232,7 +237,7 @@ async function runHttpAdapterDryRunTrial() {
   ];
 
   return {
-    trial_id: config.trial_id,
+    trial_id: config.scenario_id,
     provider: 'http',
     status: assertions.every((item) => item.pass) ? 'pass' : 'fail',
     assertions,
