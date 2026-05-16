@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { RuntimeEventStore } from './runtimeEventStore.ts';
 import { runtimeEventStoreTimeline, summarizeRuntimeEventStore } from './runtimeEventStore.ts';
 
@@ -13,7 +14,7 @@ function sourceTone(source: string) {
   return 'border-cyan-500/20 bg-cyan-950/20 text-cyan-300';
 }
 
-function Badge({ children, className }: { children: React.ReactNode; className: string }) {
+function Badge({ children, className }: { children: ReactNode; className: string }) {
   return <span className={`rounded-md border px-2 py-1 text-[11px] ${className}`}>{children}</span>;
 }
 
