@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-5/15 completed
-Current item: 6/15 — Event Store + Replay
-Next item: 7/15 — Runtime Timeline UI
+6/15 completed
+Current item: 7/15 — Runtime Timeline UI
+Next item: 8/15 — Artifact Registry / Artifact Refs
 ```
 
 ## Current state
@@ -36,6 +36,7 @@ HTTP provider: hardened boundary implemented
 Runtime adapter config panel: implemented
 Runtime callback ingest: implemented
 Runtime job state model: implemented
+Runtime event store + replay: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -73,45 +74,45 @@ Real external worker execution: not implemented yet
 ✅ 3/15 — Runtime Adapter Config Panel
 ✅ 4/15 — Runtime Callback Ingest
 ✅ 5/15 — Job State Model
+✅ 6/15 — Event Store + Replay
 ```
 
 ## Next recommended item
 
 ```text
-PR #35 — Event Store + Replay
+PR #36 — Runtime Timeline UI
 ```
 
 Why this is next:
 
 ```text
-Runtime job state now exists in the core runtime adapter layer.
-The next step is to store ordered runtime events separately and replay them deterministically.
+Runtime events can now be stored, summarized and replayed deterministically.
+The next step is to expose this as a readable runtime timeline without overloading the Runner panel.
 ```
 
 Target:
 
 ```text
-event store entries
-source: adapter_response / callback
-received_at
-raw event log
-ordered replay
-duplicate tracking
-replay summary
+timeline component
+sequence/source/type/status
+adapter response vs callback source label
+repeated event count
+replay summary surface
 ```
 
 Expected files:
 
 ```text
+src/RuntimeTimelinePanel.tsx
 src/runtimeEventStore.ts
-scripts/verify-runtime-adapter-loop.ts
-docs/verification-contract.md update
+scripts/verify-runtime-event-store.ts
+docs/runtime-event-store.md update
 ```
 
 Expected NPM script:
 
 ```text
-verify:adapter-loop
+verify:event-store
 ```
 
 ## Remaining roadmap
@@ -200,18 +201,21 @@ Panel-level job state display/export is deferred to the smaller-file event/timel
 
 ### 6. Event Store + Replay
 
-Status: next
+Status: done
 
 ```text
-events[]
-timeline
-raw event log
-event replay
+entries[]
+repeated[]
+source: adapter_response / callback
+ordered replay
+replay summary
+timeline rows
+verify:event-store
 ```
 
 ### 7. Runtime Timeline UI
 
-Status: pending
+Status: next
 
 ```text
 request created
@@ -364,8 +368,8 @@ Commercial Packaging
 3. Runtime Adapter Config Panel — done
 4. Runtime callback ingest — done
 5. Job state model — done
-6. Event store + replay — next
-7. Event timeline UI
+6. Event store + replay — done
+7. Event timeline UI — next
 8. Artifact registry
 9. Adapter trials
 10. Local HTTP worker skeleton
