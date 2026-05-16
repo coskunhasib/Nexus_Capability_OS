@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-6/15 completed
-Current item: 7/15 — Runtime Timeline UI
-Next item: 8/15 — Artifact Registry / Artifact Refs
+7/15 completed
+Current item: 8/15 — Artifact Registry / Artifact Refs
+Next item: 9/15 — Review Report Hardening
 ```
 
 ## Current state
@@ -37,6 +37,7 @@ Runtime adapter config panel: implemented
 Runtime callback ingest: implemented
 Runtime job state model: implemented
 Runtime event store + replay: implemented
+Runtime timeline UI: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -75,44 +76,50 @@ Real external worker execution: not implemented yet
 ✅ 4/15 — Runtime Callback Ingest
 ✅ 5/15 — Job State Model
 ✅ 6/15 — Event Store + Replay
+✅ 7/15 — Runtime Timeline UI
 ```
 
 ## Next recommended item
 
 ```text
-PR #36 — Runtime Timeline UI
+PR #38 — Artifact Registry / Artifact Refs
 ```
 
 Why this is next:
 
 ```text
-Runtime events can now be stored, summarized and replayed deterministically.
-The next step is to expose this as a readable runtime timeline without overloading the Runner panel.
+Runtime events can now be stored, replayed and displayed as timeline rows.
+The next step is to normalize artifact refs into a registry instead of leaving them embedded only inside runtime events.
 ```
 
 Target:
 
 ```text
-timeline component
-sequence/source/type/status
-adapter response vs callback source label
-repeated event count
-replay summary surface
+artifact_id
+kind
+ref
+summary
+step_id
+event_id
+created_at
+source event
+dedupe policy
+registry summary
 ```
 
 Expected files:
 
 ```text
-src/RuntimeTimelinePanel.tsx
-src/runtimeEventStore.ts
-scripts/verify-runtime-event-store.ts
-docs/runtime-event-store.md update
+src/runtimeArtifactRegistry.ts
+scripts/verify-runtime-artifact-registry.ts
+docs/runtime-artifact-registry.md
+package.json update
 ```
 
 Expected NPM script:
 
 ```text
-verify:event-store
+verify:artifacts
 ```
 
 ## Remaining roadmap
@@ -215,22 +222,20 @@ verify:event-store
 
 ### 7. Runtime Timeline UI
 
-Status: next
+Status: done
 
 ```text
-request created
-adapter accepted
-step started
-gate checked
-artifact created
-step completed
-blocked
-failed
+RuntimeTimelinePanel.tsx
+summary cards
+adapter response vs callback source labels
+ordered event table
+status labels
+repeated event counter
 ```
 
 ### 8. Artifact Registry / Artifact Refs
 
-Status: pending
+Status: next
 
 ```text
 artifact_id
@@ -369,13 +374,13 @@ Commercial Packaging
 4. Runtime callback ingest — done
 5. Job state model — done
 6. Event store + replay — done
-7. Event timeline UI — next
-8. Artifact registry
-9. Adapter trials
-10. Local HTTP worker skeleton
-11. Real worker vertical slice
-12. OpenHands adapter
-13. Codex / Claude Code adapter
-14. Security / permissions
-15. Observability / workspace / marketplace / commercial layers
+7. Event timeline UI — done
+8. Artifact registry — next
+9. Review report hardening
+10. Memory / context packet hardening
+11. Adapter trials
+12. Local HTTP worker skeleton
+13. Real worker vertical slice
+14. OpenHands adapter
+15. Codex / Claude Code adapter
 ```
