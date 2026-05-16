@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-13/15 completed
-Current item: 14/15 — OpenHands Adapter
-Next item: 15/15 — Codex / Claude Code Adapter
+14/15 completed
+Current item: 15/15 — Codex / Claude Code Adapter
+Next item: Final roadmap verification
 ```
 
 ## Current state
@@ -44,7 +44,7 @@ Memory/context packet hardening: implemented
 Adapter trials: implemented
 Local HTTP worker skeleton: implemented
 Minimum real worker vertical slice: implemented
-OpenHands adapter: not implemented yet
+OpenHands adapter: implemented
 Codex / Claude Code adapter: not implemented yet
 ```
 
@@ -90,29 +90,31 @@ Codex / Claude Code adapter: not implemented yet
 ✅ 11/15 — Adapter Trials
 ✅ 12/15 — Local HTTP Worker Server Skeleton
 ✅ 13/15 — Minimum Real Worker Vertical Slice
+✅ 14/15 — OpenHands Adapter
 ```
 
 ## Next recommended item
 
 ```text
-OpenHands Adapter
+Codex / Claude Code Adapter
 ```
 
 Why this is next:
 
 ```text
-The minimum real worker slice now proves safe out-of-process artifact generation through the runtime adapter contract without arbitrary command execution.
-The next step is to define an OpenHands adapter contract that can package work for OpenHands without coupling the core worker to an installed OpenHands runtime.
+The OpenHands adapter now defines a safe envelope and result-normalization layer without coupling the worker to an installed OpenHands runtime.
+The final roadmap step is to add the same explicit envelope/normalization boundary for Codex and Claude Code style coding agents.
 ```
 
 Target:
 
 ```text
-OpenHands request adapter
-safe project/workspace envelope
-allowed task payload mapping
-artifact expectation mapping
-adapter response normalization
+code-agent request adapter
+agent kind selector: codex | claude-code
+safe prompt/workspace envelope
+expected artifact mapping
+result normalization
+blocked result normalization
 focused verification script
 adapter documentation
 ```
@@ -120,16 +122,16 @@ adapter documentation
 Expected files:
 
 ```text
-server/adapters/openhands-adapter.ts
-scripts/verify-openhands-adapter.ts
-docs/openhands-adapter.md
+server/adapters/code-agent-adapter.ts
+scripts/verify-code-agent-adapter.ts
+docs/codex-claude-adapter.md
 package.json update
 ```
 
 Expected NPM script:
 
 ```text
-verify:openhands-adapter
+verify:code-agent-adapter
 ```
 
 ## Remaining roadmap
@@ -148,8 +150,8 @@ verify:openhands-adapter
 11. Adapter Trials — done
 12. Local HTTP Worker Server Skeleton — done
 13. Minimum Real Worker Vertical Slice — done
-14. OpenHands Adapter — next
-15. Codex / Claude Code Adapter — pending
+14. OpenHands Adapter — done
+15. Codex / Claude Code Adapter — next
 ```
 
 ## Current priority stack
@@ -168,6 +170,6 @@ verify:openhands-adapter
 11. Adapter trials — done
 12. Local HTTP worker skeleton — done
 13. Real worker vertical slice — done
-14. OpenHands adapter — next
-15. Codex / Claude Code adapter
+14. OpenHands adapter — done
+15. Codex / Claude Code adapter — next
 ```
