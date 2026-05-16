@@ -19,6 +19,10 @@ install determinism
 → runtime adapter operator config surface
 → runtime callback ingest behavior
 → runtime job state model behavior
+→ runtime event store + replay behavior
+→ runtime artifact registry behavior
+→ review report hardening behavior
+→ memory/context packet hardening behavior
 → snapshot sync
 → tree data sync
 → production build
@@ -52,6 +56,10 @@ npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
 npm run verify:adapter-provider
+npm run verify:event-store
+npm run verify:artifacts
+npm run verify:review-hardening
+npm run verify:memory-context
 npm run sync:trial-results
 npm run sync:tree
 ```
@@ -82,6 +90,10 @@ npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
 npm run verify:adapter-provider
+npm run verify:event-store
+npm run verify:artifacts
+npm run verify:review-hardening
+npm run verify:memory-context
 npm run check:bundle
 ```
 
@@ -99,6 +111,10 @@ npm run check:bundle
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
 | `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest, runtime job state and Runner state behavior work together. |
 | `verify:adapter-provider` | Runtime adapter provider registry, mock provider and hardened HTTP provider behavior work through the shared dispatch interface. |
+| `verify:event-store` | Runtime events can be appended, replayed, deduped and summarized without re-dispatching runtime work. |
+| `verify:artifacts` | Runtime artifact refs are collected into a registry, repeated artifacts are separated and artifact summaries stay traceable. |
+| `verify:review-hardening` | Human evidence, runtime evidence, artifact-backed evidence, missing evidence, failed gates and release blockers are separated before release. |
+| `verify:memory-context` | Hardened review buckets become bounded memory/context packets with accepted decisions, runtime blockers, artifact summaries, open questions, provider/job metadata and do-not-store policy. |
 | `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
 | `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
 | `check:bundle` | Production bundle stays within defined JS/CSS budgets. |
@@ -256,6 +272,41 @@ rejected adapter response creates rejected job state with adapter error
 empty work_order reject path returns EMPTY_WORK_ORDER
 ```
 
+## Memory / context packet hardening
+
+The memory/context hardening boundary is the next layer after hardened review reports.
+
+```text
+TaskPacket
++ HardenedReviewReport
++ optional RuntimeJobState
++ optional RuntimeArtifactRegistry
+→ nexus.memory_update_packet v0.2
+→ nexus.context_update_packet v0.2
+```
+
+Living code path:
+
+```text
+src/memoryContextHardening.ts
+docs/memory-context-hardening.md
+scripts/verify-memory-context-hardening.ts
+```
+
+The hardening layer guarantees:
+
+```text
+passed human evidence becomes accepted decisions
+passed runtime evidence becomes accepted decisions
+artifact-backed evidence becomes summary/ref decisions
+release blockers become compact runtime blocker memory
+release blockers become open next-run questions
+artifact refs are stored as summary/ref only
+provider/job metadata is kept for traceability only
+do-not-store policy excludes raw runtime events, raw callback payloads, raw artifact payloads, secrets, irrelevant personal data and full transcripts
+next-run context is bounded by maxContextItems
+```
+
 ## Generated artifacts
 
 The following paths are generated and guarded:
@@ -301,7 +352,7 @@ Do not raise bundle limits unless the new size is intentional and justified.
 
 ## Trial and Nexus runtime contract
 
-A scenario is considered healthy only when all five layers pass:
+A scenario is considered healthy only when all six layers pass:
 
 ```text
 Trial result: pass
@@ -309,6 +360,7 @@ Nexus handoff usability: pass
 Nexus runtime bridge: pass
 Runtime adapter loop: pass
 Runtime adapter provider: pass
+Memory/context hardening: pass
 ```
 
 This means:
@@ -323,6 +375,7 @@ The HTTP provider fails closed when remote worker output is invalid.
 The operator can configure dispatch metadata before sending a runtime adapter request.
 Later runtime callbacks can be validated, deduped and applied without re-dispatching the job.
 The runtime job can be represented independently from the visual Runner controls.
+The hardened review report can feed memory/context packets without storing raw runtime or callback payloads.
 ```
 
 ## Failure policy
@@ -343,6 +396,8 @@ Preferred order:
 
 The runtime job state model is implemented in the core runtime adapter layer and covered by CI. The current panel-level job state export/display was deferred because the panel update needs to be split into smaller UI files to avoid large monolithic UI patches.
 
+Memory/context hardening currently builds and verifies the packet objects in code. UI export buttons and persisted sample snapshots can be added after Adapter Trials prove the next-run workflow shape.
+
 The next integration milestone is:
 
 ```text
@@ -355,4 +410,5 @@ nexus.runtime_adapter_request
 → runtime_callback events
 → gate evidence + artifact refs
 → review report + memory/context packets
+→ adapter trials
 ```
