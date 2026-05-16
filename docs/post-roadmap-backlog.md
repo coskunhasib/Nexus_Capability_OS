@@ -14,7 +14,7 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 22. OpenHands real integration plan — done, PR #54
 23. Code Agent real integration plan — done, PR #55
 24. UI/runtime adapter polish — done, PR #56
-25-31. UI runtime implementation plan — documented
+25-31. UI runtime implementation phase — implemented
 ```
 
 ## Priority buckets
@@ -136,22 +136,22 @@ Direct runtime invocation remains intentionally unimplemented.
 
 ## UI implementation phase
 
-Detailed plan:
+Detailed implementation state:
 
 ```text
 docs/ui-runtime-implementation-plan.md
 ```
 
-Implementation sequence:
+Implemented sequence:
 
 ```text
-25. Job State card + Export job state
-26. Artifact Registry card
-27. Controlled Worker manifest preview/export
-28. External Runtime Mode explanation card
-29. Memory/Context preview/export
-30. Operator action label polish
-31. First real external runtime wiring decision gate
+25. Job State card + Export job state — implemented
+26. Artifact Registry card — implemented
+27. Controlled Worker manifest preview/export — implemented
+28. External Runtime Mode explanation card — implemented
+29. Memory/Context preview/export — implemented
+30. Operator action label polish — implemented
+31. First external runtime wiring decision gate — documented
 ```
 
 ## Guardrails for the next phase
@@ -168,13 +168,10 @@ Keep network development exposure opt-in.
 ## Recommended next phase
 
 ```text
-1. Implement job-state view/export.
-2. Implement artifact registry card.
-3. Implement controlled worker manifest preview/export.
-4. Implement external runtime mode explanation card.
-5. Implement memory/context preview/export.
-6. Rename unclear operator actions.
-7. Then decide first real external runtime wiring PR.
+1. Review the runtime panel implementation in real UI usage.
+2. Decide first external runtime integration path.
+3. Prefer operator-run result ingestion before direct runtime mode.
+4. Add focused verification for any new result-ingestion path.
 ```
 
 ## Completion rule
