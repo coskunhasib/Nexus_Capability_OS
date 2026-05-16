@@ -216,8 +216,15 @@ async function runHttpAdapterDryRunTrial() {
     invalidShapeCode = error instanceof RuntimeAdapterProviderError ? error.code : 'UNKNOWN';
   }
 
+  const healthSummary = health ? {
+    ok: health.ok,
+    provider_id: health.provider_id,
+    status: health.status,
+    message: health.message,
+  } : undefined;
+
   const assertions = [
-    pass('http health boundary checked', health?.ok === true && health.provider_id === 'http', { health }),
+    pass('http health boundary checked', health?.ok === true && health.provider_id === 'http', { health: healthSummary }),
     pass('http response shape guard checked', invalidShapeRejected && invalidShapeCode === 'INVALID_RUNTIME_ADAPTER_RESPONSE', { invalidShapeCode }),
     pass('runtime job created from valid http response', built.job.job_id.length > 0 && built.job.provider_id === 'http'),
     pass('memory context created', built.memoryContext.memory_update_packet.accepted_decisions.length > 0 && built.memoryContext.context_update_packet.next_run_context.required_followups.length > 0),
