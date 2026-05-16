@@ -4,7 +4,9 @@ Before proposing or editing code, read:
 
 ```text
 AGENTS.md
+AI_ENTRYPOINT.md
 docs/ai-entrypoint.md
+docs/nexus-unknown-mode.md
 docs/nexus-data-contract-roadmap.md
 docs/post-roadmap-backlog.md
 docs/verification-contract.md
@@ -17,12 +19,13 @@ Current active roadmap item:
 33. Nexus data contract discovery
 ```
 
-Key rule:
+Current mode:
 
 ```text
-Do not guess hidden Nexus data fields.
-Build the Nexus-owned data contract before implementing result ingestion.
-External tool outputs must map into the Nexus contract, not define it.
+Nexus Unknown Mode is active.
+First discover the Nexus-facing data contract.
+Then define the canonical result envelope.
+Then implement result ingestion.
 ```
 
 Baseline verification:
