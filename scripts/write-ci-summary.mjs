@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const generatedRoot = path.join(root, 'generated', 'trial-runs');
+const adapterTrialRoot = path.join(root, 'samples', 'adapter-trial-results');
 const assetsDir = path.join(root, 'dist', 'assets');
 const outputPath = process.env.GITHUB_STEP_SUMMARY;
 
@@ -51,6 +52,7 @@ function bundleSummary() {
 const trialSuite = safeRead(path.join(generatedRoot, 'all-skill-trials-summary.json'));
 const handoffSuite = safeRead(path.join(generatedRoot, 'nexus-handoff-usability-summary.json'));
 const runtimeSuite = safeRead(path.join(generatedRoot, 'nexus-runtime-bridge-summary.json'));
+const adapterSuite = safeRead(path.join(adapterTrialRoot, 'adapter-trials-summary.json'));
 const bundle = bundleSummary();
 
 const rows = trialIds.map((id) => {
@@ -68,6 +70,16 @@ const rows = trialIds.map((id) => {
   ];
 });
 
+const adapterRows = (adapterSuite?.summaries ?? []).map((summary) => [
+  summary.trial_id,
+  summary.provider,
+  `${statusIcon(summary.status)} ${summary.status}`,
+  String(summary.runtime_job_summary?.event_count ?? '-'),
+  String(summary.runtime_job_summary?.artifact_count ?? '-'),
+  String(summary.memory_summary?.accepted_decisions ?? '-'),
+  String(summary.memory_summary?.runtime_blockers ?? '-'),
+]);
+
 const lines = [
   '# Nexus Capability OS CI Summary',
   '',
@@ -76,12 +88,19 @@ const lines = [
   `- Skill trials: ${trialSuite ? `${statusIcon(trialSuite.status)} ${trialSuite.status}` : 'missing'}`,
   `- Nexus handoff usability: ${handoffSuite ? `${statusIcon(handoffSuite.status)} ${handoffSuite.status}` : 'missing'}`,
   `- Nexus runtime bridge: ${runtimeSuite ? `${statusIcon(runtimeSuite.status)} ${runtimeSuite.status}` : 'missing'}`,
+  `- Adapter trials: ${adapterSuite ? `${statusIcon(adapterSuite.status)} ${adapterSuite.status}` : 'missing'}`,
   '',
   '## Scenario Matrix',
   '',
   '| Scenario | Trial | Handoff | Runtime | Missing evidence | Tools | Runtime events |',
   '|---|---:|---:|---:|---:|---:|---:|',
   ...rows.map((row) => `| ${row.join(' | ')} |`),
+  '',
+  '## Adapter Trials',
+  '',
+  '| Trial | Provider | Status | Runtime events | Artifacts | Accepted decisions | Blockers |',
+  '|---|---:|---:|---:|---:|---:|---:|',
+  ...(adapterRows.length ? adapterRows.map((row) => `| ${row.join(' | ')} |`) : ['| missing | - | - | - | - | - | - |']),
   '',
   '## Bundle Budget',
   '',

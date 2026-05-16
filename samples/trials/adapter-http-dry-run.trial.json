@@ -1,0 +1,45 @@
+{
+  "scenario_id": "adapter-http-dry-run",
+  "version": "0.1",
+  "intent": "Prove the HTTP provider boundary can dispatch a runtime adapter request and reject malformed worker output safely.",
+  "tags": [
+    "adapter-trial",
+    "http-provider",
+    "dry-run-boundary"
+  ],
+  "expected": {
+    "capability_pack": "adapter-trial-pack",
+    "macro_pipeline": "software-development",
+    "profiles": [
+      "runtime-adapter-engineer",
+      "qa-automation-engineer",
+      "memory-curator"
+    ],
+    "micro_pipelines": [
+      "runtime-adapter",
+      "http-boundary",
+      "memory-context"
+    ],
+    "gates": [
+      "http-health-boundary",
+      "response-shape-guard",
+      "memory-context-continuity"
+    ],
+    "packets": [
+      "nexus.runtime_adapter_request",
+      "nexus.runtime_adapter_response",
+      "nexus.memory_update_packet",
+      "nexus.context_update_packet"
+    ]
+  },
+  "acceptance_criteria": [
+    "The HTTP provider health boundary is checked.",
+    "The HTTP provider rejects malformed runtime adapter responses.",
+    "A valid HTTP response creates runtime job state and artifact summaries.",
+    "The memory/context hardening layer produces bounded next-run context."
+  ],
+  "nexus_integration_notes": [
+    "This scenario uses a fake fetch implementation; it does not require a real HTTP worker.",
+    "The malformed response path must fail closed with INVALID_RUNTIME_ADAPTER_RESPONSE."
+  ]
+}

@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-10/15 completed
-Current item: 11/15 — Adapter Trials
-Next item: 12/15 — Local HTTP Worker Server Skeleton
+11/15 completed
+Current item: 12/15 — Local HTTP Worker Server Skeleton
+Next item: 13/15 — Minimum Real Worker Vertical Slice
 ```
 
 ## Current state
@@ -41,6 +41,7 @@ Runtime timeline UI: implemented
 Runtime artifact registry: implemented
 Review report hardening: implemented
 Memory/context packet hardening: implemented
+Adapter trials: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -83,46 +84,49 @@ Real external worker execution: not implemented yet
 ✅ 8/15 — Artifact Registry / Artifact Refs
 ✅ 9/15 — Review Report Hardening
 ✅ 10/15 — Memory / Context Packet Hardening
+✅ 11/15 — Adapter Trials
 ```
 
 ## Next recommended item
 
 ```text
-Adapter Trials
+Local HTTP Worker Server Skeleton
 ```
 
 Why this is next:
 
 ```text
-Memory/context packets now convert hardened review buckets into accepted decisions, runtime blockers, artifact summaries, open questions, provider/job metadata and bounded next-run context.
-The next step is to prove this full adapter-driven loop across realistic trial scenarios instead of a single synthetic verification fixture.
+Adapter trials now prove the mock provider path and the HTTP provider boundary with a deterministic dry-run response and fail-closed invalid response guard.
+The next step is to provide a local HTTP worker server that implements the same runtime adapter request/response boundary outside the React app process.
 ```
 
 Target:
 
 ```text
-adapter trial scenarios
-mock provider trial result snapshots
-HTTP provider dry-run boundary scenario
-memory/context packet assertions per trial
-review → memory/context → next-run follow-up continuity
-trial dashboard visibility for adapter/memory-context status
+local Express worker server
+/health endpoint
+/runtime/adapter endpoint
+request validation boundary
+mock-compatible runtime adapter response
+safe error responses
+worker docs and run script
+focused verification script
 ```
 
 Expected files:
 
 ```text
-samples/trials/*adapter*.trial.json
-samples/adapter-trial-results/*.json
-scripts/run-adapter-trials.ts
-src/AdapterTrialResultsPanel.tsx or existing dashboard extension
+server/local-http-worker.ts
+scripts/verify-local-http-worker.ts
+docs/local-http-worker.md
 package.json update
 ```
 
 Expected NPM script:
 
 ```text
-trial:adapter
+worker:local
+verify:local-worker
 ```
 
 ## Remaining roadmap
@@ -138,8 +142,8 @@ trial:adapter
 8. Artifact Registry / Artifact Refs — done
 9. Review Report Hardening — done
 10. Memory / Context Packet Hardening — done
-11. Adapter Trials — next
-12. Local HTTP Worker Server Skeleton — pending
+11. Adapter Trials — done
+12. Local HTTP Worker Server Skeleton — next
 13. Minimum Real Worker Vertical Slice — pending
 14. OpenHands Adapter — pending
 15. Codex / Claude Code Adapter — pending
@@ -158,8 +162,8 @@ trial:adapter
 8. Artifact registry — done
 9. Review report hardening — done
 10. Memory / context packet hardening — done
-11. Adapter trials — next
-12. Local HTTP worker skeleton
+11. Adapter trials — done
+12. Local HTTP worker skeleton — next
 13. Real worker vertical slice
 14. OpenHands adapter
 15. Codex / Claude Code adapter
