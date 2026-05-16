@@ -1,11 +1,13 @@
 import express, { type Request, type Response } from 'express';
 import { type Server } from 'node:http';
 import { runMockRuntimeAdapter, type RuntimeAdapterRequest } from '../src/runtimeAdapter.ts';
+import { runMinimumRealWorkerSlice } from './real-worker-actions.ts';
 
 export type LocalHttpWorkerConfig = {
   worker_id?: string;
   version?: string;
   port?: number;
+  real_output_dir?: string;
 };
 
 export type LocalHttpWorkerServer = {
@@ -59,11 +61,12 @@ export function createLocalHttpWorkerApp(config: LocalHttpWorkerConfig = {}) {
         'nexus.runtime_adapter_response',
         'runtime_bridge_events',
         'artifact_refs',
+        'minimum_real_worker_slice',
       ],
     });
   });
 
-  app.post('/runtime/adapter', (request: Request, response: Response) => {
+  app.post('/runtime/adapter', async (request: Request, response: Response) => {
     if (!isRuntimeAdapterRequest(request.body)) {
       response.status(400).json(workerError(
         'INVALID_RUNTIME_ADAPTER_REQUEST',
@@ -72,14 +75,25 @@ export function createLocalHttpWorkerApp(config: LocalHttpWorkerConfig = {}) {
       return;
     }
 
-    const adapterResponse = runMockRuntimeAdapter({
-      ...request.body,
-      dispatch: {
-        ...request.body.dispatch,
-        target_worker: workerId,
-      },
-    });
-    response.json(adapterResponse);
+    try {
+      const workerRequest = {
+        ...request.body,
+        dispatch: {
+          ...request.body.dispatch,
+          target_worker: workerId,
+        },
+      };
+      const adapterResponse = request.body.dispatch.mode === 'real'
+        ? await runMinimumRealWorkerSlice(workerRequest, { worker_id: workerId, output_dir: config.real_output_dir })
+        : runMockRuntimeAdapter(workerRequest);
+      response.json(adapterResponse);
+    } catch (error) {
+      response.status(500).json(workerError(
+        'LOCAL_WORKER_RUNTIME_ERROR',
+        error instanceof Error ? error.message : 'Local worker failed while processing the runtime adapter request.',
+        true,
+      ));
+    }
   });
 
   app.use((_request: Request, response: Response) => {
