@@ -5,9 +5,9 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 ## Queue
 
 ```text
-16. Final verification contract refresh — done
-17. Post-roadmap backlog — in progress
-18. Release notes / implementation summary — pending
+16. Final verification contract refresh — done, PR #48
+17. Post-roadmap backlog — done, PR #49
+18. Release notes / implementation summary — done
 19. Runtime security policy — pending
 20. Dev command cleanup — pending
 21. Local controlled worker v2 — pending
@@ -29,7 +29,7 @@ P3 — optional quality-of-life
 
 ### 16. Final verification contract refresh
 
-Status: done.
+Status: done, PR #48.
 
 Outcome:
 
@@ -39,9 +39,9 @@ The verification contract now reflects the completed 15/15 roadmap and the 16-24
 
 ### 17. Post-roadmap backlog
 
-Status: in progress.
+Status: done, PR #49.
 
-Definition of done:
+Outcome:
 
 ```text
 16-24 queue is documented.
@@ -82,15 +82,13 @@ Produce runtime events from action results.
 
 ### 18. Release notes / implementation summary
 
-Status: pending.
+Status: done.
 
-Definition of done:
+Outcome:
 
 ```text
-Summarize what was built.
-List verification commands.
-List current limitations.
-List next integration options.
+Implementation summary is documented in docs/release-notes.md.
+Verification commands, safe boundaries, known limitations and next integration options are listed.
 ```
 
 ### 20. Dev command cleanup
@@ -160,8 +158,6 @@ Keep network development exposure opt-in.
 ## Recommended execution order
 
 ```text
-17. Post-roadmap backlog
-18. Release notes / implementation summary
 19. Runtime security policy
 20. Dev command cleanup
 21. Local controlled worker v2
