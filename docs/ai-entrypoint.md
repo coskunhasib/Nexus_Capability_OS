@@ -21,12 +21,14 @@ Read these before proposing or editing implementation code:
 
 ```text
 1. AGENTS.md
-2. docs/nexus-data-contract-roadmap.md
-3. docs/post-roadmap-backlog.md
-4. docs/verification-contract.md
-5. docs/runtime-security-policy.md
-6. docs/operator-run-result-ingestion-plan.md
-7. docs/ui-runtime-implementation-plan.md
+2. AI_ENTRYPOINT.md
+3. docs/nexus-unknown-mode.md
+4. docs/nexus-data-contract-roadmap.md
+5. docs/post-roadmap-backlog.md
+6. docs/verification-contract.md
+7. docs/runtime-security-policy.md
+8. docs/operator-run-result-ingestion-plan.md
+9. docs/ui-runtime-implementation-plan.md
 ```
 
 ## Current project state
@@ -39,11 +41,21 @@ Read these before proposing or editing implementation code:
 33 Nexus data contract discovery: next
 ```
 
-## Critical correction
+## Current operating mode
 
-The project previously approached result ingestion too early.
+```text
+Nexus Unknown Mode is active.
+Real Nexus details are not assumed.
+The next step is inventory, not ingestion implementation.
+```
 
-The correct order is now:
+See:
+
+```text
+docs/nexus-unknown-mode.md
+```
+
+## Correct order
 
 ```text
 Nexus data contract discovery
@@ -52,17 +64,6 @@ Nexus data contract discovery
 → shared result guard and fixtures
 → Code Agent / custom agent mapping
 → first runtime wiring decision
-```
-
-## Do not do these yet
-
-```text
-Do not invent detailed Nexus fields.
-Do not finalize result schemas before data discovery.
-Do not implement result ingestion before canonical envelope discovery.
-Do not make code-agent output define the Nexus contract.
-Do not wire direct runtime mode before operator-run ingestion is proven.
-Do not store raw runtime logs in memory/context packets.
 ```
 
 ## Current next item
