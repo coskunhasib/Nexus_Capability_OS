@@ -7,8 +7,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 ```text
 16. Final verification contract refresh — done, PR #48
 17. Post-roadmap backlog — done, PR #49
-18. Release notes / implementation summary — done
-19. Runtime security policy — pending
+18. Release notes / implementation summary — done, PR #50
+19. Runtime security policy — done
 20. Dev command cleanup — pending
 21. Local controlled worker v2 — pending
 22. OpenHands real integration plan — pending
@@ -51,17 +51,12 @@ Real-runtime prerequisites are visible.
 
 ### 19. Runtime security policy
 
-Status: pending.
+Status: done.
 
-Definition of done:
+Outcome:
 
 ```text
-Document trust boundaries.
-Document sensitive-data handling rules.
-Document artifact and output-directory rules.
-Document operator approval points.
-Document allowed worker actions.
-Document external-runtime constraints.
+Runtime trust boundaries, sensitive-data handling rules, artifact/output rules, operator approval points, allowed worker actions and external-runtime constraints are documented in docs/runtime-security-policy.md.
 ```
 
 ### 21. Local controlled worker v2
@@ -82,7 +77,7 @@ Produce runtime events from action results.
 
 ### 18. Release notes / implementation summary
 
-Status: done.
+Status: done, PR #50.
 
 Outcome:
 
@@ -158,7 +153,6 @@ Keep network development exposure opt-in.
 ## Recommended execution order
 
 ```text
-19. Runtime security policy
 20. Dev command cleanup
 21. Local controlled worker v2
 22. OpenHands real integration plan
