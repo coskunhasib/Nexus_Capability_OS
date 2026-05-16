@@ -8,8 +8,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 16. Final verification contract refresh — done, PR #48
 17. Post-roadmap backlog — done, PR #49
 18. Release notes / implementation summary — done, PR #50
-19. Runtime security policy — done
-20. Dev command cleanup — pending
+19. Runtime security policy — done, PR #51
+20. Dev command cleanup — done
 21. Local controlled worker v2 — pending
 22. OpenHands real integration plan — pending
 23. Code Agent real integration plan — pending
@@ -51,7 +51,7 @@ Real-runtime prerequisites are visible.
 
 ### 19. Runtime security policy
 
-Status: done.
+Status: done, PR #51.
 
 Outcome:
 
@@ -88,14 +88,14 @@ Verification commands, safe boundaries, known limitations and next integration o
 
 ### 20. Dev command cleanup
 
-Status: pending.
+Status: done.
 
-Definition of done:
+Outcome:
 
 ```text
-Default dev command remains local-safe.
-Network/LAN dev command is explicit and opt-in if supported.
-Document local dev versus network dev.
+Default dev remains local-safe.
+Network/LAN dev is available through explicit opt-in command npm run dev:network.
+Policy is documented in docs/dev-command-policy.md.
 ```
 
 ### 24. UI/runtime adapter polish
@@ -153,7 +153,6 @@ Keep network development exposure opt-in.
 ## Recommended execution order
 
 ```text
-20. Dev command cleanup
 21. Local controlled worker v2
 22. OpenHands real integration plan
 23. Code Agent real integration plan
