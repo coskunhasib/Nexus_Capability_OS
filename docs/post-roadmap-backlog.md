@@ -16,10 +16,12 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 24. UI/runtime adapter polish — done, PR #56
 25-31. UI runtime implementation phase — implemented, PR #58
 32. Operator-run result file ingestion plan — done, PR #59
-33. Nexus operator-run result ingestion — pending
-34. Code Agent / custom agent result ingestion — pending
-35. Result schema + validation guard — pending
-36. First runtime wiring decision PR — pending
+33. Nexus data contract discovery — pending
+34. Nexus canonical result envelope — pending
+35. Nexus result ingestion prototype — pending
+36. Shared result guard and fixtures — pending
+37. Code Agent / custom agent mapping — pending
+38. First runtime wiring decision PR — pending
 ```
 
 ## Priority buckets
@@ -29,6 +31,15 @@ P0 — required before wiring real runtimes
 P1 — required before operator-facing usage
 P2 — important hardening or polish
 P3 — optional quality-of-life
+```
+
+## Core correction
+
+```text
+Do not implement Nexus result ingestion by guessing hidden Nexus data.
+Do not treat any third-party runtime as the source of truth.
+Treat Nexus as the integration owner.
+Build an explicit Nexus data contract first.
 ```
 
 ## P0 items
@@ -87,33 +98,57 @@ Outcome:
 
 ```text
 Operator-managed result file ingestion sequence is documented in docs/operator-run-result-ingestion-plan.md.
-The next phase proves Nexus result validation and normalization before direct runtime mode is considered.
+This plan is now superseded by the Nexus data contract roadmap before implementation.
 ```
 
-### 33. Nexus operator-run result ingestion
+### 33. Nexus data contract discovery
 
 Status: pending.
 
 Definition of done:
 
 ```text
-Add a Nexus operator-run result fixture shape.
-Add completed and blocked fixtures.
-Normalize fixtures to nexus.runtime_adapter_response.
-Keep direct runtime mode disabled.
-Add focused verification.
+Inventory all existing Nexus-facing types and samples.
+Identify canonical, derived, temporary and UI-only fields.
+Document unknowns without inventing data.
+Create docs/nexus-data-contract-inventory.md.
 ```
 
-### 35. Result schema + validation guard
+### 34. Nexus canonical result envelope
 
 Status: pending.
 
 Definition of done:
 
 ```text
-Centralize shared result-file validation.
-Add shared guard helpers.
-Ensure Nexus and Code Agent / custom agent fixtures pass the same base guard.
+Define the smallest stable result envelope Nexus can accept from an operator-run process.
+Create contract docs and completed/blocked fixtures only after discovery.
+Do not finalize field names before item 33.
+```
+
+### 35. Nexus result ingestion prototype
+
+Status: pending.
+
+Definition of done:
+
+```text
+Normalize a validated Nexus operator result into nexus.runtime_adapter_response.
+Completed result becomes accepted response.
+Blocked result becomes failed response with step_blocked event.
+Identity mismatch rejects before state mutation.
+Invalid artifact refs reject before state mutation.
+```
+
+### 36. Shared result guard and fixtures
+
+Status: pending.
+
+Definition of done:
+
+```text
+Centralize reusable result-file validation.
+Validate packet_type, version, identity, source, status, artifact array, notes, diagnostics and created_at.
 Reject invalid shapes before state mutation.
 ```
 
@@ -153,19 +188,16 @@ Panel-level job-state visibility, controlled worker manifest visibility, runtime
 Implementation should proceed as focused follow-up PRs.
 ```
 
-### 34. Code Agent / custom agent result ingestion
+### 37. Code Agent / custom agent mapping
 
 Status: pending.
 
 Definition of done:
 
 ```text
-Add Code Agent / custom agent operator-run result fixture shape.
-Include source_adapter and optional agent_kind.
-Add completed and blocked fixtures for supported source kinds.
-Normalize fixtures through the existing result ingestion path.
-Keep direct runtime mode disabled.
-Add focused verification.
+Map code-agent or custom-agent output into the Nexus canonical result envelope.
+Do not let agent-specific output define the primary Nexus contract.
+Add focused verification after the canonical envelope exists.
 ```
 
 ## P2 items
@@ -192,16 +224,16 @@ Supported agent kinds, prompt/workspace envelope mapping, expected artifact coll
 Direct runtime invocation remains intentionally unimplemented.
 ```
 
-### 36. First runtime wiring decision PR
+### 38. First runtime wiring decision PR
 
 Status: pending.
 
 Definition of done:
 
 ```text
-Review operator-run result ingestion outcomes.
+Review Nexus data contract inventory, canonical result envelope, ingestion prototype, shared guard and agent mapping outcomes.
 Choose first integration path.
-Prefer operator-run result ingestion before direct runtime mode.
+Prefer operator-run ingestion before direct runtime mode.
 Document the final decision and verification requirements.
 ```
 
@@ -225,22 +257,23 @@ Implemented sequence:
 31. First runtime wiring decision gate — documented
 ```
 
-## Operator-run ingestion phase
+## Nexus data contract phase
 
 Detailed plan:
 
 ```text
-docs/operator-run-result-ingestion-plan.md
+docs/nexus-data-contract-roadmap.md
 ```
 
 Planned sequence:
 
 ```text
-32. Operator-run result file ingestion plan — done
-33. Nexus operator-run result ingestion — pending
-34. Code Agent / custom agent result ingestion — pending
-35. Result schema + validation guard — pending
-36. First runtime wiring decision PR — pending
+33. Nexus data contract discovery — pending
+34. Nexus canonical result envelope — pending
+35. Nexus result ingestion prototype — pending
+36. Shared result guard and fixtures — pending
+37. Code Agent / custom agent mapping — pending
+38. First runtime wiring decision PR — pending
 ```
 
 ## Guardrails for the next phase
@@ -253,15 +286,18 @@ Keep memory packets summary/ref based.
 Keep runtime output behind response-shape validation.
 Keep network development exposure opt-in.
 Validate operator-run result files before state mutation.
+Do not guess missing Nexus data fields.
 ```
 
 ## Recommended next phase
 
 ```text
-1. Implement Nexus operator-run result ingestion.
-2. Implement Code Agent / custom agent result ingestion.
-3. Centralize result schema and validation guard.
-4. Decide first runtime integration path.
+1. Discover the Nexus data contract.
+2. Define the canonical Nexus result envelope.
+3. Implement Nexus result ingestion against that contract.
+4. Add shared validation guard.
+5. Map agent/custom outputs into Nexus-owned envelope.
+6. Decide first runtime integration path.
 ```
 
 ## Completion rule
