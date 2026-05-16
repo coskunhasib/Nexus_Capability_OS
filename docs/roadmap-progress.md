@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-11/15 completed
-Current item: 12/15 — Local HTTP Worker Server Skeleton
-Next item: 13/15 — Minimum Real Worker Vertical Slice
+12/15 completed
+Current item: 13/15 — Minimum Real Worker Vertical Slice
+Next item: 14/15 — OpenHands Adapter
 ```
 
 ## Current state
@@ -42,6 +42,7 @@ Runtime artifact registry: implemented
 Review report hardening: implemented
 Memory/context packet hardening: implemented
 Adapter trials: implemented
+Local HTTP worker skeleton: implemented
 Real external worker execution: not implemented yet
 ```
 
@@ -85,48 +86,48 @@ Real external worker execution: not implemented yet
 ✅ 9/15 — Review Report Hardening
 ✅ 10/15 — Memory / Context Packet Hardening
 ✅ 11/15 — Adapter Trials
+✅ 12/15 — Local HTTP Worker Server Skeleton
 ```
 
 ## Next recommended item
 
 ```text
-Local HTTP Worker Server Skeleton
+Minimum Real Worker Vertical Slice
 ```
 
 Why this is next:
 
 ```text
-Adapter trials now prove the mock provider path and the HTTP provider boundary with a deterministic dry-run response and fail-closed invalid response guard.
-The next step is to provide a local HTTP worker server that implements the same runtime adapter request/response boundary outside the React app process.
+The local HTTP worker now exposes a real /health and /runtime/adapter boundary backed by the same runtime adapter response contract.
+The next step is to add the smallest safe real-work execution mode without granting arbitrary command execution.
 ```
 
 Target:
 
 ```text
-local Express worker server
-/health endpoint
-/runtime/adapter endpoint
-request validation boundary
-mock-compatible runtime adapter response
-safe error responses
-worker docs and run script
+safe work manifest
+allowlisted worker actions
+real artifact generation
+runtime events derived from worker action results
+bounded file output directory
 focused verification script
+worker docs update
 ```
 
 Expected files:
 
 ```text
-server/local-http-worker.ts
-scripts/verify-local-http-worker.ts
-docs/local-http-worker.md
+server/real-worker-actions.ts
+server/real-worker-sandbox.ts
+scripts/verify-real-worker-slice.ts
+docs/real-worker-slice.md
 package.json update
 ```
 
 Expected NPM script:
 
 ```text
-worker:local
-verify:local-worker
+verify:real-worker
 ```
 
 ## Remaining roadmap
@@ -143,8 +144,8 @@ verify:local-worker
 9. Review Report Hardening — done
 10. Memory / Context Packet Hardening — done
 11. Adapter Trials — done
-12. Local HTTP Worker Server Skeleton — next
-13. Minimum Real Worker Vertical Slice — pending
+12. Local HTTP Worker Server Skeleton — done
+13. Minimum Real Worker Vertical Slice — next
 14. OpenHands Adapter — pending
 15. Codex / Claude Code Adapter — pending
 ```
@@ -163,8 +164,8 @@ verify:local-worker
 9. Review report hardening — done
 10. Memory / context packet hardening — done
 11. Adapter trials — done
-12. Local HTTP worker skeleton — next
-13. Real worker vertical slice
+12. Local HTTP worker skeleton — done
+13. Real worker vertical slice — next
 14. OpenHands adapter
 15. Codex / Claude Code adapter
 ```
