@@ -11,15 +11,15 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 19. Runtime security policy — done, PR #51
 20. Dev command cleanup — done, PR #52
 21. Local controlled worker v2 — done, PR #53
-22. OpenHands real integration plan — done, PR #54
-23. Code Agent real integration plan — done, PR #55
+22. Generic runtime integration plan — done, PR #54
+23. Code Agent integration plan — done, PR #55
 24. UI/runtime adapter polish — done, PR #56
 25-31. UI runtime implementation phase — implemented, PR #58
-32. Operator-run result file ingestion plan — done
-33. OpenHands operator-run result ingestion — pending
-34. Code Agent operator-run result ingestion — pending
+32. Operator-run result file ingestion plan — done, PR #59
+33. Nexus operator-run result ingestion — pending
+34. Code Agent / custom agent result ingestion — pending
 35. Result schema + validation guard — pending
-36. First external runtime wiring decision PR — pending
+36. First runtime wiring decision PR — pending
 ```
 
 ## Priority buckets
@@ -81,13 +81,27 @@ Runtime events are produced from manifest action results.
 
 ### 32. Operator-run result file ingestion plan
 
-Status: done.
+Status: done, PR #59.
 
 Outcome:
 
 ```text
 Operator-managed result file ingestion sequence is documented in docs/operator-run-result-ingestion-plan.md.
-The next phase proves result validation and normalization before direct runtime mode is considered.
+The next phase proves Nexus result validation and normalization before direct runtime mode is considered.
+```
+
+### 33. Nexus operator-run result ingestion
+
+Status: pending.
+
+Definition of done:
+
+```text
+Add a Nexus operator-run result fixture shape.
+Add completed and blocked fixtures.
+Normalize fixtures to nexus.runtime_adapter_response.
+Keep direct runtime mode disabled.
+Add focused verification.
 ```
 
 ### 35. Result schema + validation guard
@@ -99,7 +113,7 @@ Definition of done:
 ```text
 Centralize shared result-file validation.
 Add shared guard helpers.
-Ensure OpenHands and Code Agent fixtures pass the same base guard.
+Ensure Nexus and Code Agent / custom agent fixtures pass the same base guard.
 Reject invalid shapes before state mutation.
 ```
 
@@ -135,53 +149,39 @@ Status: done, PR #56.
 Outcome:
 
 ```text
-Panel-level job-state visibility, controlled worker manifest visibility, external runtime envelope clarity, memory/context continuity visibility, artifact registry visibility and operator action copy improvements are documented in docs/ui-runtime-adapter-polish.md.
+Panel-level job-state visibility, controlled worker manifest visibility, runtime envelope clarity, memory/context continuity visibility, artifact registry visibility and operator action copy improvements are documented in docs/ui-runtime-adapter-polish.md.
 Implementation should proceed as focused follow-up PRs.
 ```
 
-### 33. OpenHands operator-run result ingestion
+### 34. Code Agent / custom agent result ingestion
 
 Status: pending.
 
 Definition of done:
 
 ```text
-Add OpenHands operator-run result fixture shape.
-Add completed and blocked fixtures.
-Normalize fixtures through the existing OpenHands adapter normalizer.
-Keep direct runtime mode disabled.
-Add focused verification.
-```
-
-### 34. Code Agent operator-run result ingestion
-
-Status: pending.
-
-Definition of done:
-
-```text
-Add Code Agent operator-run result fixture shape.
-Include agent_kind.
-Add completed and blocked fixtures for supported agent kinds.
-Normalize fixtures through the existing Code Agent adapter normalizer.
+Add Code Agent / custom agent operator-run result fixture shape.
+Include source_adapter and optional agent_kind.
+Add completed and blocked fixtures for supported source kinds.
+Normalize fixtures through the existing result ingestion path.
 Keep direct runtime mode disabled.
 Add focused verification.
 ```
 
 ## P2 items
 
-### 22. OpenHands real integration plan
+### 22. Generic runtime integration plan
 
 Status: done, PR #54.
 
 Outcome:
 
 ```text
-Runtime prerequisites, request envelope handoff, expected result collection, failure modes and operator approvals are documented in docs/openhands-real-integration-plan.md.
+Runtime prerequisites, request envelope handoff, expected result collection, failure modes and operator approvals are documented.
 Direct runtime invocation remains intentionally unimplemented.
 ```
 
-### 23. Code Agent real integration plan
+### 23. Code Agent integration plan
 
 Status: done, PR #55.
 
@@ -192,7 +192,7 @@ Supported agent kinds, prompt/workspace envelope mapping, expected artifact coll
 Direct runtime invocation remains intentionally unimplemented.
 ```
 
-### 36. First external runtime wiring decision PR
+### 36. First runtime wiring decision PR
 
 Status: pending.
 
@@ -222,7 +222,7 @@ Implemented sequence:
 28. External Runtime Mode explanation card — implemented
 29. Memory/Context preview/export — implemented
 30. Operator action label polish — implemented
-31. First external runtime wiring decision gate — documented
+31. First runtime wiring decision gate — documented
 ```
 
 ## Operator-run ingestion phase
@@ -237,10 +237,10 @@ Planned sequence:
 
 ```text
 32. Operator-run result file ingestion plan — done
-33. OpenHands operator-run result ingestion — pending
-34. Code Agent operator-run result ingestion — pending
+33. Nexus operator-run result ingestion — pending
+34. Code Agent / custom agent result ingestion — pending
 35. Result schema + validation guard — pending
-36. First external runtime wiring decision PR — pending
+36. First runtime wiring decision PR — pending
 ```
 
 ## Guardrails for the next phase
@@ -258,10 +258,10 @@ Validate operator-run result files before state mutation.
 ## Recommended next phase
 
 ```text
-1. Implement OpenHands operator-run result ingestion.
-2. Implement Code Agent operator-run result ingestion.
+1. Implement Nexus operator-run result ingestion.
+2. Implement Code Agent / custom agent result ingestion.
 3. Centralize result schema and validation guard.
-4. Decide first external runtime integration path.
+4. Decide first runtime integration path.
 ```
 
 ## Completion rule
