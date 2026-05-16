@@ -1,0 +1,17 @@
+{
+  "packet_type": "nexus.openhands.operator_run_result",
+  "version": "0.1",
+  "request_id": "operator-run-openhands-fixture",
+  "source_adapter": "openhands",
+  "operator_run_id": "openhands-run-blocked-001",
+  "status": "blocked",
+  "artifacts": [],
+  "notes": [
+    "Operator provided blocked OpenHands result file.",
+    "Required artifacts were not produced."
+  ],
+  "diagnostics": [
+    "runtime unavailable in operator environment"
+  ],
+  "created_at": "2026-05-16T00:00:00.000Z"
+}
