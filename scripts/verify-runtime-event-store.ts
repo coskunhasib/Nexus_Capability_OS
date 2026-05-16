@@ -77,7 +77,7 @@ const assertions = [
   assert('initial append stores adapter response events', initialAppend.entries.length === response.events.length, { stored: initialAppend.entries.length, response_events: response.events.length }),
   assert('initial append has no repeats', initialAppend.repeated.length === 0, { repeated: initialAppend.repeated.length }),
   assert('callback append stores callback event', callbackAppend.entries.length === callback.events.length, { stored: callbackAppend.entries.length, callback_events: callback.events.length }),
-  assert('repeat append detects duplicate event', repeatAppend.entries.length === callbackAppend.store.entries.length && repeatAppend.repeated.length === 1, { entries: repeatAppend.entries.length, repeated: repeatAppend.repeated.length }),
+  assert('repeat append detects duplicate event', repeatAppend.entries.length === 0 && repeatAppend.store.entries.length === callbackAppend.store.entries.length && repeatAppend.repeated.length === 1, { accepted_this_append: repeatAppend.entries.length, total_entries: repeatAppend.store.entries.length, previous_total_entries: callbackAppend.store.entries.length, repeated: repeatAppend.repeated.length }),
   assert('summary counts entries', summary.entry_count === response.events.length + callback.events.length, { summary }),
   assert('summary counts repeat', summary.repeated_count === 1, { summary }),
   assert('summary separates sources', summary.adapter_response_count === response.events.length && summary.callback_count === callback.events.length, { summary }),
