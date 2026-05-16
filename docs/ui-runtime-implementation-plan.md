@@ -1,341 +1,203 @@
 # UI Runtime Implementation Plan
 
-This document turns the UI/runtime adapter polish checklist into an implementation plan.
+This document tracks the operator-facing UI/runtime implementation phase after the completed roadmap and hardening sequence.
 
-It starts after:
+## Current state
 
 ```text
-15/15 adapter/runtime roadmap completed
-16-24 post-roadmap hardening completed
-UI/runtime adapter polish checklist documented
+25. Job State card + Export job state — implemented
+26. Artifact Registry card — implemented
+27. Controlled Worker manifest preview/export — implemented
+28. External Runtime Mode explanation card — implemented
+29. Memory/Context preview/export — implemented
+30. Operator action label polish — implemented
+31. First external runtime decision gate — documented
 ```
 
 ## Goal
 
-Make the runtime adapter stack operator-friendly before real external runtime wiring.
+Make the runtime adapter stack easier to inspect before the next integration phase.
 
-The implementation should let an operator inspect, export and understand:
+The Runtime Adapter Panel now gives operator visibility into:
 
 ```text
 job state
 artifact registry
-controlled worker manifest
+controlled worker manifest preview
 external runtime mode
 memory/context carry-forward preview
 runtime adapter actions
 ```
 
-## Non-goals
+## Implemented scope
 
-```text
-Do not wire direct external runtime invocation in this phase.
-Do not add repository mutation controls in this phase.
-Do not persist raw runtime logs into memory/context views.
-Do not make network dev exposure the default.
-```
+### 25. Job State card + Export job state
 
-## Implementation sequence
-
-```text
-25. Job State card + Export job state
-26. Artifact Registry card
-27. Controlled Worker manifest preview/export
-28. External Runtime Mode explanation card
-29. Memory/Context preview/export
-30. Operator action label polish
-31. First real external runtime wiring decision gate
-```
-
-## 25. Job State card + Export job state
-
-### Objective
-
-Expose runtime job state as a first-class operator view instead of forcing the operator to read raw response JSON.
-
-### Scope
-
-```text
-Add Job State card to RuntimeAdapterPanel or adjacent runtime UI.
-Show job_id, request_id, provider_id, target_worker and status.
-Show started_at and last_event_at when available.
-Show event_count, artifact_count, error_count and callback counters.
-Add Export job state button.
-```
-
-### Acceptance criteria
-
-```text
-Operator can inspect job state without reading raw runtime response JSON.
-Operator can export job state as JSON.
-The exported state is derived from verified runtime adapter state.
-No raw callback payload is persisted as memory-ready content.
-```
-
-### Verification
-
-```bash
-npm run build
-npm run check:generated
-```
-
-If a focused UI verification is added later:
-
-```text
-verify:runtime-panel-job-state
-```
-
-## 26. Artifact Registry card
-
-### Objective
-
-Make runtime artifacts visible as structured refs instead of hiding them inside event JSON.
-
-### Scope
-
-```text
-Add Artifact Registry card.
-Show artifact kind, ref, step_id and summary.
-Group artifacts by step_id.
-Show artifact count.
-Add Export artifact registry button.
-```
-
-### Acceptance criteria
-
-```text
-Operator can find generated artifacts without reading raw event JSON.
-Artifact summaries stay compact and ref-based.
-Repeated artifacts remain distinguishable.
-Exported registry matches runtime artifact registry shape.
-```
-
-### Verification
-
-```bash
-npm run verify:artifacts
-npm run build
-npm run check:generated
-```
-
-## 27. Controlled Worker manifest preview/export
-
-### Objective
-
-Let the operator inspect controlled worker actions before dispatch.
-
-### Scope
-
-```text
-Add controlled worker manifest preview.
-Show allowed actions.
-Show selected step_id and output_kind.
-Show manifest action count.
-Add Export controlled worker manifest button.
-Keep execution behind explicit dispatch/provider choice.
-```
-
-### Acceptance criteria
-
-```text
-Operator sees which actions would run before dispatch.
-Operator can export manifest for review.
-Manifest uses allowlisted actions only.
-No external runtime is implied by the preview.
-```
-
-### Verification
-
-```bash
-npm run verify:controlled-worker
-npm run build
-npm run check:generated
-```
-
-## 28. External Runtime Mode explanation card
-
-### Objective
-
-Prevent confusion between envelope generation and real external execution.
-
-### Scope
-
-```text
-Add External Runtime Mode card.
-Show current supported mode: envelope-only.
-Show future planned modes: operator-run and direct-run.
-Show direct invocation as unavailable unless explicitly implemented later.
-Link or reference integration plan docs.
-```
-
-### Acceptance criteria
-
-```text
-Operator cannot confuse envelope export with actual external execution.
-Operator sees that direct invocation is not enabled.
-Operator sees which documents define future wiring rules.
-```
-
-### Verification
-
-```bash
-npm run verify:oh-adapter
-npm run verify:ca-adapter
-npm run build
-npm run check:generated
-```
-
-## 29. Memory/Context preview/export
-
-### Objective
-
-Show what will be carried forward after review and memory/context hardening.
-
-### Scope
-
-```text
-Add Memory/Context Preview card.
-Show accepted decisions count.
-Show blocker count.
-Show artifact summary count.
-Show open question count.
-Add Export memory/context preview button when packets are available.
-Make clear that raw runtime payloads are excluded.
-```
-
-### Acceptance criteria
-
-```text
-Operator can inspect carry-forward state before persistence.
-Raw runtime payloads are not displayed as memory-ready content.
-Exported preview follows memory/context packet hardening behavior.
-```
-
-### Verification
-
-```bash
-npm run verify:review-hardening
-npm run verify:memory-context
-npm run build
-npm run check:generated
-```
-
-## 30. Operator action label polish
-
-### Objective
-
-Make runtime panel actions clearer and safer for operators.
-
-### Scope
-
-Rename or clarify labels:
-
-```text
-Dispatch adapter → Dispatch configured adapter
-Simulate callback → Simulate mock callback
-Replay last callback → Replay last callback / dedupe check
-Export response → Export adapter response
-Export callback → Export runtime callback
-```
-
-Add helper copy where needed:
-
-```text
-Health check does not dispatch work.
-Envelope export does not invoke external runtime.
-Replay callback tests dedupe behavior.
-```
-
-### Acceptance criteria
-
-```text
-Operator can infer whether an action dispatches work, simulates a callback or exports data.
-Labels are consistent with runtime security policy.
-```
-
-### Verification
-
-```bash
-npm run build
-npm run check:generated
-```
-
-## 31. First real external runtime wiring decision gate
-
-### Objective
-
-Decide whether the next implementation should wire OpenHands, Code Agent, or continue with local controlled worker actions.
-
-### Required inputs
-
-```text
-docs/runtime-security-policy.md
-docs/openhands-real-integration-plan.md
-docs/code-agent-real-integration-plan.md
-docs/ui-runtime-adapter-polish.md
-this implementation plan
-```
-
-### Decision criteria
-
-```text
-operator approval UI exists
-job state visibility exists
-artifact registry visibility exists
-memory/context preview exists
-controlled worker manifest preview exists
-external runtime mode is clearly communicated
-runtime output validation path is clear
-```
-
-### Recommended default decision
-
-```text
-Do not wire direct external runtime first.
-Implement operator-run result file ingestion before direct invocation.
-```
-
-### Candidate next PRs
-
-```text
-OpenHands operator-run result ingestion
-Code Agent operator-run result ingestion
-Controlled worker action expansion
-Runtime Panel implementation completion
-```
-
-## Suggested PR breakdown
-
-```text
-PR A — Job State card + export
-PR B — Artifact Registry card
-PR C — Controlled Worker manifest preview/export
-PR D — External Runtime Mode card
-PR E — Memory/Context preview/export
-PR F — Operator action label polish
-PR G — Decision gate docs update
-```
-
-## File impact forecast
-
-Likely files:
+Implemented in:
 
 ```text
 src/RuntimeAdapterPanel.tsx
-src/runtimeAdapter.ts
-src/runtimeArtifactRegistry.ts
-src/memoryContextHardening.ts
-server/controlled-worker-v2.ts
-docs/ui-runtime-implementation-plan.md
-docs/post-roadmap-backlog.md
-package.json only if new verification scripts are added
 ```
 
-## Completion rule
-
-Each implementation PR should update this plan:
+The panel shows:
 
 ```text
-mark the completed item as done
-add the merged PR number
-record any follow-up under the decision gate or a new backlog file
+job_id
+request_id
+provider_id
+target_worker
+status
+started_at
+last_event_at
+event_count
+artifact_count
+error_count
+callback counters
+seen event key count
 ```
+
+Export added:
+
+```text
+Export job state
+```
+
+### 26. Artifact Registry card
+
+The panel now shows artifact refs collected from runtime events:
+
+```text
+artifact kind
+artifact ref
+step_id
+summary
+unique artifact count
+repeated artifact count
+step-level artifact counts
+```
+
+Export added:
+
+```text
+Export artifact registry
+```
+
+### 27. Controlled Worker manifest preview/export
+
+The panel now builds a preview-only controlled worker manifest from the current task packet.
+
+Visible fields:
+
+```text
+manifest_id
+action count
+allowlisted action kinds
+step_id
+output_kind
+```
+
+Export added:
+
+```text
+Export controlled worker manifest preview
+```
+
+### 28. External Runtime Mode explanation card
+
+The panel now explains:
+
+```text
+current mode: envelope-only
+future mode: operator-run
+future mode: direct-run
+current UI does not run an external runtime directly
+```
+
+### 29. Memory/Context preview/export
+
+The panel now previews carry-forward state after review and memory/context hardening.
+
+Visible counters:
+
+```text
+accepted decisions
+runtime blockers
+artifact summaries
+open questions
+release-ready / follow-up-required state
+do-not-store rule id
+```
+
+Export added:
+
+```text
+Export memory/context preview
+```
+
+### 30. Operator action label polish
+
+Updated labels:
+
+```text
+Dispatch configured adapter
+Simulate mock callback
+Replay last callback / dedupe check
+Export runtime adapter request
+Export adapter response
+Export runtime callback
+```
+
+Helper copy clarifies:
+
+```text
+Health check does not dispatch work.
+Envelope export does not run an external runtime.
+Replay callback tests dedupe behavior.
+```
+
+### 31. First external runtime decision gate
+
+Decision gate remains open for the next phase.
+
+Before the next integration PR, the operator should be able to inspect:
+
+```text
+job state
+artifact registry
+memory/context preview
+controlled worker manifest preview
+external runtime mode
+runtime output validation path
+```
+
+Recommended default next step:
+
+```text
+operator-run result file ingestion before direct runtime mode
+```
+
+## Verification
+
+Required verification:
+
+```bash
+npm run build
+npm run check:generated
+```
+
+Related focused checks:
+
+```bash
+npm run verify:artifacts
+npm run verify:controlled-worker
+npm run verify:review-hardening
+npm run verify:memory-context
+npm run verify:oh-adapter
+npm run verify:ca-adapter
+```
+
+## Completion state
+
+The 25-31 UI runtime implementation phase is implemented as a panel visibility and export pass.
+
+The next phase should be a decision PR for the first external runtime integration path.
