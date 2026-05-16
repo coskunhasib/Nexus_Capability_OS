@@ -10,8 +10,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 18. Release notes / implementation summary — done, PR #50
 19. Runtime security policy — done, PR #51
 20. Dev command cleanup — done, PR #52
-21. Local controlled worker v2 — done
-22. OpenHands real integration plan — pending
+21. Local controlled worker v2 — done, PR #53
+22. OpenHands real integration plan — done
 23. Code Agent real integration plan — pending
 24. UI/runtime adapter polish — pending
 ```
@@ -61,7 +61,7 @@ Runtime trust boundaries, sensitive-data handling rules, artifact/output rules, 
 
 ### 21. Local controlled worker v2
 
-Status: done.
+Status: done, PR #53.
 
 Outcome:
 
@@ -115,15 +115,13 @@ Create focused implementation checklist.
 
 ### 22. OpenHands real integration plan
 
-Status: pending.
+Status: done.
 
-Definition of done:
+Outcome:
 
 ```text
-Document runtime prerequisites.
-Document request envelope handoff shape.
-Document expected result collection.
-Document failure modes and operator approvals.
+Runtime prerequisites, request envelope handoff, expected result collection, failure modes and operator approvals are documented in docs/openhands-real-integration-plan.md.
+Direct runtime invocation remains intentionally unimplemented.
 ```
 
 ### 23. Code Agent real integration plan
@@ -153,7 +151,6 @@ Keep network development exposure opt-in.
 ## Recommended execution order
 
 ```text
-22. OpenHands real integration plan
 23. Code Agent real integration plan
 24. UI/runtime adapter polish
 ```
