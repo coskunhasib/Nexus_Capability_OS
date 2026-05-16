@@ -1,6 +1,16 @@
 # Verification Contract
 
-This document defines what the repository verification chain guarantees and what should be run locally before changing registry, trial, handoff, runtime bridge or UI code.
+This document is the authoritative verification map for Nexus Capability OS.
+
+It defines what the CI chain proves, which runtime boundaries are intentionally safe, and which checks must pass before a PR is merged.
+
+## Current roadmap state
+
+```text
+Adapter/runtime roadmap: 15/15 completed
+Current phase: post-roadmap hardening
+Authoritative local command: npm run build && npm run check:generated
+```
 
 ## Verification layers
 
@@ -10,13 +20,16 @@ install determinism
 → registry consistency
 → TypeScript correctness
 → skill-aware trial execution
+→ adapter trial execution
 → Nexus handoff usability
 → Nexus runtime bridge event coverage
 → runtime adapter request/response contract validity
 → runtime adapter loop behavior
 → runtime adapter provider interface behavior
 → HTTP provider hardening behavior
-→ runtime adapter operator config surface
+→ local HTTP worker boundary behavior
+→ minimum real worker slice behavior
+→ external agent envelope behavior
 → runtime callback ingest behavior
 → runtime job state model behavior
 → runtime event store + replay behavior
@@ -45,13 +58,18 @@ npm run check:generated
 npm run summary:ci
 ```
 
-`npm run build` has a `prebuild` lifecycle that runs the product-level generated checks:
+`npm run build` has a `prebuild` lifecycle that runs the product-level checks:
 
 ```text
 npm run audit:registry
 npm run validate:packets
 npm run trial:web-saas-skill
 npm run trial:all-skills
+npm run trial:adapter
+npm run verify:local-worker
+npm run verify:real-worker
+npm run verify:oh-adapter
+npm run verify:ca-adapter
 npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
@@ -72,7 +90,7 @@ npm run check:bundle
 
 ## Local verification
 
-Before opening a PR, run:
+Before opening or merging a PR, run:
 
 ```bash
 npm ci
@@ -80,12 +98,17 @@ npm run build
 npm run check:generated
 ```
 
-For faster focused checks:
+Focused checks:
 
 ```bash
 npm run validate:packets
 npm run audit:registry
 npm run trial:all-skills
+npm run trial:adapter
+npm run verify:local-worker
+npm run verify:real-worker
+npm run verify:oh-adapter
+npm run verify:ca-adapter
 npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
@@ -95,6 +118,7 @@ npm run verify:artifacts
 npm run verify:review-hardening
 npm run verify:memory-context
 npm run check:bundle
+npm run check:generated
 ```
 
 ## What each check guarantees
@@ -102,11 +126,16 @@ npm run check:bundle
 | Check | Guarantee |
 |---|---|
 | `npm ci` | `package.json` and `package-lock.json` are synchronized and installation is reproducible. |
-| `validate:packets` | Packet samples, runtime adapter request/response samples and trial scenarios match their JSON schemas. |
+| `validate:packets` | Packet samples, runtime adapter samples and trial scenarios match their JSON schemas. |
 | `audit:registry` | Registry files have required sections, no missing references and no duplicate ids. |
 | `npx tsc --noEmit` | TypeScript is type-correct without emitting build files. |
 | `trial:web-saas-skill` | The reference web SaaS scenario selects expected skills and produces review/memory/context outputs. |
 | `trial:all-skills` | All current trial scenarios pass skill-aware assertions. |
+| `trial:adapter` | Mock and HTTP adapter trial scenarios pass runtime job, artifact, review and memory/context continuity assertions. |
+| `verify:local-worker` | The local HTTP worker starts, serves health, returns runtime adapter responses, and fails closed on invalid/unknown routes. |
+| `verify:real-worker` | The minimum real worker slice uses only allowlisted artifact generation and produces runtime events without arbitrary command execution. |
+| `verify:oh-adapter` | The OpenHands envelope adapter builds safe work requests and normalizes completed/blocked results without invoking the external runtime. |
+| `verify:ca-adapter` | The code-agent envelope adapter builds safe work requests for supported agent kinds and normalizes completed/blocked results. |
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
 | `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest, runtime job state and Runner state behavior work together. |
@@ -123,13 +152,13 @@ npm run check:bundle
 
 ## Runtime adapter boundary
 
-The runtime adapter boundary is the next layer after `nexus.handoff_packet`.
+The runtime adapter boundary is the layer after `nexus.handoff_packet`.
 
 ```text
 Capability OS / Nexus side
 → nexus.runtime_adapter_request
 → RuntimeAdapterProvider
-→ mock/http/external worker
+→ mock/http/local/external worker
 → nexus.runtime_adapter_response
 → runtime_bridge events
 → Runner state ingest
@@ -156,125 +185,88 @@ scripts/verify-runtime-adapter-loop.ts
 scripts/verify-runtime-adapter-provider.ts
 ```
 
-The provider interface guarantees:
+## Local worker boundary
+
+The local HTTP worker is the first out-of-process worker boundary.
 
 ```text
-Runner can dispatch through a selected provider instead of calling mock runtime code directly.
-Mock provider uses the in-process adapter.
-HTTP provider defines the endpoint boundary for real local or remote workers.
-Provider registry rejects unknown provider ids clearly.
-HTTP provider rejects missing endpoint_url clearly.
+GET /health
+POST /runtime/adapter
 ```
 
-The HTTP provider hardening guarantees:
+Living code path:
 
 ```text
-explicit provider error codes
-timeout boundary
-retry policy for retryable HTTP statuses
-invalid JSON rejection
-invalid runtime_adapter_response shape rejection
-healthy / unconfigured / unreachable / failed health check status
-optional auth bearer header
+server/local-http-worker.ts
+server/run-local-http-worker.ts
+scripts/verify-local-http-worker.ts
+docs/local-http-worker.md
 ```
 
-The Runtime Adapter Panel exposes operator-controlled config:
+Guarantees:
 
 ```text
-provider selector
-dispatch mode selector
-endpoint_url
-healthcheck_url
-auth token boundary
-timeout_ms
-retry max/delay/statuses
-target_worker
-priority
-callback_url
-idempotency_key
-operator_notes
-health check action
-configured request export
-configured response export
-callback payload export
+health endpoint returns worker metadata
+valid runtime adapter requests return runtime adapter responses
+invalid request bodies return INVALID_RUNTIME_ADAPTER_REQUEST
+unknown endpoints return NOT_FOUND
+dispatch.mode=real routes to the minimum real worker slice
+dispatch.mode=mock and dry_run route to the mock runtime adapter
 ```
 
-The request carries:
+## Minimum real worker slice
+
+The minimum real worker slice proves safe real-work output without granting arbitrary execution.
+
+Living code path:
 
 ```text
-request_id
-handoff_packet
-dispatch mode
-target_worker
-priority
-idempotency_key
-callback_url
-timeout_seconds
-operator_notes
+server/real-worker-actions.ts
+scripts/verify-real-worker-slice.ts
+docs/real-worker-slice.md
 ```
 
-The response carries:
+Guarantees:
 
 ```text
-request_id
-accepted/status
-job metadata
-initial runtime bridge events
-optional error object
+only write_step_artifact is allowlisted
+artifacts are written into a bounded output directory
+artifact payloads mark arbitrary_command_execution=false
+runtime events include step_started, gate_checked, artifact_created and step_completed
+gate evidence is generated from artifact refs
 ```
 
-The runtime callback payload carries:
+## External agent envelope boundary
+
+External agent adapters are envelope/normalization layers only.
+
+They do not launch external agents, execute shell commands, mutate repositories, call remote services or send secrets.
+
+Living code path:
 
 ```text
-packet_type: nexus.runtime_callback
-request_id
-job_id
-provider_id
-received_at
-events[]
+server/adapters/openhands-adapter.ts
+server/adapters/code-agent-adapter.ts
+scripts/verify-oh-adapter.ts
+scripts/verify-ca-adapter.ts
+docs/openhands-adapter.md
+docs/code-agent-adapter.md
 ```
 
-The runtime job state carries:
+Guarantees:
 
 ```text
-job_id
-request_id
-provider_id
-target_worker
-status
-started_at
-last_event_at
-events[]
-artifacts[]
-errors[]
-callback counters
-seen_event_keys[]
-```
-
-The loop verification guarantees:
-
-```text
-request packet_type is correct
-response accepted path works
-step_started / gate_checked / artifact_created / step_completed are emitted
-Runner status is updated from initial response events
-gate evidence is ingested
-artifact refs are produced
-later runtime callbacks validate before ingest
-later callback events update Runner state
-replayed callback events are deduped
-invalid callback payloads are rejected
-runtime adapter response creates runtime job state
-initial events/artifacts/errors are captured in job state
-callbacks increment runtime job counters
-replayed callbacks increment duplicate counters
-rejected adapter response creates rejected job state with adapter error
-empty work_order reject path returns EMPTY_WORK_ORDER
+work requests carry secret_policy=do_not_send_secrets
+adapter safety flags forbid arbitrary command execution
+adapter safety flags state the adapter does not invoke the external agent directly
+expected artifacts are derived from work-order expected outputs
+completed results normalize to accepted runtime adapter responses
+blocked results normalize to failed runtime adapter responses with step_blocked events
 ```
 
 ## Memory / context packet hardening
 
-The memory/context hardening boundary is the next layer after hardened review reports.
+The memory/context hardening boundary is the layer after hardened review reports.
 
 ```text
 TaskPacket
@@ -293,7 +285,7 @@ docs/memory-context-hardening.md
 scripts/verify-memory-context-hardening.ts
 ```
 
-The hardening layer guarantees:
+Guarantees:
 
 ```text
 passed human evidence becomes accepted decisions
@@ -317,6 +309,7 @@ src/data.ts
 samples/trial-results
 samples/handoff-results
 samples/runtime-bridge-results
+samples/adapter-trial-results
 ```
 
 If `check:generated` fails, run:
@@ -350,9 +343,9 @@ reduce generated static payload size
 
 Do not raise bundle limits unless the new size is intentional and justified.
 
-## Trial and Nexus runtime contract
+## Healthy scenario definition
 
-A scenario is considered healthy only when all six layers pass:
+A scenario is considered healthy only when all relevant layers pass:
 
 ```text
 Trial result: pass
@@ -360,6 +353,11 @@ Nexus handoff usability: pass
 Nexus runtime bridge: pass
 Runtime adapter loop: pass
 Runtime adapter provider: pass
+Adapter trials: pass
+Local worker boundary: pass
+Real worker slice: pass
+External agent envelope checks: pass
+Review hardening: pass
 Memory/context hardening: pass
 ```
 
@@ -367,14 +365,13 @@ This means:
 
 ```text
 The compiler can route the intent.
-The handoff packet contains enough information for Nexus/runtime to start work.
-The mock runtime can emit expected callback events and payloads.
-The adapter request/response/event ingest loop works end-to-end inside Runner.
-The adapter dispatch boundary can swap mock/http/external providers without changing Runner core logic.
+The handoff packet contains enough information for a runtime to start work.
+The runtime adapter request/response/event ingest loop works end-to-end inside Runner.
+The adapter dispatch boundary can swap mock/http/local/external providers without changing Runner core logic.
 The HTTP provider fails closed when remote worker output is invalid.
-The operator can configure dispatch metadata before sending a runtime adapter request.
-Later runtime callbacks can be validated, deduped and applied without re-dispatching the job.
-The runtime job can be represented independently from the visual Runner controls.
+The local worker exposes a real HTTP boundary.
+The minimum real worker can create bounded artifacts and runtime events safely.
+External agent adapters can package work and normalize results without directly invoking agents.
 The hardened review report can feed memory/context packets without storing raw runtime or callback payloads.
 ```
 
@@ -392,23 +389,23 @@ Preferred order:
 5. Only change guard logic if the guard is demonstrably checking the wrong thing.
 ```
 
-## Current known limitation
-
-The runtime job state model is implemented in the core runtime adapter layer and covered by CI. The current panel-level job state export/display was deferred because the panel update needs to be split into smaller UI files to avoid large monolithic UI patches.
-
-Memory/context hardening currently builds and verifies the packet objects in code. UI export buttons and persisted sample snapshots can be added after Adapter Trials prove the next-run workflow shape.
-
-The next integration milestone is:
+## Current known limitations
 
 ```text
-nexus.runtime_adapter_request
-→ event store + replay
-→ runtime timeline UI
-→ real HTTP runtime adapter endpoint
-→ real worker execution
-→ nexus.runtime_adapter_response
-→ runtime_callback events
-→ gate evidence + artifact refs
-→ review report + memory/context packets
-→ adapter trials
+The external agent adapters are envelope/normalization layers only.
+The minimum real worker writes bounded artifacts but does not yet perform repository mutations.
+The local worker has no persistent job queue yet.
+The Runtime Adapter Panel job-state export/display is still a UI polish item.
+The default dev command is local-only: vite --port=3000.
+```
+
+## Next integration milestone
+
+```text
+final roadmap verification
+→ post-roadmap backlog
+→ runtime security policy
+→ local controlled worker v2
+→ external runtime wiring decision
+→ UI/runtime adapter polish
 ```
