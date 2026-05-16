@@ -16,9 +16,9 @@ After each completed PR, update this file:
 ## Roadmap progress
 
 ```text
-12/15 completed
-Current item: 13/15 — Minimum Real Worker Vertical Slice
-Next item: 14/15 — OpenHands Adapter
+13/15 completed
+Current item: 14/15 — OpenHands Adapter
+Next item: 15/15 — Codex / Claude Code Adapter
 ```
 
 ## Current state
@@ -43,7 +43,9 @@ Review report hardening: implemented
 Memory/context packet hardening: implemented
 Adapter trials: implemented
 Local HTTP worker skeleton: implemented
-Real external worker execution: not implemented yet
+Minimum real worker vertical slice: implemented
+OpenHands adapter: not implemented yet
+Codex / Claude Code adapter: not implemented yet
 ```
 
 ## Done
@@ -87,47 +89,47 @@ Real external worker execution: not implemented yet
 ✅ 10/15 — Memory / Context Packet Hardening
 ✅ 11/15 — Adapter Trials
 ✅ 12/15 — Local HTTP Worker Server Skeleton
+✅ 13/15 — Minimum Real Worker Vertical Slice
 ```
 
 ## Next recommended item
 
 ```text
-Minimum Real Worker Vertical Slice
+OpenHands Adapter
 ```
 
 Why this is next:
 
 ```text
-The local HTTP worker now exposes a real /health and /runtime/adapter boundary backed by the same runtime adapter response contract.
-The next step is to add the smallest safe real-work execution mode without granting arbitrary command execution.
+The minimum real worker slice now proves safe out-of-process artifact generation through the runtime adapter contract without arbitrary command execution.
+The next step is to define an OpenHands adapter contract that can package work for OpenHands without coupling the core worker to an installed OpenHands runtime.
 ```
 
 Target:
 
 ```text
-safe work manifest
-allowlisted worker actions
-real artifact generation
-runtime events derived from worker action results
-bounded file output directory
+OpenHands request adapter
+safe project/workspace envelope
+allowed task payload mapping
+artifact expectation mapping
+adapter response normalization
 focused verification script
-worker docs update
+adapter documentation
 ```
 
 Expected files:
 
 ```text
-server/real-worker-actions.ts
-server/real-worker-sandbox.ts
-scripts/verify-real-worker-slice.ts
-docs/real-worker-slice.md
+server/adapters/openhands-adapter.ts
+scripts/verify-openhands-adapter.ts
+docs/openhands-adapter.md
 package.json update
 ```
 
 Expected NPM script:
 
 ```text
-verify:real-worker
+verify:openhands-adapter
 ```
 
 ## Remaining roadmap
@@ -145,8 +147,8 @@ verify:real-worker
 10. Memory / Context Packet Hardening — done
 11. Adapter Trials — done
 12. Local HTTP Worker Server Skeleton — done
-13. Minimum Real Worker Vertical Slice — next
-14. OpenHands Adapter — pending
+13. Minimum Real Worker Vertical Slice — done
+14. OpenHands Adapter — next
 15. Codex / Claude Code Adapter — pending
 ```
 
@@ -165,7 +167,7 @@ verify:real-worker
 10. Memory / context packet hardening — done
 11. Adapter trials — done
 12. Local HTTP worker skeleton — done
-13. Real worker vertical slice — next
-14. OpenHands adapter
+13. Real worker vertical slice — done
+14. OpenHands adapter — next
 15. Codex / Claude Code adapter
 ```
