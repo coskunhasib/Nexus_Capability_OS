@@ -11,6 +11,7 @@ import {
   type EvidenceState,
   type RuntimeAdapterRequest,
   type RuntimeAdapterResponse,
+  type RuntimeBridgeEvent,
   type RuntimeCallbackPayload,
   type TaskPacket,
   type WorkStatus,
@@ -23,6 +24,9 @@ import {
 } from './runtimeAdapterProvider.ts';
 import { mockRuntimeAdapterProvider } from './runtimeAdapters/mockRuntimeAdapterProvider.ts';
 import { createHttpRuntimeAdapterProvider } from './runtimeAdapters/httpRuntimeAdapterProvider.ts';
+import { buildRuntimeArtifactRegistryFromEvents, summarizeRuntimeArtifactRegistry } from './runtimeArtifactRegistry.ts';
+import { buildHardenedReviewReport } from './reviewReportHardening.ts';
+import { buildHardenedMemoryContextPackets } from './memoryContextHardening.ts';
 
 type DispatchMode = RuntimeAdapterRequest['dispatch']['mode'];
 type DispatchPriority = RuntimeAdapterRequest['dispatch']['priority'];
@@ -64,6 +68,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-white/5 py-2 last:border-b-0">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">{label}</span>
+      <span className="max-w-[70%] break-all text-right text-xs text-neutral-200">{value || '-'}</span>
+    </div>
+  );
+}
+
 const inputClass = 'w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-neutral-200 outline-none placeholder:text-neutral-600 focus:border-cyan-500/40';
 
 function downloadJson(filename: string, payload: unknown) {
@@ -88,6 +101,38 @@ function parseRetryStatuses(value: string) {
 function clampNumber(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
+}
+
+function stableSlug(input: string) {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'item';
+}
+
+function allRuntimeEvents(response: RuntimeAdapterResponse | null, callbackPayload: RuntimeCallbackPayload | null): RuntimeBridgeEvent[] {
+  return [
+    ...(response?.events ?? []),
+    ...(callbackPayload?.events ?? []),
+  ];
+}
+
+function buildControlledWorkerManifestPreview(packet: TaskPacket) {
+  return {
+    packet_type: 'nexus.controlled_worker_manifest',
+    version: '0.1',
+    manifest_id: `panel-preview-${stableSlug(packet.objective)}`,
+    actions: [
+      ...packet.work_order.map((step) => ({
+        action_id: `write-${stableSlug(step.id)}`,
+        action_kind: 'write_step_artifact',
+        step_id: step.id,
+        output_kind: step.expected_outputs?.[0] ?? 'controlled_step_artifact',
+      })),
+      {
+        action_id: 'write-manifest-summary',
+        action_kind: 'write_manifest_summary',
+        output_kind: 'controlled_manifest_summary',
+      },
+    ],
+  };
 }
 
 type Props = {
@@ -145,8 +190,38 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
 
   const provider = useMemo(() => getRuntimeAdapterProvider(providerRegistry, providerId), [providerId, providerRegistry]);
   const summary = useMemo(() => (response ? summarizeRuntimeAdapterResponse(response) : null), [response]);
+  const runtimeEvents = useMemo(() => allRuntimeEvents(response, callbackPayload), [callbackPayload, response]);
+  const artifactRegistry = useMemo(() => buildRuntimeArtifactRegistryFromEvents(runtimeEvents), [runtimeEvents]);
+  const artifactSummary = useMemo(() => summarizeRuntimeArtifactRegistry(artifactRegistry), [artifactRegistry]);
+  const reviewPreview = useMemo(() => buildHardenedReviewReport(packet, statuses, evidence, artifactRegistry), [artifactRegistry, evidence, packet, statuses]);
+  const memoryContextPreview = useMemo(() => buildHardenedMemoryContextPackets(packet, reviewPreview, { artifactRegistry, maxContextItems: 8 }), [artifactRegistry, packet, reviewPreview]);
+  const controlledManifestPreview = useMemo(() => buildControlledWorkerManifestPreview(packet), [packet]);
   const isHttpProvider = provider.mode === 'http';
   const effectiveHealthUrl = healthcheckUrl.trim() || endpointUrl.trim();
+
+  const jobStatePreview = useMemo(() => {
+    if (!response) return null;
+    return {
+      job_id: response.job.job_id,
+      request_id: response.request_id,
+      provider_id: provider.id,
+      target_worker: response.job.target_worker,
+      status: response.status,
+      started_at: response.job.started_at,
+      last_event_at: runtimeEvents.at(-1)?.timestamp ?? response.job.started_at,
+      event_count: runtimeEvents.length,
+      artifact_count: artifactRegistry.artifacts.length,
+      repeated_artifact_count: artifactRegistry.repeated.length,
+      error_count: response.error ? 1 : 0,
+      callbacks: {
+        received: callbackPayload ? callbackSequence : 0,
+        accepted_events: totalCallbackAcceptedCount,
+        duplicate_events: lastCallbackDuplicateCount,
+        last_received_at: callbackPayload?.received_at,
+      },
+      seen_event_key_count: seenEventKeys.length,
+    };
+  }, [artifactRegistry.artifacts.length, artifactRegistry.repeated.length, callbackPayload, callbackSequence, lastCallbackDuplicateCount, provider.id, response, runtimeEvents, seenEventKeys.length, totalCallbackAcceptedCount]);
 
   const buildConfiguredRequest = () => {
     const nextRequest = buildRuntimeAdapterRequest(packet, dispatchMode);
@@ -286,7 +361,7 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
             <Activity size={14} /> {isCheckingHealth ? 'Checking...' : 'Health check'}
           </button>
           <button onClick={() => void dispatchAdapter()} disabled={isDispatching} className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-900/30 disabled:cursor-not-allowed disabled:opacity-50">
-            <PlayCircle size={14} /> {isDispatching ? 'Dispatching...' : 'Dispatch adapter'}
+            <PlayCircle size={14} /> {isDispatching ? 'Dispatching...' : 'Dispatch configured adapter'}
           </button>
         </div>
       </div>
@@ -390,6 +465,7 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
             <Badge>{new Date(healthResult.checked_at).toLocaleTimeString()}</Badge>
           </div>
           {healthResult.message}
+          <div className="mt-2 text-[11px] text-neutral-400">Health check does not dispatch work.</div>
         </div>
       )}
 
@@ -429,6 +505,113 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
         </div>
       )}
 
+      {jobStatePreview && (
+        <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-1 text-xs font-semibold text-cyan-100">Job State</div>
+              <p className="text-xs text-neutral-500">First-class job state view derived from the verified runtime adapter response and callback ingest path.</p>
+            </div>
+            <button onClick={() => downloadJson('runtime-job-state.json', jobStatePreview)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export job state</button>
+          </div>
+          <div className="grid gap-x-6 md:grid-cols-2">
+            <DetailRow label="job_id" value={jobStatePreview.job_id} />
+            <DetailRow label="request_id" value={jobStatePreview.request_id} />
+            <DetailRow label="provider_id" value={jobStatePreview.provider_id} />
+            <DetailRow label="target_worker" value={jobStatePreview.target_worker} />
+            <DetailRow label="status" value={jobStatePreview.status} />
+            <DetailRow label="last_event_at" value={jobStatePreview.last_event_at} />
+            <DetailRow label="event_count" value={jobStatePreview.event_count} />
+            <DetailRow label="artifact_count" value={`${jobStatePreview.artifact_count} unique / ${jobStatePreview.repeated_artifact_count} repeated`} />
+            <DetailRow label="error_count" value={jobStatePreview.error_count} />
+            <DetailRow label="callback counters" value={`${jobStatePreview.callbacks.accepted_events} accepted / ${jobStatePreview.callbacks.duplicate_events} duplicate`} />
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-1 text-xs font-semibold text-cyan-100">Artifact Registry</div>
+              <p className="text-xs text-neutral-500">Structured artifact refs collected from runtime events. Summaries stay compact and ref-based.</p>
+            </div>
+            <button onClick={() => downloadJson('runtime-artifact-registry.json', artifactRegistry)} disabled={!artifactRegistry.artifacts.length} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"><FileJson size={14} />Export artifact registry</button>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Badge tone="cyan">unique: {artifactSummary.artifact_count}</Badge>
+            <Badge tone={artifactSummary.repeated_count ? 'yellow' : 'neutral'}>repeated: {artifactSummary.repeated_count}</Badge>
+            {Object.entries(artifactSummary.step_counts).map(([stepId, count]) => <Badge key={stepId}>{stepId}: {count}</Badge>)}
+          </div>
+          <div className="space-y-2">
+            {artifactRegistry.artifacts.length ? artifactRegistry.artifacts.slice(0, 6).map((artifact) => (
+              <div key={artifact.artifact_id} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                <div className="mb-1 flex flex-wrap gap-2"><Badge tone="cyan">{artifact.kind}</Badge><Badge>{artifact.step_id}</Badge></div>
+                <div className="break-all text-xs text-neutral-300">{artifact.ref}</div>
+                <div className="mt-1 text-xs text-neutral-500">{artifact.summary}</div>
+              </div>
+            )) : <div className="text-xs text-neutral-500">No artifact refs yet. Dispatch or ingest runtime events to populate this registry.</div>}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-1 text-xs font-semibold text-cyan-100">Controlled Worker Manifest Preview</div>
+              <p className="text-xs text-neutral-500">Preview-only manifest. Exporting it does not dispatch work or imply external runtime execution.</p>
+            </div>
+            <button onClick={() => downloadJson('controlled-worker-manifest-preview.json', controlledManifestPreview)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export manifest</button>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Badge tone="green">allowlisted</Badge>
+            <Badge>{controlledManifestPreview.actions.length} actions</Badge>
+            <Badge>write_step_artifact</Badge>
+            <Badge>write_manifest_summary</Badge>
+          </div>
+          <div className="space-y-2">
+            {controlledManifestPreview.actions.slice(0, 5).map((action) => (
+              <div key={action.action_id} className="rounded-lg border border-white/5 bg-white/[0.02] p-3 text-xs">
+                <div className="font-semibold text-neutral-200">{action.action_kind}</div>
+                <div className="mt-1 text-neutral-500">{action.action_id}{'step_id' in action && action.step_id ? ` · ${action.step_id}` : ''}{'output_kind' in action && action.output_kind ? ` · ${action.output_kind}` : ''}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-1 text-xs font-semibold text-cyan-100">External Runtime Mode</div>
+          <p className="mb-3 text-xs text-neutral-500">Envelope export is not external execution. Operator-run and direct-run modes remain future integration decisions.</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge tone="green">current: envelope-only</Badge>
+            <Badge tone="yellow">future: operator-run</Badge>
+            <Badge tone="red">direct-run unavailable</Badge>
+          </div>
+          <div className="mt-3 text-xs text-neutral-500">Referenced plans: docs/openhands-real-integration-plan.md and docs/code-agent-real-integration-plan.md.</div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-1 text-xs font-semibold text-cyan-100">Memory / Context Preview</div>
+              <p className="text-xs text-neutral-500">Carry-forward preview after review and memory/context hardening. Raw runtime payloads are excluded.</p>
+            </div>
+            <button onClick={() => downloadJson('memory-context-preview.json', memoryContextPreview)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export memory/context preview</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center md:grid-cols-4">
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3"><div className="text-xl text-white">{memoryContextPreview.memory_update_packet.accepted_decisions.length}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">decisions</div></div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3"><div className="text-xl text-white">{memoryContextPreview.memory_update_packet.runtime_blockers.length}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">blockers</div></div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3"><div className="text-xl text-white">{memoryContextPreview.memory_update_packet.artifact_summaries.length}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">artifacts</div></div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3"><div className="text-xl text-white">{memoryContextPreview.memory_update_packet.open_questions.length}</div><div className="text-[10px] uppercase tracking-widest text-neutral-500">questions</div></div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Badge tone={reviewPreview.release_ready ? 'green' : 'yellow'}>{reviewPreview.release_ready ? 'release ready' : 'follow-up required'}</Badge>
+            <Badge>{memoryContextPreview.memory_update_packet.do_not_store.rule_id}</Badge>
+          </div>
+        </div>
+      </div>
+
       {response && request && (
         <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-4">
           <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -438,10 +621,10 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={simulateCallback} className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-900/30">
-                <Activity size={14} /> Simulate callback
+                <Activity size={14} /> Simulate mock callback
               </button>
               <button onClick={replayLastCallback} disabled={!callbackPayload} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
-                <RotateCcw size={14} /> Replay last callback
+                <RotateCcw size={14} /> Replay last callback / dedupe check
               </button>
             </div>
           </div>
@@ -456,9 +639,9 @@ export default function RuntimeAdapterPanel({ packet, statuses, evidence, onAppl
 
       {(request || response || callbackPayload) && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {request && <button onClick={() => downloadJson('runtime-adapter-request.json', request)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export request</button>}
-          {response && <button onClick={() => downloadJson('runtime-adapter-response.json', response)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export response</button>}
-          {callbackPayload && <button onClick={() => downloadJson('runtime-callback.json', callbackPayload)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export callback</button>}
+          {request && <button onClick={() => downloadJson('runtime-adapter-request.json', request)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export runtime adapter request</button>}
+          {response && <button onClick={() => downloadJson('runtime-adapter-response.json', response)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export adapter response</button>}
+          {callbackPayload && <button onClick={() => downloadJson('runtime-callback.json', callbackPayload)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-300 hover:text-white"><FileJson size={14} />Export runtime callback</button>}
         </div>
       )}
 
