@@ -13,7 +13,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 21. Local controlled worker v2 — done, PR #53
 22. OpenHands real integration plan — done, PR #54
 23. Code Agent real integration plan — done, PR #55
-24. UI/runtime adapter polish — done
+24. UI/runtime adapter polish — done, PR #56
+25-31. UI runtime implementation plan — documented
 ```
 
 ## Priority buckets
@@ -100,7 +101,7 @@ Policy is documented in docs/dev-command-policy.md.
 
 ### 24. UI/runtime adapter polish
 
-Status: done.
+Status: done, PR #56.
 
 Outcome:
 
@@ -131,6 +132,26 @@ Outcome:
 ```text
 Supported agent kinds, prompt/workspace envelope mapping, expected artifact collection, failure modes and operator approvals are documented in docs/code-agent-real-integration-plan.md.
 Direct runtime invocation remains intentionally unimplemented.
+```
+
+## UI implementation phase
+
+Detailed plan:
+
+```text
+docs/ui-runtime-implementation-plan.md
+```
+
+Implementation sequence:
+
+```text
+25. Job State card + Export job state
+26. Artifact Registry card
+27. Controlled Worker manifest preview/export
+28. External Runtime Mode explanation card
+29. Memory/Context preview/export
+30. Operator action label polish
+31. First real external runtime wiring decision gate
 ```
 
 ## Guardrails for the next phase
