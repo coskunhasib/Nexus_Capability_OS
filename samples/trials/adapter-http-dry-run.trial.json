@@ -1,0 +1,14 @@
+{
+  "trial_id": "adapter-http-dry-run",
+  "title": "Adapter Trial / HTTP Dry Run Boundary",
+  "intent": "Prove the HTTP provider boundary can dispatch a runtime adapter request and reject malformed worker output safely.",
+  "expected_provider": "http",
+  "dispatch_mode": "dry_run",
+  "expected_status": "pass",
+  "required_checks": [
+    "http_health_boundary_checked",
+    "http_response_shape_guard_checked",
+    "runtime_job_created_from_valid_http_response",
+    "memory_context_created"
+  ]
+}
