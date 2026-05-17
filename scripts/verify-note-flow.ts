@@ -1,113 +1,100 @@
-import {
-  createNote,
-  mergeNotes,
-  retireNote,
-  updateNote,
-} from '../src/noteFlow.ts';
+import { createNote, mergeNotes, retireNote, updateNote } from '../src/noteFlow.ts';
 
-function assert(name: string, pass: boolean, details?: Record<string, unknown>) {
-  return { name, pass, details };
+function assert(name: string, pass: unknown, details?: Record<string, unknown>) {
+  return { name, pass: Boolean(pass), details };
 }
 
-const created = createNote({
-  note_id: 'note.beta.created',
+const t0 = '2026-05-17T00:00:00.000Z';
+const t1 = '2026-05-17T00:01:00.000Z';
+const t2 = '2026-05-17T00:02:00.000Z';
+const t3 = '2026-05-17T00:03:00.000Z';
+const t4 = '2026-05-17T00:04:00.000Z';
+const t5 = '2026-05-17T00:05:00.000Z';
+
+const a = createNote({
+  note_id: 'note.beta.a',
   topic: 'Beta note flow',
   note_type: 'decision',
   summary: 'Create note candidates with source refs.',
   source_refs: ['obs.beta.001'],
   confidence: 'high',
-  at: '2026-05-17T00:00:00.000Z',
+  at: t0,
 });
 
-const invalidCreate = createNote({
-  note_id: 'note.beta.invalid',
-  topic: 'Invalid beta note flow',
+const badCreate = createNote({
+  note_id: 'note.beta.bad',
+  topic: 'Bad note',
   note_type: 'decision',
-  summary: 'This note lacks source refs.',
+  summary: 'No refs.',
   source_refs: [],
   confidence: 'high',
-  at: '2026-05-17T00:00:00.000Z',
+  at: t0,
 });
 
-const updated = created.note
-  ? updateNote({
-      existing: created.note,
-      note_id: 'note.beta.updated',
-      summary: 'Updated note keeps previous and new source refs.',
-      source_refs: ['artifact.beta.001'],
-      at: '2026-05-17T00:01:00.000Z',
-    })
-  : { valid: false, errors: ['create failed'] };
+const b = a.note ? updateNote({
+  existing: a.note,
+  note_id: 'note.beta.b',
+  summary: 'Updated note keeps previous and new refs.',
+  source_refs: ['artifact.beta.001'],
+  at: t1,
+}) : { valid: false, errors: ['missing a'] };
 
-const second = createNote({
-  note_id: 'note.beta.second',
-  topic: 'Second beta note',
+const c = createNote({
+  note_id: 'note.beta.c',
+  topic: 'Second note',
   note_type: 'lesson',
-  summary: 'Second note for merge verification.',
+  summary: 'Second note.',
   source_refs: ['obs.beta.002'],
   confidence: 'medium',
-  at: '2026-05-17T00:02:00.000Z',
+  at: t2,
 });
 
-const merged = updated.note && second.note
-  ? mergeNotes({
-      note_id: 'note.beta.merged',
-      topic: 'Merged beta note flow',
-      notes: [updated.note, second.note],
-      summary: 'Merged note preserves lineage and source refs.',
-      source_refs: ['review.beta.merge'],
-      confidence: 'high',
-      at: '2026-05-17T00:03:00.000Z',
-    })
-  : { valid: false, errors: ['merge prerequisites failed'] };
+const merged = b.note && c.note ? mergeNotes({
+  note_id: 'note.beta.merged',
+  topic: 'Merged note',
+  notes: [b.note, c.note],
+  summary: 'Merged note keeps lineage and refs.',
+  source_refs: ['review.beta.merge'],
+  confidence: 'high',
+  at: t3,
+}) : { valid: false, errors: ['missing merge input'] };
 
-const invalidMerge = updated.note
-  ? mergeNotes({
-      note_id: 'note.beta.bad-merge',
-      topic: 'Bad merge',
-      notes: [updated.note],
-      summary: 'Invalid single-note merge.',
-      source_refs: ['review.beta.merge'],
-      confidence: 'medium',
-      at: '2026-05-17T00:04:00.000Z',
-    })
-  : { valid: false, errors: ['merge prerequisite failed'] };
+const badMerge = b.note ? mergeNotes({
+  note_id: 'note.beta.bad-merge',
+  topic: 'Bad merge',
+  notes: [b.note],
+  summary: 'Single note merge.',
+  source_refs: ['review.beta.merge'],
+  confidence: 'medium',
+  at: t4,
+}) : { valid: false, errors: ['missing b'] };
 
-const retired = merged.note
-  ? retireNote({
-      existing: merged.note,
-      reason: 'Superseded by Beta controlled runtime summary.',
-      at: '2026-05-17T00:05:00.000Z',
-    })
-  : { valid: false, errors: ['merge failed'] };
+const closed = merged.note ? retireNote({
+  existing: merged.note,
+  reason: 'Superseded by later summary.',
+  at: t4,
+}) : { valid: false, errors: ['missing merged'] };
 
-const invalidRetire = merged.note
-  ? retireNote({
-      existing: merged.note,
-      reason: '',
-      at: '2026-05-17T00:06:00.000Z',
-    })
-  : { valid: false, errors: ['merge failed'] };
+const badClose = merged.note ? retireNote({
+  existing: merged.note,
+  reason: '',
+  at: t5,
+}) : { valid: false, errors: ['missing merged'] };
 
 const assertions = [
-  assert('create with source refs is valid', created.valid && created.note?.status === 'active', { created }),
-  assert('create without source refs is rejected', !invalidCreate.valid, { invalidCreate }),
-  assert('update preserves replaced note id', updated.valid && updated.note?.replaces?.includes('note.beta.created'), { updated }),
-  assert('update preserves old and new source refs', updated.valid && updated.note?.source_refs.includes('obs.beta.001') && updated.note?.source_refs.includes('artifact.beta.001'), { updated }),
-  assert('merge requires multiple notes', !invalidMerge.valid, { invalidMerge }),
-  assert('merge preserves replaced ids', merged.valid && merged.note?.replaces?.includes('note.beta.updated') && merged.note?.replaces?.includes('note.beta.second'), { merged }),
-  assert('merge preserves source refs', merged.valid && merged.note?.source_refs.includes('obs.beta.001') && merged.note?.source_refs.includes('obs.beta.002') && merged.note?.source_refs.includes('review.beta.merge'), { merged }),
-  assert('retire requires reason and keeps traceable note', retired.valid && retired.note?.status === 'retired' && retired.note?.stale_reason, { retired }),
-  assert('retire without reason is rejected', !invalidRetire.valid, { invalidRetire }),
+  assert('create with refs', a.valid && a.note?.status === 'active', { a }),
+  assert('create without refs fails', !badCreate.valid, { badCreate }),
+  assert('update has lineage', b.valid && b.note?.replaces?.includes('note.beta.a'), { b }),
+  assert('update keeps refs', b.valid && b.note?.source_refs.includes('obs.beta.001') && b.note?.source_refs.includes('artifact.beta.001'), { b }),
+  assert('single note merge fails', !badMerge.valid, { badMerge }),
+  assert('merge has lineage', merged.valid && merged.note?.replaces?.includes('note.beta.b') && merged.note?.replaces?.includes('note.beta.c'), { merged }),
+  assert('merge keeps refs', merged.valid && merged.note?.source_refs.includes('obs.beta.001') && merged.note?.source_refs.includes('obs.beta.002') && merged.note?.source_refs.includes('review.beta.merge'), { merged }),
+  assert('close has note status', closed.valid && closed.note?.status === 'retired' && closed.note?.stale_reason, { closed }),
+  assert('close without reason fails', !badClose.valid, { badClose }),
 ];
 
 const status = assertions.every((item) => item.pass) ? 'pass' : 'fail';
-const result = {
-  suite_id: 'note-flow',
-  status,
-  assertions,
-};
-
+const result = { suite_id: 'note-flow', status, assertions };
 console.log(JSON.stringify(result, null, 2));
 
 if (status !== 'pass') {
