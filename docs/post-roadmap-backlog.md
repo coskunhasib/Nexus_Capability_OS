@@ -16,18 +16,20 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 24. UI/runtime adapter polish — done, PR #56
 25-31. UI runtime implementation phase — implemented, PR #58
 32. Operator-run result file ingestion plan — done, PR #59
-33. Nexus data contract discovery — pending
-34. Nexus canonical result envelope — pending
-35. Nexus result ingestion prototype — pending
-36. Shared result guard and fixtures — pending
-37. Code Agent / custom agent mapping — pending
-38. First runtime wiring decision PR — pending
+33. Capability Runtime data model discovery — design-contract complete
+34. Skill-Tool-Agent execution contract — design-contract complete
+35. Skill package standard — design-contract complete
+36. Tool permission model — design-contract complete
+37. Agent / sub-agent delegation model — design-contract complete
+38. Memory/context distillation model — design-contract complete
+39. Evaluation and observation model — design-contract complete
+40. Runtime loop prototype — design-contract complete
 ```
 
 ## Priority buckets
 
 ```text
-P0 — required before wiring real runtimes
+P0 — required before embedding the runtime deeply into Nexus
 P1 — required before operator-facing usage
 P2 — important hardening or polish
 P3 — optional quality-of-life
@@ -36,10 +38,39 @@ P3 — optional quality-of-life
 ## Core correction
 
 ```text
-Do not implement Nexus result ingestion by guessing hidden Nexus data.
-Do not treat any third-party runtime as the source of truth.
-Treat Nexus as the integration owner.
-Build an explicit Nexus data contract first.
+LLM = reasoning intelligence.
+Nexus Capability Runtime = wisdom, experience and operating discipline.
+Nexus is the host system.
+Capability Runtime is the embedded skill-tool-agent layer.
+```
+
+## Core philosophy
+
+See:
+
+```text
+docs/nexus-capability-runtime-philosophy.md
+docs/capability-runtime-decision-log.md
+```
+
+Main rules:
+
+```text
+Skill decides the method.
+Agent owns the role.
+Sub-agent handles bounded delegation.
+Tool performs the action.
+Memory carries experience.
+Context carries current working state.
+Evaluation decides whether the result is good enough.
+```
+
+Memory/context rule:
+
+```text
+Distillation first.
+Notes-first memory.
+Pruning only for duplicates, temporary traces and already-distilled raw noise.
 ```
 
 ## P0 items
@@ -98,58 +129,68 @@ Outcome:
 
 ```text
 Operator-managed result file ingestion sequence is documented in docs/operator-run-result-ingestion-plan.md.
-This plan is now superseded by the Nexus data contract roadmap before implementation.
+This plan is now secondary to the Capability Runtime data model and execution contract.
 ```
 
-### 33. Nexus data contract discovery
+### 33. Capability Runtime data model discovery
 
-Status: pending.
+Status: design-contract complete.
 
-Definition of done:
+Outcome:
 
 ```text
-Inventory all existing Nexus-facing types and samples.
-Identify canonical, derived, temporary and UI-only fields.
-Document unknowns without inventing data.
-Create docs/nexus-data-contract-inventory.md.
+Existing runtime-facing surfaces are inventoried in docs/capability-runtime-data-model-inventory.md.
+Canonical candidates, derived fields, UI-only fields, fixture-only fields and unknowns are identified.
 ```
 
-### 34. Nexus canonical result envelope
+### 34. Skill-Tool-Agent execution contract
 
-Status: pending.
+Status: design-contract complete.
 
-Definition of done:
+Outcome:
 
 ```text
-Define the smallest stable result envelope Nexus can accept from an operator-run process.
-Create contract docs and completed/blocked fixtures only after discovery.
-Do not finalize field names before item 33.
+Runtime cycle, ownership rules, execution phases, handoff expectations and safety boundaries are documented in docs/skill-tool-agent-execution-contract.md.
 ```
 
-### 35. Nexus result ingestion prototype
+### 35. Skill package standard
 
-Status: pending.
+Status: design-contract complete.
 
-Definition of done:
+Outcome:
 
 ```text
-Normalize a validated Nexus operator result into nexus.runtime_adapter_response.
-Completed result becomes accepted response.
-Blocked result becomes failed response with step_blocked event.
-Identity mismatch rejects before state mutation.
-Invalid artifact refs reject before state mutation.
+Skill package shape, method steps, tool requests, selection signals, performance observations and anti-patterns are documented in docs/skill-package-standard.md.
 ```
 
-### 36. Shared result guard and fixtures
+### 36. Tool permission model
 
-Status: pending.
+Status: design-contract complete.
 
-Definition of done:
+Outcome:
 
 ```text
-Centralize reusable result-file validation.
-Validate packet_type, version, identity, source, status, artifact array, notes, diagnostics and created_at.
-Reject invalid shapes before state mutation.
+Tool classes, grants, workspace boundaries, approval policy, audit output and sub-agent permission boundaries are documented in docs/tool-permission-model.md.
+```
+
+### 37. Agent / sub-agent delegation model
+
+Status: design-contract complete.
+
+Outcome:
+
+```text
+Agent ownership, sub-agent scope, delegation rules, handoff contract, permission inheritance and context inheritance are documented in docs/agent-subagent-delegation-model.md.
+```
+
+### 38. Memory/context distillation model
+
+Status: design-contract complete.
+
+Outcome:
+
+```text
+Notes-first memory, raw trace boundaries, distilled note shape, active context selection, note lifecycle and staleness rules are documented in docs/memory-context-distillation-plan.md.
 ```
 
 ## P1 items
@@ -188,16 +229,24 @@ Panel-level job-state visibility, controlled worker manifest visibility, runtime
 Implementation should proceed as focused follow-up PRs.
 ```
 
-### 37. Code Agent / custom agent mapping
+### 39. Evaluation and observation model
 
-Status: pending.
+Status: design-contract complete.
 
-Definition of done:
+Outcome:
 
 ```text
-Map code-agent or custom-agent output into the Nexus canonical result envelope.
-Do not let agent-specific output define the primary Nexus contract.
-Add focused verification after the canonical envelope exists.
+Observation targets, observation shape, evaluation result shape, gate categories and learning rules are documented in docs/evaluation-observation-model.md.
+```
+
+### 40. Runtime loop prototype
+
+Status: design-contract complete.
+
+Outcome:
+
+```text
+Runtime loop phases, prototype boundaries, inputs, outputs, RuntimeLoopCycle shape and verification goals are documented in docs/runtime-loop-prototype-plan.md.
 ```
 
 ## P2 items
@@ -224,19 +273,6 @@ Supported agent kinds, prompt/workspace envelope mapping, expected artifact coll
 Direct runtime invocation remains intentionally unimplemented.
 ```
 
-### 38. First runtime wiring decision PR
-
-Status: pending.
-
-Definition of done:
-
-```text
-Review Nexus data contract inventory, canonical result envelope, ingestion prototype, shared guard and agent mapping outcomes.
-Choose first integration path.
-Prefer operator-run ingestion before direct runtime mode.
-Document the final decision and verification requirements.
-```
-
 ## UI implementation phase
 
 Detailed implementation state:
@@ -257,47 +293,54 @@ Implemented sequence:
 31. First runtime wiring decision gate — documented
 ```
 
-## Nexus data contract phase
+## Capability Runtime design-contract phase
 
-Detailed plan:
+Detailed documents:
 
 ```text
-docs/nexus-data-contract-roadmap.md
+docs/capability-runtime-data-model-inventory.md
+docs/skill-tool-agent-execution-contract.md
+docs/skill-package-standard.md
+docs/tool-permission-model.md
+docs/agent-subagent-delegation-model.md
+docs/memory-context-distillation-plan.md
+docs/evaluation-observation-model.md
+docs/runtime-loop-prototype-plan.md
 ```
 
-Planned sequence:
+Completed design-contract sequence:
 
 ```text
-33. Nexus data contract discovery — pending
-34. Nexus canonical result envelope — pending
-35. Nexus result ingestion prototype — pending
-36. Shared result guard and fixtures — pending
-37. Code Agent / custom agent mapping — pending
-38. First runtime wiring decision PR — pending
+33. Capability Runtime data model discovery — design-contract complete
+34. Skill-Tool-Agent execution contract — design-contract complete
+35. Skill package standard — design-contract complete
+36. Tool permission model — design-contract complete
+37. Agent / sub-agent delegation model — design-contract complete
+38. Memory/context distillation model — design-contract complete
+39. Evaluation and observation model — design-contract complete
+40. Runtime loop prototype — design-contract complete
 ```
 
 ## Guardrails for the next phase
 
 ```text
-Keep real-runtime wiring behind explicit operator choices.
-Keep work request envelopes minimal.
-Keep sensitive values out of envelopes by default.
-Keep memory packets summary/ref based.
+Keep Nexus as the host system.
+Keep Capability Runtime as the embedded wisdom/experience layer.
+Treat external tools and agents as mappings into this runtime, not as the source of truth.
+Use distillation-first context compression.
+Use sub-agents only for real delegation, isolation or parallel work.
 Keep runtime output behind response-shape validation.
 Keep network development exposure opt-in.
-Validate operator-run result files before state mutation.
-Do not guess missing Nexus data fields.
 ```
 
 ## Recommended next phase
 
 ```text
-1. Discover the Nexus data contract.
-2. Define the canonical Nexus result envelope.
-3. Implement Nexus result ingestion against that contract.
-4. Add shared validation guard.
-5. Map agent/custom outputs into Nexus-owned envelope.
-6. Decide first runtime integration path.
+41. Add schemas and fixtures for the Capability Runtime contracts.
+42. Add deterministic verifiers for skill, tool, agent, note and evaluation shapes.
+43. Implement a local dry-run runtime loop prototype.
+44. Add UI visibility for skill/tool/agent decisions.
+45. Decide whether external runtime mapping is needed after local loop validation.
 ```
 
 ## Completion rule
