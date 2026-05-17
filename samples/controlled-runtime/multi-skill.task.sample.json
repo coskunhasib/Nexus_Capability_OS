@@ -1,0 +1,51 @@
+{
+  "packet_type": "nexus.task_packet",
+  "version": "0.1",
+  "objective": "Verify multi-skill controlled runtime fixture",
+  "source_compiler_rule": "verify-multi-skill-controlled-runtime",
+  "routing": {
+    "macro_pipeline": "software-development",
+    "micro_pipelines": ["capability-runtime", "controlled-worker-mapping"],
+    "capability_packs": ["capability-runtime-pack", "controlled-worker-v2-pack"],
+    "skills": ["quality-assurance-skill", "review-skill"]
+  },
+  "skills": [
+    { "skill": "quality-assurance-skill", "required": true },
+    { "skill": "review-skill", "required": true }
+  ],
+  "team": [
+    { "profile": "runtime-adapter-engineer", "role": "owner_or_reviewer" },
+    { "profile": "spec-compliance-reviewer", "role": "reviewer" }
+  ],
+  "gates": [
+    { "gate": "controlled-worker-output", "required": true },
+    { "gate": "runtime-loop-mapping", "required": true },
+    { "gate": "review-evidence", "required": true }
+  ],
+  "policies": {
+    "memory": "project-decision-memory",
+    "context": "software-working-set-context"
+  },
+  "work_order": [
+    {
+      "order": 1,
+      "id": "01-quality-evidence",
+      "title": "Create Quality Evidence",
+      "owner": "runtime-adapter-engineer",
+      "description": "Produce bounded quality evidence artifact.",
+      "expected_outputs": ["quality_evidence_artifact"],
+      "required_gates": ["controlled-worker-output", "runtime-loop-mapping"],
+      "status": "not_started"
+    },
+    {
+      "order": 2,
+      "id": "02-review-evidence",
+      "title": "Create Review Evidence",
+      "owner": "spec-compliance-reviewer",
+      "description": "Produce bounded review evidence artifact.",
+      "expected_outputs": ["review_evidence_artifact"],
+      "required_gates": ["review-evidence"],
+      "status": "not_started"
+    }
+  ]
+}
