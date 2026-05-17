@@ -5,6 +5,7 @@
 ```text
 The local capability execution kernel is complete.
 The whole Nexus layer is not complete.
+The remaining items are Nexus internal layers, not external or optional side quests.
 ```
 
 Nexus is not just a local runner, a single-agent app, or a demo UI. The intended layer is:
@@ -23,7 +24,7 @@ cloud/hybrid run policy
 Nexus data contract and result ingestion
 ```
 
-## Completed foundation
+## Completed internal foundation
 
 ```text
 local capability execution kernel
@@ -40,7 +41,7 @@ alpha e2e verifier
 minimal review panel
 ```
 
-## Active Nexus layers still to implement
+## Active Nexus internal layers still to implement
 
 ### 1. Nexus data contract and result envelope
 

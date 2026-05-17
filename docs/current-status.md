@@ -4,7 +4,7 @@
 
 ```text
 Local capability execution kernel complete.
-Nexus layer roadmap remains active.
+Nexus internal layer implementation remains active.
 ```
 
 ## Frozen phase
@@ -18,6 +18,7 @@ Architecture, contract, fixture, milestone documentation, and local-alpha capabi
 ```text
 PR #111–#116 did not complete the whole Nexus product.
 They completed the local capability execution kernel inside Nexus.
+The remaining items are not outside Nexus; they are Nexus internal product layers.
 Nexus itself is broader: skill marketplace, distributed compute, hidden dispatcher, workflow execution fabric, organization/team use layer, tenant/workspace isolation, billing/credits, trust/reputation, and marketplace compute records.
 ```
 
@@ -45,6 +46,8 @@ PR #113 — operator action workflow
 PR #114 — local identity and permission boundary
 PR #115 — alpha e2e verifier
 PR #116 — final local execution-kernel documentation closure
+PR #117 — scope correction for Nexus layer roadmap
+PR #118 — terminology correction: remaining work is Nexus internal work
 ```
 
 ## Canonical files
@@ -94,7 +97,7 @@ npm run verify:all
 npm run build
 ```
 
-## Nexus layer work still active
+## Nexus internal work still active
 
 ```text
 skill marketplace
@@ -113,5 +116,6 @@ Nexus data contract ingestion and result envelope
 
 ```text
 Do not call Nexus complete just because the local capability kernel is complete.
-New work must be classified by Nexus layer, not collapsed into vague post-alpha wording.
+Do not call the remaining layers post-alpha or out-of-scope.
+They are Nexus internal layers and must be implemented under docs/nexus-layer-roadmap.md.
 ```
