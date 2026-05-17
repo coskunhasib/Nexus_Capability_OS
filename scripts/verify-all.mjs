@@ -33,6 +33,7 @@ const commands = [
   ['npm', ['run', 'verify:runner']],
   ['npm', ['run', 'verify:actions']],
   ['npm', ['run', 'verify:perm-local']],
+  ['npm', ['run', 'verify:alpha-e2e']],
   ['npm', ['run', 'verify:oh-adapter']],
   ['npm', ['run', 'verify:ca-adapter']],
   ['npm', ['run', 'verify:capability-runtime']],
