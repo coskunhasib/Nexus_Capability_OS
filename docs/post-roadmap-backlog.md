@@ -26,8 +26,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 47. Stricter JSON schema validation — implemented
 48. Local controlled worker mapping into runtime loop — implemented
 49. Operator-run result mapping into runtime loop — implemented
-50. External runtime mapping re-evaluation — next
-Post-50. Switch to milestone/release planning — planned
+50. External runtime mapping re-evaluation — completed
+Post-50. Milestone 1 — Capability Runtime Alpha — next
 ```
 
 ## Stop rule
@@ -238,12 +238,15 @@ Focused verification is available through npm run verify:operator-run-runtime.
 
 ### 50. External runtime mapping re-evaluation
 
-Status: next.
+Status: completed.
 
-Definition of done:
+Outcome:
 
 ```text
-Re-evaluate external runtime mapping only after local loop, schema validation, controlled worker mapping, operator-run mapping and UI visibility are proven.
+Mapping pattern is accepted.
+Live external runtime execution remains deferred.
+External Runtime Mapping moves to Milestone 4.
+The next phase is Milestone 1 — Capability Runtime Alpha.
 ```
 
 ## P1 items
@@ -405,6 +408,7 @@ Completed sequence:
 47. Add stricter JSON schema validation for fixtures — implemented
 48. Add local controlled worker mapping into runtime loop — implemented
 49. Add operator-run result mapping into runtime loop — implemented
+50. Re-evaluate external runtime mapping — completed
 ```
 
 ## Post-50 milestone mode
@@ -434,15 +438,14 @@ Use distillation-first context compression.
 Use sub-agents only for real delegation, isolation or parallel work.
 Keep runtime output behind response-shape validation.
 Keep network development exposure opt-in.
-Keep external runtime mapping deferred until local loop validation and UI visibility are proven.
+Keep live external runtime execution deferred until Alpha, Beta and Embedded Nexus boundaries are proven.
 Stop extending numbered roadmap after item 50.
 ```
 
 ## Recommended next phase
 
 ```text
-50. Revisit external runtime mapping after local validation.
-Then switch to Milestone 1 — Capability Runtime Alpha.
+Milestone 1 — Capability Runtime Alpha.
 ```
 
 ## Completion rule
