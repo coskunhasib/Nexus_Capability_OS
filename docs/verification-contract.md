@@ -2,22 +2,19 @@
 
 This document is the authoritative verification map for Nexus Capability OS.
 
-It defines what the CI chain proves, which runtime boundaries are intentionally safe, and which checks must pass before a PR is merged.
-
 ## Current project state
 
 ```text
 Adapter/runtime roadmap: 15/15 completed
 Post-roadmap numbered block: 16-50 completed
-Current phase: Milestone 1 — Capability Runtime Alpha
+Milestone 1 — Capability Runtime Alpha: planned and released as notes
+Current phase: Milestone 2 — Controlled Runtime Beta
 Authoritative local command: npm run build && npm run check:generated
 ```
 
 ## Milestone mode
 
 The project no longer extends the numbered roadmap after item 50.
-
-Current milestone sequence:
 
 ```text
 Milestone 1 — Capability Runtime Alpha
@@ -26,74 +23,40 @@ Milestone 3 — Embedded Nexus Integration
 Milestone 4 — External Runtime Mapping
 ```
 
-Milestone 1 source documents:
+Current Beta documents:
 
 ```text
-docs/post-50-milestone-plan.md
-docs/milestone-1-capability-runtime-alpha.md
-docs/alpha-release-checklist.md
-docs/external-runtime-mapping-decision.md
+docs/milestone-2-controlled-runtime-beta.md
+docs/beta-release-checklist.md
+docs/controlled-runtime-beta-release-notes.md
+docs/beta-closure-plan.md
 ```
 
-## Capability Runtime Alpha contract
+## Controlled Runtime Beta contract
 
-Alpha proves that the embedded Capability Runtime can run in local, read-only or controlled mode.
+Beta proves that local controlled execution outputs can be validated, traced and mapped without making external live execution the default path.
 
-Alpha must show:
+Beta must show:
 
 ```text
-skill selection
-owning agent assignment
-bounded sub-agent delegation
-explicit tool grant
-active context from selected notes
-runtime events from dry-run or controlled loop
-evaluation observation generation
-memory note candidate generation
-read-only UI decision visibility
+Alpha gates remain green
+artifact lifecycle is explicit
+workspace boundary checks are deterministic
+note flow preserves source refs and lineage
+multi-skill controlled fixture works
+decision gates are explicit
+focused Beta checks are wired into package scripts and prebuild
 ```
 
-Alpha excludes:
+Beta excludes:
 
 ```text
-live external execution
-broad workspace mutation
-full-context dumping
-autonomous worker swarm
-memory updates without source refs
-persistent Nexus host API
-```
-
-## Verification layers
-
-```text
-install determinism
-→ packet/schema validity
-→ registry consistency
-→ TypeScript correctness
-→ skill-aware trial execution
-→ adapter trial execution
-→ local worker boundary behavior
-→ minimum real worker slice behavior
-→ controlled worker behavior
-→ controlled worker runtime mapping
-→ operator-run runtime mapping
-→ external agent envelope behavior
-→ Capability Runtime contract validation
-→ Nexus handoff usability
-→ Nexus runtime bridge event coverage
-→ runtime adapter loop behavior
-→ runtime adapter provider interface behavior
-→ runtime event store + replay behavior
-→ runtime artifact registry behavior
-→ review report hardening behavior
-→ memory/context packet hardening behavior
-→ snapshot sync
-→ tree data sync
-→ production build
-→ bundle budget
-→ generated artifact drift guard
-→ CI summary
+live external execution by default
+implicit network write access
+raw logs as notes
+broad file mutation
+hidden tool permissions
+production Nexus deployment requirement
 ```
 
 ## CI command contract
@@ -123,6 +86,11 @@ npm run verify:real-worker
 npm run verify:controlled-worker
 npm run verify:controlled-worker-runtime
 npm run verify:operator-run-runtime
+npm run verify:artifact-lifecycle
+npm run verify:workspace-boundary
+npm run verify:note-flow
+npm run verify:multi-skill-controlled-runtime
+npm run verify:decision-gate
 npm run verify:oh-adapter
 npm run verify:ca-adapter
 npm run verify:capability-runtime
@@ -154,7 +122,17 @@ npm run build
 npm run check:generated
 ```
 
-Focused Alpha checks:
+Focused Beta checks:
+
+```bash
+npm run verify:artifact-lifecycle
+npm run verify:workspace-boundary
+npm run verify:note-flow
+npm run verify:multi-skill-controlled-runtime
+npm run verify:decision-gate
+```
+
+Carry-over Alpha checks:
 
 ```bash
 npm run verify:capability-runtime
@@ -186,54 +164,66 @@ npm run check:bundle
 npm run check:generated
 ```
 
-## What each check guarantees
+## What each Beta check guarantees
 
 | Check | Guarantee |
 |---|---|
-| `npm ci` | `package.json` and `package-lock.json` are synchronized and installation is reproducible. |
-| `validate:packets` | Packet samples, runtime adapter samples and trial scenarios match their JSON schemas. |
-| `audit:registry` | Registry files have required sections, no missing references and no duplicate ids. |
-| `npx tsc --noEmit` | TypeScript is type-correct without emitting build files. |
-| `trial:web-saas-skill` | The reference web SaaS scenario selects expected skills and produces review/memory/context outputs. |
-| `trial:all-skills` | All current trial scenarios pass skill-aware assertions. |
-| `trial:adapter` | Mock and HTTP adapter trial scenarios pass runtime job, artifact, review and memory/context continuity assertions. |
-| `verify:local-worker` | The local HTTP worker starts, serves health, returns runtime adapter responses, and fails closed on invalid/unknown routes. |
-| `verify:real-worker` | The minimum real worker slice uses only allowlisted artifact generation and produces runtime events without broad execution. |
+| `verify:artifact-lifecycle` | Artifact records have lifecycle status, source refs and valid transitions. |
+| `verify:workspace-boundary` | Workspace reads, writes and artifact outputs are evaluated deterministically against explicit boundaries. |
+| `verify:note-flow` | Note create/update/merge/retire operations preserve source refs and lineage. |
+| `verify:multi-skill-controlled-runtime` | At least two skills can feed a controlled local runtime fixture and map events/artifacts into the loop. |
+| `verify:decision-gate` | Gate states are explicit; granted/denied decisions require trace fields. |
+
+## What each carry-over check guarantees
+
+| Check | Guarantee |
+|---|---|
+| `verify:capability-runtime` | Capability Runtime fixtures, strict validators, invalid fixture smoke-tests and dry-run loop construction pass. |
 | `verify:controlled-worker` | The manifest-driven controlled worker writes bounded artifacts and emits runtime adapter events. |
 | `verify:controlled-worker-runtime` | Controlled worker responses map into Capability Runtime observations, events and artifacts. |
-| `verify:operator-run-runtime` | Completed and blocked operator-run result files map into observations, runtime cycles and memory note candidates. |
+| `verify:operator-run-runtime` | Completed and blocked operator-run result files map into observations, runtime cycles and note candidates. |
+| `verify:local-worker` | The local HTTP worker starts, serves health, returns runtime adapter responses, and fails closed on invalid/unknown routes. |
+| `verify:real-worker` | The minimum real worker slice uses only allowlisted artifact generation and produces runtime events without broad execution. |
 | `verify:oh-adapter` | The OpenHands envelope adapter builds safe work requests and normalizes completed/blocked results without invoking the external runtime. |
 | `verify:ca-adapter` | The code-agent envelope adapter builds safe work requests for supported agent kinds and normalizes completed/blocked results. |
-| `verify:capability-runtime` | Capability Runtime fixtures, strict validators, invalid fixture smoke-tests and dry-run loop construction pass. |
-| `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
-| `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
-| `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest, runtime job state and Runner state behavior work together. |
-| `verify:adapter-provider` | Runtime adapter provider registry, mock provider and hardened HTTP provider behavior work through the shared dispatch interface. |
-| `verify:event-store` | Runtime events can be appended, replayed, deduped and summarized without re-dispatching runtime work. |
-| `verify:artifacts` | Runtime artifact refs are collected into a registry, repeated artifacts are separated and artifact summaries stay traceable. |
-| `verify:review-hardening` | Human evidence, runtime evidence, artifact-backed evidence, missing evidence, failed gates and release blockers are separated before release. |
-| `verify:memory-context` | Hardened review buckets become bounded memory/context packets with accepted decisions, runtime blockers, artifact summaries, open questions, provider/job metadata and do-not-store policy. |
-| `sync:trial-results` | Trial, handoff and runtime bridge snapshots are copied into `samples/*-results`. |
-| `sync:tree` | Registry data regenerates `src/generated-tree-data.ts` and `src/data.ts`. |
-| `check:bundle` | Production bundle stays within defined JS/CSS budgets. |
-| `check:generated` | Generated tracked and untracked artifacts are committed and not drifting. |
-| `summary:ci` | GitHub Actions gets a readable matrix summary of trial/handoff/runtime/bundle status. |
+| `verify:handoff` | Generated Nexus handoff packets are usable enough for local or controlled runtime work. |
+| `verify:runtime-bridge` | Mock runtime events satisfy callback event and payload coverage expectations. |
+| `verify:adapter-loop` | Runtime request, response, callback ingest, job state and Runner state behavior work together. |
+| `verify:adapter-provider` | Mock and HTTP provider behavior work through the shared dispatch interface. |
+| `verify:event-store` | Runtime events can be appended, replayed, deduped and summarized. |
+| `verify:artifacts` | Runtime artifact refs are collected into a registry and remain traceable. |
+| `verify:review-hardening` | Evidence, missing evidence, failed gates and blockers are separated before release. |
+| `verify:memory-context` | Review buckets become bounded memory/context packets with source refs and do-not-store policy. |
 
-## Runtime adapter boundary
+## Living code paths
 
-The runtime adapter boundary is the layer after `nexus.handoff_packet`.
+Capability Runtime:
 
 ```text
-Capability OS / Nexus side
-→ nexus.runtime_adapter_request
-→ RuntimeAdapterProvider
-→ mock/http/local/external worker envelope
-→ nexus.runtime_adapter_response
-→ runtime_bridge events
-→ Runner state ingest
+src/capabilityRuntimeContracts.ts
+src/CapabilityRuntimePanel.tsx
+src/controlledWorkerRuntimeMapping.ts
+src/operatorRunRuntimeMapping.ts
+samples/capability-runtime/
+samples/operator-run-results/
 ```
 
-Living code path:
+Controlled Runtime Beta:
+
+```text
+src/artifactLifecycle.ts
+src/workspaceBoundary.ts
+src/noteFlow.ts
+src/decisionGate.ts
+samples/controlled-runtime/
+scripts/verify-artifact-lifecycle.ts
+scripts/verify-workspace-boundary.ts
+scripts/verify-note-flow.ts
+scripts/verify-multi-skill-controlled-runtime.ts
+scripts/verify-decision-gate.ts
+```
+
+Runtime adapter:
 
 ```text
 src/runtimeAdapter.ts
@@ -245,42 +235,7 @@ scripts/verify-runtime-adapter-loop.ts
 scripts/verify-runtime-adapter-provider.ts
 ```
 
-## Capability Runtime boundary
-
-Capability Runtime is the embedded skill-tool-agent layer.
-
-Living code path:
-
-```text
-src/capabilityRuntimeContracts.ts
-src/CapabilityRuntimePanel.tsx
-src/controlledWorkerRuntimeMapping.ts
-src/operatorRunRuntimeMapping.ts
-scripts/verify-capability-runtime-contracts.ts
-scripts/verify-controlled-worker-runtime-mapping.ts
-scripts/verify-operator-run-runtime-mapping.ts
-schemas/capability-runtime-contracts.schema.json
-samples/capability-runtime/
-samples/operator-run-results/
-```
-
-Guarantees:
-
-```text
-skill package shape is strict
-explicit tool grant shape is strict
-agent and sub-agent shapes are strict
-active context comes from selected note refs
-evaluation observations include evidence refs
-runtime loop cycles include events and artifacts
-controlled worker outputs map into runtime loop
-operator-run results map into runtime loop and memory note candidates
-invalid fixture/result shapes fail before mapping
-```
-
 ## External runtime position
-
-External runtime mapping is not the Alpha execution path.
 
 Current decision:
 
@@ -288,7 +243,7 @@ Current decision:
 mapping pattern accepted
 live external execution deferred
 External Runtime Mapping moved to Milestone 4
-Milestone 1 remains local/read-only/controlled
+Milestone 2 remains local/controlled by default
 ```
 
 ## Generated artifacts
@@ -324,42 +279,34 @@ total JS <= 1200 kB
 total CSS <= 80 kB
 ```
 
-If `check:bundle` fails, prefer:
-
-```text
-lazy-load heavy views
-split large registry payloads
-avoid importing large JSON into the initial shell
-reduce generated static payload size
-```
-
 Do not raise bundle limits unless the new size is intentional and justified.
 
-## Healthy Alpha scenario definition
+## Healthy Beta scenario definition
 
-A Capability Runtime Alpha scenario is healthy when:
+A Controlled Runtime Beta scenario is healthy when:
 
 ```text
-Capability Runtime contract validation: pass
-controlled worker runtime mapping: pass
-operator-run runtime mapping: pass
-runtime adapter loop: pass
-runtime adapter provider: pass
-review hardening: pass
-memory/context hardening: pass
-build: pass
-generated artifact drift guard: pass
+Alpha carry-over checks pass
+artifact lifecycle passes
+workspace boundary passes
+note flow passes
+multi-skill controlled runtime passes
+decision gate passes
+runtime adapter loop passes
+review hardening passes
+memory/context hardening passes
+build passes
+generated artifact drift guard passes
 ```
 
 This means:
 
 ```text
 The compiler can route the intent.
-The handoff packet contains enough information for local/controlled runtime work.
+The handoff packet contains enough information for local/controlled work.
 The runtime adapter request/response/event ingest loop works.
-The Capability Runtime can explain skill, agent, sub-agent, tool, context, observation and memory-note-candidate decisions.
 Controlled and operator-run outputs can feed the local runtime loop through structured observations and artifacts.
-The read-only UI can show runtime decisions without mutation controls.
+Artifacts, workspace boundaries, notes and decision gates are each verified by focused checks.
 ```
 
 ## Failure policy
@@ -379,16 +326,15 @@ Preferred order:
 ## Current known limitations
 
 ```text
-CapabilityRuntimePanel is read-only and fixture-backed.
 RuntimeLoopCycle is local/dry-run/controlled, not a persistent host subsystem.
-Memory note candidates are generated but not merged into a persistent store.
-Artifact lifecycle is still a Beta-grade work area.
-Workspace boundary validation is still a Beta-grade work area.
-Live external execution remains outside Alpha scope.
+Memory note candidates and note flows are verified but not yet backed by a persistent store.
+Artifact lifecycle is policy-level, not full storage automation.
+Workspace boundary rules are deterministic policy checks, not a complete OS sandbox.
+Live external execution remains outside Beta scope.
 ```
 
 ## Next integration milestone
 
 ```text
-Milestone 1 — Capability Runtime Alpha
+Milestone 3 — Embedded Nexus Integration
 ```
