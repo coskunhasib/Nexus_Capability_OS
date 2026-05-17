@@ -5,6 +5,15 @@ export type ToolActionClass = 'read_only' | 'write_artifact' | 'write_workspace'
 export type MemoryNoteStatus = 'active' | 'stale' | 'retired';
 export type MemoryNoteType = 'decision' | 'preference' | 'lesson' | 'failure' | 'pattern' | 'constraint' | 'open_question' | 'artifact_summary';
 
+const RUNTIME_SIGNALS = ['positive', 'negative', 'neutral', 'unknown'] as const;
+const RUNTIME_CONFIDENCES = ['low', 'medium', 'high'] as const;
+const RUNTIME_STATUSES = ['pass', 'partial', 'fail'] as const;
+const TOOL_ACTION_CLASSES = ['read_only', 'write_artifact', 'write_workspace', 'network_read', 'network_write', 'runtime_control', 'system_sensitive'] as const;
+const MEMORY_NOTE_STATUSES = ['active', 'stale', 'retired'] as const;
+const MEMORY_NOTE_TYPES = ['decision', 'preference', 'lesson', 'failure', 'pattern', 'constraint', 'open_question', 'artifact_summary'] as const;
+const EVALUATION_SUBJECT_TYPES = ['skill', 'tool', 'agent', 'sub_agent', 'context', 'memory_note', 'artifact', 'gate'] as const;
+const AUDIT_LEVELS = ['summary', 'full'] as const;
+
 export type SkillPackage = {
   packet_type: 'nexus.skill_package';
   version: '0.1';
@@ -153,8 +162,39 @@ function requiredString(value: Record<string, unknown>, key: string, errors: str
   if (typeof value[key] !== 'string' || !(value[key] as string).trim()) errors.push(`${key} must be a non-empty string`);
 }
 
-function requiredStringArray(value: Record<string, unknown>, key: string, errors: string[]) {
-  if (!isStringArray(value[key])) errors.push(`${key} must be a string array`);
+function requiredStringArray(value: Record<string, unknown>, key: string, errors: string[], options: { nonEmpty?: boolean } = {}) {
+  if (!isStringArray(value[key])) {
+    errors.push(`${key} must be a string array`);
+    return;
+  }
+  if (options.nonEmpty && (value[key] as string[]).length === 0) {
+    errors.push(`${key} must not be empty`);
+  }
+}
+
+function optionalStringArray(value: Record<string, unknown>, key: string, errors: string[]) {
+  if (value[key] !== undefined && !isStringArray(value[key])) errors.push(`${key} must be a string array when provided`);
+}
+
+function requiredEnum<T extends readonly string[]>(value: Record<string, unknown>, key: string, allowed: T, errors: string[]) {
+  if (typeof value[key] !== 'string' || !allowed.includes(value[key] as T[number])) {
+    errors.push(`${key} must be one of: ${allowed.join(', ')}`);
+  }
+}
+
+function validateObjectArray(value: unknown, key: string, errors: string[], validator: (item: Record<string, unknown>, index: number) => void, options: { nonEmpty?: boolean } = {}) {
+  if (!Array.isArray(value)) {
+    errors.push(`${key} must be an array`);
+    return;
+  }
+  if (options.nonEmpty && value.length === 0) errors.push(`${key} must not be empty`);
+  value.forEach((item, index) => {
+    if (!isRecord(item)) {
+      errors.push(`${key}[${index}] must be an object`);
+      return;
+    }
+    validator(item, index);
+  });
 }
 
 export type ContractValidation = { valid: boolean; errors: string[] };
@@ -165,8 +205,16 @@ export function validateSkillPackage(value: unknown): ContractValidation {
   if (value.packet_type !== 'nexus.skill_package') errors.push('packet_type must be nexus.skill_package');
   if (value.version !== '0.1') errors.push('version must be 0.1');
   ['skill_id', 'name', 'purpose'].forEach((key) => requiredString(value, key, errors));
-  ['when_to_use', 'when_not_to_use', 'required_inputs', 'required_tools', 'optional_tools', 'agent_profile_hints', 'sub_agent_hints', 'quality_gates', 'risk_notes', 'expected_outputs', 'observation_metrics'].forEach((key) => requiredStringArray(value, key, errors));
-  if (!Array.isArray(value.method_steps) || value.method_steps.length === 0) errors.push('method_steps must be a non-empty array');
+  ['when_to_use', 'when_not_to_use', 'required_inputs', 'required_tools', 'agent_profile_hints', 'quality_gates', 'risk_notes', 'expected_outputs', 'observation_metrics'].forEach((key) => requiredStringArray(value, key, errors, { nonEmpty: true }));
+  ['optional_tools', 'sub_agent_hints'].forEach((key) => requiredStringArray(value, key, errors));
+  validateObjectArray(value.method_steps, 'method_steps', errors, (step, index) => {
+    ['step_id', 'instruction', 'output_kind'].forEach((key) => requiredString(step, key, errors));
+    optionalStringArray(step, 'required_tool_refs', errors);
+    optionalStringArray(step, 'required_gate_refs', errors);
+    if (!step.required_tool_refs && !step.required_gate_refs) {
+      errors.push(`method_steps[${index}] must declare at least required_tool_refs or required_gate_refs`);
+    }
+  }, { nonEmpty: true });
   return { valid: errors.length === 0, errors };
 }
 
@@ -175,10 +223,17 @@ export function validateToolGrant(value: unknown): ContractValidation {
   if (!isRecord(value)) return { valid: false, errors: ['tool grant must be an object'] };
   if (value.packet_type !== 'nexus.tool_grant') errors.push('packet_type must be nexus.tool_grant');
   if (value.version !== '0.1') errors.push('version must be 0.1');
-  ['grant_id', 'tool_id', 'action_class', 'scope', 'expires_after', 'owning_agent_ref', 'audit_level'].forEach((key) => requiredString(value, key, errors));
-  requiredStringArray(value, 'allowed_actions', errors);
+  ['grant_id', 'tool_id', 'scope', 'expires_after', 'owning_agent_ref'].forEach((key) => requiredString(value, key, errors));
+  requiredEnum(value, 'action_class', TOOL_ACTION_CLASSES, errors);
+  requiredEnum(value, 'audit_level', AUDIT_LEVELS, errors);
+  requiredStringArray(value, 'allowed_actions', errors, { nonEmpty: true });
   if (typeof value.approval_required !== 'boolean') errors.push('approval_required must be boolean');
-  if (!isRecord(value.workspace_boundary)) errors.push('workspace_boundary must be object');
+  if (!isRecord(value.workspace_boundary)) {
+    errors.push('workspace_boundary must be object');
+  } else {
+    ['allowed_read_paths', 'allowed_write_paths', 'blocked_paths'].forEach((key) => requiredStringArray(value.workspace_boundary as Record<string, unknown>, key, errors));
+    requiredString(value.workspace_boundary as Record<string, unknown>, 'artifact_output_root', errors);
+  }
   return { valid: errors.length === 0, errors };
 }
 
@@ -188,7 +243,7 @@ export function validateAgentProfile(value: unknown): ContractValidation {
   if (value.packet_type !== 'nexus.agent_profile') errors.push('packet_type must be nexus.agent_profile');
   if (value.version !== '0.1') errors.push('version must be 0.1');
   ['agent_id', 'profile', 'role', 'owned_scope', 'default_tool_policy', 'memory_access_policy', 'context_access_policy', 'evaluation_responsibility'].forEach((key) => requiredString(value, key, errors));
-  ['responsibilities', 'allowed_skill_refs'].forEach((key) => requiredStringArray(value, key, errors));
+  ['responsibilities', 'allowed_skill_refs'].forEach((key) => requiredStringArray(value, key, errors, { nonEmpty: true }));
   return { valid: errors.length === 0, errors };
 }
 
@@ -198,7 +253,7 @@ export function validateSubAgentDelegation(value: unknown): ContractValidation {
   if (value.packet_type !== 'nexus.sub_agent_delegation') errors.push('packet_type must be nexus.sub_agent_delegation');
   if (value.version !== '0.1') errors.push('version must be 0.1');
   ['sub_agent_id', 'parent_agent_id', 'scope', 'active_context_ref', 'expected_output', 'handoff_format', 'expires_after'].forEach((key) => requiredString(value, key, errors));
-  requiredStringArray(value, 'allowed_tools', errors);
+  requiredStringArray(value, 'allowed_tools', errors, { nonEmpty: true });
   return { valid: errors.length === 0, errors };
 }
 
@@ -207,8 +262,14 @@ export function validateMemoryNote(value: unknown): ContractValidation {
   if (!isRecord(value)) return { valid: false, errors: ['memory note must be an object'] };
   if (value.packet_type !== 'nexus.memory_note') errors.push('packet_type must be nexus.memory_note');
   if (value.version !== '0.1') errors.push('version must be 0.1');
-  ['note_id', 'topic', 'note_type', 'summary', 'confidence', 'status', 'created_at', 'last_updated'].forEach((key) => requiredString(value, key, errors));
-  requiredStringArray(value, 'source_refs', errors);
+  ['note_id', 'topic', 'summary', 'created_at', 'last_updated'].forEach((key) => requiredString(value, key, errors));
+  requiredEnum(value, 'note_type', MEMORY_NOTE_TYPES, errors);
+  requiredEnum(value, 'confidence', RUNTIME_CONFIDENCES, errors);
+  requiredEnum(value, 'status', MEMORY_NOTE_STATUSES, errors);
+  requiredStringArray(value, 'source_refs', errors, { nonEmpty: true });
+  optionalStringArray(value, 'replaces', errors);
+  optionalStringArray(value, 'related_notes', errors);
+  if (value.status === 'stale' && typeof value.stale_reason !== 'string') errors.push('stale notes must include stale_reason');
   return { valid: errors.length === 0, errors };
 }
 
@@ -218,8 +279,12 @@ export function validateActiveContextBundle(value: unknown): ContractValidation 
   if (value.packet_type !== 'nexus.active_context_bundle') errors.push('packet_type must be nexus.active_context_bundle');
   if (value.version !== '0.1') errors.push('version must be 0.1');
   ['context_id', 'task_ref'].forEach((key) => requiredString(value, key, errors));
-  ['selected_note_refs', 'current_constraints', 'open_questions'].forEach((key) => requiredStringArray(value, key, errors));
-  if (!Array.isArray(value.excluded_refs)) errors.push('excluded_refs must be an array');
+  ['selected_note_refs', 'current_constraints'].forEach((key) => requiredStringArray(value, key, errors, { nonEmpty: true }));
+  requiredStringArray(value, 'open_questions', errors);
+  validateObjectArray(value.excluded_refs, 'excluded_refs', errors, (item) => {
+    requiredString(item, 'ref', errors);
+    requiredString(item, 'reason', errors);
+  });
   return { valid: errors.length === 0, errors };
 }
 
@@ -228,8 +293,11 @@ export function validateEvaluationObservation(value: unknown): ContractValidatio
   if (!isRecord(value)) return { valid: false, errors: ['evaluation observation must be an object'] };
   if (value.packet_type !== 'nexus.evaluation_observation') errors.push('packet_type must be nexus.evaluation_observation');
   if (value.version !== '0.1') errors.push('version must be 0.1');
-  ['observation_id', 'run_ref', 'subject_type', 'subject_ref', 'signal', 'summary', 'confidence'].forEach((key) => requiredString(value, key, errors));
-  requiredStringArray(value, 'evidence_refs', errors);
+  ['observation_id', 'run_ref', 'subject_ref', 'summary'].forEach((key) => requiredString(value, key, errors));
+  requiredEnum(value, 'subject_type', EVALUATION_SUBJECT_TYPES, errors);
+  requiredEnum(value, 'signal', RUNTIME_SIGNALS, errors);
+  requiredEnum(value, 'confidence', RUNTIME_CONFIDENCES, errors);
+  requiredStringArray(value, 'evidence_refs', errors, { nonEmpty: true });
   return { valid: errors.length === 0, errors };
 }
 
@@ -238,10 +306,17 @@ export function validateRuntimeLoopCycle(value: unknown): ContractValidation {
   if (!isRecord(value)) return { valid: false, errors: ['runtime loop cycle must be an object'] };
   if (value.packet_type !== 'nexus.runtime_loop_cycle') errors.push('packet_type must be nexus.runtime_loop_cycle');
   if (value.version !== '0.1') errors.push('version must be 0.1');
-  ['cycle_id', 'task_ref', 'owning_agent_ref', 'active_context_ref', 'evaluation_ref', 'status'].forEach((key) => requiredString(value, key, errors));
-  ['selected_skill_refs', 'sub_agent_refs', 'tool_grant_refs', 'memory_note_update_refs'].forEach((key) => requiredStringArray(value, key, errors));
-  if (!Array.isArray(value.events)) errors.push('events must be an array');
-  if (!Array.isArray(value.artifact_refs)) errors.push('artifact_refs must be an array');
+  ['cycle_id', 'task_ref', 'owning_agent_ref', 'active_context_ref', 'evaluation_ref'].forEach((key) => requiredString(value, key, errors));
+  requiredEnum(value, 'status', RUNTIME_STATUSES, errors);
+  ['selected_skill_refs', 'tool_grant_refs', 'memory_note_update_refs'].forEach((key) => requiredStringArray(value, key, errors, { nonEmpty: true }));
+  requiredStringArray(value, 'sub_agent_refs', errors);
+  validateObjectArray(value.events, 'events', errors, (event) => {
+    requiredString(event, 'event_type', errors);
+    requiredString(event, 'summary', errors);
+  }, { nonEmpty: true });
+  validateObjectArray(value.artifact_refs, 'artifact_refs', errors, (artifact) => {
+    ['kind', 'ref', 'summary'].forEach((key) => requiredString(artifact, key, errors));
+  }, { nonEmpty: true });
   return { valid: errors.length === 0, errors };
 }
 
