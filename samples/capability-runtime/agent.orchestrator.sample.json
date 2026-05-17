@@ -1,0 +1,14 @@
+{
+  "packet_type": "nexus.agent_profile",
+  "version": "0.1",
+  "agent_id": "agent.orchestrator",
+  "profile": "orchestrator",
+  "role": "Own the runtime cycle and decide whether bounded delegation is useful.",
+  "owned_scope": "capability-runtime-dry-run",
+  "responsibilities": ["select skill", "assign context", "review sub-agent output", "approve memory notes"],
+  "allowed_skill_refs": ["skill.review-doc"],
+  "default_tool_policy": "read-only plus bounded artifact writes",
+  "memory_access_policy": "active notes only; raw trace by reference",
+  "context_access_policy": "selected notes and current task constraints",
+  "evaluation_responsibility": "final quality observation"
+}
