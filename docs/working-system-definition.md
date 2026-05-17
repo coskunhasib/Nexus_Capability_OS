@@ -1,8 +1,8 @@
 # Working System Definition
 
-## Local alpha working system
+## Local execution-kernel working system
 
-The repository has a completed local-alpha working system when these commands pass:
+The repository has a completed local execution-kernel working system when these commands pass:
 
 ```bash
 npm run verify:vs
@@ -14,6 +14,13 @@ npm run verify:perm-local
 npm run verify:alpha-e2e
 npm run verify:all
 npm run build
+```
+
+## Scope correction
+
+```text
+This document defines the completed local execution kernel.
+It does not define completion of the whole Nexus layer.
 ```
 
 ## Required working paths
@@ -79,7 +86,7 @@ minimal React sidebar review panel is connected to the vertical slice
 operator action workflow is implemented in runtime modules and verified by scripts
 ```
 
-## Completed for local alpha
+## Completed for local execution kernel
 
 ```text
 working vertical slice
@@ -91,18 +98,23 @@ alpha e2e verification
 minimal review UI
 ```
 
-## Post-alpha only
+## Still active in Nexus layer roadmap
 
 ```text
-third-party provider connection
-durable production database
-full deployment setup
-multi-tenant billing
-marketplace integration
+skill marketplace
+marketplace compute records
+hidden dispatcher
+workflow execution fabric
+company/team usage layer
+internal tenant/workspace isolation
+billing and usage-credit primitives
+trust and reputation gates
+cloud/hybrid run policy
+Nexus data contract and result ingestion
 ```
 
-## Active completion plan
+## Active Nexus roadmap
 
 ```text
-docs/productization-completion-plan.md
+docs/nexus-layer-roadmap.md
 ```
