@@ -4,8 +4,8 @@
 
 ```text
 Step 1/5 — Beta verifier script wiring — complete, PR #84
-Step 2/5 — Beta release notes — in progress
-Step 3/5 — verification contract Beta update — planned
+Step 2/5 — Beta release notes — complete, PR #85
+Step 3/5 — verification contract Beta update — ready for PR
 Step 4/5 — Beta closure checklist — planned
 Step 5/5 — Milestone 3 plan — planned
 ```
@@ -49,20 +49,9 @@ Write Beta release notes with scope, evidence, boundaries, known limitations and
 Status:
 
 ```text
-in progress
-```
-
-Done when:
-
-```text
-Beta release notes exist
-scope is documented
-evidence is documented
-boundaries are documented
-known limitations are documented
-next milestone is stated
-CI is green
-PR is merged
+Beta release notes added
+CI green
+merged in PR #85
 ```
 
 ## Step 3/5 — verification contract Beta update
@@ -71,6 +60,21 @@ Goal:
 
 ```text
 Update the verification contract so Beta is the current phase and the new focused checks are listed.
+```
+
+Status:
+
+```text
+verification contract updated
+waiting for PR CI
+```
+
+Done when:
+
+```text
+CI is green
+PR is merged
+this plan marks Step 3/5 complete
 ```
 
 ## Step 4/5 — Beta closure checklist
