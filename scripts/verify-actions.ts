@@ -12,20 +12,24 @@ const c = runReviewAction({ action: 'request_changes', operatorRef: 'operator.lo
 const f = runReviewAction({ action: 'use_fallback', operatorRef: 'operator.local' });
 
 const assertions: Check[] = [
+  check('a has result', Boolean(a.result), { outcome: a }),
   check('a status', a.record.status === 'accepted', { record: a.record }),
-  check('a artifact count', a.result.acceptedArtifacts.length === 1, { count: a.result.acceptedArtifacts.length }),
+  check('a artifact count', a.result?.acceptedArtifacts.length === 1, { count: a.result?.acceptedArtifacts.length }),
   check('a snapshot', a.snapshot.records.length === 1 && a.snapshot.records[0]?.acceptedArtifacts.length === 1, { snapshot: a.snapshot }),
 
+  check('r has result', Boolean(r.result), { outcome: r }),
   check('r status', r.record.status === 'rejected', { record: r.record }),
-  check('r count', r.result.acceptedArtifacts.length === 0, { count: r.result.acceptedArtifacts.length }),
+  check('r count', r.result?.acceptedArtifacts.length === 0, { count: r.result?.acceptedArtifacts.length }),
   check('r reason', r.snapshot.records[0]?.reasonCode === 'REVIEW_REJECTED', { snapshot: r.snapshot }),
 
+  check('c has result', Boolean(c.result), { outcome: c }),
   check('c status', c.record.status === 'changes_requested', { record: c.record }),
-  check('c count', c.result.acceptedArtifacts.length === 0, { count: c.result.acceptedArtifacts.length }),
+  check('c count', c.result?.acceptedArtifacts.length === 0, { count: c.result?.acceptedArtifacts.length }),
   check('c reason', c.snapshot.records[0]?.reasonCode === 'CHANGES_REQUESTED', { snapshot: c.snapshot }),
 
+  check('f has result', Boolean(f.result), { outcome: f }),
   check('f status', f.record.status === 'fallback_used', { record: f.record }),
-  check('f count', f.result.acceptedArtifacts.length === 0, { count: f.result.acceptedArtifacts.length }),
+  check('f count', f.result?.acceptedArtifacts.length === 0, { count: f.result?.acceptedArtifacts.length }),
   check('f reason', f.snapshot.records[0]?.reasonCode === 'FALLBACK_SELECTED', { snapshot: f.snapshot }),
 
   check('operator ref', [a, r, c, f].every((outcome) => outcome.record.operatorRef === 'operator.local'), {
