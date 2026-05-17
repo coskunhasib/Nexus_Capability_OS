@@ -31,6 +31,7 @@ const commands = [
   ['npm', ['run', 'verify:vs-snapshot']],
   ['npm', ['run', 'verify:store']],
   ['npm', ['run', 'verify:runner']],
+  ['npm', ['run', 'verify:actions']],
   ['npm', ['run', 'verify:oh-adapter']],
   ['npm', ['run', 'verify:ca-adapter']],
   ['npm', ['run', 'verify:capability-runtime']],
