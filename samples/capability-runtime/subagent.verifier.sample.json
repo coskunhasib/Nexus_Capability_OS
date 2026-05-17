@@ -1,0 +1,12 @@
+{
+  "packet_type": "nexus.sub_agent_delegation",
+  "version": "0.1",
+  "sub_agent_id": "subagent.verifier",
+  "parent_agent_id": "agent.orchestrator",
+  "scope": "Check whether the selected document review has enough evidence and no invented Nexus fields.",
+  "allowed_tools": ["tool.read-doc"],
+  "active_context_ref": "context.docs-review",
+  "expected_output": "verification summary with unknowns flagged",
+  "handoff_format": "summary + evidence refs + open questions",
+  "expires_after": "cycle-end"
+}

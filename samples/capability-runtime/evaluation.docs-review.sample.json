@@ -1,0 +1,13 @@
+{
+  "packet_type": "nexus.evaluation_observation",
+  "version": "0.1",
+  "observation_id": "obs.docs-review-context-quality",
+  "run_ref": "task.docs-review-dry-run",
+  "subject_type": "context",
+  "subject_ref": "context.docs-review",
+  "signal": "positive",
+  "summary": "Active context used distilled notes instead of full transcript and preserved the key runtime philosophy and context-distillation decisions.",
+  "evidence_refs": ["note.runtime-philosophy", "note.context-distillation", "context.docs-review"],
+  "confidence": "high",
+  "recommended_action": "Use this notes-first pattern for the runtime loop prototype."
+}

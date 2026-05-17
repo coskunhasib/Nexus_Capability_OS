@@ -1,0 +1,21 @@
+{
+  "packet_type": "nexus.tool_grant",
+  "version": "0.1",
+  "grant_id": "grant.read-doc",
+  "tool_id": "tool.read-doc",
+  "action_class": "read_only",
+  "allowed_actions": ["read_document_summary", "read_source_refs"],
+  "scope": "documentation review dry-run",
+  "workspace_boundary": {
+    "allowed_read_paths": ["docs/", "samples/"],
+    "allowed_write_paths": [],
+    "blocked_paths": [".env", "node_modules/"],
+    "artifact_output_root": "artifacts/capability-runtime/"
+  },
+  "approval_required": false,
+  "expires_after": "cycle-end",
+  "source_skill_ref": "skill.review-doc",
+  "owning_agent_ref": "agent.orchestrator",
+  "sub_agent_ref": "subagent.verifier",
+  "audit_level": "summary"
+}

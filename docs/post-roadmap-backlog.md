@@ -16,14 +16,12 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 24. UI/runtime adapter polish — done, PR #56
 25-31. UI runtime implementation phase — implemented, PR #58
 32. Operator-run result file ingestion plan — done, PR #59
-33. Capability Runtime data model discovery — design-contract complete
-34. Skill-Tool-Agent execution contract — design-contract complete
-35. Skill package standard — design-contract complete
-36. Tool permission model — design-contract complete
-37. Agent / sub-agent delegation model — design-contract complete
-38. Memory/context distillation model — design-contract complete
-39. Evaluation and observation model — design-contract complete
-40. Runtime loop prototype — design-contract complete
+33-40. Capability Runtime design-contract phase — done, PR #66
+41. Capability Runtime schemas and fixtures — implemented
+42. Capability Runtime deterministic verifier — implemented
+43. Local dry-run runtime loop prototype — implemented
+44. Capability Runtime UI visibility plan — documented
+45. External runtime mapping decision — documented
 ```
 
 ## Priority buckets
@@ -132,65 +130,44 @@ Operator-managed result file ingestion sequence is documented in docs/operator-r
 This plan is now secondary to the Capability Runtime data model and execution contract.
 ```
 
-### 33. Capability Runtime data model discovery
+### 33-40. Capability Runtime design-contract phase
 
-Status: design-contract complete.
+Status: done, PR #66.
 
 Outcome:
 
 ```text
-Existing runtime-facing surfaces are inventoried in docs/capability-runtime-data-model-inventory.md.
-Canonical candidates, derived fields, UI-only fields, fixture-only fields and unknowns are identified.
+Capability Runtime data inventory, skill-tool-agent execution contract, skill package standard, tool permission model, agent/sub-agent delegation model, memory/context distillation model, evaluation/observation model and runtime loop prototype plan are documented.
 ```
 
-### 34. Skill-Tool-Agent execution contract
+### 41. Capability Runtime schemas and fixtures
 
-Status: design-contract complete.
+Status: implemented.
 
 Outcome:
 
 ```text
-Runtime cycle, ownership rules, execution phases, handoff expectations and safety boundaries are documented in docs/skill-tool-agent-execution-contract.md.
+Schema index and first fixture set exist for skill package, tool grant, agent profile, sub-agent delegation, memory notes, active context bundle and evaluation observation.
 ```
 
-### 35. Skill package standard
+### 42. Capability Runtime deterministic verifier
 
-Status: design-contract complete.
+Status: implemented.
 
 Outcome:
 
 ```text
-Skill package shape, method steps, tool requests, selection signals, performance observations and anti-patterns are documented in docs/skill-package-standard.md.
+Deterministic verifier validates fixture shapes and dry-run runtime loop construction through npm run verify:capability-runtime.
 ```
 
-### 36. Tool permission model
+### 43. Local dry-run runtime loop prototype
 
-Status: design-contract complete.
-
-Outcome:
-
-```text
-Tool classes, grants, workspace boundaries, approval policy, audit output and sub-agent permission boundaries are documented in docs/tool-permission-model.md.
-```
-
-### 37. Agent / sub-agent delegation model
-
-Status: design-contract complete.
+Status: implemented.
 
 Outcome:
 
 ```text
-Agent ownership, sub-agent scope, delegation rules, handoff contract, permission inheritance and context inheritance are documented in docs/agent-subagent-delegation-model.md.
-```
-
-### 38. Memory/context distillation model
-
-Status: design-contract complete.
-
-Outcome:
-
-```text
-Notes-first memory, raw trace boundaries, distilled note shape, active context selection, note lifecycle and staleness rules are documented in docs/memory-context-distillation-plan.md.
+Dry-run RuntimeLoopCycle is generated from selected skill, owning agent, bounded sub-agent, explicit tool grant, active context notes, evaluation observation and memory note refs.
 ```
 
 ## P1 items
@@ -229,24 +206,24 @@ Panel-level job-state visibility, controlled worker manifest visibility, runtime
 Implementation should proceed as focused follow-up PRs.
 ```
 
-### 39. Evaluation and observation model
+### 44. Capability Runtime UI visibility plan
 
-Status: design-contract complete.
+Status: documented.
 
 Outcome:
 
 ```text
-Observation targets, observation shape, evaluation result shape, gate categories and learning rules are documented in docs/evaluation-observation-model.md.
+Read-only UI visibility requirements for skill decision, agent ownership, sub-agent delegation, tool grants, active context notes, evaluation observations and runtime loop cycle are documented in docs/capability-runtime-ui-visibility-plan.md.
 ```
 
-### 40. Runtime loop prototype
+### 45. External runtime mapping decision
 
-Status: design-contract complete.
+Status: documented.
 
 Outcome:
 
 ```text
-Runtime loop phases, prototype boundaries, inputs, outputs, RuntimeLoopCycle shape and verification goals are documented in docs/runtime-loop-prototype-plan.md.
+External runtime mapping is deferred until local loop, contracts, fixtures and UI visibility are validated. Decision is documented in docs/external-runtime-mapping-decision.md.
 ```
 
 ## P2 items
@@ -321,6 +298,29 @@ Completed design-contract sequence:
 40. Runtime loop prototype — design-contract complete
 ```
 
+## Capability Runtime implementation-prep phase
+
+Detailed files:
+
+```text
+src/capabilityRuntimeContracts.ts
+schemas/capability-runtime-contracts.schema.json
+samples/capability-runtime/
+scripts/verify-capability-runtime-contracts.ts
+docs/capability-runtime-ui-visibility-plan.md
+docs/external-runtime-mapping-decision.md
+```
+
+Completed sequence:
+
+```text
+41. Add schemas and fixtures for the Capability Runtime contracts — implemented
+42. Add deterministic verifiers for skill, tool, agent, note and evaluation shapes — implemented
+43. Implement a local dry-run runtime loop prototype — implemented
+44. Add UI visibility for skill/tool/agent decisions — documented
+45. Decide whether external runtime mapping is needed after local loop validation — documented
+```
+
 ## Guardrails for the next phase
 
 ```text
@@ -331,16 +331,17 @@ Use distillation-first context compression.
 Use sub-agents only for real delegation, isolation or parallel work.
 Keep runtime output behind response-shape validation.
 Keep network development exposure opt-in.
+Keep external runtime mapping deferred until local loop validation and UI visibility are proven.
 ```
 
 ## Recommended next phase
 
 ```text
-41. Add schemas and fixtures for the Capability Runtime contracts.
-42. Add deterministic verifiers for skill, tool, agent, note and evaluation shapes.
-43. Implement a local dry-run runtime loop prototype.
-44. Add UI visibility for skill/tool/agent decisions.
-45. Decide whether external runtime mapping is needed after local loop validation.
+46. Implement CapabilityRuntimePanel read-only UI.
+47. Add stricter JSON schema validation for fixtures.
+48. Add local controlled worker mapping into runtime loop.
+49. Add operator-run result mapping into runtime loop.
+50. Revisit external runtime mapping after local validation.
 ```
 
 ## Completion rule
