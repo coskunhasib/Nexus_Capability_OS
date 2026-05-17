@@ -17,18 +17,18 @@ operator-run runtime mapping remains verified
 external live execution remains outside default path
 ```
 
-## Beta evidence to add
+## Beta evidence
 
 ```text
 artifact lifecycle policy exists — done
 artifact lifecycle verifier exists — done
-artifact lifecycle verifier lifecycle wiring — follow-up
-workspace boundary policy exists
-workspace boundary verifier passes
-memory note lifecycle policy exists
-memory note lifecycle verifier passes
-multi-skill controlled runtime fixtures exist
-approval-required action behavior is explicit
+workspace boundary policy exists — done
+workspace boundary verifier exists — done
+note flow policy exists — done
+note flow verifier exists — done
+multi-skill controlled runtime fixtures exist — done
+decision gate behavior is explicit — done
+package script wiring for new Beta checks — follow-up
 ```
 
 ## Verification commands
@@ -49,18 +49,14 @@ npm run verify:artifacts
 npm run verify:memory-context
 ```
 
-New Beta checks to wire:
-
-```bash
-npm run verify:artifact-lifecycle
-npm run verify:workspace-boundary
-npm run verify:memory-note-lifecycle
-```
-
-Manual focused check until package lifecycle wiring is added:
+Manual focused checks until package script wiring is added:
 
 ```bash
 npx tsx scripts/verify-artifact-lifecycle.ts
+npx tsx scripts/verify-workspace-boundary.ts
+npx tsx scripts/verify-note-flow.ts
+npx tsx scripts/verify-multi-skill-controlled-runtime.ts
+npx tsx scripts/verify-decision-gate.ts
 ```
 
 ## Artifact lifecycle checklist
@@ -76,31 +72,43 @@ artifact refs remain traceable to runtime events or operator results — done
 ## Workspace boundary checklist
 
 ```text
-allowed read paths are explicit
-allowed write paths are explicit
-blocked paths are explicit
-artifact output root is explicit
-writes outside allowed roots fail validation
-blocked paths override broad allow rules
+allowed read paths are explicit — done
+allowed write paths are explicit — done
+reserved paths are explicit — done
+artifact output root is explicit — done
+out-of-scope writes fail validation — done
+reserved paths override broad allow rules — done
 ```
 
-## Memory note lifecycle checklist
+## Note flow checklist
 
 ```text
-new note candidates include source refs
-updates preserve lineage
-merge operation preserves replaced refs
-retire operation includes reason
-raw logs are not accepted as memory notes
+new note candidates include source refs — done
+updates preserve lineage — done
+merge operation preserves replaced refs — done
+retire operation includes reason — done
+raw logs are not accepted as notes — done
 ```
 
-## Approval checkpoint checklist
+## Decision gate checklist
 
 ```text
-approval-required action without approval is blocked
-approval-required action with approval is traceable
-approval metadata is not optional when required
-blocked approval becomes evaluation observation
+not-required gate allows — done
+pending gate does not allow — done
+granted gate requires trace fields — done
+denied gate requires reason — done
+required gate cannot be marked not-required — done
+```
+
+## Multi-skill controlled runtime checklist
+
+```text
+two required skills are present — done
+two work-order steps are present — done
+controlled worker manifest covers both steps — done
+quality artifact is produced — done
+review artifact is produced — done
+runtime loop receives mapped events and artifacts — done
 ```
 
 ## Known limitations to include in Beta notes
@@ -110,4 +118,5 @@ controlled execution remains local and deterministic
 external live execution remains outside default path
 persistent host API remains Milestone 3 work
 external runtime mapping remains Milestone 4 work
+package script wiring for the new focused Beta checks remains a follow-up
 ```
