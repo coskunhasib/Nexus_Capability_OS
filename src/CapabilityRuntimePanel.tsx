@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import skillFixture from '../samples/capability-runtime/skill.review-doc.sample.json';
 import agentFixture from '../samples/capability-runtime/agent.orchestrator.sample.json';
 import subAgentFixture from '../samples/capability-runtime/subagent.verifier.sample.json';
@@ -45,7 +46,7 @@ function Pill({ children }: { children: string }) {
   );
 }
 
-function RuntimeSection({ title, children }: { title: string; children: React.ReactNode }) {
+function RuntimeSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="bg-[#0e0e0e] border border-white/5 rounded-xl p-4 space-y-3">
       <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-500">{title}</h3>
