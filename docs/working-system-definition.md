@@ -1,12 +1,18 @@
 # Working System Definition
 
-## Minimum working system
+## Local alpha working system
 
-The repository has a working implementation slice when these commands pass:
+The repository has a completed local-alpha working system when these commands pass:
 
 ```bash
 npm run verify:vs
 npm run verify:vs-snapshot
+npm run verify:store
+npm run verify:runner
+npm run verify:actions
+npm run verify:perm-local
+npm run verify:alpha-e2e
+npm run verify:all
 npm run build
 ```
 
@@ -21,6 +27,10 @@ request changes path creates no accepted artifact
 missing disposition path creates no accepted artifact
 missing operator ref path creates no accepted artifact
 artifact outside approved root creates no accepted artifact
+controlled local runner can produce a reviewed accepted candidate
+controlled local runner failure maps to safe fallback
+reviewer without accept permission cannot accept
+admin identity can accept after review and disposition
 ```
 
 ## Required state tracking
@@ -44,6 +54,8 @@ CHANGES_REQUESTED
 MISSING_DISPOSITION
 MISSING_OPERATOR_REF
 ARTIFACT_OUTSIDE_ROOT
+RUNNER_FAILURE
+PERMISSION_DENIED
 NO_ACCEPTED_ARTIFACT
 ```
 
@@ -56,37 +68,41 @@ runtime log records
 state history
 review decision
 artifact disposition
+local store snapshot
 accepted artifact record only when accepted
-```
-
-## Current manual commands
-
-```bash
-npm run verify:vs
-npm run verify:vs-snapshot
-npm run demo:vs
-npm run verify:all
-npm run build
 ```
 
 ## UI status
 
 ```text
 minimal React sidebar review panel is connected to the vertical slice
-full operator workflow is not complete yet
+operator action workflow is implemented in runtime modules and verified by scripts
 ```
 
-## Not done yet
+## Completed for local alpha
 
 ```text
-real controlled provider execution beyond mock runner
-persistent database storage
-production authentication and authorization
-full operator workflow beyond minimal sidebar panel
+working vertical slice
+local deterministic snapshots
+controlled local runner
+operator action workflow
+local identity checks
+alpha e2e verification
+minimal review UI
 ```
 
-## Active backlog
+## Post-alpha only
 
 ```text
-docs/implementation-backlog-plan.md
+third-party provider connection
+durable production database
+full deployment setup
+multi-tenant billing
+marketplace integration
+```
+
+## Active completion plan
+
+```text
+docs/productization-completion-plan.md
 ```
