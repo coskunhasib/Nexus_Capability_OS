@@ -4,7 +4,7 @@
 
 ```text
 Closed for local capability execution kernel.
-Nexus layer roadmap remains active.
+Nexus internal layer implementation remains active.
 ```
 
 ## Scope correction
@@ -12,6 +12,7 @@ Nexus layer roadmap remains active.
 ```text
 This document did not close the whole Nexus product.
 It closed the local execution-kernel productization slice inside Nexus.
+The remaining items are not outside Nexus; they are Nexus internal product layers.
 ```
 
 ## Purpose
@@ -77,7 +78,7 @@ end-to-end persistence and runner tests
 documentation finalization for the execution kernel
 ```
 
-## Still in Nexus layer roadmap
+## Nexus internal layers still active
 
 ```text
 skill marketplace
@@ -97,8 +98,9 @@ Nexus data contract and result ingestion
 ```text
 new numbered milestone documents for the local kernel
 claiming whole Nexus is complete
+calling Nexus internal layers post-alpha or external work
 ```
 
 ## Stop condition
 
-After PR #116 is merged and CI is green, this local execution-kernel process is closed. Further work must be classified under the Nexus layer roadmap, not as unfinished local-kernel work.
+After PR #116 is merged and CI is green, this local execution-kernel process is closed. Further work must be classified under the Nexus internal layer roadmap, not as unfinished local-kernel work and not as out-of-scope product expansion.
