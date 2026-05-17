@@ -7,6 +7,7 @@ import runtimeNoteFixture from '../samples/capability-runtime/memory-note.runtim
 import contextNoteFixture from '../samples/capability-runtime/memory-note.context-distillation.sample.json';
 import activeContextFixture from '../samples/capability-runtime/context.docs-review.sample.json';
 import evaluationFixture from '../samples/capability-runtime/evaluation.docs-review.sample.json';
+import { VerticalSliceReviewPanel } from './VerticalSliceReviewPanel';
 import {
   buildDryRunRuntimeLoopCycle,
   type ActiveContextBundle,
@@ -72,9 +73,11 @@ export function CapabilityRuntimePanel() {
           Capability Runtime
         </p>
         <p className="text-xs leading-relaxed text-neutral-500 px-2">
-          Read-only alpha preview. Shows decisions from fixtures and dry-run loop only; no mutation or external runtime execution.
+          Read-only alpha preview. Shows decisions from fixtures, dry-run loop, and the current implementation vertical slice.
         </p>
       </div>
+
+      <VerticalSliceReviewPanel />
 
       <RuntimeSection title="Skill decision">
         <div>
