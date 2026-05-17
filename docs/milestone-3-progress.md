@@ -3,7 +3,7 @@
 ## Current phase
 
 ```text
-Milestone 3 — Embedded Nexus Integration
+Milestone 3 — Embedded Nexus Integration — closed
 ```
 
 ## Progress
@@ -13,12 +13,12 @@ Step 1/10 — Nexus host boundary document, fixtures and verifier — complete, 
 Step 2/10 — package script wiring for host boundary verifier — complete, PR #91
 Step 3/10 — embedded package boundary document and verifier — complete, PR #92
 Step 4/10 — storage boundary document and verifier — complete, PR #93
-Step 5/10 — permission boundary document and verifier — ready for PR
-Step 6/10 — UI mount point document — ready for PR
-Step 7/10 — configuration surface document — ready for PR
-Step 8/10 — migration checklist — ready for PR
-Step 9/10 — Milestone 3 release notes — ready for PR
-Step 10/10 — Milestone 3 closure checklist — ready for PR
+Step 5/10 — permission boundary document and verifier — complete, PR #94
+Step 6/10 — UI mount point document — complete, PR #94
+Step 7/10 — configuration surface document — complete, PR #94
+Step 8/10 — migration checklist — complete, PR #94
+Step 9/10 — Milestone 3 release notes — complete, PR #94
+Step 10/10 — Milestone 3 closure checklist — complete, PR #94
 ```
 
 ## Step 1/10
@@ -108,17 +108,6 @@ Goal:
 Define the permission boundary between runtime-declared requests and Nexus host-decided grants.
 ```
 
-Expected outputs:
-
-```text
-docs/nexus-permission-boundary.md
-samples/nexus-host-integration/permission-boundary.sample.json
-scripts/verify-permission-boundary.ts
-verify:permission-boundary package script
-prebuild includes verify:permission-boundary
-predev includes verify:permission-boundary
-```
-
 Status:
 
 ```text
@@ -128,7 +117,8 @@ permission boundary verifier added
 package script added
 prebuild updated
 predev updated
-waiting for PR CI
+CI green
+merged in PR #94
 ```
 
 ## Step 6/10
@@ -143,7 +133,8 @@ Status:
 
 ```text
 docs/nexus-ui-mount-point.md added
-waiting for PR CI
+CI green
+merged in PR #94
 ```
 
 ## Step 7/10
@@ -158,7 +149,8 @@ Status:
 
 ```text
 docs/nexus-configuration-surface.md added
-waiting for PR CI
+CI green
+merged in PR #94
 ```
 
 ## Step 8/10
@@ -173,7 +165,8 @@ Status:
 
 ```text
 docs/nexus-migration-checklist.md added
-waiting for PR CI
+CI green
+merged in PR #94
 ```
 
 ## Step 9/10
@@ -188,7 +181,8 @@ Status:
 
 ```text
 docs/milestone-3-release-notes.md added
-waiting for PR CI
+CI green
+merged in PR #94
 ```
 
 ## Step 10/10
@@ -203,14 +197,13 @@ Status:
 
 ```text
 docs/milestone-3-closure-checklist.md added
-waiting for PR CI
+CI green
+merged in PR #94
+Milestone 3 closed
 ```
 
-Done when:
+## Next
 
 ```text
-CI is green
-PR is merged
-this plan marks Steps 5/10 through 10/10 complete
-Milestone 3 is closed
+Milestone 4 — External Runtime Mapping
 ```
