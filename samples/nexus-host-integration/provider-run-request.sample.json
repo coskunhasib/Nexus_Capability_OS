@@ -1,0 +1,28 @@
+{
+  "packet_type": "nexus.provider_run_request",
+  "version": "0.1",
+  "run_id": "provider-run-001",
+  "request_ref": "external-call-001",
+  "provider_ref": "provider.mock.external-runtime",
+  "adapter_ref": "adapter.mock.external-runtime.v1",
+  "runtime_mode": "dry_run_external",
+  "objective": "Execute a bounded mock provider run and return a normalized candidate result.",
+  "source_refs": [
+    "docs/provider-run-request.md",
+    "docs/provider-execution-boundary.md"
+  ],
+  "active_tool_grants": [
+    "tool_grant.external_runtime.invoke",
+    "tool_grant.workspace.read",
+    "tool_grant.artifact.write_candidate"
+  ],
+  "active_workspace_boundary": "explicit_host_boundary",
+  "allowed_artifact_root": "artifacts/provider-run-candidates/",
+  "expected_outputs": [
+    "provider_run_state",
+    "normalized_result_candidate",
+    "trace_refs"
+  ],
+  "fallback_ref": "local-controlled-runtime",
+  "manual_review_required": true
+}
