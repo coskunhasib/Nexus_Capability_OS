@@ -1,0 +1,52 @@
+{
+  "packet_type": "nexus.external_runtime_mapping_boundary",
+  "version": "0.1",
+  "boundary_ref": "capability-runtime-external-mapping",
+  "external_mapping_enabled_by_default": false,
+  "local_controlled_runtime_primary": true,
+  "provider_required": false,
+  "mapping_layers": [
+    "host_request",
+    "runtime_mapping",
+    "provider_adapter",
+    "external_invocation",
+    "result_normalization",
+    "host_safe_response"
+  ],
+  "host_owned_decisions": [
+    "external_mapping_activation",
+    "provider_allowlist",
+    "active_tool_grants",
+    "active_workspace_boundary",
+    "artifact_root_policy",
+    "decision_gate_policy",
+    "fallback_policy",
+    "accepted_result_shape"
+  ],
+  "runtime_owned_surfaces": [
+    "mapping_contract",
+    "normalization_contract",
+    "provider_capability_expectations",
+    "fixture_set",
+    "verification_helpers",
+    "local_fallback_path"
+  ],
+  "provider_adapter_constraints": [
+    "declare_provider_capabilities",
+    "no_permission_widening",
+    "source_refs_required",
+    "no_direct_memory_write",
+    "normalized_result_candidates",
+    "blocked_and_partial_outcomes_supported"
+  ],
+  "failure_posture": [
+    "provider_unavailable:fallback_or_blocked",
+    "provider_permission_mismatch:blocked",
+    "provider_schema_mismatch:blocked",
+    "provider_timeout:partial_or_fallback",
+    "provider_artifact_violation:blocked"
+  ],
+  "external_mapping_may_bypass_host_policy": false,
+  "external_mapping_may_remove_local_checks": false,
+  "provider_specific_contracts_hidden_from_host": false
+}
