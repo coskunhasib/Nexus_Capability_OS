@@ -9,12 +9,13 @@ Before changing code, creating schemas or implementing integrations, read these 
 ```text
 1. AI_ENTRYPOINT.md
 2. docs/ai-entrypoint.md
-3. docs/nexus-unknown-mode.md
-4. docs/nexus-capability-runtime-philosophy.md
-5. docs/memory-context-distillation-plan.md
-6. docs/post-roadmap-backlog.md
-7. docs/verification-contract.md
-8. docs/runtime-security-policy.md
+3. docs/capability-runtime-decision-log.md
+4. docs/nexus-unknown-mode.md
+5. docs/nexus-capability-runtime-philosophy.md
+6. docs/memory-context-distillation-plan.md
+7. docs/post-roadmap-backlog.md
+8. docs/verification-contract.md
+9. docs/runtime-security-policy.md
 ```
 
 ## Current rule
@@ -36,6 +37,14 @@ Expected output:
 
 ```text
 docs/nexus-data-contract-inventory.md
+```
+
+## Preserved decisions
+
+The design decisions made before the memory/context plan are recorded in:
+
+```text
+docs/capability-runtime-decision-log.md
 ```
 
 ## Memory/context rule
