@@ -63,9 +63,11 @@ Do not create sub-agents just to multiply names. Create them when isolation, per
 ```text
 Pruning removes.
 Distillation preserves meaning.
+Notes carry experience.
+Active context should be selected, not dumped wholesale.
 ```
 
-The preferred design is distillation-first.
+The preferred design is notes-first and distillation-first.
 
 Use pruning only for:
 
@@ -90,18 +92,25 @@ open questions
 failure causes
 ```
 
-## Context compression policy
+## Notes-first context policy
 
-Context should not be shortened by blindly deleting older content.
+The runtime should avoid sending the full conversation into every LLM call.
 
 Preferred flow:
 
 ```text
-raw interaction / runtime trace
-→ extract decisions, facts, failures, artifacts and open questions
-→ distill into compact working memory
-→ attach source refs where possible
-→ drop raw detail only after the distilled version exists
+conversation / runtime trace / review output
+→ extract decisions, lessons, failures, artifacts and open questions
+→ create or update distilled notes
+→ retire stale notes when replaced
+→ select only relevant active notes for the next task
+→ keep raw trace as evidence, not default working context
+```
+
+This is documented in detail in:
+
+```text
+docs/memory-context-distillation-plan.md
 ```
 
 ## Skill-tool-agent operating idea
@@ -118,13 +127,12 @@ Evaluation decides whether the result is good enough.
 
 ## Research-aligned design notes
 
-Recent agent-context research supports moving beyond simple truncation/pruning. Agent context compression work such as ACON optimizes compact natural-language condensations for long-horizon agents and reports token reductions while preserving most task performance. Context compilation/distillation work also explores turning long context into compact reusable memory artifacts.
-
-The product lesson is simple:
+Recent agent-context research supports moving beyond simple truncation/pruning. Memory-tier systems, linked-note memory, optimized context compression and memory-action approaches all point toward the same product lesson:
 
 ```text
 Do not just cut context.
 Compress it into usable experience.
+Treat memory as evolving notes, not as one giant prompt buffer.
 ```
 
 ## Current roadmap impact
@@ -132,7 +140,7 @@ Compress it into usable experience.
 This philosophy changes item 33 from a passive inventory into the first step of a runtime design:
 
 ```text
-33. Capability runtime data model discovery
+33. Capability Runtime data model discovery
 34. Skill-Tool-Agent execution contract
 35. Skill package standard
 36. Tool permission model
