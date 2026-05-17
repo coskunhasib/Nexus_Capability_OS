@@ -1,0 +1,42 @@
+{
+  "packet_type": "nexus.embedded_package_boundary",
+  "version": "0.1",
+  "package_ref": "capability-runtime",
+  "embedding_mode": "embedded_subsystem",
+  "export_groups": [
+    "core_contracts",
+    "runtime_mapping",
+    "verification_helpers",
+    "read_only_ui_panel",
+    "sample_fixtures",
+    "scaffold_app_shell"
+  ],
+  "required_docs": [
+    "docs/nexus-host-runtime-boundary.md",
+    "docs/nexus-embedded-package-boundary.md",
+    "docs/milestone-3-embedded-nexus-integration.md"
+  ],
+  "required_scripts": [
+    "verify:nexus-host-boundary",
+    "verify:embedded-package-boundary"
+  ],
+  "host_owned_decisions": [
+    "active_tool_grants",
+    "active_workspace_boundary",
+    "memory_commit_policy",
+    "artifact_root_policy",
+    "ui_mount_location",
+    "release_gate_policy"
+  ],
+  "runtime_owned_surfaces": [
+    "contract_shapes",
+    "mapping_helpers",
+    "verifiers",
+    "fixtures",
+    "read_only_runtime_panel",
+    "local_scaffold"
+  ],
+  "read_only_ui": true,
+  "local_scaffold_required": true,
+  "external_mapping_default": "disabled"
+}
