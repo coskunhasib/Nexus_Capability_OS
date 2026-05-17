@@ -1,0 +1,19 @@
+{
+  "packet_type": "nexus.review_artifact_disposition",
+  "version": "0.1",
+  "disposition_id": "artifact-disposition-001",
+  "artifact_ref": "artifacts/provider-run-candidates/candidate.patch",
+  "run_ref": "provider-run-001",
+  "result_ref": "provider-ingest-001",
+  "decision_ref": "review-decision-001",
+  "disposition": "request_revision",
+  "reason": "Candidate artifact remains under review and needs revision.",
+  "source_refs": [
+    "docs/review-artifact-disposition.md"
+  ],
+  "trace_refs": [
+    "trace/provider-run-001",
+    "trace/provider-ingest-001"
+  ],
+  "candidate_status_preserved": true
+}
