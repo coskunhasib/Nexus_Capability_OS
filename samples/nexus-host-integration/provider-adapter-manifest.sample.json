@@ -1,0 +1,40 @@
+{
+  "packet_type": "nexus.provider_adapter_manifest",
+  "version": "0.1",
+  "provider_ref": "provider.mock.external-runtime",
+  "adapter_ref": "adapter.mock.external-runtime.v1",
+  "adapter_version": "0.1.0",
+  "supported_runtime_modes": [
+    "controlled_external",
+    "dry_run_external"
+  ],
+  "supported_invocation_types": [
+    "structured_task",
+    "code_change_candidate",
+    "test_execution_candidate"
+  ],
+  "declared_capabilities": [
+    "file_read",
+    "file_write_candidate",
+    "test_execution",
+    "command_execution",
+    "artifact_generation",
+    "structured_result",
+    "partial_result",
+    "blocked_result"
+  ],
+  "required_host_grants": [
+    "tool_grant.external_runtime.invoke",
+    "tool_grant.workspace.read",
+    "tool_grant.artifact.write_candidate"
+  ],
+  "required_workspace_boundary": "explicit_host_boundary",
+  "artifact_policy": "host_approved_roots_only",
+  "result_policy": "normalized_host_safe_response_required",
+  "fallback_policy": "local_controlled_runtime_or_blocked",
+  "observability_policy": "trace_refs_required",
+  "provider_available_assumed": false,
+  "provider_may_widen_permissions": false,
+  "provider_may_write_memory_directly": false,
+  "provider_may_bypass_decision_gates": false
+}
