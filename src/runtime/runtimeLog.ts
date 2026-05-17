@@ -1,4 +1,4 @@
-import type { RuntimeEvent } from '../contracts/verticalSliceContracts';
+import type { ReasonCode, RuntimeEvent } from '../contracts/verticalSliceContracts';
 
 export class RuntimeLog {
   private readonly records: RuntimeEvent[] = [];
@@ -20,6 +20,6 @@ export class RuntimeLog {
   }
 }
 
-export function runtimeRecord(name: string, ref: string, reason?: string): RuntimeEvent {
-  return reason ? { event: name, ref, reason } : { event: name, ref };
+export function runtimeRecord(name: string, ref: string, reason?: string, reasonCode?: ReasonCode): RuntimeEvent {
+  return reason ? { event: name, ref, reason, reasonCode } : { event: name, ref, reasonCode };
 }
