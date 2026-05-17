@@ -20,8 +20,9 @@ external live execution remains outside default path
 ## Beta evidence to add
 
 ```text
-artifact lifecycle policy exists
-artifact lifecycle verifier passes
+artifact lifecycle policy exists — done
+artifact lifecycle verifier exists — done
+artifact lifecycle verifier lifecycle wiring — follow-up
 workspace boundary policy exists
 workspace boundary verifier passes
 memory note lifecycle policy exists
@@ -56,14 +57,20 @@ npm run verify:workspace-boundary
 npm run verify:memory-note-lifecycle
 ```
 
+Manual focused check until package lifecycle wiring is added:
+
+```bash
+npx tsx scripts/verify-artifact-lifecycle.ts
+```
+
 ## Artifact lifecycle checklist
 
 ```text
-artifact has id/ref/kind/summary/source refs
-artifact has lifecycle status
-artifact status transition rules are documented
-artifact status transition verifier rejects invalid transitions
-artifact refs remain traceable to runtime events or operator results
+artifact has id/ref/kind/summary/source refs — done
+artifact has lifecycle status — done
+artifact status transition rules are documented — done
+artifact status transition verifier rejects invalid transitions — done
+artifact refs remain traceable to runtime events or operator results — done
 ```
 
 ## Workspace boundary checklist
