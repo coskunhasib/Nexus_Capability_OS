@@ -1,0 +1,33 @@
+{
+  "packet_type": "nexus.provider_capability_matrix",
+  "version": "0.1",
+  "matrix_ref": "provider-capability-matrix-v1",
+  "providers": [
+    {
+      "provider_ref": "provider.mock.external-runtime",
+      "adapter_ref": "adapter.mock.external-runtime.v1",
+      "runtime_modes": [
+        "dry_run_external",
+        "controlled_external"
+      ],
+      "invocation_types": [
+        "structured_task",
+        "code_change_candidate",
+        "test_execution_candidate"
+      ],
+      "capabilities": [
+        "file_read",
+        "file_write_candidate",
+        "test_execution",
+        "command_execution",
+        "artifact_generation",
+        "structured_result",
+        "partial_result",
+        "blocked_result"
+      ],
+      "local_fallback_supported": true,
+      "observability_supported": true,
+      "capability_is_permission": false
+    }
+  ]
+}

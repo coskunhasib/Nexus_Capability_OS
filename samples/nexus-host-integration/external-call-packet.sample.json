@@ -1,0 +1,27 @@
+{
+  "packet_type": "nexus.external_call_packet",
+  "version": "0.1",
+  "call_id": "external-call-001",
+  "request_ref": "host-request-001",
+  "provider_ref": "provider.mock.external-runtime",
+  "adapter_ref": "adapter.mock.external-runtime.v1",
+  "runtime_mode": "dry_run_external",
+  "objective": "Produce a host-safe candidate result for a controlled runtime task.",
+  "source_refs": [
+    "docs/external-runtime-mapping-boundary.md",
+    "samples/nexus-host-integration/external-runtime-mapping.sample.json"
+  ],
+  "active_tool_grants": [
+    "tool_grant.external_runtime.invoke",
+    "tool_grant.workspace.read",
+    "tool_grant.artifact.write_candidate"
+  ],
+  "active_workspace_boundary": "explicit_host_boundary",
+  "allowed_artifact_root": "artifacts/external-runtime-candidates/",
+  "expected_outputs": [
+    "normalized_result_candidate",
+    "artifact_refs",
+    "trace_refs"
+  ],
+  "fallback_ref": "local-controlled-runtime"
+}
