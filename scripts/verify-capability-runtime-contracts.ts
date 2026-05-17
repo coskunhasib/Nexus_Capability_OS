@@ -38,6 +38,31 @@ const contextNoteValidation = validateMemoryNote(contextNoteFixture);
 const contextValidation = validateActiveContextBundle(activeContextFixture);
 const evaluationValidation = validateEvaluationObservation(evaluationFixture);
 
+const invalidSkillValidation = validateSkillPackage({
+  ...skillFixture,
+  method_steps: [{ step_id: 'invalid', instruction: 'No gate/tool refs.', output_kind: 'bad' }],
+});
+const invalidToolGrantValidation = validateToolGrant({
+  ...toolGrantFixture,
+  action_class: 'unsafe_everything',
+  workspace_boundary: { allowed_read_paths: ['docs/'] },
+});
+const invalidMemoryNoteValidation = validateMemoryNote({
+  ...runtimeNoteFixture,
+  confidence: 'certain',
+  status: 'stale',
+});
+const invalidContextValidation = validateActiveContextBundle({
+  ...activeContextFixture,
+  selected_note_refs: [],
+  excluded_refs: [{ ref: 'raw' }],
+});
+const invalidEvaluationValidation = validateEvaluationObservation({
+  ...evaluationFixture,
+  signal: 'great',
+  evidence_refs: [],
+});
+
 const runtimeCycle = buildDryRunRuntimeLoopCycle({
   taskRef: 'task.docs-review-dry-run',
   skill: skillFixture as SkillPackage,
@@ -50,6 +75,11 @@ const runtimeCycle = buildDryRunRuntimeLoopCycle({
 });
 
 const runtimeCycleValidation = validateRuntimeLoopCycle(runtimeCycle);
+const invalidRuntimeCycleValidation = validateRuntimeLoopCycle({
+  ...runtimeCycle,
+  status: 'done',
+  events: [],
+});
 
 const assertions = [
   assert('skill fixture is valid', skillValidation.valid, { errors: skillValidation.errors }),
@@ -67,6 +97,12 @@ const assertions = [
   assert('dry-run uses active context notes only', runtimeCycle.active_context_ref === 'context.docs-review', { active_context_ref: runtimeCycle.active_context_ref }),
   assert('dry-run requires explicit tool grant', runtimeCycle.tool_grant_refs.includes('grant.read-doc'), { tool_grant_refs: runtimeCycle.tool_grant_refs }),
   assert('dry-run produces memory note refs', runtimeCycle.memory_note_update_refs.length === 2, { memory_note_update_refs: runtimeCycle.memory_note_update_refs }),
+  assert('invalid skill method step is rejected', !invalidSkillValidation.valid, { errors: invalidSkillValidation.errors }),
+  assert('invalid tool grant enum/boundary is rejected', !invalidToolGrantValidation.valid, { errors: invalidToolGrantValidation.errors }),
+  assert('invalid memory note enum/stale state is rejected', !invalidMemoryNoteValidation.valid, { errors: invalidMemoryNoteValidation.errors }),
+  assert('invalid active context empty notes/excluded refs are rejected', !invalidContextValidation.valid, { errors: invalidContextValidation.errors }),
+  assert('invalid evaluation signal/evidence is rejected', !invalidEvaluationValidation.valid, { errors: invalidEvaluationValidation.errors }),
+  assert('invalid runtime loop status/events are rejected', !invalidRuntimeCycleValidation.valid, { errors: invalidRuntimeCycleValidation.errors }),
 ];
 
 const status = assertions.every((item) => item.pass) ? 'pass' : 'fail';

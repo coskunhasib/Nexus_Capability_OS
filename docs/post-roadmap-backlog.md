@@ -23,8 +23,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 44. Capability Runtime UI visibility plan — documented
 45. External runtime mapping decision — documented
 46. CapabilityRuntimePanel read-only UI — implemented
-47. Stricter JSON schema validation — next
-48. Local controlled worker mapping into runtime loop — planned
+47. Stricter JSON schema validation — implemented
+48. Local controlled worker mapping into runtime loop — next
 49. Operator-run result mapping into runtime loop — planned
 50. External runtime mapping re-evaluation — planned
 Post-50. Switch to milestone/release planning — planned
@@ -202,18 +202,19 @@ No mutation controls or external runtime execution were added.
 
 ### 47. Stricter JSON schema validation
 
-Status: next.
+Status: implemented.
 
-Definition of done:
+Outcome:
 
 ```text
-Fixture validation relies on stricter schema checks in addition to TypeScript validators.
-Invalid fixtures fail deterministic verification.
+Capability Runtime validators now enforce stricter enums, non-empty required arrays, method-step gate/tool refs, nested workspace boundaries, stale-note reasons, evaluation evidence refs and runtime loop event/artifact shape.
+The verifier includes invalid fixture smoke-tests that must fail validation.
+The JSON schema index mirrors the stricter contract.
 ```
 
 ### 48. Local controlled worker mapping into runtime loop
 
-Status: planned.
+Status: next.
 
 Definition of done:
 
@@ -392,6 +393,7 @@ Completed sequence:
 44. Add UI visibility for skill/tool/agent decisions — documented
 45. Decide whether external runtime mapping is needed after local loop validation — documented
 46. Implement CapabilityRuntimePanel read-only UI — implemented
+47. Add stricter JSON schema validation for fixtures — implemented
 ```
 
 ## Post-50 milestone mode
@@ -428,7 +430,6 @@ Stop extending numbered roadmap after item 50.
 ## Recommended next phase
 
 ```text
-47. Add stricter JSON schema validation for fixtures.
 48. Add local controlled worker mapping into runtime loop.
 49. Add operator-run result mapping into runtime loop.
 50. Revisit external runtime mapping after local validation.
