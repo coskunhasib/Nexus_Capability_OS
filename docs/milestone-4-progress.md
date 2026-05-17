@@ -3,22 +3,22 @@
 ## Current phase
 
 ```text
-Milestone 4 — External Runtime Mapping
+Milestone 4 — External Runtime Mapping — ready for closure PR
 ```
 
 ## Progress
 
 ```text
-Step 1/10 — external runtime mapping boundary document, fixture and verifier — ready for PR
-Step 2/10 — provider adapter manifest document, fixture and verifier — planned
-Step 3/10 — external invocation packet document, fixture and verifier — planned
-Step 4/10 — external result normalization document, fixture and verifier — planned
-Step 5/10 — failure and fallback policy document, fixture and verifier — planned
-Step 6/10 — provider capability matrix document and sample — planned
-Step 7/10 — security and permission hardening document — planned
-Step 8/10 — observability and evaluation checklist — planned
-Step 9/10 — migration checklist and release notes — planned
-Step 10/10 — Milestone 4 closure checklist — planned
+Step 1/10 — external runtime mapping boundary document, fixture and verifier — complete, PR #96
+Step 2/10 — provider adapter manifest document, fixture and verifier — ready for PR
+Step 3/10 — external call packet document, fixture and verifier — ready for PR
+Step 4/10 — external result normalization document, fixture and verifier — ready for PR
+Step 5/10 — failure and fallback policy document, fixture and verifier — ready for PR
+Step 6/10 — provider capability matrix document and sample — ready for PR
+Step 7/10 — security and permission hardening document — ready for PR
+Step 8/10 — observability and evaluation checklist — ready for PR
+Step 9/10 — migration checklist and release notes — ready for PR
+Step 10/10 — Milestone 4 closure checklist — ready for PR
 ```
 
 ## Step 1/10
@@ -27,18 +27,6 @@ Goal:
 
 ```text
 Define the external runtime mapping boundary between Nexus host, Capability Runtime, and optional provider adapters.
-```
-
-Expected outputs:
-
-```text
-docs/milestone-4-external-runtime-mapping.md
-docs/external-runtime-mapping-boundary.md
-samples/nexus-host-integration/external-runtime-mapping.sample.json
-scripts/verify-external-runtime-mapping.ts
-verify:external-runtime-mapping package script
-prebuild includes verify:external-runtime-mapping
-predev includes verify:external-runtime-mapping
 ```
 
 Status:
@@ -51,6 +39,163 @@ external runtime mapping verifier added
 package script added
 prebuild updated
 predev updated
+CI green
+merged in PR #96
+```
+
+## Step 2/10
+
+Goal:
+
+```text
+Define the provider adapter manifest contract for optional external runtime providers.
+```
+
+Status:
+
+```text
+docs/provider-adapter-manifest.md added
+samples/nexus-host-integration/provider-adapter-manifest.sample.json added
+scripts/verify-provider-adapter-manifest.ts added
+verify:provider-manifest script added
+prebuild updated
+predev updated
+waiting for PR CI
+```
+
+## Step 3/10
+
+Goal:
+
+```text
+Define the external call packet for host-reviewed provider adapter calls.
+```
+
+Status:
+
+```text
+docs/external-call-packet.md added
+samples/nexus-host-integration/external-call-packet.sample.json added
+scripts/verify-external-call-packet.ts added
+verify:external-call script added
+prebuild updated
+predev updated
+waiting for PR CI
+```
+
+## Step 4/10
+
+Goal:
+
+```text
+Normalize provider output into host-safe runtime result packets.
+```
+
+Status:
+
+```text
+docs/external-result-normalization.md added
+samples/nexus-host-integration/external-result-normalization.sample.json added
+scripts/verify-external-result-normalization.ts added
+verify:external-result script added
+prebuild updated
+predev updated
+waiting for PR CI
+```
+
+## Step 5/10
+
+Goal:
+
+```text
+Define fallback behavior for external provider unavailability, timeout, mismatch, or incomplete output.
+```
+
+Status:
+
+```text
+docs/external-fallback-policy.md added
+samples/nexus-host-integration/external-fallback-policy.sample.json added
+scripts/verify-external-fallback-policy.ts added
+verify:external-fallback script added
+prebuild updated
+predev updated
+waiting for PR CI
+```
+
+## Step 6/10
+
+Goal:
+
+```text
+Document provider capability comparison without treating capability as permission.
+```
+
+Status:
+
+```text
+docs/provider-capability-matrix.md added
+samples/nexus-host-integration/provider-capability-matrix.sample.json added
+waiting for PR CI
+```
+
+## Step 7/10
+
+Goal:
+
+```text
+Document safety and permission hardening for external runtime mapping.
+```
+
+Status:
+
+```text
+docs/external-runtime-safety-and-permissions.md added
+waiting for PR CI
+```
+
+## Step 8/10
+
+Goal:
+
+```text
+Document observability and evaluation requirements for external runtime mapping.
+```
+
+Status:
+
+```text
+docs/external-runtime-observability-checklist.md added
+waiting for PR CI
+```
+
+## Step 9/10
+
+Goal:
+
+```text
+Document migration path and release notes.
+```
+
+Status:
+
+```text
+docs/milestone-4-migration-and-release.md added
+waiting for PR CI
+```
+
+## Step 10/10
+
+Goal:
+
+```text
+Close Milestone 4 with an explicit closure checklist.
+```
+
+Status:
+
+```text
+docs/milestone-4-closure-checklist.md added
 waiting for PR CI
 ```
 
@@ -59,5 +204,6 @@ Done when:
 ```text
 CI is green
 PR is merged
-this plan marks Step 1/10 complete
+this plan marks Steps 2/10 through 10/10 complete
+Milestone 4 is closed
 ```
