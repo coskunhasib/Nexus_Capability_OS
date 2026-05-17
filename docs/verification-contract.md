@@ -4,36 +4,64 @@ This document is the authoritative verification map for Nexus Capability OS.
 
 It defines what the CI chain proves, which runtime boundaries are intentionally safe, and which checks must pass before a PR is merged.
 
-## Current roadmap state
+## Current project state
 
 ```text
 Adapter/runtime roadmap: 15/15 completed
-Current phase: post-roadmap hardening
+Post-roadmap numbered block: 16-50 completed
+Current phase: Milestone 1 — Capability Runtime Alpha
 Authoritative local command: npm run build && npm run check:generated
 ```
 
-## Post-roadmap execution queue
+## Milestone mode
 
-The next sequence extends the completed 15-step roadmap without changing the completed roadmap count.
+The project no longer extends the numbered roadmap after item 50.
+
+Current milestone sequence:
 
 ```text
-16. Final verification contract refresh — in progress
-17. Post-roadmap backlog — next
-18. Release notes / implementation summary
-19. Runtime security policy
-20. Dev command cleanup
-21. Local controlled worker v2
-22. OpenHands real integration plan
-23. Code Agent real integration plan
-24. UI/runtime adapter polish
+Milestone 1 — Capability Runtime Alpha
+Milestone 2 — Controlled Runtime Beta
+Milestone 3 — Embedded Nexus Integration
+Milestone 4 — External Runtime Mapping
 ```
 
-Status policy:
+Milestone 1 source documents:
 
 ```text
-When each item is completed, update this section before merge.
-Keep 16-24 visible until the post-roadmap hardening cycle is complete.
-Do not wire a real external runtime before items 16-21 are documented and verified.
+docs/post-50-milestone-plan.md
+docs/milestone-1-capability-runtime-alpha.md
+docs/alpha-release-checklist.md
+docs/external-runtime-mapping-decision.md
+```
+
+## Capability Runtime Alpha contract
+
+Alpha proves that the embedded Capability Runtime can run in local, read-only or controlled mode.
+
+Alpha must show:
+
+```text
+skill selection
+owning agent assignment
+bounded sub-agent delegation
+explicit tool grant
+active context from selected notes
+runtime events from dry-run or controlled loop
+evaluation observation generation
+memory note candidate generation
+read-only UI decision visibility
+```
+
+Alpha excludes:
+
+```text
+live external execution
+broad workspace mutation
+full-context dumping
+autonomous worker swarm
+memory updates without source refs
+persistent Nexus host API
 ```
 
 ## Verification layers
@@ -45,17 +73,17 @@ install determinism
 → TypeScript correctness
 → skill-aware trial execution
 → adapter trial execution
+→ local worker boundary behavior
+→ minimum real worker slice behavior
+→ controlled worker behavior
+→ controlled worker runtime mapping
+→ operator-run runtime mapping
+→ external agent envelope behavior
+→ Capability Runtime contract validation
 → Nexus handoff usability
 → Nexus runtime bridge event coverage
-→ runtime adapter request/response contract validity
 → runtime adapter loop behavior
 → runtime adapter provider interface behavior
-→ HTTP provider hardening behavior
-→ local HTTP worker boundary behavior
-→ minimum real worker slice behavior
-→ external agent envelope behavior
-→ runtime callback ingest behavior
-→ runtime job state model behavior
 → runtime event store + replay behavior
 → runtime artifact registry behavior
 → review report hardening behavior
@@ -92,8 +120,12 @@ npm run trial:all-skills
 npm run trial:adapter
 npm run verify:local-worker
 npm run verify:real-worker
+npm run verify:controlled-worker
+npm run verify:controlled-worker-runtime
+npm run verify:operator-run-runtime
 npm run verify:oh-adapter
 npm run verify:ca-adapter
+npm run verify:capability-runtime
 npm run verify:handoff
 npm run verify:runtime-bridge
 npm run verify:adapter-loop
@@ -122,7 +154,16 @@ npm run build
 npm run check:generated
 ```
 
-Focused checks:
+Focused Alpha checks:
+
+```bash
+npm run verify:capability-runtime
+npm run verify:controlled-worker
+npm run verify:controlled-worker-runtime
+npm run verify:operator-run-runtime
+```
+
+Focused general checks:
 
 ```bash
 npm run validate:packets
@@ -157,9 +198,13 @@ npm run check:generated
 | `trial:all-skills` | All current trial scenarios pass skill-aware assertions. |
 | `trial:adapter` | Mock and HTTP adapter trial scenarios pass runtime job, artifact, review and memory/context continuity assertions. |
 | `verify:local-worker` | The local HTTP worker starts, serves health, returns runtime adapter responses, and fails closed on invalid/unknown routes. |
-| `verify:real-worker` | The minimum real worker slice uses only allowlisted artifact generation and produces runtime events without arbitrary command execution. |
+| `verify:real-worker` | The minimum real worker slice uses only allowlisted artifact generation and produces runtime events without broad execution. |
+| `verify:controlled-worker` | The manifest-driven controlled worker writes bounded artifacts and emits runtime adapter events. |
+| `verify:controlled-worker-runtime` | Controlled worker responses map into Capability Runtime observations, events and artifacts. |
+| `verify:operator-run-runtime` | Completed and blocked operator-run result files map into observations, runtime cycles and memory note candidates. |
 | `verify:oh-adapter` | The OpenHands envelope adapter builds safe work requests and normalizes completed/blocked results without invoking the external runtime. |
 | `verify:ca-adapter` | The code-agent envelope adapter builds safe work requests for supported agent kinds and normalizes completed/blocked results. |
+| `verify:capability-runtime` | Capability Runtime fixtures, strict validators, invalid fixture smoke-tests and dry-run loop construction pass. |
 | `verify:handoff` | Generated Nexus handoff packets are usable enough for a runtime to start work. |
 | `verify:runtime-bridge` | Mock Nexus runtime events satisfy callback event and payload coverage expectations. |
 | `verify:adapter-loop` | Runtime adapter request, mock response, initial event ingest, later callback ingest, runtime job state and Runner state behavior work together. |
@@ -182,19 +227,10 @@ The runtime adapter boundary is the layer after `nexus.handoff_packet`.
 Capability OS / Nexus side
 → nexus.runtime_adapter_request
 → RuntimeAdapterProvider
-→ mock/http/local/external worker
+→ mock/http/local/external worker envelope
 → nexus.runtime_adapter_response
 → runtime_bridge events
 → Runner state ingest
-```
-
-Contracts:
-
-```text
-schemas/runtime-adapter-request.schema.json
-schemas/runtime-adapter-response.schema.json
-samples/packets/runtime-adapter-request.sample.json
-samples/packets/runtime-adapter-response.sample.json
 ```
 
 Living code path:
@@ -209,118 +245,50 @@ scripts/verify-runtime-adapter-loop.ts
 scripts/verify-runtime-adapter-provider.ts
 ```
 
-## Local worker boundary
+## Capability Runtime boundary
 
-The local HTTP worker is the first out-of-process worker boundary.
-
-```text
-GET /health
-POST /runtime/adapter
-```
+Capability Runtime is the embedded skill-tool-agent layer.
 
 Living code path:
 
 ```text
-server/local-http-worker.ts
-server/run-local-http-worker.ts
-scripts/verify-local-http-worker.ts
-docs/local-http-worker.md
+src/capabilityRuntimeContracts.ts
+src/CapabilityRuntimePanel.tsx
+src/controlledWorkerRuntimeMapping.ts
+src/operatorRunRuntimeMapping.ts
+scripts/verify-capability-runtime-contracts.ts
+scripts/verify-controlled-worker-runtime-mapping.ts
+scripts/verify-operator-run-runtime-mapping.ts
+schemas/capability-runtime-contracts.schema.json
+samples/capability-runtime/
+samples/operator-run-results/
 ```
 
 Guarantees:
 
 ```text
-health endpoint returns worker metadata
-valid runtime adapter requests return runtime adapter responses
-invalid request bodies return INVALID_RUNTIME_ADAPTER_REQUEST
-unknown endpoints return NOT_FOUND
-dispatch.mode=real routes to the minimum real worker slice
-dispatch.mode=mock and dry_run route to the mock runtime adapter
+skill package shape is strict
+explicit tool grant shape is strict
+agent and sub-agent shapes are strict
+active context comes from selected note refs
+evaluation observations include evidence refs
+runtime loop cycles include events and artifacts
+controlled worker outputs map into runtime loop
+operator-run results map into runtime loop and memory note candidates
+invalid fixture/result shapes fail before mapping
 ```
 
-## Minimum real worker slice
+## External runtime position
 
-The minimum real worker slice proves safe real-work output without granting arbitrary execution.
+External runtime mapping is not the Alpha execution path.
 
-Living code path:
-
-```text
-server/real-worker-actions.ts
-scripts/verify-real-worker-slice.ts
-docs/real-worker-slice.md
-```
-
-Guarantees:
+Current decision:
 
 ```text
-only write_step_artifact is allowlisted
-artifacts are written into a bounded output directory
-artifact payloads mark arbitrary_command_execution=false
-runtime events include step_started, gate_checked, artifact_created and step_completed
-gate evidence is generated from artifact refs
-```
-
-## External agent envelope boundary
-
-External agent adapters are envelope/normalization layers only.
-
-They do not launch external agents, execute shell commands, mutate repositories, call remote services or send secrets.
-
-Living code path:
-
-```text
-server/adapters/openhands-adapter.ts
-server/adapters/code-agent-adapter.ts
-scripts/verify-oh-adapter.ts
-scripts/verify-ca-adapter.ts
-docs/openhands-adapter.md
-docs/code-agent-adapter.md
-```
-
-Guarantees:
-
-```text
-work requests carry secret_policy=do_not_send_secrets
-adapter safety flags forbid arbitrary command execution
-adapter safety flags state the adapter does not invoke the external agent directly
-expected artifacts are derived from work-order expected outputs
-completed results normalize to accepted runtime adapter responses
-blocked results normalize to failed runtime adapter responses with step_blocked events
-```
-
-## Memory / context packet hardening
-
-The memory/context hardening boundary is the layer after hardened review reports.
-
-```text
-TaskPacket
-+ HardenedReviewReport
-+ optional RuntimeJobState
-+ optional RuntimeArtifactRegistry
-→ nexus.memory_update_packet v0.2
-→ nexus.context_update_packet v0.2
-```
-
-Living code path:
-
-```text
-src/memoryContextHardening.ts
-docs/memory-context-hardening.md
-scripts/verify-memory-context-hardening.ts
-```
-
-Guarantees:
-
-```text
-passed human evidence becomes accepted decisions
-passed runtime evidence becomes accepted decisions
-artifact-backed evidence becomes summary/ref decisions
-release blockers become compact runtime blocker memory
-release blockers become open next-run questions
-artifact refs are stored as summary/ref only
-provider/job metadata is kept for traceability only
-do-not-store policy excludes raw runtime events, raw callback payloads, raw artifact payloads, secrets, irrelevant personal data and full transcripts
-next-run context is bounded by maxContextItems
+mapping pattern accepted
+live external execution deferred
+External Runtime Mapping moved to Milestone 4
+Milestone 1 remains local/read-only/controlled
 ```
 
 ## Generated artifacts
@@ -367,36 +335,31 @@ reduce generated static payload size
 
 Do not raise bundle limits unless the new size is intentional and justified.
 
-## Healthy scenario definition
+## Healthy Alpha scenario definition
 
-A scenario is considered healthy only when all relevant layers pass:
+A Capability Runtime Alpha scenario is healthy when:
 
 ```text
-Trial result: pass
-Nexus handoff usability: pass
-Nexus runtime bridge: pass
-Runtime adapter loop: pass
-Runtime adapter provider: pass
-Adapter trials: pass
-Local worker boundary: pass
-Real worker slice: pass
-External agent envelope checks: pass
-Review hardening: pass
-Memory/context hardening: pass
+Capability Runtime contract validation: pass
+controlled worker runtime mapping: pass
+operator-run runtime mapping: pass
+runtime adapter loop: pass
+runtime adapter provider: pass
+review hardening: pass
+memory/context hardening: pass
+build: pass
+generated artifact drift guard: pass
 ```
 
 This means:
 
 ```text
 The compiler can route the intent.
-The handoff packet contains enough information for a runtime to start work.
-The runtime adapter request/response/event ingest loop works end-to-end inside Runner.
-The adapter dispatch boundary can swap mock/http/local/external providers without changing Runner core logic.
-The HTTP provider fails closed when remote worker output is invalid.
-The local worker exposes a real HTTP boundary.
-The minimum real worker can create bounded artifacts and runtime events safely.
-External agent adapters can package work and normalize results without directly invoking agents.
-The hardened review report can feed memory/context packets without storing raw runtime or callback payloads.
+The handoff packet contains enough information for local/controlled runtime work.
+The runtime adapter request/response/event ingest loop works.
+The Capability Runtime can explain skill, agent, sub-agent, tool, context, observation and memory-note-candidate decisions.
+Controlled and operator-run outputs can feed the local runtime loop through structured observations and artifacts.
+The read-only UI can show runtime decisions without mutation controls.
 ```
 
 ## Failure policy
@@ -416,23 +379,16 @@ Preferred order:
 ## Current known limitations
 
 ```text
-The external agent adapters are envelope/normalization layers only.
-The minimum real worker writes bounded artifacts but does not yet perform repository mutations.
-The local worker has no persistent job queue yet.
-The Runtime Adapter Panel job-state export/display is still a UI polish item.
-The default dev command is local-only: vite --port=3000.
+CapabilityRuntimePanel is read-only and fixture-backed.
+RuntimeLoopCycle is local/dry-run/controlled, not a persistent host subsystem.
+Memory note candidates are generated but not merged into a persistent store.
+Artifact lifecycle is still a Beta-grade work area.
+Workspace boundary validation is still a Beta-grade work area.
+Live external execution remains outside Alpha scope.
 ```
 
 ## Next integration milestone
 
 ```text
-16. final roadmap verification
-17. post-roadmap backlog
-18. release notes / implementation summary
-19. runtime security policy
-20. dev command cleanup
-21. local controlled worker v2
-22. OpenHands real integration plan
-23. Code Agent real integration plan
-24. UI/runtime adapter polish
+Milestone 1 — Capability Runtime Alpha
 ```
