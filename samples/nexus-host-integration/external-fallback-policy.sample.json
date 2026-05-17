@@ -1,0 +1,43 @@
+{
+  "packet_type": "nexus.external_fallback_policy",
+  "version": "0.1",
+  "policy_ref": "external-runtime-fallback-v1",
+  "local_controlled_runtime_available": true,
+  "retry_limit": 1,
+  "failure_mappings": [
+    {
+      "failure_class": "provider_unavailable",
+      "outcome": "fallback_to_local"
+    },
+    {
+      "failure_class": "provider_timeout",
+      "outcome": "return_partial"
+    },
+    {
+      "failure_class": "provider_permission_mismatch",
+      "outcome": "return_blocked"
+    },
+    {
+      "failure_class": "provider_schema_mismatch",
+      "outcome": "return_blocked"
+    },
+    {
+      "failure_class": "provider_artifact_violation",
+      "outcome": "return_blocked"
+    },
+    {
+      "failure_class": "provider_result_incomplete",
+      "outcome": "manual_review_required"
+    }
+  ],
+  "allowed_outcomes": [
+    "fallback_to_local",
+    "return_partial",
+    "return_blocked",
+    "retry_once",
+    "manual_review_required"
+  ],
+  "blocked_results_require_reason": true,
+  "partial_results_require_reason": true,
+  "manual_review_host_owned": true
+}
