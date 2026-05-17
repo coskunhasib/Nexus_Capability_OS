@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/capability-runtime-contracts.schema.json",
+  "title": "Nexus Capability Runtime Contracts",
+  "type": "object",
+  "description": "Schema index for the first Capability Runtime contract fixture set. The deterministic TypeScript verifier is the current enforcement source.",
+  "oneOf": [
+    { "$ref": "#/$defs/SkillPackage" },
+    { "$ref": "#/$defs/ToolGrant" },
+    { "$ref": "#/$defs/AgentProfile" },
+    { "$ref": "#/$defs/SubAgentDelegation" },
+    { "$ref": "#/$defs/MemoryNote" },
+    { "$ref": "#/$defs/ActiveContextBundle" },
+    { "$ref": "#/$defs/EvaluationObservation" },
+    { "$ref": "#/$defs/RuntimeLoopCycle" }
+  ],
+  "$defs": {
+    "StringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "SkillPackage": {
+      "type": "object",
+      "required": ["packet_type", "version", "skill_id", "name", "purpose", "when_to_use", "when_not_to_use", "required_inputs", "method_steps", "required_tools", "quality_gates", "expected_outputs", "observation_metrics"],
+      "properties": {
+        "packet_type": { "const": "nexus.skill_package" },
+        "version": { "const": "0.1" },
+        "skill_id": { "type": "string" },
+        "name": { "type": "string" },
+        "purpose": { "type": "string" },
+        "when_to_use": { "$ref": "#/$defs/StringArray" },
+        "when_not_to_use": { "$ref": "#/$defs/StringArray" },
+        "required_inputs": { "$ref": "#/$defs/StringArray" },
+        "method_steps": { "type": "array", "items": { "type": "object" } },
+        "required_tools": { "$ref": "#/$defs/StringArray" },
+        "optional_tools": { "$ref": "#/$defs/StringArray" },
+        "agent_profile_hints": { "$ref": "#/$defs/StringArray" },
+        "sub_agent_hints": { "$ref": "#/$defs/StringArray" },
+        "quality_gates": { "$ref": "#/$defs/StringArray" },
+        "risk_notes": { "$ref": "#/$defs/StringArray" },
+        "expected_outputs": { "$ref": "#/$defs/StringArray" },
+        "observation_metrics": { "$ref": "#/$defs/StringArray" }
+      }
+    },
+    "ToolGrant": {
+      "type": "object",
+      "required": ["packet_type", "version", "grant_id", "tool_id", "action_class", "allowed_actions", "scope", "workspace_boundary", "approval_required", "expires_after", "owning_agent_ref", "audit_level"],
+      "properties": {
+        "packet_type": { "const": "nexus.tool_grant" },
+        "version": { "const": "0.1" },
+        "grant_id": { "type": "string" },
+        "tool_id": { "type": "string" },
+        "action_class": { "type": "string" },
+        "allowed_actions": { "$ref": "#/$defs/StringArray" },
+        "scope": { "type": "string" },
+        "workspace_boundary": { "type": "object" },
+        "approval_required": { "type": "boolean" },
+        "expires_after": { "type": "string" },
+        "owning_agent_ref": { "type": "string" },
+        "audit_level": { "type": "string" }
+      }
+    },
+    "AgentProfile": {
+      "type": "object",
+      "required": ["packet_type", "version", "agent_id", "profile", "role", "owned_scope", "responsibilities", "allowed_skill_refs", "default_tool_policy", "memory_access_policy", "context_access_policy", "evaluation_responsibility"],
+      "properties": { "packet_type": { "const": "nexus.agent_profile" }, "version": { "const": "0.1" } }
+    },
+    "SubAgentDelegation": {
+      "type": "object",
+      "required": ["packet_type", "version", "sub_agent_id", "parent_agent_id", "scope", "allowed_tools", "active_context_ref", "expected_output", "handoff_format", "expires_after"],
+      "properties": { "packet_type": { "const": "nexus.sub_agent_delegation" }, "version": { "const": "0.1" } }
+    },
+    "MemoryNote": {
+      "type": "object",
+      "required": ["packet_type", "version", "note_id", "topic", "note_type", "summary", "source_refs", "confidence", "status", "created_at", "last_updated"],
+      "properties": { "packet_type": { "const": "nexus.memory_note" }, "version": { "const": "0.1" } }
+    },
+    "ActiveContextBundle": {
+      "type": "object",
+      "required": ["packet_type", "version", "context_id", "task_ref", "selected_note_refs", "current_constraints", "open_questions", "excluded_refs"],
+      "properties": { "packet_type": { "const": "nexus.active_context_bundle" }, "version": { "const": "0.1" } }
+    },
+    "EvaluationObservation": {
+      "type": "object",
+      "required": ["packet_type", "version", "observation_id", "run_ref", "subject_type", "subject_ref", "signal", "summary", "evidence_refs", "confidence"],
+      "properties": { "packet_type": { "const": "nexus.evaluation_observation" }, "version": { "const": "0.1" } }
+    },
+    "RuntimeLoopCycle": {
+      "type": "object",
+      "required": ["packet_type", "version", "cycle_id", "task_ref", "selected_skill_refs", "owning_agent_ref", "sub_agent_refs", "active_context_ref", "tool_grant_refs", "events", "artifact_refs", "evaluation_ref", "memory_note_update_refs", "status"],
+      "properties": { "packet_type": { "const": "nexus.runtime_loop_cycle" }, "version": { "const": "0.1" } }
+    }
+  }
+}
