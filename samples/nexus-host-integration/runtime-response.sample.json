@@ -1,0 +1,24 @@
+{
+  "packet_type": "nexus.host_runtime_response",
+  "version": "0.1",
+  "response_id": "host-response-001",
+  "request_ref": "host-request-001",
+  "status": "pass",
+  "runtime_cycle_ref": "cycle.controlled-worker.task.embedded-boundary-001",
+  "evaluation_refs": ["obs.controlled-worker.task.embedded-boundary-001"],
+  "artifact_refs": [
+    {
+      "kind": "runtime_summary",
+      "ref": "artifacts/capability-runtime/runtime-summary.json",
+      "summary": "Runtime summary returned to the Nexus host."
+    }
+  ],
+  "memory_note_candidate_refs": ["note.operator-result.operator-result-completed-001"],
+  "events": [
+    {
+      "event_type": "host_boundary.response_ready",
+      "summary": "Capability Runtime returned structured output to Nexus host."
+    }
+  ],
+  "source_refs": ["host-request-001", "cycle.controlled-worker.task.embedded-boundary-001"]
+}
