@@ -22,8 +22,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 43. Local dry-run runtime loop prototype — implemented
 44. Capability Runtime UI visibility plan — documented
 45. External runtime mapping decision — documented
-46. CapabilityRuntimePanel read-only UI — next
-47. Stricter JSON schema validation — planned
+46. CapabilityRuntimePanel read-only UI — implemented
+47. Stricter JSON schema validation — next
 48. Local controlled worker mapping into runtime loop — planned
 49. Operator-run result mapping into runtime loop — planned
 50. External runtime mapping re-evaluation — planned
@@ -191,19 +191,18 @@ Dry-run RuntimeLoopCycle is generated from selected skill, owning agent, bounded
 
 ### 46. CapabilityRuntimePanel read-only UI
 
-Status: next.
+Status: implemented.
 
-Definition of done:
+Outcome:
 
 ```text
-Read-only panel shows skill decision, agent ownership, sub-agent delegation, tool grant, active context notes, evaluation observation and runtime loop cycle.
-No mutation controls.
-No external runtime execution.
+Read-only CapabilityRuntimePanel renders skill decision, agent ownership, sub-agent delegation, tool grant, active context notes, evaluation observation and dry-run runtime loop cycle in the sidebar.
+No mutation controls or external runtime execution were added.
 ```
 
 ### 47. Stricter JSON schema validation
 
-Status: planned.
+Status: next.
 
 Definition of done:
 
@@ -376,6 +375,7 @@ Detailed files:
 
 ```text
 src/capabilityRuntimeContracts.ts
+src/CapabilityRuntimePanel.tsx
 schemas/capability-runtime-contracts.schema.json
 samples/capability-runtime/
 scripts/verify-capability-runtime-contracts.ts
@@ -391,6 +391,7 @@ Completed sequence:
 43. Implement a local dry-run runtime loop prototype — implemented
 44. Add UI visibility for skill/tool/agent decisions — documented
 45. Decide whether external runtime mapping is needed after local loop validation — documented
+46. Implement CapabilityRuntimePanel read-only UI — implemented
 ```
 
 ## Post-50 milestone mode
@@ -427,7 +428,6 @@ Stop extending numbered roadmap after item 50.
 ## Recommended next phase
 
 ```text
-46. Implement CapabilityRuntimePanel read-only UI.
 47. Add stricter JSON schema validation for fixtures.
 48. Add local controlled worker mapping into runtime loop.
 49. Add operator-run result mapping into runtime loop.
