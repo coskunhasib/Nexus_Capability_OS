@@ -17,6 +17,7 @@ export type ReasonCode =
   | 'MISSING_DISPOSITION'
   | 'MISSING_OPERATOR_REF'
   | 'ARTIFACT_OUTSIDE_ROOT'
+  | 'RUNNER_FAILURE'
   | 'NO_ACCEPTED_ARTIFACT';
 
 export type SliceState =
