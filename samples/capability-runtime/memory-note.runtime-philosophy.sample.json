@@ -1,0 +1,14 @@
+{
+  "packet_type": "nexus.memory_note",
+  "version": "0.1",
+  "note_id": "note.runtime-philosophy",
+  "topic": "Capability Runtime philosophy",
+  "note_type": "decision",
+  "summary": "LLM is reasoning intelligence; Nexus Capability Runtime carries wisdom, experience and operating discipline through skills, tools, agents, memory, context and evaluation.",
+  "source_refs": ["docs/nexus-capability-runtime-philosophy.md", "docs/capability-runtime-decision-log.md"],
+  "confidence": "high",
+  "status": "active",
+  "created_at": "2026-05-17T00:00:00.000Z",
+  "last_updated": "2026-05-17T00:00:00.000Z",
+  "related_notes": ["note.context-distillation"]
+}
