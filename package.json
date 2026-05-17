@@ -36,6 +36,7 @@
     "verify:store": "tsx scripts/verify-store.ts",
     "verify:runner": "tsx scripts/verify-runner.ts",
     "verify:actions": "tsx scripts/verify-actions.ts",
+    "verify:perm-local": "tsx scripts/verify-permissions-local.ts",
     "demo:vs": "tsx scripts/run-vslice-demo.ts",
     "verify:oh-adapter": "tsx scripts/verify-oh-adapter.ts",
     "verify:ca-adapter": "tsx scripts/verify-ca-adapter.ts",
