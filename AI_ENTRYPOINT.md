@@ -8,22 +8,33 @@ Read these files before changing code or designing integrations:
 1. AGENTS.md
 2. docs/ai-entrypoint.md
 3. docs/nexus-unknown-mode.md
-4. docs/nexus-data-contract-roadmap.md
-5. docs/post-roadmap-backlog.md
-6. docs/verification-contract.md
-7. docs/runtime-security-policy.md
+4. docs/nexus-capability-runtime-philosophy.md
+5. docs/memory-context-distillation-plan.md
+6. docs/post-roadmap-backlog.md
+7. docs/verification-contract.md
+8. docs/runtime-security-policy.md
 ```
 
 Current active item:
 
 ```text
-33. Nexus data contract discovery
+33. Capability Runtime data model discovery
 ```
 
-Current mode:
+Current framing:
 
 ```text
-Treat real Nexus details as unknown until item 33 creates docs/nexus-data-contract-inventory.md.
+LLM = reasoning intelligence.
+Nexus Capability Runtime = wisdom, experience and operating discipline.
+```
+
+Memory/context rule:
+
+```text
+Use notes-first memory.
+Distill conversations and runtime traces into living notes.
+Use only relevant active notes as working context.
+Update, merge or retire notes when they become stale.
 ```
 
 Next expected output:

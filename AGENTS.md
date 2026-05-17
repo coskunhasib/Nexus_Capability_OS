@@ -7,34 +7,50 @@ This file is the required first-read guide for any AI agent, Nexus-side integrat
 Before changing code, creating schemas or implementing integrations, read these documents in order:
 
 ```text
-1. docs/ai-entrypoint.md
-2. docs/nexus-data-contract-roadmap.md
-3. docs/post-roadmap-backlog.md
-4. docs/verification-contract.md
-5. docs/runtime-security-policy.md
-6. docs/operator-run-result-ingestion-plan.md
+1. AI_ENTRYPOINT.md
+2. docs/ai-entrypoint.md
+3. docs/nexus-unknown-mode.md
+4. docs/nexus-capability-runtime-philosophy.md
+5. docs/memory-context-distillation-plan.md
+6. docs/post-roadmap-backlog.md
+7. docs/verification-contract.md
+8. docs/runtime-security-policy.md
 ```
 
 ## Current rule
 
 ```text
-Do not implement Nexus result ingestion by guessing hidden Nexus data.
-Do not treat any third-party runtime as the source of truth.
-Treat Nexus as the integration owner.
-Build an explicit Nexus data contract first.
+Nexus is the host system.
+Capability Runtime is the embedded wisdom / experience / operating-discipline layer.
+LLM provides reasoning intelligence.
+The runtime provides skills, tools, agents/sub-agents, memory, context and evaluation.
 ```
 
 ## Current next item
 
 ```text
-33. Nexus data contract discovery
+33. Capability Runtime data model discovery
 ```
 
-Do not skip directly to result ingestion, direct runtime wiring, code-agent mapping or schema finalization before item 33 is completed.
+Expected output:
+
+```text
+docs/nexus-data-contract-inventory.md
+```
+
+## Memory/context rule
+
+```text
+Use notes-first memory.
+Distill conversations and runtime traces into living notes.
+Send only relevant active notes into working context.
+Update, merge or retire notes as they become stale.
+```
 
 ## Safe working pattern
 
 ```text
+read entrypoint
 read roadmap
 identify current item
 make one focused branch
