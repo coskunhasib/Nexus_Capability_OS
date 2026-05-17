@@ -2,10 +2,12 @@
 
 ## Minimum working system
 
-The repository is considered to have a working implementation slice when the following command passes:
+The repository has a working implementation slice when these commands pass:
 
 ```bash
 npm run verify:vs
+npm run verify:vs-snapshot
+npm run build
 ```
 
 ## Required working paths
@@ -31,12 +33,27 @@ blocked path ends blocked
 fallback path ends fallback_used
 ```
 
+## Required reason codes
+
+```text
+NONE
+MISSING_SOURCE_REFS
+FALLBACK_SELECTED
+REVIEW_REJECTED
+CHANGES_REQUESTED
+MISSING_DISPOSITION
+MISSING_OPERATOR_REF
+ARTIFACT_OUTSIDE_ROOT
+NO_ACCEPTED_ARTIFACT
+```
+
 ## Required records
 
 ```text
 source refs
 trace refs
 runtime log records
+state history
 review decision
 artifact disposition
 accepted artifact record only when accepted
@@ -46,17 +63,26 @@ accepted artifact record only when accepted
 
 ```bash
 npm run verify:vs
+npm run verify:vs-snapshot
 npm run demo:vs
+npm run verify:all
 npm run build
+```
+
+## UI status
+
+```text
+minimal React sidebar review panel is connected to the vertical slice
+full operator workflow is not complete yet
 ```
 
 ## Not done yet
 
 ```text
-React operator UI is not connected yet
-real external provider execution is not enabled
-persistent database storage is not added
-production authentication is not added
+real controlled provider execution beyond mock runner
+persistent database storage
+production authentication and authorization
+full operator workflow beyond minimal sidebar panel
 ```
 
 ## Active backlog
