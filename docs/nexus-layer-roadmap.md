@@ -1,30 +1,16 @@
-# Nexus Layer Roadmap
+# Nexus Layer Handoff Reference
 
 ## Scope correction
 
 ```text
-The local capability execution kernel is complete.
-The whole Nexus layer is not complete.
-The remaining items are Nexus internal layers, not external or optional side quests.
+The local capability execution kernel is complete in this repository.
+The main Nexus product is developed elsewhere.
+The remaining Nexus internal layers should be implemented in the main Nexus product codebase, using this repository as the kernel package and integration reference.
 ```
 
-Nexus is not just a local runner, a single-agent app, or a demo UI. The intended layer is:
+This repository is not intended to keep growing into the whole Nexus product.
 
-```text
-skill marketplace
-agent/capability runtime
-workflow execution fabric
-hidden dispatcher
-marketplace compute records
-company/team usage layer
-internal tenant/workspace isolation
-billing and usage-credit primitives
-trust/reputation gates
-cloud/hybrid run policy
-Nexus data contract and result ingestion
-```
-
-## Completed internal foundation
+## What this repository provides
 
 ```text
 local capability execution kernel
@@ -39,9 +25,10 @@ operator actions
 local identity checks
 alpha e2e verifier
 minimal review panel
+Nexus integration guide
 ```
 
-## Active Nexus internal layers still to implement
+## Main Nexus internal layers that should consume this kernel
 
 ### 1. Nexus data contract and result envelope
 
@@ -123,7 +110,7 @@ manual review queue
 ban/suspend policy marker
 ```
 
-## Important product decisions already made
+## Product decisions to preserve in Nexus
 
 ```text
 Nexus does not need its own GPU fleet for V1.
@@ -134,27 +121,29 @@ Workspace and tenant concepts are internal implementation boundaries, not front-
 No separate private-data pipeline for V1; privacy is controlled by deployment mode, consent, retention, audit and isolation.
 ```
 
-## Next correct implementation sequence
+## Correct Nexus-side integration sequence
 
 ```text
-1. Nexus data contract discovery and canonical envelope
-2. Result ingestion prototype over current local kernel
-3. Skill marketplace registry and listing projection
-4. Hidden dispatcher policy and node scoring fixture
-5. Marketplace compute provider records
-6. Company/team usage layer and internal isolation
-7. Billing/credit/settlement primitives
-8. Trust/reputation/quality gates
-9. Cloud/hybrid policy projection
-10. Full Nexus e2e verifier
+1. Add Nexus adapter for this kernel.
+2. Map Nexus run envelope to kernel input.
+3. Map kernel VerticalSliceResult to Nexus result envelope.
+4. Persist kernel StoredSliceRecord through Nexus storage boundary.
+5. Connect Nexus review UI to review action flow.
+6. Let hidden dispatcher select this kernel as one eligible execution target.
+7. Add marketplace skill invocation path that can use this kernel.
+8. Add compute provider records as alternate execution targets.
+9. Add billing/trust/quality gates around the run envelope.
+10. Add full Nexus e2e verifier.
 ```
 
-## Stop condition for Nexus layer
+## Kernel repository stop condition
 
-Nexus layer can be called complete only when this exists:
+This repository should be considered complete when:
 
 ```text
-a skill can be published, discovered, selected, dispatched to an eligible local/cloud/hybrid runner through hidden policy, executed through guarded workflow, reviewed, billed/credited when applicable, stored, audited, and evaluated with trust/quality records.
+local kernel verification passes
+integration guide exists
+main Nexus can consume this package through an adapter
 ```
 
-Until then, only the local capability execution kernel is complete.
+Further marketplace, dispatcher, compute, billing, organization, and cloud/hybrid implementation belongs in the main Nexus product unless it directly changes the kernel integration surface.
