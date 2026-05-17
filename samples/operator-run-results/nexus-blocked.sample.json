@@ -1,0 +1,17 @@
+{
+  "packet_type": "nexus.operator_run_result",
+  "version": "0.1",
+  "result_id": "operator-result-blocked-001",
+  "task_ref": "task.operator-run-mapping",
+  "source": "operator-run",
+  "status": "blocked",
+  "artifacts": [],
+  "notes": [
+    "Operator-run result was blocked before artifact production."
+  ],
+  "diagnostics": [
+    "required input artifact missing",
+    "operator did not approve continuation"
+  ],
+  "created_at": "2026-05-17T00:00:00.000Z"
+}
