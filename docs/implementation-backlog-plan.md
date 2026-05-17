@@ -12,169 +12,72 @@ Implementation phase is active.
 
 ```text
 PR #103 introduced the first working vertical slice.
-The next work connects that slice to real runtime modules instead of creating more milestone documents.
+PR #104 connected the slice to shared contracts, artifact registry, runtime log, and stronger guard checks.
+PR #105 added runner abstraction, state history, state validation, and demo script.
+PR #106 simplified verify scripts and added release/status documentation.
+PR #107 connected the vertical slice to the existing React sidebar through a review panel.
+PR #108 added reason codes and deterministic snapshot verification.
 ```
 
-## Workstream A — canonical vertical slice
+## Completed workstreams
 
 ```text
-remove duplicate implementation copy
-keep src/providerVerticalSlice.ts as canonical entry point
-keep verify:vs as the end-to-end verifier
+[x] A — canonical vertical slice cleanup
+[x] B — shared contracts starter
+[x] C — in-memory artifact registry integration
+[x] D — runtime log integration
+[x] E — stronger guard tests
+[x] F — runner abstraction inside vertical slice
+[x] G — state flow binding and validation
+[x] H — demo script and minimal UI review panel
+[x] I — repository hygiene and working-system docs
+[x] J — reason-code taxonomy and deterministic snapshot verifier
 ```
 
-Done when:
+## Active implementation files
 
 ```text
-there is exactly one canonical provider vertical slice implementation
-CI passes verify:vs
+src/providerVerticalSlice.ts
+src/contracts/verticalSliceContracts.ts
+src/runtime/artifactRegistry.ts
+src/runtime/runtimeLog.ts
+src/runtime/stateFlow.ts
+src/VerticalSliceReviewPanel.tsx
+scripts/verify-vslice.ts
+scripts/verify-vslice-snapshot.ts
+scripts/run-vslice-demo.ts
+scripts/verify-all.mjs
 ```
 
-## Workstream B — shared contracts
+## Active verification commands
 
-```text
-extract shared provider/review/artifact/event types
-make runtime and verifiers import those types
-reduce drift between fixtures and implementation
+```bash
+npm run verify:vs
+npm run verify:vs-snapshot
+npm run demo:vs
+npm run verify:all
+npm run build
 ```
 
-Done when:
+## Working-system definition
 
 ```text
-runtime types are defined in src/contracts
-vertical slice imports contract types
+A candidate artifact becomes an accepted artifact only when source refs, operator decision, artifact disposition, trace refs, and allowed artifact root checks all pass.
+Blocked, rejected, change-requested, fallback, missing-operator, missing-disposition, and outside-root paths create zero accepted artifacts.
 ```
 
-## Workstream C — artifact registry integration
+## Remaining real work
 
 ```text
-add in-memory artifact registry
-record candidate artifacts
-commit accepted artifacts only after review and disposition
-block accepted artifacts for missing source refs, fallback, missing operator ref, or invalid disposition
+persistent storage beyond in-memory snapshots
+real controlled provider adapter execution beyond mock runner
+production authentication and authorization
+full operator workflow beyond minimal sidebar panel
 ```
 
-Done when:
+## Rule
 
 ```text
-happy path writes one accepted artifact record
-blocked path writes zero accepted artifact records
-fallback path writes zero accepted provider artifact records
-```
-
-## Workstream D — event store integration
-
-```text
-add in-memory event store
-append vertical slice events through a store API
-verify event order for happy, blocked, and fallback paths
-```
-
-Done when:
-
-```text
-host_request_created
-provider_run_prepared
-provider_result_normalized
-review_decision_recorded
-artifact_disposition_recorded
-accepted_artifact_recorded
-```
-
-are visible in event store for the happy path.
-
-## Workstream E — stronger guard tests
-
-```text
-review reject path
-request changes path
-artifact without disposition cannot be accepted
-decision without operator ref cannot be accepted
-artifact outside allowed root cannot be accepted
-fallback cannot create accepted provider artifact
-```
-
-Done when:
-
-```text
-verify:vs fails if acceptance guard is weakened
-```
-
-## Workstream F — adapter abstraction
-
-```text
-introduce ProviderAdapter interface
-move mock execution into MockProviderAdapter
-keep provider execution mock-only
-prepare future controlled adapter execution
-```
-
-Done when:
-
-```text
-vertical slice depends on ProviderAdapter rather than direct mockProviderExecute
-```
-
-## Workstream G — state machine binding
-
-```text
-bind provider run states to actual flow
-validate transition order
-reject invalid transition sequences
-```
-
-Done when:
-
-```text
-happy, blocked and fallback paths expose deterministic state history
-```
-
-## Workstream H — UI and demo entry points
-
-```text
-add minimal demo script
-later connect OperatorReviewPanel to vertical slice output
-```
-
-Done when:
-
-```text
-npm script can print happy, blocked and fallback outputs for local inspection
-```
-
-## Workstream I — repository hygiene
-
-```text
-add release history summary for PR #90 through PR #103
-add current status document
-make active roadmap point to implementation backlog
-```
-
-Done when:
-
-```text
-repo readers can tell which docs are historical contracts and which work is active implementation
-```
-
-## Immediate package
-
-The next PR should complete:
-
-```text
-A — canonical vertical slice cleanup
-B — shared contracts starter
-C — in-memory artifact registry
-D — in-memory event store
-E — stronger verify:vs checks
-I — current status note
-```
-
-Out of scope for the immediate package:
-
-```text
-React UI
-real provider credentials
-database persistence
-external cloud execution
-new numbered milestone files
+No new numbered milestone documents.
+Continue implementation from this backlog only when adding real runtime behavior.
 ```
