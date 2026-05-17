@@ -1,4 +1,4 @@
-import type { Scenario, VerticalSliceResult } from '../contracts/verticalSliceContracts';
+import type { ReasonCode, Scenario, VerticalSliceResult } from '../contracts/verticalSliceContracts';
 import type { StoreSnapshot } from '../storage/storageContracts';
 
 export type ReviewAction = 'accept_candidate' | 'reject_candidate' | 'request_changes' | 'use_fallback';
@@ -13,12 +13,12 @@ export type ReviewActionRecord = {
   action: ReviewAction;
   operatorRef: string;
   scenario: Scenario;
-  status: VerticalSliceResult['status'];
-  reasonCode: VerticalSliceResult['reasonCode'];
+  status: VerticalSliceResult['status'] | 'blocked';
+  reasonCode: ReasonCode;
 };
 
 export type ReviewActionOutcome = {
   record: ReviewActionRecord;
-  result: VerticalSliceResult;
+  result?: VerticalSliceResult;
   snapshot: StoreSnapshot;
 };
