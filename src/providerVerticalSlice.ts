@@ -7,12 +7,14 @@ import type {
   ProviderRunRequest,
   ReviewDecision,
   Scenario,
+  SliceRunner,
   VerticalSliceResult,
 } from './contracts/verticalSliceContracts';
 import { InMemoryArtifactRegistry } from './runtime/artifactRegistry';
 import { RuntimeLog, runtimeRecord } from './runtime/runtimeLog';
+import { StateFlow } from './runtime/stateFlow';
 
-export type { AcceptedArtifact, ArtifactDisposition, CandidateArtifact, HostRequest, NormalizedResult, ProviderRunRequest, ReviewDecision, Scenario, VerticalSliceResult };
+export type { AcceptedArtifact, ArtifactDisposition, CandidateArtifact, HostRequest, NormalizedResult, ProviderRunRequest, ReviewDecision, Scenario, SliceRunner, VerticalSliceResult };
 
 function hasSourceRefs(sourceRefs: string[]) {
   return sourceRefs.length > 0 && sourceRefs.every((item) => item.trim().length > 0);
@@ -81,6 +83,11 @@ export function mockProviderExecute(runRequest: ProviderRunRequest, scenario: Sc
     traceRefs,
   };
 }
+
+export const defaultSliceRunner: SliceRunner = {
+  runnerRef: 'mock-slice-runner-v1',
+  run: mockProviderExecute,
+};
 
 export function reviewResult(result: NormalizedResult, scenario: Scenario): ReviewDecision {
   if (scenario === 'request_changes_path') {
@@ -168,52 +175,77 @@ export function createDisposition(result: NormalizedResult, decision: ReviewDeci
   return undefined;
 }
 
-export function runProviderVerticalSlice(scenario: Scenario): VerticalSliceResult {
+export function runProviderVerticalSlice(scenario: Scenario, runner: SliceRunner = defaultSliceRunner): VerticalSliceResult {
   const registry = new InMemoryArtifactRegistry();
   const log = new RuntimeLog();
+  const flow = new StateFlow();
   const hostRequest = createHostRequest(scenario);
   log.add(runtimeRecord('host_request_created', hostRequest.requestId));
   const runRequest = createRunRequest(hostRequest);
 
   if (!runRequest) {
     const reason = 'Source refs are required before provider execution.';
+    flow.move('blocked');
     log.add(runtimeRecord('provider_run_blocked', hostRequest.requestId, reason));
     return {
       status: 'blocked',
       hostRequest,
       acceptedArtifacts: [],
       events: log.snapshot(),
+      stateHistory: flow.history(),
+      runnerRef: runner.runnerRef,
       reason,
     };
   }
 
+  flow.move('prepared');
   log.add(runtimeRecord('provider_run_prepared', runRequest.runId));
-  const normalizedResult = mockProviderExecute(runRequest, scenario);
+  flow.move('running');
+  const normalizedResult = runner.run(runRequest, scenario);
   registry.recordCandidates(normalizedResult.artifactRefs);
+
+  if (normalizedResult.status === 'fallback_used') {
+    flow.move('fallback_used');
+    log.add(runtimeRecord('provider_result_normalized', normalizedResult.resultId));
+    const reviewDecision = reviewResult(normalizedResult, scenario);
+    const disposition = createDisposition(normalizedResult, reviewDecision, scenario);
+    log.add(runtimeRecord('review_decision_recorded', reviewDecision.decisionId));
+    if (disposition) log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId));
+    log.add(runtimeRecord('fallback_recorded', runRequest.fallbackRef, normalizedResult.reason));
+    return { status: 'fallback_used', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts: [], events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: normalizedResult.reason };
+  }
+
+  flow.move('normalized');
   log.add(runtimeRecord('provider_result_normalized', normalizedResult.resultId));
   const reviewDecision = reviewResult(normalizedResult, scenario);
+  flow.move('reviewed');
   log.add(runtimeRecord('review_decision_recorded', reviewDecision.decisionId));
   const disposition = createDisposition(normalizedResult, reviewDecision, scenario);
-  if (disposition) log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId));
+  if (disposition) {
+    flow.move('disposed');
+    log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId));
+  }
   const acceptedArtifacts = registry.commitAccepted(normalizedResult, reviewDecision, disposition);
 
   if (acceptedArtifacts.length > 0) {
+    flow.move('accepted');
     log.add(runtimeRecord('accepted_artifact_recorded', acceptedArtifacts[0].artifactId));
-    return { status: 'accepted', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot() };
-  }
-
-  if (normalizedResult.status === 'fallback_used') {
-    log.add(runtimeRecord('fallback_recorded', runRequest.fallbackRef, normalizedResult.reason));
-    return { status: 'fallback_used', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), reason: normalizedResult.reason };
+    return { status: 'accepted', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef };
   }
 
   if (reviewDecision.decision === 'request_changes') {
-    return { status: 'changes_requested', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), reason: 'Operator requested changes.' };
+    if (!disposition) flow.move('changes_requested');
+    else flow.move('changes_requested');
+    return { status: 'changes_requested', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'Operator requested changes.' };
   }
 
   if (reviewDecision.decision === 'reject_candidate') {
-    return { status: 'rejected', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), reason: 'Operator rejected candidate.' };
+    if (!disposition) flow.move('rejected');
+    else flow.move('rejected');
+    return { status: 'rejected', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'Operator rejected candidate.' };
   }
 
-  return { status: 'blocked', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), reason: 'No accepted artifact was produced.' };
+  if (disposition) flow.move('blocked');
+  else flow.move('blocked');
+  return { status: 'blocked', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'No accepted artifact was produced.' };
 }

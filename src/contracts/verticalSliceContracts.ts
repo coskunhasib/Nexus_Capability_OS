@@ -8,6 +8,19 @@ export type Scenario =
   | 'missing_operator_ref'
   | 'artifact_outside_root';
 
+export type SliceState =
+  | 'created'
+  | 'prepared'
+  | 'running'
+  | 'normalized'
+  | 'reviewed'
+  | 'disposed'
+  | 'accepted'
+  | 'blocked'
+  | 'fallback_used'
+  | 'changes_requested'
+  | 'rejected';
+
 export type HostRequest = {
   requestId: string;
   objective: string;
@@ -73,6 +86,11 @@ export type AcceptedArtifact = {
   traceRefs: string[];
 };
 
+export type SliceRunner = {
+  runnerRef: string;
+  run: (request: ProviderRunRequest, scenario: Scenario) => NormalizedResult;
+};
+
 export type VerticalSliceResult = {
   status: 'accepted' | 'blocked' | 'fallback_used' | 'changes_requested' | 'rejected';
   hostRequest: HostRequest;
@@ -82,5 +100,7 @@ export type VerticalSliceResult = {
   disposition?: ArtifactDisposition;
   acceptedArtifacts: AcceptedArtifact[];
   events: RuntimeEvent[];
+  stateHistory: SliceState[];
+  runnerRef?: string;
   reason?: string;
 };

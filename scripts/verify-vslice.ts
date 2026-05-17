@@ -1,4 +1,5 @@
 import { runProviderVerticalSlice } from '../src/providerVerticalSlice.ts';
+import { isValidStateHistory } from '../src/runtime/stateFlow.ts';
 
 type Check = { name: string; pass: boolean; details?: Record<string, unknown> };
 
@@ -25,23 +26,30 @@ const changes = runProviderVerticalSlice('request_changes_path');
 const noDisposition = runProviderVerticalSlice('artifact_without_disposition');
 const noOperator = runProviderVerticalSlice('missing_operator_ref');
 const outsideRoot = runProviderVerticalSlice('artifact_outside_root');
+const allResults = [happy, blocked, fallback, rejected, changes, noDisposition, noOperator, outsideRoot];
 
 const assertions: Check[] = [
+  check('all paths have valid state history', allResults.every((result) => isValidStateHistory(result.stateHistory)), { stateHistories: allResults.map((result) => result.stateHistory) }),
+  check('all paths record runner ref', allResults.every((result) => Boolean(result.runnerRef)), { runnerRefs: allResults.map((result) => result.runnerRef) }),
+
   check('happy path accepted', happy.status === 'accepted', { status: happy.status }),
   check('happy path has one accepted artifact', happy.acceptedArtifacts.length === 1, { acceptedArtifacts: happy.acceptedArtifacts }),
   check('happy path keeps source refs', Boolean(happy.acceptedArtifacts[0]?.sourceRefs.length), { acceptedArtifacts: happy.acceptedArtifacts }),
   check('happy path records review before accepted artifact', eventOrder(happy.events, 'review_decision_recorded', 'accepted_artifact_recorded'), { events: happy.events }),
   check('happy path has accepted disposition', happy.disposition?.disposition === 'accept_after_review', { disposition: happy.disposition }),
+  check('happy path ends accepted', happy.stateHistory.at(-1) === 'accepted', { stateHistory: happy.stateHistory }),
 
   check('missing source refs are blocked', blocked.status === 'blocked', { status: blocked.status, reason: blocked.reason }),
   check('blocked path has no run request', !blocked.runRequest, { runRequest: blocked.runRequest }),
   check('blocked path has no accepted artifacts', blocked.acceptedArtifacts.length === 0, { acceptedArtifacts: blocked.acceptedArtifacts }),
   check('blocked path records blocked event', hasEvent(blocked.events, 'provider_run_blocked'), { events: blocked.events }),
+  check('blocked path ends blocked', blocked.stateHistory.at(-1) === 'blocked', { stateHistory: blocked.stateHistory }),
 
   check('fallback path uses fallback status', fallback.status === 'fallback_used', { status: fallback.status, reason: fallback.reason }),
   check('fallback path has no accepted provider artifact', fallback.acceptedArtifacts.length === 0, { acceptedArtifacts: fallback.acceptedArtifacts }),
   check('fallback path records fallback event', hasEvent(fallback.events, 'fallback_recorded'), { events: fallback.events }),
   check('fallback path has fallback disposition', fallback.disposition?.disposition === 'use_fallback_result', { disposition: fallback.disposition }),
+  check('fallback path ends fallback', fallback.stateHistory.at(-1) === 'fallback_used', { stateHistory: fallback.stateHistory }),
 
   check('review reject path is rejected', rejected.status === 'rejected', { status: rejected.status }),
   check('review reject path has no accepted artifacts', rejected.acceptedArtifacts.length === 0, { acceptedArtifacts: rejected.acceptedArtifacts }),
