@@ -4,14 +4,14 @@ This document defines what happens after the final numbered block, 46-50.
 
 The project should not continue with endless five-item roadmap batches. After item 50, planning switches to milestone/release mode.
 
-## Current final numbered block
+## Completed numbered block
 
 ```text
-46. CapabilityRuntimePanel read-only UI
-47. Stricter JSON schema validation
-48. Local controlled worker mapping into runtime loop
-49. Operator-run result mapping into runtime loop
-50. External runtime mapping re-evaluation
+46. CapabilityRuntimePanel read-only UI — completed
+47. Stricter JSON schema validation — completed
+48. Local controlled worker mapping into runtime loop — completed
+49. Operator-run result mapping into runtime loop — completed
+50. External runtime mapping re-evaluation — completed
 ```
 
 ## Stop rule
@@ -21,7 +21,24 @@ Stop extending the numbered roadmap after item 50.
 Switch to milestones.
 ```
 
+## Current milestone state
+
+```text
+Milestone 1 — Capability Runtime Alpha — planned and documented
+Milestone 2 — Controlled Runtime Beta — active planning
+Milestone 3 — Embedded Nexus Integration — future
+Milestone 4 — External Runtime Mapping — future
+```
+
 ## Milestone 1 — Capability Runtime Alpha
+
+Detailed plan:
+
+```text
+docs/milestone-1-capability-runtime-alpha.md
+docs/alpha-release-checklist.md
+docs/capability-runtime-alpha-release-notes.md
+```
 
 Goal:
 
@@ -91,6 +108,13 @@ external runtime mapping remains deferred
 
 ## Milestone 2 — Controlled Runtime Beta
 
+Detailed plan:
+
+```text
+docs/milestone-2-controlled-runtime-beta.md
+docs/beta-release-checklist.md
+```
+
 Goal:
 
 ```text
@@ -135,11 +159,11 @@ no production Nexus deployment requirement
 Expected Beta outputs:
 
 ```text
-controlled-worker-runtime-mapping implementation
 artifact lifecycle policy and verifier
 workspace boundary verifier
 memory note lifecycle verifier
 multi-skill controlled runtime fixtures
+approval checkpoint visibility
 beta release notes
 ```
 
@@ -307,16 +331,15 @@ release notes
 rollback or disable path
 ```
 
-## Recommended next after item 50
+## Recommended next
 
 ```text
-Create docs/milestone-1-capability-runtime-alpha.md
-Update docs/verification-contract.md
-Create alpha release checklist
+Start Milestone 2 — Controlled Runtime Beta.
+First implementation focus: artifact lifecycle policy and verifier.
 ```
 
 ## One-line direction
 
 ```text
-Finish 46-50, then stop expanding roadmap numbers and ship Capability Runtime Alpha.
+Stop extending roadmap numbers; ship by milestone gates.
 ```
