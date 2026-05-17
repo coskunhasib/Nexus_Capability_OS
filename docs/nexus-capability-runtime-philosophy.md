@@ -2,6 +2,12 @@
 
 This document defines the core philosophy for the Nexus Capability Runtime.
 
+For the preserved decision history that led here, read:
+
+```text
+docs/capability-runtime-decision-log.md
+```
+
 ## Core distinction
 
 ```text
