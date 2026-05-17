@@ -1,0 +1,23 @@
+{
+  "packet_type": "nexus.review_decision_packet",
+  "version": "0.1",
+  "decision_id": "review-decision-001",
+  "run_ref": "provider-run-001",
+  "result_ref": "provider-ingest-001",
+  "decision": "request_changes",
+  "reason": "Candidate output needs operator follow-up before final disposition.",
+  "source_refs": [
+    "docs/review-decision-packet.md",
+    "docs/provider-result-ingest.md"
+  ],
+  "artifact_refs": [
+    "artifacts/provider-run-candidates/candidate.patch"
+  ],
+  "trace_refs": [
+    "trace/provider-run-001",
+    "trace/provider-ingest-001"
+  ],
+  "operator_ref": "operator.local",
+  "recorded_at": "2026-05-17T00:00:00Z",
+  "candidate_state_changes_only_by_packet": true
+}
