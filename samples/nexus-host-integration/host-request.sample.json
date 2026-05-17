@@ -1,0 +1,18 @@
+{
+  "packet_type": "nexus.host_runtime_request",
+  "version": "0.1",
+  "request_id": "host-request-001",
+  "host_ref": "nexus.host.local",
+  "task_ref": "task.embedded-boundary-001",
+  "runtime_mode": "controlled_local",
+  "objective": "Verify host-to-runtime boundary fixture.",
+  "selected_skill_refs": ["skill.review-doc"],
+  "owning_agent_ref": "agent.orchestrator",
+  "sub_agent_refs": ["subagent.verifier"],
+  "active_context_ref": "context.docs-review",
+  "tool_grant_refs": ["grant.read-doc"],
+  "decision_gate_refs": ["gate.granted"],
+  "artifact_output_root": "artifacts/capability-runtime/",
+  "requested_outputs": ["runtime_cycle", "evaluation_observation", "artifact_refs"],
+  "source_refs": ["docs/milestone-3-embedded-nexus-integration.md", "docs/nexus-host-runtime-boundary.md"]
+}
