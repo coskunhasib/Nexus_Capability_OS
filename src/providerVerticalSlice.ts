@@ -5,6 +5,7 @@ import type {
   HostRequest,
   NormalizedResult,
   ProviderRunRequest,
+  ReasonCode,
   ReviewDecision,
   Scenario,
   SliceRunner,
@@ -14,7 +15,7 @@ import { InMemoryArtifactRegistry } from './runtime/artifactRegistry';
 import { RuntimeLog, runtimeRecord } from './runtime/runtimeLog';
 import { StateFlow } from './runtime/stateFlow';
 
-export type { AcceptedArtifact, ArtifactDisposition, CandidateArtifact, HostRequest, NormalizedResult, ProviderRunRequest, ReviewDecision, Scenario, SliceRunner, VerticalSliceResult };
+export type { AcceptedArtifact, ArtifactDisposition, CandidateArtifact, HostRequest, NormalizedResult, ProviderRunRequest, ReasonCode, ReviewDecision, Scenario, SliceRunner, VerticalSliceResult };
 
 function hasSourceRefs(sourceRefs: string[]) {
   return sourceRefs.length > 0 && sourceRefs.every((item) => item.trim().length > 0);
@@ -62,6 +63,7 @@ export function mockProviderExecute(runRequest: ProviderRunRequest, scenario: Sc
       artifactRefs: [],
       traceRefs: [...traceRefs, `fallback/${runRequest.fallbackRef}`],
       reason: 'Fallback path selected before artifact acceptance.',
+      reasonCode: 'FALLBACK_SELECTED',
     };
   }
 
@@ -81,6 +83,7 @@ export function mockProviderExecute(runRequest: ProviderRunRequest, scenario: Sc
       },
     ],
     traceRefs,
+    reasonCode: scenario === 'artifact_outside_root' ? 'ARTIFACT_OUTSIDE_ROOT' : 'NONE',
   };
 }
 
@@ -96,6 +99,7 @@ export function reviewResult(result: NormalizedResult, scenario: Scenario): Revi
       resultRef: result.resultId,
       decision: 'request_changes',
       reason: 'Operator requested a revision before any acceptance.',
+      reasonCode: 'CHANGES_REQUESTED',
       operatorRef: 'operator.local',
     };
   }
@@ -106,6 +110,7 @@ export function reviewResult(result: NormalizedResult, scenario: Scenario): Revi
       resultRef: result.resultId,
       decision: 'reject_candidate',
       reason: 'Operator rejected the candidate output.',
+      reasonCode: 'REVIEW_REJECTED',
       operatorRef: 'operator.local',
     };
   }
@@ -116,6 +121,7 @@ export function reviewResult(result: NormalizedResult, scenario: Scenario): Revi
       resultRef: result.resultId,
       decision: 'use_fallback',
       reason: 'Fallback result remains non-accepted by default.',
+      reasonCode: 'FALLBACK_SELECTED',
       operatorRef: 'operator.local',
     };
   }
@@ -125,6 +131,7 @@ export function reviewResult(result: NormalizedResult, scenario: Scenario): Revi
     resultRef: result.resultId,
     decision: 'accept_candidate',
     reason: 'Operator accepted candidate after source, trace, and artifact review.',
+    reasonCode: scenario === 'missing_operator_ref' ? 'MISSING_OPERATOR_REF' : 'NONE',
     operatorRef: scenario === 'missing_operator_ref' ? '' : 'operator.local',
   };
 }
@@ -139,6 +146,7 @@ export function createDisposition(result: NormalizedResult, decision: ReviewDeci
       disposition: 'accept_after_review',
       decisionRef: decision.decisionId,
       reason: 'Candidate artifact accepted only after operator decision.',
+      reasonCode: result.reasonCode ?? decision.reasonCode,
     };
   }
 
@@ -149,6 +157,7 @@ export function createDisposition(result: NormalizedResult, decision: ReviewDeci
       disposition: 'use_fallback_result',
       decisionRef: decision.decisionId,
       reason: 'Fallback selected without accepted provider artifact.',
+      reasonCode: 'FALLBACK_SELECTED',
     };
   }
 
@@ -159,6 +168,7 @@ export function createDisposition(result: NormalizedResult, decision: ReviewDeci
       disposition: 'request_revision',
       decisionRef: decision.decisionId,
       reason: 'Candidate artifact needs revision before acceptance.',
+      reasonCode: 'CHANGES_REQUESTED',
     };
   }
 
@@ -169,10 +179,19 @@ export function createDisposition(result: NormalizedResult, decision: ReviewDeci
       disposition: 'reject_candidate',
       decisionRef: decision.decisionId,
       reason: 'Candidate artifact rejected by operator decision.',
+      reasonCode: 'REVIEW_REJECTED',
     };
   }
 
   return undefined;
+}
+
+function blockedReasonCode(scenario: Scenario, result?: NormalizedResult, decision?: ReviewDecision, disposition?: ArtifactDisposition): ReasonCode {
+  if (scenario === 'missing_source_refs') return 'MISSING_SOURCE_REFS';
+  if (scenario === 'artifact_without_disposition' && !disposition) return 'MISSING_DISPOSITION';
+  if (scenario === 'missing_operator_ref' && !decision?.operatorRef.trim()) return 'MISSING_OPERATOR_REF';
+  if (scenario === 'artifact_outside_root' || result?.reasonCode === 'ARTIFACT_OUTSIDE_ROOT') return 'ARTIFACT_OUTSIDE_ROOT';
+  return 'NO_ACCEPTED_ARTIFACT';
 }
 
 export function runProviderVerticalSlice(scenario: Scenario, runner: SliceRunner = defaultSliceRunner): VerticalSliceResult {
@@ -185,8 +204,9 @@ export function runProviderVerticalSlice(scenario: Scenario, runner: SliceRunner
 
   if (!runRequest) {
     const reason = 'Source refs are required before provider execution.';
+    const reasonCode: ReasonCode = 'MISSING_SOURCE_REFS';
     flow.move('blocked');
-    log.add(runtimeRecord('provider_run_blocked', hostRequest.requestId, reason));
+    log.add(runtimeRecord('provider_run_blocked', hostRequest.requestId, reason, reasonCode));
     return {
       status: 'blocked',
       hostRequest,
@@ -195,6 +215,7 @@ export function runProviderVerticalSlice(scenario: Scenario, runner: SliceRunner
       stateHistory: flow.history(),
       runnerRef: runner.runnerRef,
       reason,
+      reasonCode,
     };
   }
 
@@ -205,47 +226,48 @@ export function runProviderVerticalSlice(scenario: Scenario, runner: SliceRunner
   registry.recordCandidates(normalizedResult.artifactRefs);
 
   if (normalizedResult.status === 'fallback_used') {
+    const reasonCode: ReasonCode = 'FALLBACK_SELECTED';
     flow.move('fallback_used');
-    log.add(runtimeRecord('provider_result_normalized', normalizedResult.resultId));
+    log.add(runtimeRecord('provider_result_normalized', normalizedResult.resultId, normalizedResult.reason, reasonCode));
     const reviewDecision = reviewResult(normalizedResult, scenario);
     const disposition = createDisposition(normalizedResult, reviewDecision, scenario);
-    log.add(runtimeRecord('review_decision_recorded', reviewDecision.decisionId));
-    if (disposition) log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId));
-    log.add(runtimeRecord('fallback_recorded', runRequest.fallbackRef, normalizedResult.reason));
-    return { status: 'fallback_used', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts: [], events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: normalizedResult.reason };
+    log.add(runtimeRecord('review_decision_recorded', reviewDecision.decisionId, reviewDecision.reason, reviewDecision.reasonCode));
+    if (disposition) log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId, disposition.reason, disposition.reasonCode));
+    log.add(runtimeRecord('fallback_recorded', runRequest.fallbackRef, normalizedResult.reason, reasonCode));
+    return { status: 'fallback_used', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts: [], events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: normalizedResult.reason, reasonCode };
   }
 
   flow.move('normalized');
-  log.add(runtimeRecord('provider_result_normalized', normalizedResult.resultId));
+  log.add(runtimeRecord('provider_result_normalized', normalizedResult.resultId, normalizedResult.reason, normalizedResult.reasonCode));
   const reviewDecision = reviewResult(normalizedResult, scenario);
   flow.move('reviewed');
-  log.add(runtimeRecord('review_decision_recorded', reviewDecision.decisionId));
+  log.add(runtimeRecord('review_decision_recorded', reviewDecision.decisionId, reviewDecision.reason, reviewDecision.reasonCode));
   const disposition = createDisposition(normalizedResult, reviewDecision, scenario);
   if (disposition) {
     flow.move('disposed');
-    log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId));
+    log.add(runtimeRecord('artifact_disposition_recorded', disposition.dispositionId, disposition.reason, disposition.reasonCode));
   }
   const acceptedArtifacts = registry.commitAccepted(normalizedResult, reviewDecision, disposition);
 
   if (acceptedArtifacts.length > 0) {
     flow.move('accepted');
     log.add(runtimeRecord('accepted_artifact_recorded', acceptedArtifacts[0].artifactId));
-    return { status: 'accepted', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef };
+    return { status: 'accepted', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reasonCode: 'NONE' };
   }
 
   if (reviewDecision.decision === 'request_changes') {
-    if (!disposition) flow.move('changes_requested');
-    else flow.move('changes_requested');
-    return { status: 'changes_requested', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'Operator requested changes.' };
+    const reasonCode: ReasonCode = 'CHANGES_REQUESTED';
+    flow.move('changes_requested');
+    return { status: 'changes_requested', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'Operator requested changes.', reasonCode };
   }
 
   if (reviewDecision.decision === 'reject_candidate') {
-    if (!disposition) flow.move('rejected');
-    else flow.move('rejected');
-    return { status: 'rejected', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'Operator rejected candidate.' };
+    const reasonCode: ReasonCode = 'REVIEW_REJECTED';
+    flow.move('rejected');
+    return { status: 'rejected', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'Operator rejected candidate.', reasonCode };
   }
 
-  if (disposition) flow.move('blocked');
-  else flow.move('blocked');
-  return { status: 'blocked', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'No accepted artifact was produced.' };
+  const reasonCode = blockedReasonCode(scenario, normalizedResult, reviewDecision, disposition);
+  flow.move('blocked');
+  return { status: 'blocked', hostRequest, runRequest, normalizedResult, reviewDecision, disposition, acceptedArtifacts, events: log.snapshot(), stateHistory: flow.history(), runnerRef: runner.runnerRef, reason: 'No accepted artifact was produced.', reasonCode };
 }

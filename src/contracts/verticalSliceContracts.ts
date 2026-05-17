@@ -8,6 +8,17 @@ export type Scenario =
   | 'missing_operator_ref'
   | 'artifact_outside_root';
 
+export type ReasonCode =
+  | 'NONE'
+  | 'MISSING_SOURCE_REFS'
+  | 'FALLBACK_SELECTED'
+  | 'REVIEW_REJECTED'
+  | 'CHANGES_REQUESTED'
+  | 'MISSING_DISPOSITION'
+  | 'MISSING_OPERATOR_REF'
+  | 'ARTIFACT_OUTSIDE_ROOT'
+  | 'NO_ACCEPTED_ARTIFACT';
+
 export type SliceState =
   | 'created'
   | 'prepared'
@@ -32,6 +43,7 @@ export type RuntimeEvent = {
   event: string;
   ref: string;
   reason?: string;
+  reasonCode?: ReasonCode;
 };
 
 export type ProviderRunRequest = {
@@ -60,6 +72,7 @@ export type NormalizedResult = {
   artifactRefs: CandidateArtifact[];
   traceRefs: string[];
   reason?: string;
+  reasonCode?: ReasonCode;
 };
 
 export type ReviewDecision = {
@@ -67,6 +80,7 @@ export type ReviewDecision = {
   resultRef: string;
   decision: 'accept_candidate' | 'use_fallback' | 'reject_candidate' | 'request_changes';
   reason: string;
+  reasonCode: ReasonCode;
   operatorRef: string;
 };
 
@@ -76,6 +90,7 @@ export type ArtifactDisposition = {
   disposition: 'accept_after_review' | 'use_fallback_result' | 'reject_candidate' | 'request_revision';
   decisionRef: string;
   reason: string;
+  reasonCode: ReasonCode;
 };
 
 export type AcceptedArtifact = {
@@ -103,4 +118,5 @@ export type VerticalSliceResult = {
   stateHistory: SliceState[];
   runnerRef?: string;
   reason?: string;
+  reasonCode: ReasonCode;
 };
