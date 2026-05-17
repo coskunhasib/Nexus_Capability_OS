@@ -10,7 +10,7 @@ function hasText(value: unknown) {
   return typeof value === 'string' && Boolean(value.trim());
 }
 
-function isStringArray(value: unknown) {
+function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => hasText(item));
 }
 
@@ -19,8 +19,9 @@ function includesAll(value: unknown, required: string[], key: string, errors: st
     errors.push(`${key} must be string array`);
     return;
   }
+  const items = value;
   required.forEach((item) => {
-    if (!value.includes(item)) errors.push(`${key} must include ${item}`);
+    if (!items.includes(item)) errors.push(`${key} must include ${item}`);
   });
 }
 
