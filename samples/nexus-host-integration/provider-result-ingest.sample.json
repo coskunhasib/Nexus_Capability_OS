@@ -1,0 +1,27 @@
+{
+  "packet_type": "nexus.provider_result_ingest",
+  "version": "0.1",
+  "ingest_id": "provider-ingest-001",
+  "run_ref": "provider-run-001",
+  "normalized_result_ref": "external-result-001",
+  "status": "manual_review_required",
+  "summary": "Normalized provider result entered host review as a candidate.",
+  "source_refs": [
+    "docs/provider-result-ingest.md",
+    "docs/external-result-normalization.md"
+  ],
+  "artifact_refs": [
+    {
+      "kind": "candidate_patch",
+      "ref": "artifacts/provider-run-candidates/candidate.patch",
+      "root": "artifacts/provider-run-candidates/",
+      "summary": "Candidate artifact pending review."
+    }
+  ],
+  "trace_refs": [
+    "trace/provider-run-001",
+    "trace/provider-ingest-001"
+  ],
+  "review_required": true,
+  "accepted_by_host": false
+}
