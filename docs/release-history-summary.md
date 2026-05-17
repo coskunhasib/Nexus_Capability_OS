@@ -28,11 +28,28 @@ PR #102 — Milestone 6 progress closure
 PR #103 — first working vertical slice
 PR #104 — implementation backlog plan, canonical cleanup, shared contracts, artifact registry, runtime log and stronger vertical slice verifier
 PR #105 — runner abstraction, state flow, state history verifier and vertical slice demo script
+PR #106 — verify-all simplification, release history and working-system definition
+PR #107 — minimal React vertical slice review panel
+PR #108 — reason-code taxonomy and deterministic snapshot verifier
+PR #109 — implementation backlog and status documentation refresh
 ```
 
-## Current active direction
+## Local alpha productization phase
 
 ```text
+PR #110 — productization completion plan
+PR #111 — deterministic local store snapshots
+PR #112 — controlled local runner execution
+PR #113 — operator action workflow
+PR #114 — local identity and permission boundary
+PR #115 — alpha e2e verifier
+PR #116 — final local-alpha documentation closure
+```
+
+## Current direction
+
+```text
+Local alpha completion process is closed.
 No new numbered milestone files.
-Continue implementation work from docs/implementation-backlog-plan.md.
+Future work is post-alpha expansion.
 ```
