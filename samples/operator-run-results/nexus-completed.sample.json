@@ -1,0 +1,28 @@
+{
+  "packet_type": "nexus.operator_run_result",
+  "version": "0.1",
+  "result_id": "operator-result-completed-001",
+  "task_ref": "task.operator-run-mapping",
+  "source": "operator-run",
+  "status": "completed",
+  "artifacts": [
+    {
+      "step_id": "01-operator-result",
+      "kind": "operator_summary",
+      "ref": "operator-run/operator-result-summary.md",
+      "summary": "Operator-run completed summary artifact."
+    },
+    {
+      "step_id": "01-operator-result",
+      "kind": "artifact_manifest",
+      "ref": "operator-run/operator-artifact-manifest.json",
+      "summary": "Operator-run artifact manifest."
+    }
+  ],
+  "notes": [
+    "Operator-run result was reviewed manually.",
+    "No direct external runtime execution was performed by Nexus."
+  ],
+  "diagnostics": [],
+  "created_at": "2026-05-17T00:00:00.000Z"
+}
