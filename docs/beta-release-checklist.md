@@ -6,15 +6,24 @@
 Milestone 2 — Controlled Runtime Beta
 ```
 
+## Closure status
+
+```text
+Beta evidence is documented.
+Beta focused checks are wired into package scripts.
+Beta focused checks run through prebuild.
+Current release gate: npm run build && npm run check:generated.
+```
+
 ## Required Alpha carry-over
 
 ```text
-Capability Runtime Alpha gates remain green
-CapabilityRuntimePanel remains read-only
-strict Capability Runtime validators remain active
-controlled worker runtime mapping remains verified
-operator-run runtime mapping remains verified
-external live execution remains outside default path
+Capability Runtime Alpha gates remain green — done
+CapabilityRuntimePanel remains read-only — done
+strict Capability Runtime validators remain active — done
+controlled worker runtime mapping remains verified — done
+operator-run runtime mapping remains verified — done
+external live execution remains outside default path — done
 ```
 
 ## Beta evidence
@@ -28,7 +37,7 @@ note flow policy exists — done
 note flow verifier exists — done
 multi-skill controlled runtime fixtures exist — done
 decision gate behavior is explicit — done
-package script wiring for new Beta checks — follow-up
+package script wiring for new Beta checks — done, PR #84
 ```
 
 ## Verification commands
@@ -39,24 +48,23 @@ npm run build
 npm run check:generated
 ```
 
-Existing focused checks:
+Focused Beta checks:
 
 ```bash
+npm run verify:artifact-lifecycle
+npm run verify:workspace-boundary
+npm run verify:note-flow
+npm run verify:multi-skill-controlled-runtime
+npm run verify:decision-gate
+```
+
+Carry-over checks:
+
+```bash
+npm run verify:capability-runtime
 npm run verify:controlled-worker
 npm run verify:controlled-worker-runtime
 npm run verify:operator-run-runtime
-npm run verify:artifacts
-npm run verify:memory-context
-```
-
-Manual focused checks until package script wiring is added:
-
-```bash
-npx tsx scripts/verify-artifact-lifecycle.ts
-npx tsx scripts/verify-workspace-boundary.ts
-npx tsx scripts/verify-note-flow.ts
-npx tsx scripts/verify-multi-skill-controlled-runtime.ts
-npx tsx scripts/verify-decision-gate.ts
 ```
 
 ## Artifact lifecycle checklist
@@ -111,12 +119,20 @@ review artifact is produced — done
 runtime loop receives mapped events and artifacts — done
 ```
 
-## Known limitations to include in Beta notes
+## Known limitations for Beta closure
 
 ```text
 controlled execution remains local and deterministic
 external live execution remains outside default path
 persistent host API remains Milestone 3 work
 external runtime mapping remains Milestone 4 work
-package script wiring for the new focused Beta checks remains a follow-up
+workspace boundary policy is deterministic validation, not a full OS sandbox
+artifact lifecycle is policy-level, not full storage lifecycle automation
+```
+
+## Beta closure decision
+
+```text
+Controlled Runtime Beta can be considered closed after CI passes this checklist update.
+Next milestone: Milestone 3 — Embedded Nexus Integration.
 ```
