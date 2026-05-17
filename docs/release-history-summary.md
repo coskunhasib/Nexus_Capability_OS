@@ -34,22 +34,29 @@ PR #108 — reason-code taxonomy and deterministic snapshot verifier
 PR #109 — implementation backlog and status documentation refresh
 ```
 
-## Local alpha productization phase
+## Local execution-kernel productization phase
 
 ```text
-PR #110 — productization completion plan
+PR #110 — productization completion plan for local execution kernel
 PR #111 — deterministic local store snapshots
 PR #112 — controlled local runner execution
 PR #113 — operator action workflow
 PR #114 — local identity and permission boundary
 PR #115 — alpha e2e verifier
-PR #116 — final local-alpha documentation closure
+PR #116 — final local execution-kernel documentation closure
+```
+
+## Nexus layer scope correction
+
+```text
+PR #117 — clarify that PR #111–#116 close only the local capability execution kernel, not the whole Nexus layer; add docs/nexus-layer-roadmap.md
 ```
 
 ## Current direction
 
 ```text
-Local alpha completion process is closed.
-No new numbered milestone files.
-Future work is post-alpha expansion.
+Local execution kernel is closed.
+Nexus layer roadmap remains active.
+No new numbered milestone files for the completed local kernel.
+Future work must be classified under docs/nexus-layer-roadmap.md.
 ```

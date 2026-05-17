@@ -3,19 +3,26 @@
 ## Status
 
 ```text
-Closed for local alpha.
+Closed for local capability execution kernel.
+Nexus layer roadmap remains active.
+```
+
+## Scope correction
+
+```text
+This document did not close the whole Nexus product.
+It closed the local execution-kernel productization slice inside Nexus.
 ```
 
 ## Purpose
 
-This document closes the planning gap between the working vertical slice and a usable local alpha product. It intentionally avoids creating new numbered milestones.
+This document closes the planning gap between the working vertical slice and a usable local capability execution kernel. It intentionally avoids creating new numbered milestones for that kernel.
 
 ## Final baseline
 
 ```text
-Contract and milestone documentation phase is frozen.
-Implementation backlog is active only for post-alpha expansion.
-The local alpha slice is implemented.
+Contract and milestone documentation phase is frozen for the local execution kernel.
+The local alpha execution kernel is implemented.
 The slice has shared contracts, artifact registry guard logic, deterministic local store snapshots, runtime log, state flow, reason codes, snapshot verification, controlled local runner, operator action workflow, local permission checks, alpha e2e verification, demo script, and a minimal React review panel.
 ```
 
@@ -30,9 +37,9 @@ The slice has shared contracts, artifact registry guard logic, deterministic loc
 [x] PR F — final documentation closure, PR #116
 ```
 
-## Local alpha done definition
+## Local execution-kernel done definition
 
-The productization process is complete for local alpha when these pass:
+The productization process is complete for the local execution kernel when these pass:
 
 ```bash
 npm run verify:vs
@@ -67,23 +74,31 @@ controlled local runner execution
 operator action workflow
 permission boundary for local alpha
 end-to-end persistence and runner tests
-documentation finalization
+documentation finalization for the execution kernel
 ```
 
-## Explicitly out of scope after local alpha
+## Still in Nexus layer roadmap
 
 ```text
-cloud marketplace
-multi-tenant billing
-real third-party provider credentials
-production SSO
-distributed coordination
-long-term database scalability
-new numbered milestone documents
+skill marketplace
+marketplace compute provider records
+hidden dispatcher and node scoring
+workflow execution fabric
+company/team usage layer
+internal tenant/workspace isolation
+billing and usage-credit primitives
+trust/reputation gates
+cloud/hybrid run policy
+Nexus data contract and result ingestion
 ```
 
-If any of those becomes necessary, it is post-alpha product expansion, not unfinished local-alpha work.
+## Explicitly out of scope for this execution-kernel closure
+
+```text
+new numbered milestone documents for the local kernel
+claiming whole Nexus is complete
+```
 
 ## Stop condition
 
-After PR #116 is merged and CI is green, this completion process is closed. Further work must be classified as post-alpha product expansion.
+After PR #116 is merged and CI is green, this local execution-kernel process is closed. Further work must be classified under the Nexus layer roadmap, not as unfinished local-kernel work.
