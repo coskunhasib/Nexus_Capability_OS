@@ -6,7 +6,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
-function hasText(value: unknown) {
+function hasText(value: unknown): value is string {
   return typeof value === 'string' && Boolean(value.trim());
 }
 
@@ -52,8 +52,7 @@ function validateFallbackPolicy(value: unknown): Validation {
       errors.push(`invalid outcome ${failure}`);
       return;
     }
-    const outcome = mapping.outcome;
-    if (!allowedOutcomes.includes(outcome)) errors.push(`outcome not allowed ${failure}`);
+    if (!allowedOutcomes.includes(mapping.outcome)) errors.push(`outcome not allowed ${failure}`);
   });
 
   return { valid: errors.length === 0, errors };
