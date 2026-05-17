@@ -1,0 +1,42 @@
+{
+  "packet_type": "nexus.permission_boundary",
+  "version": "0.1",
+  "boundary_ref": "capability-runtime-permissions",
+  "runtime_declared_fields": [
+    "requested_tool_grants",
+    "requested_workspace_boundary",
+    "requested_decision_gate_state",
+    "required_source_refs",
+    "expected_artifact_root"
+  ],
+  "host_decided_fields": [
+    "active_tool_grants",
+    "active_workspace_boundary",
+    "valid_decision_gate_result",
+    "allowed_result_shape",
+    "allowed_artifact_root"
+  ],
+  "permission_lifecycle": [
+    "requested",
+    "reviewed",
+    "active",
+    "expired",
+    "revoked",
+    "blocked"
+  ],
+  "blocked_behaviors": [
+    "implicit_tool_grant",
+    "self_approved_gate",
+    "workspace_boundary_widening",
+    "artifact_root_override",
+    "source_ref_omission",
+    "memory_commit_without_host_policy"
+  ],
+  "tool_grants_explicit": true,
+  "workspace_boundary_explicit": true,
+  "runtime_can_activate_grant": false,
+  "runtime_can_widen_workspace": false,
+  "runtime_can_self_approve_gate": false,
+  "stateful_outputs_require_source_refs": true,
+  "artifact_root_host_approved": true
+}
