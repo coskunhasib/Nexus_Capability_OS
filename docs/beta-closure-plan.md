@@ -3,7 +3,7 @@
 ## Progress
 
 ```text
-Step 1/5 — Beta verifier script wiring — in progress
+Step 1/5 — Beta verifier script wiring — ready for PR
 Step 2/5 — Beta release notes — planned
 Step 3/5 — verification contract Beta update — planned
 Step 4/5 — Beta closure checklist — planned
@@ -28,12 +28,20 @@ verify:multi-skill-controlled-runtime
 verify:decision-gate
 ```
 
+Status:
+
+```text
+package scripts added
+prebuild updated
+predev updated
+waiting for PR CI
+```
+
 Done when:
 
 ```text
-package scripts exist
-prebuild includes the focused Beta checks
 CI is green
+PR is merged
 this plan marks Step 1/5 complete
 ```
 
