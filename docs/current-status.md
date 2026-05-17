@@ -4,22 +4,23 @@
 
 ```text
 Local capability execution kernel complete.
-Nexus internal layer implementation remains active.
+This repository is in Nexus handoff mode.
+The main Nexus product is developed elsewhere.
 ```
 
 ## Frozen phase
 
 ```text
-Architecture, contract, fixture, milestone documentation, and local-alpha capability-kernel productization phases are frozen.
+Architecture, contract, fixture, milestone documentation, local-alpha capability-kernel productization, and kernel implementation phases are frozen.
 ```
 
 ## Scope correction
 
 ```text
 PR #111–#116 did not complete the whole Nexus product.
-They completed the local capability execution kernel inside Nexus.
-The remaining items are not outside Nexus; they are Nexus internal product layers.
-Nexus itself is broader: skill marketplace, distributed compute, hidden dispatcher, workflow execution fabric, organization/team use layer, tenant/workspace isolation, billing/credits, trust/reputation, and marketplace compute records.
+They completed the local capability execution kernel that Nexus will integrate.
+The remaining Nexus product layers are not implemented in this repository by default.
+They belong to the main Nexus product codebase unless explicitly pulled into this package as kernel-facing contracts.
 ```
 
 ## Current truth
@@ -28,7 +29,8 @@ Nexus itself is broader: skill marketplace, distributed compute, hidden dispatch
 The working vertical slice is implemented and productized for local alpha.
 It is connected to shared contracts, artifact registry guard logic, deterministic local store snapshots, runtime log, state flow, reason codes, controlled local runner, operator action workflow, local permission checks, alpha e2e verifier, demo script, and a minimal React review panel.
 
-This is the execution-kernel foundation for Nexus, not the full Nexus layer.
+This repository provides the execution-kernel foundation for Nexus.
+Nexus marketplace, dispatcher, compute, organization, billing, trust and cloud/hybrid layers are developed in the main Nexus product.
 ```
 
 ## Completed implementation packages
@@ -48,6 +50,7 @@ PR #115 — alpha e2e verifier
 PR #116 — final local execution-kernel documentation closure
 PR #117 — scope correction for Nexus layer roadmap
 PR #118 — terminology correction: remaining work is Nexus internal work
+PR #119 — Nexus integration handoff guide
 ```
 
 ## Canonical files
@@ -75,11 +78,11 @@ scripts/verify-permissions-local.ts
 scripts/verify-alpha-e2e.ts
 scripts/run-vslice-demo.ts
 scripts/verify-all.mjs
+docs/nexus-integration-guide.md
 docs/productization-completion-plan.md
 docs/implementation-backlog-plan.md
 docs/working-system-definition.md
 docs/release-history-summary.md
-docs/nexus-layer-roadmap.md
 ```
 
 ## Active verification
@@ -97,25 +100,23 @@ npm run verify:all
 npm run build
 ```
 
-## Nexus internal work still active
+## Main Nexus product integration work
 
 ```text
-skill marketplace
-marketplace compute provider records
-hidden dispatcher / node selection
-workflow execution fabric
-company/team usage layer
-internal tenant/workspace isolation
-billing, usage credits, escrow and payout primitives
-trust score, reputation and provider quality gates
-cloud/hybrid run policy
-Nexus data contract ingestion and result envelope
+Nexus data contract and result envelope mapping
+Nexus storage bridge
+Nexus review bridge
+Nexus dispatcher bridge
+Nexus skill marketplace bridge
+Nexus compute provider bridge
+Nexus organization/team bridge
+Nexus billing and trust layers
 ```
 
 ## Rule
 
 ```text
-Do not call Nexus complete just because the local capability kernel is complete.
-Do not call the remaining layers post-alpha or out-of-scope.
-They are Nexus internal layers and must be implemented under docs/nexus-layer-roadmap.md.
+Do not continue implementing the whole Nexus product in this repository by default.
+Use this repository as the kernel package and handoff reference.
+Main Nexus layers should integrate this kernel through docs/nexus-integration-guide.md.
 ```
