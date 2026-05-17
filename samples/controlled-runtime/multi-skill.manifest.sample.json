@@ -1,0 +1,24 @@
+{
+  "packet_type": "nexus.controlled_worker_manifest",
+  "version": "0.1",
+  "manifest_id": "multi-skill-controlled-runtime",
+  "actions": [
+    {
+      "action_id": "write-quality-evidence",
+      "action_kind": "write_step_artifact",
+      "step_id": "01-quality-evidence",
+      "output_kind": "quality_evidence_artifact"
+    },
+    {
+      "action_id": "write-review-evidence",
+      "action_kind": "write_step_artifact",
+      "step_id": "02-review-evidence",
+      "output_kind": "review_evidence_artifact"
+    },
+    {
+      "action_id": "write-multi-skill-summary",
+      "action_kind": "write_manifest_summary",
+      "output_kind": "multi_skill_manifest_summary"
+    }
+  ]
+}
