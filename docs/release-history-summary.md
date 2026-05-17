@@ -46,17 +46,19 @@ PR #115 — alpha e2e verifier
 PR #116 — final local execution-kernel documentation closure
 ```
 
-## Nexus layer scope correction
+## Scope correction and handoff phase
 
 ```text
 PR #117 — clarify that PR #111–#116 close only the local capability execution kernel, not the whole Nexus layer; add docs/nexus-layer-roadmap.md
+PR #118 — clarify that remaining work belongs to Nexus internal layers, not external post-alpha scope
+PR #119 — add Nexus integration handoff guide and close this repository as the capability execution kernel package
 ```
 
 ## Current direction
 
 ```text
-Local execution kernel is closed.
-Nexus layer roadmap remains active.
-No new numbered milestone files for the completed local kernel.
-Future work must be classified under docs/nexus-layer-roadmap.md.
+This repository is the completed local capability execution kernel package.
+The main Nexus product is developed elsewhere.
+Nexus integration should follow docs/nexus-integration-guide.md.
+Do not continue implementing marketplace, dispatcher, compute, billing, company/team, or cloud/hybrid layers in this repository by default.
 ```
