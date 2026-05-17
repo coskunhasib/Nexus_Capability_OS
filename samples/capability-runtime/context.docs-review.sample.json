@@ -1,0 +1,15 @@
+{
+  "packet_type": "nexus.active_context_bundle",
+  "version": "0.1",
+  "context_id": "context.docs-review",
+  "task_ref": "task.docs-review-dry-run",
+  "selected_note_refs": ["note.runtime-philosophy", "note.context-distillation"],
+  "current_constraints": ["Treat Nexus as host system", "Use notes-first memory", "Flag unknowns instead of inventing fields"],
+  "open_questions": ["Which runtime contract fields should become schemas first?"],
+  "excluded_refs": [
+    {
+      "ref": "raw-transcript.full-history",
+      "reason": "Raw trace is evidence, not default working context."
+    }
+  ]
+}
