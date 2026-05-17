@@ -22,6 +22,25 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 43. Local dry-run runtime loop prototype — implemented
 44. Capability Runtime UI visibility plan — documented
 45. External runtime mapping decision — documented
+46. CapabilityRuntimePanel read-only UI — next
+47. Stricter JSON schema validation — planned
+48. Local controlled worker mapping into runtime loop — planned
+49. Operator-run result mapping into runtime loop — planned
+50. External runtime mapping re-evaluation — planned
+Post-50. Switch to milestone/release planning — planned
+```
+
+## Stop rule
+
+```text
+Stop extending the numbered roadmap after item 50.
+After item 50, switch to milestone/release mode.
+```
+
+Detailed post-50 plan:
+
+```text
+docs/post-50-milestone-plan.md
 ```
 
 ## Priority buckets
@@ -168,6 +187,59 @@ Outcome:
 
 ```text
 Dry-run RuntimeLoopCycle is generated from selected skill, owning agent, bounded sub-agent, explicit tool grant, active context notes, evaluation observation and memory note refs.
+```
+
+### 46. CapabilityRuntimePanel read-only UI
+
+Status: next.
+
+Definition of done:
+
+```text
+Read-only panel shows skill decision, agent ownership, sub-agent delegation, tool grant, active context notes, evaluation observation and runtime loop cycle.
+No mutation controls.
+No external runtime execution.
+```
+
+### 47. Stricter JSON schema validation
+
+Status: planned.
+
+Definition of done:
+
+```text
+Fixture validation relies on stricter schema checks in addition to TypeScript validators.
+Invalid fixtures fail deterministic verification.
+```
+
+### 48. Local controlled worker mapping into runtime loop
+
+Status: planned.
+
+Definition of done:
+
+```text
+Controlled worker outputs can map into RuntimeLoopCycle events, artifacts and observations without external runtime execution.
+```
+
+### 49. Operator-run result mapping into runtime loop
+
+Status: planned.
+
+Definition of done:
+
+```text
+Operator-run result files map into RuntimeLoopCycle events, artifacts, observations and memory note candidates.
+```
+
+### 50. External runtime mapping re-evaluation
+
+Status: planned.
+
+Definition of done:
+
+```text
+Re-evaluate external runtime mapping only after local loop, schema validation, controlled worker mapping, operator-run mapping and UI visibility are proven.
 ```
 
 ## P1 items
@@ -321,6 +393,23 @@ Completed sequence:
 45. Decide whether external runtime mapping is needed after local loop validation — documented
 ```
 
+## Post-50 milestone mode
+
+Detailed plan:
+
+```text
+docs/post-50-milestone-plan.md
+```
+
+Planned milestones:
+
+```text
+Milestone 1 — Capability Runtime Alpha
+Milestone 2 — Controlled Runtime Beta
+Milestone 3 — Embedded Nexus Integration
+Milestone 4 — External Runtime Mapping
+```
+
 ## Guardrails for the next phase
 
 ```text
@@ -332,6 +421,7 @@ Use sub-agents only for real delegation, isolation or parallel work.
 Keep runtime output behind response-shape validation.
 Keep network development exposure opt-in.
 Keep external runtime mapping deferred until local loop validation and UI visibility are proven.
+Stop extending numbered roadmap after item 50.
 ```
 
 ## Recommended next phase
@@ -342,6 +432,7 @@ Keep external runtime mapping deferred until local loop validation and UI visibi
 48. Add local controlled worker mapping into runtime loop.
 49. Add operator-run result mapping into runtime loop.
 50. Revisit external runtime mapping after local validation.
+Then switch to Milestone 1 — Capability Runtime Alpha.
 ```
 
 ## Completion rule
