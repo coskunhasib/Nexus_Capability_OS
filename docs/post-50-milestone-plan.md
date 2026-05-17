@@ -29,6 +29,19 @@ Goal:
 Prove the embedded Capability Runtime loop end to end in local/read-only or controlled mode.
 ```
 
+Scope:
+
+```text
+read-only CapabilityRuntimePanel
+strict fixture/schema validation
+local dry-run runtime loop
+controlled worker mapping into runtime loop
+operator-run result mapping into runtime loop
+evaluation observation generation
+memory note candidate generation
+alpha release notes
+```
+
 Alpha is ready when:
 
 ```text
@@ -52,6 +65,7 @@ no unbounded workspace writes
 no full-context dumping
 no autonomous sub-agent swarm
 no memory update without source refs
+no persistent Nexus host API yet
 ```
 
 Expected Alpha outputs:
@@ -65,6 +79,16 @@ updated verification contract
 alpha release notes
 ```
 
+Alpha release gates:
+
+```text
+npm run build passes
+npm run check:generated passes
+npm run verify:capability-runtime passes
+UI shows all runtime decisions read-only
+external runtime mapping remains deferred
+```
+
 ## Milestone 2 — Controlled Runtime Beta
 
 Goal:
@@ -73,25 +97,61 @@ Goal:
 Move from dry-run visibility to controlled local execution.
 ```
 
-Beta should add:
+Scope:
 
 ```text
-more controlled worker action types
-artifact lifecycle policy
-workspace boundary enforcement
-approval checkpoints
-runtime event persistence
-memory note create/update/retire verifier
-multi-skill trial scenarios
+controlled worker actions become the first real execution substrate
+runtime loop consumes controlled worker outputs
+artifact lifecycle becomes explicit
+workspace boundaries are enforced
+memory notes can be created, updated, merged and retired in fixtures/verifiers
+multi-skill trials are added
+approval checkpoints are visible
 ```
 
-Beta should still avoid:
+Beta is ready when:
 
 ```text
-direct external runtime execution by default
-implicit network write access
-raw logs as memory
-unbounded file mutation
+controlled worker can produce runtime-loop-compatible events
+artifact refs are created with lifecycle status
+workspace read/write boundaries are validated
+approval-required actions fail closed without approval
+memory note create/update/merge/retire flow is verified
+at least two skills can run through controlled local loop fixtures
+runtime events persist or replay deterministically in test fixtures
+```
+
+Beta non-goals:
+
+```text
+no external runtime execution by default
+no implicit network write access
+no raw logs stored as memory
+no unbounded file mutation
+no hidden tool permissions
+no production Nexus deployment requirement
+```
+
+Expected Beta outputs:
+
+```text
+controlled-worker-runtime-mapping implementation
+artifact lifecycle policy and verifier
+workspace boundary verifier
+memory note lifecycle verifier
+multi-skill controlled runtime fixtures
+beta release notes
+```
+
+Beta release gates:
+
+```text
+all Alpha gates remain green
+controlled worker mapping verifier passes
+artifact lifecycle verifier passes
+memory lifecycle verifier passes
+workspace boundary verifier passes
+security policy updated for controlled local execution
 ```
 
 ## Milestone 3 — Embedded Nexus Integration
@@ -102,7 +162,7 @@ Goal:
 Prepare the Capability Runtime to live as an embedded Nexus subsystem.
 ```
 
-Should define:
+Scope:
 
 ```text
 Nexus host API boundary
@@ -112,6 +172,51 @@ permission boundary
 UI mount point
 configuration surface
 migration path from current repo scaffold
+embedded mode initialization
+```
+
+Embedded Nexus Integration is ready when:
+
+```text
+host API inputs and outputs are documented
+Capability Runtime package boundary is explicit
+storage boundary separates raw trace, notes, artifacts and config
+permission boundary is mapped to Nexus host controls
+UI mount point is documented
+configuration surface is documented
+current scaffold-to-embedded migration path is documented
+integration fixtures prove host-to-runtime and runtime-to-host handoff
+```
+
+Embedded integration non-goals:
+
+```text
+no external runtime execution requirement
+no cloud/multi-tenant productization requirement
+no marketplace requirement
+no billing/workspace expansion requirement
+no hidden dependency on a specific third-party agent runtime
+```
+
+Expected Embedded outputs:
+
+```text
+docs/nexus-embedded-integration-plan.md
+schemas/nexus-host-runtime-boundary.schema.json optional
+samples/nexus-host-integration/*.json
+host boundary verifier
+embedded integration release notes
+```
+
+Embedded release gates:
+
+```text
+all Beta gates remain green
+host boundary verifier passes
+permission boundary is reviewed
+storage boundary is documented
+migration checklist exists
+known limitations are explicit
 ```
 
 ## Milestone 4 — External Runtime Mapping
@@ -122,7 +227,7 @@ Goal:
 Map external runtimes into the Capability Runtime contract without letting them define the core architecture.
 ```
 
-Can include:
+Scope:
 
 ```text
 custom code-agent mapping
@@ -130,21 +235,67 @@ operator-run result mapping
 remote runtime service mapping
 artifact import/export mapping
 external observation mapping
+runtime failure mapping
 ```
 
-Required before this milestone starts:
+External Runtime Mapping is ready when:
 
 ```text
-Alpha complete
-Beta controlled runtime stable
-permission model verified
-memory distillation verified
-UI visibility available
+external output maps into Capability Runtime contracts
+external artifacts map into artifact lifecycle policy
+external logs are summarized before memory use
+external failures become evaluation observations
+tool/permission boundaries stay host-owned
+operator approval gates exist for risky actions
+at least one external mapping works through fixtures before live execution
 ```
 
-## Release gates
+External mapping non-goals:
 
-Each milestone should have:
+```text
+external runtimes do not define the core contract
+no direct shell/system control without explicit permission model
+no raw external logs as memory
+no automatic network write access
+no autonomous external worker swarm
+```
+
+Expected External outputs:
+
+```text
+external runtime mapping adapter interface
+custom agent mapping fixture
+operator-run mapping fixture
+external artifact import policy
+external failure/observation mapping verifier
+external mapping release notes
+```
+
+External release gates:
+
+```text
+all Embedded gates remain green
+external mapping verifier passes
+permission review passes
+artifact import/export verifier passes
+memory distillation still blocks raw log ingestion
+external runtime can be disabled without breaking local runtime
+```
+
+## Milestone dependency order
+
+```text
+Milestone 1 — Capability Runtime Alpha
+→ Milestone 2 — Controlled Runtime Beta
+→ Milestone 3 — Embedded Nexus Integration
+→ Milestone 4 — External Runtime Mapping
+```
+
+External Runtime Mapping should not start before Alpha and Beta prove the local embedded runtime model.
+
+## Release gates for every milestone
+
+Each milestone must include:
 
 ```text
 scope
@@ -153,6 +304,7 @@ verification commands
 known limitations
 security notes
 release notes
+rollback or disable path
 ```
 
 ## Recommended next after item 50
