@@ -3,14 +3,22 @@
 ## Active phase
 
 ```text
-Local alpha complete.
-Post-alpha expansion only.
+Local capability execution kernel complete.
+Nexus layer roadmap remains active.
 ```
 
 ## Frozen phase
 
 ```text
-Architecture, contract, fixture, milestone documentation, and local-alpha productization phases are frozen.
+Architecture, contract, fixture, milestone documentation, and local-alpha capability-kernel productization phases are frozen.
+```
+
+## Scope correction
+
+```text
+PR #111–#116 did not complete the whole Nexus product.
+They completed the local capability execution kernel inside Nexus.
+Nexus itself is broader: skill marketplace, distributed compute, hidden dispatcher, workflow execution fabric, organization/team use layer, tenant/workspace isolation, billing/credits, trust/reputation, and marketplace compute records.
 ```
 
 ## Current truth
@@ -18,6 +26,8 @@ Architecture, contract, fixture, milestone documentation, and local-alpha produc
 ```text
 The working vertical slice is implemented and productized for local alpha.
 It is connected to shared contracts, artifact registry guard logic, deterministic local store snapshots, runtime log, state flow, reason codes, controlled local runner, operator action workflow, local permission checks, alpha e2e verifier, demo script, and a minimal React review panel.
+
+This is the execution-kernel foundation for Nexus, not the full Nexus layer.
 ```
 
 ## Completed implementation packages
@@ -34,7 +44,7 @@ PR #112 — controlled local runner execution
 PR #113 — operator action workflow
 PR #114 — local identity and permission boundary
 PR #115 — alpha e2e verifier
-PR #116 — final documentation closure
+PR #116 — final local execution-kernel documentation closure
 ```
 
 ## Canonical files
@@ -66,6 +76,7 @@ docs/productization-completion-plan.md
 docs/implementation-backlog-plan.md
 docs/working-system-definition.md
 docs/release-history-summary.md
+docs/nexus-layer-roadmap.md
 ```
 
 ## Active verification
@@ -83,20 +94,24 @@ npm run verify:all
 npm run build
 ```
 
-## Post-alpha expansion only
+## Nexus layer work still active
 
 ```text
-cloud marketplace
-multi-tenant billing
-real third-party provider credentials
-production SSO
-distributed coordination
-long-term database scalability
+skill marketplace
+marketplace compute provider records
+hidden dispatcher / node selection
+workflow execution fabric
+company/team usage layer
+internal tenant/workspace isolation
+billing, usage credits, escrow and payout primitives
+trust score, reputation and provider quality gates
+cloud/hybrid run policy
+Nexus data contract ingestion and result envelope
 ```
 
 ## Rule
 
 ```text
-Do not create new numbered milestones for the completed local-alpha work.
-New work must be classified as post-alpha expansion.
+Do not call Nexus complete just because the local capability kernel is complete.
+New work must be classified by Nexus layer, not collapsed into vague post-alpha wording.
 ```
