@@ -1,0 +1,23 @@
+{
+  "packet_type": "nexus.operator_action_log",
+  "version": "0.1",
+  "log_ref": "operator-action-log-001",
+  "actions": [
+    {
+      "action_id": "operator-action-001",
+      "operator_ref": "operator.local",
+      "action_type": "request_changes",
+      "run_ref": "provider-run-001",
+      "result_ref": "provider-ingest-001",
+      "decision_ref": "review-decision-001",
+      "source_refs": [
+        "docs/operator-action-log.md"
+      ],
+      "trace_refs": [
+        "trace/provider-run-001"
+      ],
+      "recorded_at": "2026-05-17T00:00:00Z"
+    }
+  ],
+  "append_only": true
+}
