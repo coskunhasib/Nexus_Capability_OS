@@ -3,22 +3,22 @@
 ## Current phase
 
 ```text
-Milestone 4 — External Runtime Mapping — ready for closure PR
+Milestone 4 — External Runtime Mapping — closed
 ```
 
 ## Progress
 
 ```text
 Step 1/10 — external runtime mapping boundary document, fixture and verifier — complete, PR #96
-Step 2/10 — provider adapter manifest document, fixture and verifier — ready for PR
-Step 3/10 — external call packet document, fixture and verifier — ready for PR
-Step 4/10 — external result normalization document, fixture and verifier — ready for PR
-Step 5/10 — failure and fallback policy document, fixture and verifier — ready for PR
-Step 6/10 — provider capability matrix document and sample — ready for PR
-Step 7/10 — security and permission hardening document — ready for PR
-Step 8/10 — observability and evaluation checklist — ready for PR
-Step 9/10 — migration checklist and release notes — ready for PR
-Step 10/10 — Milestone 4 closure checklist — ready for PR
+Step 2/10 — provider adapter manifest document, fixture and verifier — complete, PR #97
+Step 3/10 — external call packet document, fixture and verifier — complete, PR #97
+Step 4/10 — external result normalization document, fixture and verifier — complete, PR #97
+Step 5/10 — failure and fallback policy document, fixture and verifier — complete, PR #97
+Step 6/10 — provider capability matrix document and sample — complete, PR #97
+Step 7/10 — security and permission hardening document — complete, PR #97
+Step 8/10 — observability and evaluation checklist — complete, PR #97
+Step 9/10 — migration checklist and release notes — complete, PR #97
+Step 10/10 — Milestone 4 closure checklist — complete, PR #97
 ```
 
 ## Step 1/10
@@ -60,7 +60,8 @@ scripts/verify-provider-adapter-manifest.ts added
 verify:provider-manifest script added
 prebuild updated
 predev updated
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 3/10
@@ -80,7 +81,8 @@ scripts/verify-external-call-packet.ts added
 verify:external-call script added
 prebuild updated
 predev updated
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 4/10
@@ -100,7 +102,8 @@ scripts/verify-external-result-normalization.ts added
 verify:external-result script added
 prebuild updated
 predev updated
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 5/10
@@ -120,7 +123,8 @@ scripts/verify-external-fallback-policy.ts added
 verify:external-fallback script added
 prebuild updated
 predev updated
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 6/10
@@ -136,7 +140,8 @@ Status:
 ```text
 docs/provider-capability-matrix.md added
 samples/nexus-host-integration/provider-capability-matrix.sample.json added
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 7/10
@@ -151,7 +156,8 @@ Status:
 
 ```text
 docs/external-runtime-safety-and-permissions.md added
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 8/10
@@ -166,7 +172,8 @@ Status:
 
 ```text
 docs/external-runtime-observability-checklist.md added
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 9/10
@@ -181,7 +188,8 @@ Status:
 
 ```text
 docs/milestone-4-migration-and-release.md added
-waiting for PR CI
+CI green
+merged in PR #97
 ```
 
 ## Step 10/10
@@ -196,14 +204,13 @@ Status:
 
 ```text
 docs/milestone-4-closure-checklist.md added
-waiting for PR CI
+CI green
+merged in PR #97
+Milestone 4 closed
 ```
 
-Done when:
+## Next
 
 ```text
-CI is green
-PR is merged
-this plan marks Steps 2/10 through 10/10 complete
-Milestone 4 is closed
+Milestone 5 — Runtime Provider Execution Slice
 ```
