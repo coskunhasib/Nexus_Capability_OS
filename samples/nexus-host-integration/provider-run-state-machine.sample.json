@@ -1,0 +1,56 @@
+{
+  "packet_type": "nexus.provider_run_state_machine",
+  "version": "0.1",
+  "machine_ref": "provider-run-state-machine-v1",
+  "states": [
+    "prepared",
+    "started",
+    "provider_running",
+    "normalizing_result",
+    "manual_review_required",
+    "fallback_ready",
+    "completed",
+    "blocked"
+  ],
+  "terminal_states": [
+    "completed",
+    "blocked"
+  ],
+  "transitions": [
+    {
+      "from": "prepared",
+      "to": "started"
+    },
+    {
+      "from": "started",
+      "to": "provider_running"
+    },
+    {
+      "from": "provider_running",
+      "to": "normalizing_result"
+    },
+    {
+      "from": "normalizing_result",
+      "to": "manual_review_required"
+    },
+    {
+      "from": "manual_review_required",
+      "to": "completed"
+    },
+    {
+      "from": "manual_review_required",
+      "to": "fallback_ready"
+    },
+    {
+      "from": "fallback_ready",
+      "to": "completed"
+    },
+    {
+      "from": "fallback_ready",
+      "to": "blocked"
+    }
+  ],
+  "blocked_requires_reason": true,
+  "manual_review_required": true,
+  "fallback_path_required": true
+}
