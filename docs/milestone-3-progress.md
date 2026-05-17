@@ -9,7 +9,7 @@ Milestone 3 — Embedded Nexus Integration
 ## Progress
 
 ```text
-Step 1/10 — Nexus host boundary document, fixtures and verifier — in progress
+Step 1/10 — Nexus host boundary document, fixtures and verifier — ready for PR
 Step 2/10 — package script wiring for host boundary verifier — planned
 Step 3/10 — embedded package boundary document and verifier — planned
 Step 4/10 — storage boundary document and verifier — planned
@@ -38,13 +38,20 @@ samples/nexus-host-integration/runtime-response.sample.json
 scripts/verify-nexus-host-boundary.ts
 ```
 
+Status:
+
+```text
+host boundary document added
+host request fixture added
+runtime response fixture added
+host boundary verifier added
+waiting for PR CI
+```
+
 Done when:
 
 ```text
-host boundary document exists
-host request fixture exists
-runtime response fixture exists
-host boundary verifier exists
 CI is green
 PR is merged
+this plan marks Step 1/10 complete
 ```
