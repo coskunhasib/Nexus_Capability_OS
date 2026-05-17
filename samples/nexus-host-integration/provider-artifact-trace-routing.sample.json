@@ -1,0 +1,22 @@
+{
+  "packet_type": "nexus.provider_artifact_trace_routing",
+  "version": "0.1",
+  "routing_ref": "provider-routing-001",
+  "run_ref": "provider-run-001",
+  "artifact_root": "artifacts/provider-run-candidates/",
+  "artifact_refs": [
+    {
+      "kind": "candidate_patch",
+      "ref": "artifacts/provider-run-candidates/candidate.patch",
+      "root": "artifacts/provider-run-candidates/",
+      "summary": "Candidate artifact pending host review."
+    }
+  ],
+  "trace_refs": [
+    "trace/provider-run-001",
+    "trace/provider-ingest-001",
+    "fallback/local-controlled-runtime"
+  ],
+  "review_required": true,
+  "accepted_by_host": false
+}

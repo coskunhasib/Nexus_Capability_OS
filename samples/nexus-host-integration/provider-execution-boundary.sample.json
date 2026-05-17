@@ -1,0 +1,27 @@
+{
+  "packet_type": "nexus.provider_execution_boundary",
+  "version": "0.1",
+  "boundary_ref": "runtime-provider-execution-slice",
+  "provider_execution_enabled_by_default": false,
+  "mock_provider_only": true,
+  "local_controlled_fallback_required": true,
+  "normalized_result_required": true,
+  "host_owned_decisions": [
+    "execution_activation",
+    "provider_selection",
+    "active_grants",
+    "workspace_boundary",
+    "artifact_root",
+    "fallback_policy",
+    "manual_review_policy",
+    "accepted_result_shape"
+  ],
+  "runtime_owned_surfaces": [
+    "run_request_shape",
+    "state_machine_shape",
+    "normalized_ingest_shape",
+    "fallback_result_shape",
+    "fixture_set",
+    "verification_helpers"
+  ]
+}

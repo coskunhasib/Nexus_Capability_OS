@@ -1,0 +1,18 @@
+{
+  "packet_type": "nexus.provider_fallback_execution",
+  "version": "0.1",
+  "fallback_run_id": "provider-fallback-001",
+  "source_run_ref": "provider-run-001",
+  "fallback_ref": "local-controlled-runtime",
+  "reason": "Provider result remained candidate-only and requires local controlled fallback before acceptance.",
+  "source_refs": [
+    "docs/provider-fallback-execution.md",
+    "docs/external-fallback-policy.md"
+  ],
+  "trace_refs": [
+    "trace/provider-run-001",
+    "fallback/local-controlled-runtime"
+  ],
+  "result_status": "fallback_used",
+  "manual_review_required": true
+}
