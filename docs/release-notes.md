@@ -1,14 +1,20 @@
 # Release Notes / Implementation Summary
 
-This document summarizes the completed 15/15 adapter/runtime roadmap and the immediate post-roadmap hardening phase.
+This document summarizes the current Nexus Capability OS implementation state.
 
 ## Release status
 
 ```text
-Roadmap: adapter/runtime roadmap
-Status: 15/15 completed
-Current phase: post-roadmap hardening
+Adapter/runtime roadmap: 15/15 completed
+Post-roadmap numbered block: 16-50 completed
+Current phase: Milestone 1 — Capability Runtime Alpha
 Primary verification command: npm run build && npm run check:generated
+```
+
+Detailed Alpha notes:
+
+```text
+docs/capability-runtime-alpha-release-notes.md
 ```
 
 ## What was built
@@ -56,8 +62,25 @@ Memory/context packet hardening
 Adapter trials
 Local HTTP worker skeleton
 Minimum real worker vertical slice
+Controlled worker v2
 OpenHands adapter envelope
 Code Agent adapter envelope
+```
+
+### Capability Runtime Alpha layer
+
+```text
+Capability Runtime contract types
+strict Capability Runtime validators
+Capability Runtime schema index
+Capability Runtime fixture set
+read-only CapabilityRuntimePanel
+local dry-run RuntimeLoopCycle builder
+controlled-worker-to-runtime mapping
+operator-result-to-runtime mapping
+Capability Runtime verification scripts
+Alpha milestone plan
+Alpha release checklist
 ```
 
 ## Verification chain
@@ -76,7 +99,16 @@ npm run build
 npm run check:generated
 ```
 
-Focused checks include:
+Focused Alpha checks:
+
+```bash
+npm run verify:capability-runtime
+npm run verify:controlled-worker
+npm run verify:controlled-worker-runtime
+npm run verify:operator-run-runtime
+```
+
+Focused general checks include:
 
 ```bash
 npm run validate:packets
@@ -102,18 +134,20 @@ npm run check:generated
 ## Current safe boundaries
 
 ```text
+CapabilityRuntimePanel is read-only.
+Capability Runtime outputs are local, dry-run or controlled.
+Controlled worker actions are allowlisted and bounded.
+Operator-run result files are structured inputs, not raw external logs.
+Memory note outputs are candidates with source refs.
 External agent adapters are envelope/normalization layers only.
-They do not launch external agents directly.
-They do not execute shell commands.
-They do not mutate repositories.
-They do not send secrets in work requests.
+Live external runtime execution remains outside Alpha scope.
 ```
 
 ```text
 The minimum real worker slice writes bounded artifacts.
 It uses an allowlisted action.
 It emits runtime bridge events from action results.
-It does not perform arbitrary execution.
+It does not perform broad workspace execution.
 ```
 
 ```text
@@ -124,36 +158,44 @@ They do not persist raw runtime or callback payloads.
 ## Known limitations
 
 ```text
+CapabilityRuntimePanel is fixture-backed.
+RuntimeLoopCycle is local/dry-run/controlled, not a persistent host subsystem.
+Memory note candidates are generated but not merged into a persistent store.
+Artifact lifecycle is still a Beta-grade work area.
+Workspace boundary verification is still a Beta-grade work area.
 No persistent local worker job queue yet.
-No direct external runtime invocation yet.
-No repository mutation worker action yet.
-No operator approval UI for real-runtime handoff yet.
-Runtime Adapter Panel job-state export/display still needs polish.
+Live external runtime execution remains deferred.
 Default dev command is local-only.
 ```
 
-## Recommended next steps
+## Recommended next milestone
 
 ```text
-19. Runtime security policy
-20. Dev command cleanup
-21. Local controlled worker v2
-22. OpenHands real integration plan
-23. Code Agent real integration plan
-24. UI/runtime adapter polish
+Milestone 2 — Controlled Runtime Beta
+```
+
+Recommended Beta focus:
+
+```text
+artifact lifecycle policy and verifier
+workspace boundary verifier
+memory note lifecycle verifier
+multi-skill controlled runtime fixtures
+approval checkpoint visibility
+security policy update for controlled local execution
 ```
 
 ## Integration recommendation
 
-Do not wire a real external runtime first.
+Do not make a live external runtime the next step.
 
 The safer sequence is:
 
 ```text
-1. Harden runtime security policy.
-2. Add local controlled worker v2.
-3. Prove manifest-driven bounded actions.
-4. Decide external runtime wiring strategy.
-5. Add operator approval points.
-6. Then wire external runtime invocation.
+1. Finish Alpha release validation.
+2. Move to Controlled Runtime Beta.
+3. Make artifact lifecycle explicit.
+4. Make workspace boundaries verifiable.
+5. Make memory note lifecycle verifiable.
+6. Then revisit external runtime mapping in its dedicated milestone.
 ```
