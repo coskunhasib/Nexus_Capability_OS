@@ -5,7 +5,7 @@ const allowed: Record<SliceState, SliceState[]> = {
   prepared: ['running'],
   running: ['normalized', 'fallback_used', 'blocked'],
   normalized: ['reviewed'],
-  reviewed: ['disposed', 'changes_requested', 'rejected', 'fallback_used'],
+  reviewed: ['disposed', 'changes_requested', 'rejected', 'fallback_used', 'blocked'],
   disposed: ['accepted', 'blocked', 'fallback_used', 'changes_requested', 'rejected'],
   accepted: [],
   blocked: [],
