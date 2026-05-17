@@ -20,33 +20,40 @@ function isObjectArray(value: unknown): value is Record<string, unknown>[] {
 
 function validateFallbackPolicy(value: unknown): Validation {
   const errors: string[] = [];
-  if (!isRecord(value)) return { valid: false, errors: ['fallback policy must be object'] };
-  if (value.packet_type !== 'nexus.external_fallback_policy') errors.push('packet_type must be nexus.external_fallback_policy');
-  if (value.version !== '0.1') errors.push('version must be 0.1');
-  if (!hasText(value.policy_ref)) errors.push('policy_ref must be non-empty string');
-  if (value.local_controlled_runtime_available !== true) errors.push('local_controlled_runtime_available must be true');
-  if (value.retry_limit !== 1) errors.push('retry_limit must be 1');
-  if (value.blocked_results_require_reason !== true) errors.push('blocked_results_require_reason must be true');
-  if (value.partial_results_require_reason !== true) errors.push('partial_results_require_reason must be true');
-  if (value.manual_review_host_owned !== true) errors.push('manual_review_host_owned must be true');
-  if (!isStringArray(value.allowed_outcomes)) errors.push('allowed_outcomes must be string array');
-  if (!isObjectArray(value.failure_mappings)) errors.push('failure_mappings must be object array');
+  if (!isRecord(value)) return { valid: false, errors: ['policy must be object'] };
+  if (value.packet_type !== 'nexus.external_fallback_policy') errors.push('packet_type invalid');
+  if (value.version !== '0.1') errors.push('version invalid');
+  if (!hasText(value.policy_ref)) errors.push('policy_ref invalid');
+  if (value.local_controlled_runtime_available !== true) errors.push('local path required');
+  if (value.retry_limit !== 1) errors.push('retry_limit invalid');
+  if (value.blocked_results_require_reason !== true) errors.push('blocked reason required');
+  if (value.partial_results_require_reason !== true) errors.push('partial reason required');
+  if (value.manual_review_host_owned !== true) errors.push('manual review must be host owned');
 
   const requiredFailures = ['provider_unavailable', 'provider_timeout', 'provider_permission_mismatch', 'provider_schema_mismatch', 'provider_artifact_violation', 'provider_result_incomplete'];
+  const requiredOutcomes = ['fallback_to_local', 'return_partial', 'return_blocked', 'retry_once', 'manual_review_required'];
   const allowedOutcomes = isStringArray(value.allowed_outcomes) ? value.allowed_outcomes : [];
   const mappings = isObjectArray(value.failure_mappings) ? value.failure_mappings : [];
 
-  ['fallback_to_local', 'return_partial', 'return_blocked', 'retry_once', 'manual_review_required'].forEach((outcome) => {
-    if (!allowedOutcomes.includes(outcome)) errors.push(`allowed_outcomes must include ${outcome}`);
+  if (!isStringArray(value.allowed_outcomes)) errors.push('allowed_outcomes invalid');
+  if (!isObjectArray(value.failure_mappings)) errors.push('failure_mappings invalid');
+
+  requiredOutcomes.forEach((outcome) => {
+    if (!allowedOutcomes.includes(outcome)) errors.push(`missing outcome ${outcome}`);
   });
+
   requiredFailures.forEach((failure) => {
     const mapping = mappings.find((item) => item.failure_class === failure);
     if (!mapping) {
-      errors.push(`failure_mappings must include ${failure}`);
+      errors.push(`missing mapping ${failure}`);
       return;
     }
-    if (!hasText(mapping.outcome)) errors.push(`${failure} outcome must be non-empty string`);
-    if (hasText(mapping.outcome) && !allowedOutcomes.includes(mapping.outcome)) errors.push(`${failure} outcome must be allowed`);
+    if (!hasText(mapping.outcome)) {
+      errors.push(`invalid outcome ${failure}`);
+      return;
+    }
+    const outcome = mapping.outcome;
+    if (!allowedOutcomes.includes(outcome)) errors.push(`outcome not allowed ${failure}`);
   });
 
   return { valid: errors.length === 0, errors };
@@ -67,12 +74,12 @@ const invalidMapping = validateFallbackPolicy({
 });
 
 const assertions = [
-  assert('valid fallback policy passes', validPolicy.valid, { errors: validPolicy.errors }),
-  assert('missing local fallback fails', !invalidLocalFallback.valid, { errors: invalidLocalFallback.errors }),
-  assert('unbounded retry fails', !invalidRetry.valid, { errors: invalidRetry.errors }),
-  assert('blocked without required reason fails', !invalidBlockedReason.valid, { errors: invalidBlockedReason.errors }),
-  assert('partial without required reason fails', !invalidPartialReason.valid, { errors: invalidPartialReason.errors }),
-  assert('missing schema mismatch mapping fails', !invalidMapping.valid, { errors: invalidMapping.errors }),
+  assert('valid policy passes', validPolicy.valid, { errors: validPolicy.errors }),
+  assert('missing local path fails', !invalidLocalFallback.valid, { errors: invalidLocalFallback.errors }),
+  assert('invalid retry fails', !invalidRetry.valid, { errors: invalidRetry.errors }),
+  assert('missing blocked reason rule fails', !invalidBlockedReason.valid, { errors: invalidBlockedReason.errors }),
+  assert('missing partial reason rule fails', !invalidPartialReason.valid, { errors: invalidPartialReason.errors }),
+  assert('missing mapping fails', !invalidMapping.valid, { errors: invalidMapping.errors }),
 ];
 
 const status = assertions.every((item) => item.pass) ? 'pass' : 'fail';
@@ -80,6 +87,6 @@ const result = { suite_id: 'external-fallback-policy', status, assertions };
 console.log(JSON.stringify(result, null, 2));
 
 if (status !== 'pass') {
-  console.error('External fallback policy verification failed.');
+  console.error('verification failed');
   process.exit(1);
 }
