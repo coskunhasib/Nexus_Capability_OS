@@ -7,7 +7,7 @@ Step 1/5 — Beta verifier script wiring — complete, PR #84
 Step 2/5 — Beta release notes — complete, PR #85
 Step 3/5 — verification contract Beta update — complete, PR #86
 Step 4/5 — Beta closure checklist — complete, PR #87
-Step 5/5 — Milestone 3 plan — ready for PR
+Step 5/5 — Milestone 3 plan — complete, PR #88
 ```
 
 ## Step 1/5 — Beta verifier script wiring
@@ -89,13 +89,14 @@ Status:
 ```text
 Milestone 3 plan added
 Milestone 3 checklist added
-waiting for PR CI
+CI green
+merged in PR #88
 ```
 
-Done when:
+## Final status
 
 ```text
-CI is green
-PR is merged
-this plan marks Step 5/5 complete
+Beta closure series: 5/5 complete
+Next phase: Milestone 3 — Embedded Nexus Integration
+Next recommended work: host boundary plan and verifier
 ```
