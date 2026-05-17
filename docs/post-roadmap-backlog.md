@@ -24,8 +24,8 @@ The adapter/runtime roadmap is complete at 15/15. This file tracks the next hard
 45. External runtime mapping decision — documented
 46. CapabilityRuntimePanel read-only UI — implemented
 47. Stricter JSON schema validation — implemented
-48. Local controlled worker mapping into runtime loop — next
-49. Operator-run result mapping into runtime loop — planned
+48. Local controlled worker mapping into runtime loop — implemented
+49. Operator-run result mapping into runtime loop — next
 50. External runtime mapping re-evaluation — planned
 Post-50. Switch to milestone/release planning — planned
 ```
@@ -214,17 +214,19 @@ The JSON schema index mirrors the stricter contract.
 
 ### 48. Local controlled worker mapping into runtime loop
 
-Status: next.
+Status: implemented.
 
-Definition of done:
+Outcome:
 
 ```text
-Controlled worker outputs can map into RuntimeLoopCycle events, artifacts and observations without external runtime execution.
+Controlled worker RuntimeAdapterResponse output maps into a Capability Runtime EvaluationObservation and RuntimeLoopCycle.
+Controlled worker runtime events and artifact refs are carried into the runtime loop without direct external runtime execution.
+Focused verification is available through npm run verify:controlled-worker-runtime.
 ```
 
 ### 49. Operator-run result mapping into runtime loop
 
-Status: planned.
+Status: next.
 
 Definition of done:
 
@@ -377,9 +379,11 @@ Detailed files:
 ```text
 src/capabilityRuntimeContracts.ts
 src/CapabilityRuntimePanel.tsx
+src/controlledWorkerRuntimeMapping.ts
 schemas/capability-runtime-contracts.schema.json
 samples/capability-runtime/
 scripts/verify-capability-runtime-contracts.ts
+scripts/verify-controlled-worker-runtime-mapping.ts
 docs/capability-runtime-ui-visibility-plan.md
 docs/external-runtime-mapping-decision.md
 ```
@@ -394,6 +398,7 @@ Completed sequence:
 45. Decide whether external runtime mapping is needed after local loop validation — documented
 46. Implement CapabilityRuntimePanel read-only UI — implemented
 47. Add stricter JSON schema validation for fixtures — implemented
+48. Add local controlled worker mapping into runtime loop — implemented
 ```
 
 ## Post-50 milestone mode
@@ -430,7 +435,6 @@ Stop extending numbered roadmap after item 50.
 ## Recommended next phase
 
 ```text
-48. Add local controlled worker mapping into runtime loop.
 49. Add operator-run result mapping into runtime loop.
 50. Revisit external runtime mapping after local validation.
 Then switch to Milestone 1 — Capability Runtime Alpha.
