@@ -1,0 +1,55 @@
+{
+  "packet_type": "nexus.storage_boundary",
+  "version": "0.1",
+  "boundary_ref": "capability-runtime-storage",
+  "storage_groups": [
+    "trace_refs",
+    "memory_notes",
+    "note_candidates",
+    "artifact_refs",
+    "runtime_events",
+    "configuration",
+    "operator_result_files"
+  ],
+  "host_owned_persistence": [
+    "memory_notes",
+    "configuration",
+    "artifact_root_policy",
+    "trace_retention_policy",
+    "operator_result_file_location"
+  ],
+  "runtime_allowed_outputs": [
+    "trace_refs",
+    "note_candidates",
+    "artifact_refs",
+    "runtime_events",
+    "operator_result_files"
+  ],
+  "blocked_runtime_writes": [
+    "direct_memory_commit",
+    "direct_configuration_mutation",
+    "artifact_outside_allowed_root",
+    "trace_retention_override",
+    "operator_result_file_finalization"
+  ],
+  "required_artifact_ref_fields": [
+    "kind",
+    "ref",
+    "summary",
+    "root"
+  ],
+  "allowed_event_classes": [
+    "runtime_started",
+    "skill_selected",
+    "tool_grant_requested",
+    "decision_gate_checked",
+    "artifact_proposed",
+    "note_candidate_proposed",
+    "runtime_blocked",
+    "runtime_completed"
+  ],
+  "memory_direct_write_allowed": false,
+  "configuration_mutation_allowed": false,
+  "runtime_events_append_only": true,
+  "artifact_root_required": true
+}
