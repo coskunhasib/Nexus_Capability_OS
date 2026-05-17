@@ -1,0 +1,33 @@
+{
+  "packet_type": "nexus.skill_package",
+  "version": "0.1",
+  "skill_id": "skill.review-doc",
+  "name": "Review Documentation Skill",
+  "purpose": "Review a technical document and produce concise quality observations.",
+  "when_to_use": ["technical documentation needs review", "runtime contract needs consistency check"],
+  "when_not_to_use": ["code execution is required", "unknown source data must be invented"],
+  "required_inputs": ["document_ref", "review_goal"],
+  "method_steps": [
+    {
+      "step_id": "read-summary",
+      "instruction": "Inspect the document summary and stated goal.",
+      "output_kind": "review_scope",
+      "required_tool_refs": ["tool.read-doc"],
+      "required_gate_refs": ["traceability"]
+    },
+    {
+      "step_id": "evaluate-quality",
+      "instruction": "Evaluate completeness, consistency and missing assumptions.",
+      "output_kind": "quality_observation",
+      "required_gate_refs": ["completeness", "correctness"]
+    }
+  ],
+  "required_tools": ["tool.read-doc"],
+  "optional_tools": ["tool.write-artifact"],
+  "agent_profile_hints": ["agent.orchestrator", "agent.reviewer"],
+  "sub_agent_hints": ["subagent.verifier"],
+  "quality_gates": ["traceability", "completeness", "correctness"],
+  "risk_notes": ["Do not infer missing Nexus fields.", "Flag unknowns explicitly."],
+  "expected_outputs": ["quality_observation", "memory_note_update"],
+  "observation_metrics": ["missing_assumptions", "evidence_quality", "reuse_potential"]
+}
