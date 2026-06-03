@@ -1,0 +1,157 @@
+version: draft-0.1
+pipeline_id: sdlc_pipeline
+name: SDLC Pipeline
+purpose: Sıfırdan ürün seviyesine yazılım geliştirme sürecini no-human governance ile yürütmek.
+status: discussion
+owner_domain: software_engineering
+required_team_type: sdlc_team
+required_team_lead_role: sdlc_team_lead
+
+stages:
+  - intake
+  - domain_risk_profile
+  - skill_semantic_extraction
+  - requirements
+  - requirements_review
+  - architecture
+  - architecture_review
+  - security_privacy_design
+  - premortem_fmea
+  - planning
+  - implementation
+  - code_review
+  - test_generation
+  - test_execution
+  - verification_loop_bug_finding
+  - security_validation
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - privacy_data_lifecycle_validation
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - data_migration_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  - evidence_graph_build
+  - development_completion
+  - release_candidate
+  - refraction_learning
+
+uses_core_abilities:
+  - Supervisor
+  - Coder
+  - Memory
+  - Web
+  - OS
+  - Vision
+
+uses_skills:
+  - prism
+  - verification-loop
+  - sentinel
+  - llm-council
+  - fmea
+  - adr-builder
+  - gap-audit
+  - prompt-fidelity
+  - calibrate
+  - refraction
+  - fermi-decompose
+  - bayesian-update
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+  - repo_diff_reader
+  - test_runner
+  - scanner_runner
+  - dependency_scanner
+  - sbom_generator
+  - license_checker
+  - accessibility_auditor
+  - migration_checker
+  - contract_test_runner
+  - resource_budget_checker
+  - compliance_matrix_builder
+  - requirements_trace_checker
+  - prompt_injection_tester
+  - tool_misuse_tester
+  - context_poisoning_tester
+  - evidence_consistency_checker
+  - agent_permission_auditor
+  - eval_runner
+  - backup_plan_checker
+  - restore_test_runner
+  - dr_runbook_checker
+  - cost_estimator
+  - quota_policy_checker
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - agentic_safety_governance
+  - supply_chain_governance
+  - privacy_lifecycle_governance
+  - data_migration_governance
+  - domain_compliance_governance
+  - release_candidate_governance
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema
+  - stage_gate_trace_schema
+  - release_evidence_schema
+  - compliance_matrix_schema
+  - regulatory_evidence_schema
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+  - coder_engineering_model
+  - supervisor_routing_model
+  - architecture_reasoning_model
+  - security_analysis_model
+  - release_reasoning_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - requirements_context_pack
+  - architecture_context_pack
+  - implementation_context_pack
+  - release_context_pack
+
+required_gates:
+  always:
+    - requirements_complete
+    - nfr_coverage_complete
+    - architecture_complete
+    - adr_coverage_complete
+    - security_privacy_design_complete
+    - implementation_scope_clean
+    - code_review_pass
+    - tests_pass
+    - verification_loop_bug_finding_pass
+    - security_validation_pass
+    - supply_chain_pass
+    - license_pass
+    - sbom_present
+    - agentic_safety_eval_pass
+    - operations_readiness_pass
+    - evidence_graph_complete
+    - no_blocking_policy_failure
+  conditional:
+    - accessibility_pass_if_applicable
+    - data_migration_pass_if_applicable
+    - privacy_lifecycle_pass_if_applicable
+    - api_contract_compatibility_pass_if_applicable
+    - backup_restore_dr_pass_if_applicable
+    - compliance_pass_if_applicable
+    - cost_resource_governance_pass_if_applicable
+
+canonical_docs:
+  - docs/ai-sdlc-factory/07-pipeline-contract-standard.md
+  - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md
+  - docs/ai-sdlc-factory/sdlc-stages/README.md
+  - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md
