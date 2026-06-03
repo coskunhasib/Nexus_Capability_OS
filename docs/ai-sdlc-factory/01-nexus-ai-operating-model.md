@@ -15,16 +15,42 @@ Nexus AI, SDLC’den daha geniştir. SDLC yalnızca bir pipeline türüdür.
 ```text
 Nexus AI
 
-1. Pipeline System
-2. Team System
-3. Capability System
-4. Method System
-5. Execution System
-6. Governance System
-7. Audit System
+1. Shared Registry
+2. Pipeline System
+3. Team System
+4. Capability System
+5. Method System
+6. Execution System
+7. Governance System
+8. Audit System
+9. Model / Provider System
+10. Context / Memory System
 ```
 
-## 3. Pipeline System
+## 3. Shared Registry
+
+Shared Registry, sistemde mevcut olan ortak öğeleri listeler.
+
+```text
+Shared Registry
+├── Core Abilities
+├── Skills
+├── Tools
+├── Governance Profiles
+├── Audit Schemas
+├── Model / Provider Profiles
+└── Context / Memory Profiles
+```
+
+Shared Registry şu soruyu cevaplar:
+
+```text
+Sistemde ne var?
+```
+
+Shared Registry kullanım yeri değildir. Kullanım ilişkisi pipeline, stage, team, team lead, agent veya sub-agent altında ayrıca gösterilir.
+
+## 4. Pipeline System
 
 Pipeline System iki parçadan oluşur:
 
@@ -46,6 +72,28 @@ Activation Pipeline
 Operations Pipeline
 ```
 
+Pipeline Catalog, ilgili pipeline’ın hangi shared öğeleri kullanabileceğini referanslar.
+
+Örnek:
+
+```text
+SDLC Pipeline
+  uses Core Abilities:
+    - Coder
+    - Memory
+    - Web
+    - OS
+  uses Skills:
+    - prism
+    - verification-loop
+    - sentinel
+    - llm-council
+  uses Governance Profiles:
+    - sdlc_pipeline_governance
+  uses Audit Schemas:
+    - sdlc_pipeline_evidence_schema
+```
+
 ### Pipeline Run
 
 Bir pipeline şablonunun gerçek çalışma örneğidir.
@@ -64,13 +112,15 @@ Pipeline Run şunları içerir:
 selected_pipeline
 assigned_team
 active_stage
-context
+run_context
 governance_state
 evidence
 trace
 ```
 
-## 4. Team System
+Pipeline Run, kullanılan shared öğeleri run bağlamında tekrar gösterir.
+
+## 5. Team System
 
 Team, pipeline run için çalışan organizasyondur.
 
@@ -94,9 +144,22 @@ SDLC Team
     └── Direct SDLC Sub-agents
 ```
 
-Her pipeline için aynı team yapısı zorunlu değildir. Karmaşık pipeline’lar team gerektirir. Basit pipeline run’ları daha az rolle çalışabilir.
+Team, shared öğelerin sahibi değildir. Team Lead, Agent ve Sub-agent bu öğeleri kullanır.
 
-## 5. Capability System
+Örnek:
+
+```text
+SDLC Team Lead
+  uses Core Abilities:
+    - Supervisor
+    - Memory
+  uses Governance Profiles:
+    - sdlc_team_governance
+  uses Audit Schemas:
+    - team_handoff_trace_schema
+```
+
+## 6. Capability System
 
 Capability System, Nexus AI’ın ortak kabiliyet katmanıdır.
 
@@ -114,9 +177,11 @@ Core Abilities
 
 Core Abilities team değildir. Agent değildir. SDLC Team üyesi değildir.
 
-Team Lead, Agent veya Sub-agent ihtiyaç duyduğunda Core Abilities kullanabilir.
+Core Ability adı ana hiyerarşide yeterlidir. Kendi iç motoruna, modeline veya yapılandırmasına hiyerarşide inilmez.
 
-## 6. Method System
+Alt çağrılabilir işlemler Tool Registry’de görünür.
+
+## 7. Method System
 
 Method System, Skills katmanıdır.
 
@@ -125,18 +190,21 @@ Skill bir yöntem, protokol veya çalışma paketi sağlar.
 Örnek:
 
 ```text
-prism
-verification-loop
-sentinel
-llm-council
-fmea
-adr-builder
-gap-audit
+Skills
+├── prism
+├── verification-loop
+├── sentinel
+├── llm-council
+├── fmea
+├── adr-builder
+└── gap-audit
 ```
 
 Skill agent değildir. Tool değildir.
 
-## 7. Execution System
+Skill ana hiyerarşide yalnız adıyla görünür. `scripts`, `references` veya benzeri paket içeriği ana hiyerarşide gösterilmez; bu ayrıntılar skill inventory / audit dokümanına aittir.
+
+## 8. Execution System
 
 Execution System, Tools katmanıdır.
 
@@ -145,18 +213,19 @@ Tool gerçek çağrılabilir işlemdir.
 Örnek:
 
 ```text
-file_read
-file_write
-shell_exec
-web_fetch
-test_runner
-repo_diff_reader
-scanner_runner
+Tools
+├── file_read
+├── file_write
+├── shell_exec
+├── web_fetch
+├── test_runner
+├── repo_diff_reader
+└── scanner_runner
 ```
 
-Tool skill değildir.
+Tool skill değildir. Tool, ilgili Core Ability altında gruplanmış olabilir ama kullanım yerinde ayrıca görünür.
 
-## 8. Governance System
+## 9. Governance System
 
 Governance System kural, izin, gate ve risk yönetimidir.
 
@@ -167,13 +236,16 @@ Global Governance
 Pipeline Governance
 Team Governance
 Stage Governance
+Core Ability Governance
 Skill Governance
 Tool Governance
 ```
 
 Governance tek bir düz policy dosyası değildir. Her pipeline kendi özel governance kurallarına sahip olabilir.
 
-## 9. Audit System
+Governance Profiles shared registry’de listelenir ve kullanıldığı pipeline/stage/team/agent altında tekrar gösterilir.
+
+## 10. Audit System
 
 Audit System kanıt ve izleme ailesidir.
 
@@ -184,9 +256,46 @@ Trace
 
 Evidence karar kanıtıdır. Trace işlem geçmişidir.
 
-## 10. Genel ilişki
+Audit Schemas shared registry’de listelenir ve kullanıldığı pipeline/stage/team/agent altında tekrar gösterilir.
+
+## 11. Model / Provider System
+
+Model / Provider Profiles, Core Abilities veya pipeline rolleri tarafından kullanılan model, provider veya inference profilini belirtir.
+
+Örnek:
 
 ```text
+Coder
+  uses Model / Provider Profiles:
+    - coder_engineering_model
+
+Vision
+  uses Model / Provider Profiles:
+    - vision_model
+```
+
+## 12. Context / Memory System
+
+Context / Memory Profiles, pipeline run ve role özel çalışma bağlamını tanımlar.
+
+Örnek:
+
+```text
+SDLC Pipeline Run
+  uses Context / Memory Profiles:
+    - sdlc_run_context
+
+Requirements Agent
+  uses Context / Memory Profiles:
+    - requirements_context_pack
+```
+
+Memory Core Ability olarak kalır; context ise run/agent çalışma bilgisidir.
+
+## 13. Genel ilişki
+
+```text
+Shared Registry neyin mevcut olduğunu gösterir.
 Pipeline tanımlar.
 Pipeline Run çalışır.
 Team atanır.
@@ -199,7 +308,7 @@ Governance sınırlar.
 Audit kanıtlar.
 ```
 
-## 11. Birleşmemesi gerekenler
+## 14. Birleşmemesi gerekenler
 
 ```text
 Pipeline != Team
@@ -208,4 +317,5 @@ Agent != Core Ability
 Skill != Tool
 Governance != Audit
 Evidence != Trace
+Registry != Usage
 ```
