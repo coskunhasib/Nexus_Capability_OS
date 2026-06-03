@@ -144,11 +144,12 @@ Plugin yok
 ## Okuma sırası
 
 1. [`00-decision-log.md`](00-decision-log.md)
-2. [`01-nexus-ai-operating-model.md`](01-nexus-ai-operating-model.md)
-3. [`02-concept-boundaries.md`](02-concept-boundaries.md)
-4. [`03-governance-and-audit-layering.md`](03-governance-and-audit-layering.md)
-5. [`04-open-discussion-items.md`](04-open-discussion-items.md)
-6. [`05-shared-registry-and-usage-mapping.md`](05-shared-registry-and-usage-mapping.md)
+2. [`00a-shared-registry-decisions.md`](00a-shared-registry-decisions.md)
+3. [`01-nexus-ai-operating-model.md`](01-nexus-ai-operating-model.md)
+4. [`02-concept-boundaries.md`](02-concept-boundaries.md)
+5. [`03-governance-and-audit-layering.md`](03-governance-and-audit-layering.md)
+6. [`04-open-discussion-items.md`](04-open-discussion-items.md)
+7. [`05-shared-registry-and-usage-mapping.md`](05-shared-registry-and-usage-mapping.md)
 
 ## Uygulama yasağı
 
