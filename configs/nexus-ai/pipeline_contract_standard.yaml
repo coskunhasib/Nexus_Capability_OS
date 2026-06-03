@@ -1,0 +1,103 @@
+version: draft-0.1
+standard_id: nexus_ai_pipeline_contract_standard
+purpose: Machine-readable baseline contract for all Nexus AI pipelines.
+
+pipeline_definition_required_fields:
+  - pipeline_id
+  - name
+  - purpose
+  - version
+  - status
+  - owner_domain
+  - required_team_type
+  - required_team_lead_role
+  - applicable_domains
+  - risk_profiles
+  - stages
+  - uses_core_abilities
+  - uses_skills
+  - uses_tools
+  - uses_governance_profiles
+  - uses_audit_schemas
+  - uses_model_provider_profiles
+  - uses_context_memory_profiles
+  - entry_criteria
+  - exit_criteria
+  - blocking_conditions
+  - allowed_rework_routes
+  - required_evidence
+  - required_trace
+
+pipeline_run_required_fields:
+  - run_id
+  - pipeline_id
+  - pipeline_version
+  - run_goal
+  - run_status
+  - selected_pipeline
+  - assigned_team
+  - team_lead
+  - active_stage
+  - completed_stages
+  - blocked_stages
+  - run_context
+  - governance_state
+  - evidence
+  - trace
+  - used_core_abilities
+  - used_skills
+  - used_tools
+  - used_governance_profiles
+  - used_audit_schemas
+  - used_model_provider_profiles
+  - used_context_memory_profiles
+  - open_questions
+  - blocking_findings
+  - next_action
+
+stage_required_fields:
+  - stage_id
+  - name
+  - purpose
+  - owner_team
+  - team_lead
+  - owner_agent
+  - sub_agents
+  - uses_core_abilities
+  - uses_skills
+  - uses_tools
+  - uses_governance_profiles
+  - uses_audit_schemas
+  - uses_model_provider_profiles
+  - uses_context_memory_profiles
+  - inputs
+  - outputs
+  - evidence
+  - trace
+  - gates
+  - on_pass
+  - on_fail
+  - rework_route
+  - blocking_conditions
+
+shared_usage_fields:
+  - uses_core_abilities
+  - uses_skills
+  - uses_tools
+  - uses_governance_profiles
+  - uses_audit_schemas
+  - uses_model_provider_profiles
+  - uses_context_memory_profiles
+
+completion_rule:
+  pipeline_is_incomplete_if_any_stage_lacks_required_field: true
+  pipeline_is_incomplete_if_shared_usage_fields_missing: true
+  pipeline_is_incomplete_if_no_rework_route: true
+  pipeline_is_incomplete_if_no_evidence: true
+  pipeline_is_incomplete_if_no_governance_profile: true
+
+severity_values:
+  - blocker
+  - major
+  - advisory
+  - informational
