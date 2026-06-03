@@ -149,7 +149,8 @@ Plugin yok
 4. [`02-concept-boundaries.md`](02-concept-boundaries.md)
 5. [`03-governance-and-audit-layering.md`](03-governance-and-audit-layering.md)
 6. [`04-open-discussion-items.md`](04-open-discussion-items.md)
-7. [`05-shared-registry-and-usage-mapping.md`](05-shared-registry-and-usage-mapping.md)
+7. [`04a-open-discussion-updates.md`](04a-open-discussion-updates.md)
+8. [`05-shared-registry-and-usage-mapping.md`](05-shared-registry-and-usage-mapping.md)
 
 ## Uygulama yasağı
 
