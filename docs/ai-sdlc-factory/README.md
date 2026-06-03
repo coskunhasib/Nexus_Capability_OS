@@ -151,6 +151,24 @@ Plugin yok
 6. [`04-open-discussion-items.md`](04-open-discussion-items.md)
 7. [`04a-open-discussion-updates.md`](04a-open-discussion-updates.md)
 8. [`05-shared-registry-and-usage-mapping.md`](05-shared-registry-and-usage-mapping.md)
+9. [`06-sdlc-coverage-gap-audit.md`](06-sdlc-coverage-gap-audit.md)
+10. [`06a-sdlc-mandatory-gates-decision.md`](06a-sdlc-mandatory-gates-decision.md)
+11. [`06b-sdlc-agentic-safety-and-remaining-gates.md`](06b-sdlc-agentic-safety-and-remaining-gates.md)
+12. [`07-pipeline-contract-standard.md`](07-pipeline-contract-standard.md)
+13. [`08-sdlc-pipeline-contract.md`](08-sdlc-pipeline-contract.md)
+14. [`sdlc-stages/`](sdlc-stages/)
+
+## SDLC stage contracts
+
+SDLC stage sözleşmeleri okunabilir kalması için parçalara ayrıldı:
+
+```text
+sdlc-stages/01-foundation-and-requirements.md
+sdlc-stages/02-design-risk-and-planning.md
+sdlc-stages/03-build-review-and-test.md
+sdlc-stages/04-validation-and-product-gates.md
+sdlc-stages/05-completion-release-and-learning.md
+```
 
 ## Uygulama yasağı
 
