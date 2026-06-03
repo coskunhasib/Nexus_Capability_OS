@@ -22,9 +22,12 @@ Global Governance
 Pipeline Governance
 Team Governance
 Stage Governance
+Core Ability Governance
 Skill Governance
 Tool Governance
 ```
+
+Governance Profiles shared registry’de listelenir ve kullanıldığı pipeline/team/stage/agent/core ability altında tekrar gösterilir.
 
 ## 3. Global Governance
 
@@ -38,7 +41,7 @@ secret sızdırma yok
 policy bypass yok
 trace zorunlu
 raw credential gösterme yok
-destructive action default deny
+high-risk action default deny
 ```
 
 ## 4. Pipeline Governance
@@ -94,12 +97,41 @@ Pipeline içindeki tek bir aşamanın kurallarıdır.
 
 ```text
 verification_loop_bug_finding stage
-  - verification-loop skill kullanılmalı
-  - BUG_FINDING_REPORT üretilmeli
-  - blocker bug count = 0 olmalı
+  uses Governance Profiles:
+    - verification_loop_bug_gate
+  rules:
+    - verification-loop skill kullanılmalı
+    - BUG_FINDING_REPORT üretilmeli
+    - blocker bug count = 0 olmalı
 ```
 
-## 7. Skill Governance
+## 7. Core Ability Governance
+
+Core Ability kullanım kurallarıdır. Her Core Ability aynı risk ve izin profiline sahip değildir.
+
+Örnek:
+
+```text
+Coder
+  uses Governance Profiles:
+    - code_generation_governance
+
+Web
+  uses Governance Profiles:
+    - web_access_governance
+
+OS
+  uses Governance Profiles:
+    - system_access_governance
+
+Memory
+  uses Governance Profiles:
+    - memory_access_governance
+```
+
+Bu profiller shared registry’de listelenir ve Core Ability altında tekrar gösterilir.
+
+## 8. Skill Governance
 
 Skill kullanım kurallarıdır.
 
@@ -107,29 +139,37 @@ Skill kullanım kurallarıdır.
 
 ```text
 prism
-  - brainstorming için kullanılır
-  - bug finding için kullanılmaz
+  uses Governance Profiles:
+    - brainstorming_skill_governance
+  rules:
+    - brainstorming için kullanılır
+    - bug finding için kullanılmaz
 
 verification-loop
-  - bug/defect finding için kullanılır
-  - genel readiness checklist değildir
+  uses Governance Profiles:
+    - defect_finding_skill_governance
+  rules:
+    - bug/defect finding için kullanılır
+    - genel readiness checklist değildir
 ```
 
-## 8. Tool Governance
+## 9. Tool Governance
 
 Tool çağrılarının yetki ve risk kurallarıdır.
 
 Örnek:
 
 ```text
-OS.shell_exec
-  - sandbox required
-  - timeout required
-  - trace required
-  - destructive command deny by default
+shell_exec
+  uses Governance Profiles:
+    - sandbox_execution_governance
+  rules:
+    - sandbox required
+    - timeout required
+    - trace required
 ```
 
-## 9. Audit ailesi
+## 10. Audit ailesi
 
 Audit şu kavramları kapsar:
 
@@ -140,7 +180,9 @@ Trace
 
 Ama Evidence ve Trace aynı şey değildir.
 
-## 10. Evidence
+Audit Schemas shared registry’de listelenir ve kullanıldığı pipeline/team/stage/agent/core ability/tool altında tekrar gösterilir.
+
+## 11. Evidence
 
 Evidence karar kanıtıdır.
 
@@ -156,7 +198,7 @@ DEVELOPMENT_COMPLETION_REPORT
 RELEASE_EVIDENCE
 ```
 
-## 11. Trace
+## 12. Trace
 
 Trace işlem geçmişidir.
 
@@ -167,11 +209,14 @@ agent invocation trace
 sub-agent invocation trace
 skill activation trace
 tool call trace
+core ability invocation trace
+model invocation trace
+context usage trace
 policy evaluation trace
 pipeline transition trace
 ```
 
-## 12. Pipeline özel evidence
+## 13. Pipeline özel evidence
 
 Her pipeline kendi özel evidence setine sahip olabilir.
 
@@ -179,28 +224,57 @@ Her pipeline kendi özel evidence setine sahip olabilir.
 
 ```text
 SDLC Pipeline Evidence
-  - REQUIREMENTS_SPEC
-  - ARCHITECTURE_DECISION
-  - TEST_REPORT
-  - BUG_FINDING_REPORT
-  - SECURITY_SCAN_REPORT
-  - DEVELOPMENT_COMPLETION_REPORT
-  - RELEASE_EVIDENCE
+  uses Audit Schemas:
+    - sdlc_pipeline_evidence_schema
+  evidence examples:
+    - REQUIREMENTS_SPEC
+    - ARCHITECTURE_DECISION
+    - TEST_REPORT
+    - BUG_FINDING_REPORT
+    - SECURITY_SCAN_REPORT
+    - DEVELOPMENT_COMPLETION_REPORT
+    - RELEASE_EVIDENCE
 
 Research Pipeline Evidence
-  - SOURCE_LIST
-  - SOURCE_RELIABILITY_REPORT
-  - CLAIM_EVIDENCE_MAP
-  - UNCERTAINTY_REPORT
+  uses Audit Schemas:
+    - research_claim_evidence_schema
+  evidence examples:
+    - SOURCE_LIST
+    - SOURCE_RELIABILITY_REPORT
+    - CLAIM_EVIDENCE_MAP
+    - UNCERTAINTY_REPORT
 
 Activation Pipeline Evidence
-  - PREVIEW_RESULT
-  - PILOT_RESULT
-  - ACTIVATION_DECISION
-  - ROLLBACK_PLAN
+  uses Audit Schemas:
+    - activation_evidence_schema
+  evidence examples:
+    - PREVIEW_RESULT
+    - PILOT_RESULT
+    - ACTIVATION_DECISION
+    - ROLLBACK_PLAN
 ```
 
-## 13. Sonuç
+## 14. Usage mapping rule
+
+Governance ve Audit de ortak kategorilerdir.
+
+Bu nedenle iki yerde görünürler:
+
+```text
+Shared Registry
+  - Governance Profiles
+  - Audit Schemas
+
+Usage Mapping
+  - ilgili pipeline altında
+  - ilgili team altında
+  - ilgili stage altında
+  - ilgili agent/sub-agent altında
+  - ilgili core ability altında
+  - ilgili tool altında
+```
+
+## 15. Sonuç
 
 Doğru model:
 
@@ -208,10 +282,12 @@ Doğru model:
 Governance
   - genel aile
   - alt katmanlar korunur
+  - kullanıldığı bağlamda tekrar gösterilir
 
 Audit
   - genel aile
   - Evidence ve Trace ayrımı korunur
+  - kullanıldığı bağlamda tekrar gösterilir
 ```
 
 Yanlış model:
@@ -220,4 +296,5 @@ Yanlış model:
 Tüm policy/gate/permission kavramlarını tek dosyada eritmek
 Evidence ve trace’i aynı kayıt türü yapmak
 Her pipeline’a aynı governance setini zorla uygulamak
+Shared registry’de var diye kullanım yerinde göstermemek
 ```
