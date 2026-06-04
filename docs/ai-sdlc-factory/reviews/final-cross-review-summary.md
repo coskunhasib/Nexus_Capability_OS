@@ -38,6 +38,23 @@ consistency check, or invalidates a machine-readable contract. The two prior-rev
 (both `PASS_WITH_FINDINGS`) are confirmed, with two additional non-blocking findings surfaced by
 the diagram inspection (X1, X2).
 
+> **Resolution update (2026-06-05).** The non-blocking findings below were the corpus state *at the
+> time this review was written*. Several were fixed afterward (Phase A cleanup + locked decision
+> D-016) and were independently re-verified against the live files on 2026-06-05. They are retained
+> below unchanged as the original audit record; their current status is:
+>
+> | Finding | Status | Evidence (live, 2026-06-05) |
+> |---|---|---|
+> | F1 — `sdlc_pipeline.yaml` vs `pipeline_definition.schema.json` | **RESOLVED** | validates with 0 errors (8 required fields added; schema extended for `required_gates`/`canonical_docs`) |
+> | X1 — flow-diagram agent labels (stages 4/5/7) | **RESOLVED** | `sdlc-pipeline-flow.mmd`: stage 4 `product_requirements_agent`, stages 5 & 7 `sdlc_team_lead`; no legacy `*_reviewer_agent` |
+> | X2 — `BLUEPRINT_INDEX` §9 stale placeholder | **RESOLVED** | §9 lists the 3 reviews + 4 diagrams; no placeholder text |
+> | F2 — stage README stale count | **RESOLVED** | `configs/nexus-ai/stages/sdlc/README.md` reflects all 31 |
+> | F3 — doc 08 §7 vs registry naming | **RESOLVED** | §7 reconciled to `artifact_registry.yaml` canonical names |
+> | F5/SA-1 — stage 27 stale attribution | **RESOLVED** | DR reports → `operations_readiness_agent` (#26); `PERFORMANCE_REPORT` → `performance_resilience_agent` (#24) |
+> | F-roll / F6 — rollup-alias / non-canonical candidates | tracked | `required_gate_producers` map added; registry items carry `status: candidate` for the registry-formalization phase |
+>
+> Current verified state: see [`claude-code-sdlc-completion-summary.md`](claude-code-sdlc-completion-summary.md) §4 and [`final-readiness-gate.md`](final-readiness-gate.md).
+
 ---
 
 ## Assessment by required dimension

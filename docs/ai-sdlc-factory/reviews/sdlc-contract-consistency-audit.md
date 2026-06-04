@@ -21,6 +21,14 @@ the artifact registry against their JSON Schemas with `jsonschema` (Draft 2020-1
 are pre-existing documentation/reconciliation issues (most already recorded in
 `configs/nexus-ai/validation/README.md` "Open items"), not contract defects.
 
+> **Resolution update (2026-06-05).** The non-blocking findings in this audit reflect the corpus
+> state at the time of writing. The diagram / index / stage-27 / stage-README / doc-08 staleness
+> items (mirrored in `final-cross-review-summary.md` as F1/X1/X2/F2/F3/F5) were fixed afterward
+> (Phase A cleanup + D-016) and re-verified against the live files on 2026-06-05. Findings are
+> retained below as the original audit record; the current verified state is in
+> [`final-cross-review-summary.md`](final-cross-review-summary.md) ("Resolution update") and
+> [`claude-code-sdlc-completion-summary.md`](claude-code-sdlc-completion-summary.md) §4.
+
 **Severity legend:** blocker = breaks a locked invariant / fails a mandated check; major =
 real inconsistency a reviewer must reconcile; minor = cosmetic / stale-doc / comment-only.
 
