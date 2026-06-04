@@ -1,5 +1,11 @@
 # 04 — Team / Agent / Sub-agent Modeli
 
+> **SUPERSEDED — narrative/legacy only.** Bu doküman erken tasarım anlatısıdır ve artık otorite DEĞİLDİR.
+> Takım/agent/sub-agent rollerinin tek doğruluk kaynağı (source of truth) aşağıdaki makine-okunabilir kataloglardır:
+> `configs/nexus-ai/agent_roles.yaml`, `configs/nexus-ai/sub_agent_roles.yaml` ve 31 stage sözleşmesi
+> (`configs/nexus-ai/stages/sdlc/*.yaml`). Bu dosyadaki roster/isimler kısmen reconcile edilmiştir; herhangi bir
+> uyuşmazlıkta yukarıdaki config'ler geçerlidir. Bu doc'u runtime/binding kaynağı olarak KULLANMAYIN.
+
 Bu doküman, AI SDLC Factory içinde takım, agent, sub-agent ve Team Lead ilişkisini tam kapsamlı ama tekrarsız şekilde tanımlar.
 
 ## 1. Tasarım hedefi
@@ -458,6 +464,12 @@ blocks:
 
 ## 6. Sub-agent kataloğu
 
+> **SUPERSEDED roster.** Bu sub-agent listesi otorite değildir; canonical sub-agent kayıtları
+> `configs/nexus-ai/sub_agent_roles.yaml` + ilgili stage sözleşmelerindedir. Not: §6.8'in
+> `parent_agent` değeri `evidence_graph_agent`'tır (SDLC stage #28 owner). Bu agent bu legacy doc'un
+> §4.6/§5 roster'ında ayrıca TANIMLANMAZ; tanımı authoritative kataloglardadır
+> (`configs/nexus-ai/agent_roles.yaml` + `configs/nexus-ai/stages/sdlc/28-evidence-graph-build.yaml`).
+
 ### 6.1 Skill Semantic Extractor Sub-agent
 
 ```yaml
@@ -579,7 +591,7 @@ outputs:
 
 ```yaml
 id: evidence_trace_subagent
-parent_agent: evidence_graph_agent   # SDLC stage #28 owner; matches sub_agent_roles.yaml + stage 28 contract (artifact author != downstream gate decider). Was release_manager_agent (corrected).
+parent_agent: evidence_graph_agent   # SDLC stage #28 owner (defined in authoritative catalogs: agent_roles.yaml + stage 28 contract; not in this legacy doc's §4.6/§5 roster). Matches sub_agent_roles.yaml + stage 28 contract (artifact author != downstream gate decider). Was release_manager_agent (corrected).
 mission: Requirement → design → code → test → gate → release candidate zincirini kurar.
 skills:
   - evidence-graph-builder

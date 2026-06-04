@@ -28,9 +28,10 @@
 #     open_questions because two canonical docs still carry the release_manager_agent owner.
 #   - sub_agent `evidence_trace_subagent` is canonical (Phase A sub-agent registry + team model §6.8,
 #     exact spelling). Legacy sdlc-stages/05 §2 used `evidence_trace_sub_agent` — normalized.
-#     NOTE: team model §6.8 lists evidence_trace_subagent.parent_agent = release_manager_agent; under
-#     the owner reconciliation above its effective parent for this stage is evidence_graph_agent. Both
-#     are sdlc_team agent roles; flagged in open_questions for parent_agent re-binding.
+#     RESOLVED: team model §6.8 originally listed evidence_trace_subagent.parent_agent =
+#     release_manager_agent; under the owner reconciliation above its effective parent for this stage is
+#     evidence_graph_agent, and team model §6.8 has since been corrected to match. Both are sdlc_team
+#     agent roles; parent_agent re-binding is reconciled (sub_agent_roles.yaml + team-model §6.8 agree).
 #   - Skill `evidence-graph-builder` is NON-CANONICAL: it is NOT in the canonical shared skills
 #     registry but is named by legacy docs 05/08/team-model and is load-bearing (it builds the
 #     requirement->...->release evidence DAG). Carried per the task's legacy-skill allowance and

@@ -27,8 +27,8 @@ reported via the Completion Report Contract (doc 20 §5 / `../executor-standard/
 | [WP-03](WP-03-governance-engine.md) | Governance Engine | Codex | WP-01 |
 | [WP-04](WP-04-audit-evidence-store.md) | Audit / Evidence Store | Codex | WP-01 |
 | [WP-05](WP-05-tool-permission-system.md) | Tool Permission System | Codex | WP-01, WP-02 |
-| [WP-06](WP-06-model-provider-resolver.md) | Model / Provider Resolver | Codex | WP-01, WP-02 |
-| [WP-07](WP-07-context-memory-resolver.md) | Context / Memory Resolver | Codex | WP-01 |
+| [WP-06](WP-06-model-provider-resolver.md) | Model / Provider Profile Resolver | Codex | WP-01, WP-02 |
+| [WP-07](WP-07-context-memory-resolver.md) | Context / Memory Profile Resolver | Codex | WP-01 |
 | [WP-08](WP-08-pipeline-run-state-model.md) | Pipeline Run State Model | Codex | WP-01 |
 | [WP-09](WP-09-pipeline-runner.md) | Pipeline Runner | Codex | WP-03, WP-04, WP-08 |
 | [WP-10](WP-10-executor-integration.md) | Executor Integration | Claude Code | WP-09, WP-05 |

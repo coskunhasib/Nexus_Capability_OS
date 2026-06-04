@@ -541,9 +541,10 @@ sub_agents:
   # ---------------------------------------------------------------------------
   # 8) evidence_trace_subagent
   #    SDLC stage #28 (evidence_graph_build, owner: evidence_graph_agent).
-  #    NOTE: team-model §6.8 lists parent_agent = release_manager_agent; the stage #28 contract
-  #    reconciled the owner to evidence_graph_agent (artifact-author / gate-decider separation).
-  #    parent_agent here follows the stage contract (evidence_graph_agent). Flagged in open_questions.
+  #    RESOLVED: team-model §6.8 originally listed parent_agent = release_manager_agent; the stage #28
+  #    contract reconciled the owner to evidence_graph_agent (artifact-author / gate-decider separation),
+  #    and team-model §6.8 has since been corrected to match. parent_agent here follows the stage
+  #    contract (evidence_graph_agent); all three sources now agree.
   # ---------------------------------------------------------------------------
   - sub_agent_id: evidence_trace_subagent
     parent_agent: evidence_graph_agent

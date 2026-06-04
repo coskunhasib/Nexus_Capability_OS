@@ -15,10 +15,12 @@
 #       uses_governance_profiles:
 #         memory_source_governance, validity_window_required_gate,
 #         redaction_required_gate
-#   - configs/nexus-ai/pipeline_catalog.yaml (knowledge_memory_pipeline) adds
-#     no_self_approval_policy at pipeline level; the Phase C registry binds
-#     no_self_approval + evidence_required under memory_source_governance. Both are
-#     carried here as cross-cutting rules (the registry notes evidence_required is
+#   - the pre-R9 configs/nexus-ai/pipeline_catalog.yaml definition_contract
+#     (knowledge_memory_pipeline) added no_self_approval_policy at pipeline level
+#     (R9 has since made pipeline_catalog.yaml summary-only; the authoritative
+#     per-pipeline source is the markdown definition_doc above); the Phase C registry
+#     binds no_self_approval + evidence_required under memory_source_governance. Both
+#     are carried here as cross-cutting rules (the registry notes evidence_required is
 #     governed via memory_provenance completeness — see open_questions).
 #   - SDLC §7 minimums applied AS RELEVANT (doc 19 §4): this is a knowledge-
 #     lifecycle pipeline, not a build pipeline; SDLC build/security/supply-chain
@@ -288,7 +290,7 @@ provenance:
   registry_profile: governance_profiles.yaml#pipeline.memory_source_governance
   derived_from:
     - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md  # markdown authoritative
-    - configs/nexus-ai/pipeline_catalog.yaml                               # knowledge_memory_pipeline entry (memory_governance_profile alias)
+    - configs/nexus-ai/pipeline_catalog.yaml                               # knowledge_memory_pipeline summary entry (memory_governance_profile was a pre-R9 definition_contract alias; catalog now summary-only)
     - configs/nexus-ai/team_templates.yaml                                 # knowledge_team / knowledge_team_lead (authoritative names)
     - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md           # §4, §5
     - docs/ai-sdlc-factory/03-governance-and-audit-layering.md             # §4 memory/knowledge governance

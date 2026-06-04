@@ -63,8 +63,8 @@ gates:
   - compliance_pass_if_applicable
   - regulatory_traceability_pass_if_applicable
 on_pass: data_migration_validation_if_applicable
-on_fail: requirements
-rework_route: requirements
+on_fail: security_privacy_design   # reconciled to operative value (stage 21 YAML + runtime_rules by_stage); was `requirements` in this doc
+rework_route: security_privacy_design   # reconciled to operative value (stage 21 YAML + runtime_rules by_stage); was `requirements` in this doc
 blocking_conditions:
   - unresolved_regulatory_requirement
   - missing_compliance_traceability

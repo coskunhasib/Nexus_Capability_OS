@@ -63,7 +63,7 @@ purpose: >-
   bir genel release-readiness checklist'i DEĞİLDİR; yalnız regülatif/domain uyum izlenebilirliğini denetler.
 
 applicability_decision:
-  decision_artifact: COMPLIANCE_APPLICABILITY_DECISION
+  decision: COMPLIANCE_APPLICABILITY_DECISION
   required_when: >-
     regulated_domain == true or contractual_compliance_required == true or
     public_sector_or_enterprise_requirements_present == true
@@ -71,7 +71,7 @@ applicability_decision:
     - DOMAIN_PROFILE_DECISION
     - RISK_PROFILE
     - REQUIREMENTS_SPEC
-  when_not_applicable:
+  on_not_applicable:
     decision: skipped
     emit: COMPLIANCE_APPLICABILITY_DECISION   # records not_applicable + rationale; conditional gates waived
     on_pass: data_migration_validation_if_applicable

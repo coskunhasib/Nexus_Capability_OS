@@ -70,7 +70,7 @@ purpose: >-
   dedicated verification_loop_bug_finding stage #15).
 
 applicability_decision:
-  artifact: API_CONTRACT_APPLICABILITY_DECISION
+  decision: API_CONTRACT_APPLICABILITY_DECISION
   required_when: >-
     api_changed == true or public_interface_changed == true or event_or_message_contract_changed == true
     or sdk_or_client_library_changed == true

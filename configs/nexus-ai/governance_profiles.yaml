@@ -68,7 +68,7 @@ canonical_sources:
   - configs/nexus-ai/sdlc_pipeline.yaml                               # SDLC pipeline-level uses_governance_profiles
   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml                 # locked-decision guards (no_self_approval, no plugin)
   - configs/nexus-ai/stages/sdlc/*.yaml                               # 31 SDLC stage uses_governance_profiles (richest source)
-  - configs/nexus-ai/pipeline_catalog.yaml                            # catalog uses_governance_profiles (YAML variant names noted)
+  - configs/nexus-ai/pipeline_catalog.yaml                            # pre-R9 catalog definition_contract variant names (now summary-only; recorded as aliases)
   - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md        # research governance (markdown authoritative)
   - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md      # activation governance (markdown authoritative)
   - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md      # operations governance (markdown authoritative)
@@ -821,11 +821,14 @@ governance_profiles:
         - postmortem                 # 2.5
         - learning_update            # 2.6
       aliases:
-        - incident_response_governance   # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: operations_pipeline_governance
+        - incident_response_governance   # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name; MD canonical: operations_pipeline_governance
       notes: >-
-        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Catalog YAML uses the divergent
-        name `incident_response_governance` (F-1); markdown `operations_pipeline_governance` is canonical-source.
-        The YAML-only variant is now recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. The pre-R9 catalog-YAML
+        definition_contract used the divergent name `incident_response_governance` (F-1); markdown
+        `operations_pipeline_governance` is canonical-source. After the R9 reconciliation collapsed
+        pipeline_catalog.yaml into a summary-only catalog (no per-pipeline definition_contract blocks),
+        the authoritative per-pipeline source is the markdown definition_doc; the divergent name is
+        retained under aliases only as the historical reconciliation record.
 
     - id: skill_governance_pipeline_governance
       name: Skill Governance Pipeline Governance
@@ -863,12 +866,14 @@ governance_profiles:
       used_by:
         - skill_governance_pipeline
       aliases:
-        - skill_governance_profile       # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: skill_governance_pipeline_governance
+        - skill_governance_profile       # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name; MD canonical: skill_governance_pipeline_governance
       notes: >-
         NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. NOTE the SDLC pipeline already
         has a stage 03 `skill_governance` (stage-scope) profile — that is DISTINCT from this whole-
-        pipeline umbrella for the dedicated Skill Governance Pipeline. The catalog-YAML variant
-        `skill_governance_profile` is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        pipeline umbrella for the dedicated Skill Governance Pipeline. The pre-R9 catalog-YAML
+        definition_contract variant `skill_governance_profile` is retained under aliases only as the
+        historical reconciliation record; after R9 collapsed pipeline_catalog.yaml into a summary-only
+        catalog, the authoritative per-pipeline source is the markdown definition_doc.
 
     - id: memory_source_governance
       name: Memory Source Governance
@@ -908,11 +913,14 @@ governance_profiles:
         - retrieval_profile_update    # 2.5
         - memory_expiration_review    # 2.6
       aliases:
-        - memory_governance_profile   # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: memory_source_governance
+        - memory_governance_profile   # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name; MD canonical: memory_source_governance
       notes: >-
-        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Catalog YAML uses divergent
-        `memory_governance_profile` (F-1); markdown `memory_source_governance` is canonical-source.
-        The YAML-only variant is now recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. The pre-R9 catalog-YAML
+        definition_contract used the divergent name `memory_governance_profile` (F-1); markdown
+        `memory_source_governance` is canonical-source. After R9 collapsed pipeline_catalog.yaml into a
+        summary-only catalog (no per-pipeline definition_contract blocks), the authoritative per-pipeline
+        source is the markdown definition_doc; the divergent name is retained under aliases only as the
+        historical reconciliation record.
 
     - id: release_candidate_governance
       name: Release Candidate Governance
@@ -2946,12 +2954,14 @@ governance_profiles:
       used_by:
         - script_reference_audit     # skill-governance stage 2.3
       aliases:
-        - skill_safety_gate          # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: script_reference_audit_gate
+        - skill_safety_gate          # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name; MD canonical: script_reference_audit_gate
       notes: >-
         NEW. In pipeline-catalog-review.md §4.1 the consolidated header list names the five gates
         explicitly requested; this gate is part of the same Skill Governance set (review §4.1 lists it).
-        verification-loop used here strictly as defect/bug-finding (locked semantics). The catalog-YAML
-        variant `skill_safety_gate` is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        verification-loop used here strictly as defect/bug-finding (locked semantics). The pre-R9
+        catalog-YAML definition_contract variant `skill_safety_gate` is retained under aliases only as
+        the historical reconciliation record; after R9 collapsed pipeline_catalog.yaml into a
+        summary-only catalog, the authoritative per-pipeline source is the markdown definition_doc.
 
     - id: misuse_warning_required_gate
       name: Misuse Warning Required Gate
@@ -3005,11 +3015,13 @@ governance_profiles:
       used_by:
         - skill_binding_proposal     # skill-governance stage 2.5
       aliases:
-        - skill_binding_gate         # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: skill_binding_proposal_gate
+        - skill_binding_gate         # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name; MD canonical: skill_binding_proposal_gate
       notes: >-
         NEW. Part of the Skill Governance set (pipeline-catalog-review.md §4.1). Enforces
-        binding_proposed_without_semantics == false. The catalog-YAML variant `skill_binding_gate` is
-        recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        binding_proposed_without_semantics == false. The pre-R9 catalog-YAML definition_contract variant
+        `skill_binding_gate` is retained under aliases only as the historical reconciliation record;
+        after R9 collapsed pipeline_catalog.yaml into a summary-only catalog, the authoritative
+        per-pipeline source is the markdown definition_doc.
 
     - id: skill_activation_decision_gate
       name: Skill Activation Decision Gate
@@ -3103,10 +3115,12 @@ governance_profiles:
         - retrieval_profile_update      # stage 2.5
         - memory_expiration_review      # stage 2.6
       aliases:
-        - memory_validity_gate          # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: validity_window_required_gate
+        - memory_validity_gate          # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name; MD canonical: validity_window_required_gate
       notes: >-
-        NEW (pipeline-catalog-review.md §4.1). Knowledge/Memory Pipeline gate. The catalog-YAML variant
-        `memory_validity_gate` is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        NEW (pipeline-catalog-review.md §4.1). Knowledge/Memory Pipeline gate. The pre-R9 catalog-YAML
+        definition_contract variant `memory_validity_gate` is retained under aliases only as the
+        historical reconciliation record; after R9 collapsed pipeline_catalog.yaml into a summary-only
+        catalog, the authoritative per-pipeline source is the markdown definition_doc.
 
     - id: redaction_required_gate
       name: Redaction Required Gate
@@ -3135,12 +3149,14 @@ governance_profiles:
       used_by:
         - source_classification     # knowledge/memory stage 2.2 (redaction_applied_if_required)
       aliases:
-        - memory_expiration_gate    # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml) — third knowledge/memory gate; MD canonical: redaction_required_gate
+        - memory_expiration_gate    # F-1 / OQ-GOV-4: pre-R9 catalog-YAML definition_contract name — third knowledge/memory gate; MD canonical: redaction_required_gate
       notes: >-
         NEW (pipeline-catalog-review.md §4.1). Knowledge/Memory Pipeline gate. Distinct from the
         global raw_credential_redaction policy (which masks credentials in any output/evidence). The
-        catalog-YAML variant `memory_expiration_gate` (the third knowledge/memory gate token, per
-        OQ-GOV-4) is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+        pre-R9 catalog-YAML definition_contract variant `memory_expiration_gate` (the third
+        knowledge/memory gate token, per OQ-GOV-4) is retained under aliases only as the historical
+        reconciliation record; after R9 collapsed pipeline_catalog.yaml into a summary-only catalog,
+        the authoritative per-pipeline source is the markdown definition_doc.
 
     # ---- Context-pack stage-domain governance profiles (status: candidate) ----
     # Referenced by context_memory_profiles.yaml as the per-domain governance that bounds a context

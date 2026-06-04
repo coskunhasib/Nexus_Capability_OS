@@ -288,7 +288,7 @@ provenance:
   registry_profile: governance_profiles.yaml#pipeline.skill_governance_pipeline_governance
   derived_from:
     - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md  # markdown authoritative
-    - configs/nexus-ai/pipeline_catalog.yaml                               # skill_governance_pipeline entry (skill_governance_profile alias)
+    - configs/nexus-ai/pipeline_catalog.yaml                               # skill_governance_pipeline summary entry (skill_governance_profile was a pre-R9 definition_contract alias; catalog now summary-only)
     - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md           # §4, §5, §9 locked semantics
     - docs/ai-sdlc-factory/03-governance-and-audit-layering.md             # §8 skill governance
 no_plugin: true

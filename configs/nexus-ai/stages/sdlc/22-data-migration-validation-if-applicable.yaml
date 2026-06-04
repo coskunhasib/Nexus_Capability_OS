@@ -80,13 +80,13 @@ purpose: >-
   not re-run the full functional test suite (that is test_execution, stage #14).
 
 applicability_decision:
-  decision_artifact: DATA_MIGRATION_APPLICABILITY_DECISION
+  decision: DATA_MIGRATION_APPLICABILITY_DECISION
   required_when: data_model_changed == true or migration_changed == true
   evaluated_from:
     - DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE   # present => data model changed
     - MIGRATION_FILES_IF_APPLICABLE            # present => migration changed
     - DOMAIN_PROFILE_DECISION                  # persistent-data / regulated-data risk signal
-  when_not_applicable:
+  on_not_applicable:
     result: pass
     emit_evidence:
       - DATA_MIGRATION_APPLICABILITY_DECISION
@@ -187,16 +187,16 @@ optional_conditions:
   - stage_not_applicable_when_no_data_model_or_migration_change  # short-circuit PASS via applicability_decision
 
 conditional_required_gates:
-  - gate: data_migration_pass_if_applicable
+  - gate_id: data_migration_pass_if_applicable
     required_when: data_model_changed == true or migration_changed == true
     severity: blocker
-  - gate: rollback_validation_pass_if_applicable
+  - gate_id: rollback_validation_pass_if_applicable
     required_when: migration_changed == true
     severity: blocker
-  - gate: data_integrity_pass_if_applicable
+  - gate_id: data_integrity_pass_if_applicable
     required_when: data_model_changed == true or migration_changed == true
     severity: blocker
-  - gate: migration_covers_data_model_delta_if_applicable
+  - gate_id: migration_covers_data_model_delta_if_applicable
     required_when: data_model_changed == true and migration_changed == true
     severity: major
 

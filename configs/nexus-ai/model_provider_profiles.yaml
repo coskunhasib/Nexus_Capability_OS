@@ -33,9 +33,11 @@
 #   - docs/ai-sdlc-factory/01-nexus-ai-operating-model.md §11 (Core Ability -> profile binding).
 #   - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md §11.
 #   - docs/ai-sdlc-factory/pipeline-catalog/{research,activation,operations,skill-governance,
-#     knowledge-memory}.md (markdown = authoritative per pipeline-catalog-review F-1) and
-#     configs/nexus-ai/pipeline_catalog.yaml definition_contract blocks (divergent YAML variants
-#     recorded under aliases per F-1).
+#     knowledge-memory}.md (markdown = authoritative per pipeline-catalog-review F-1) and the
+#     pre-R9 configs/nexus-ai/pipeline_catalog.yaml definition_contract blocks (divergent YAML
+#     variants recorded under aliases per F-1). NOTE: R9 later collapsed pipeline_catalog.yaml into
+#     a summary-only catalog — those per-pipeline definition_contract blocks no longer exist there;
+#     the authoritative per-pipeline source is now each pipeline's markdown definition_doc.
 #   - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md §4.4 (consolidated new profiles).
 #
 # LOCKED DECISIONS honoured: Plugin cancelled (no plugin profiles, ever). Core Abilities are NOT
@@ -494,9 +496,10 @@ profiles:
   # -------------------------------------------------------------------------------------------
   # CANDIDATE profiles — newly introduced by the 5 non-SDLC catalog pipelines (Phase B / doc 16).
   # Referenced but not yet ratified. Markdown catalog docs are authoritative (pipeline-catalog
-  # -review F-1); divergent pipeline_catalog.yaml definition_contract names are recorded under
-  # aliases. Each candidate carries an overlap/consolidation recommendation where it shadows a
-  # canonical profile (doc 17 task requirement).
+  # -review F-1); divergent names from the pre-R9 pipeline_catalog.yaml definition_contract blocks
+  # are recorded under aliases (R9 has since made pipeline_catalog.yaml summary-only, so the
+  # authoritative per-pipeline source is each pipeline's markdown definition_doc). Each candidate
+  # carries an overlap/consolidation recommendation where it shadows a canonical profile (doc 17 task requirement).
   # -------------------------------------------------------------------------------------------
 
   # ---- Research pipeline ----
@@ -635,15 +638,17 @@ profiles:
       stages: [preview, pilot, activation_decision]
       core_abilities: []
     aliases:
-      - activation_reasoning_profile        # pipeline_catalog.yaml definition_contract variant (F-1); markdown `activation_reasoning_model` authoritative
+      - activation_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract variant (F-1); markdown `activation_reasoning_model` authoritative
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
         Overlaps the general_reasoning family. Recommend reusing a shared general reasoning profile
         unless activation needs distinct governance (owner-gate sensitivity). Decide in Phase E.
     notes: >-
-      Markdown activation-pipeline.md §1 lists `activation_reasoning_model`; pipeline_catalog.yaml
-      lists the `activation_reasoning_profile` variant (recorded as alias per F-1).
+      Markdown activation-pipeline.md §1 lists `activation_reasoning_model`; the pre-R9
+      pipeline_catalog.yaml definition_contract used the `activation_reasoning_profile` variant
+      (recorded as alias per F-1). R9 has since made pipeline_catalog.yaml summary-only; the
+      authoritative per-pipeline source is the markdown definition_doc.
 
   - id: risk_analysis_model
     name: Risk Analysis Model
@@ -733,18 +738,21 @@ profiles:
       stages: [incident_intake, severity_classification]
       core_abilities: []
     aliases:
-      - operations_reasoning_profile        # pipeline_catalog.yaml collapses all operations models into this single variant (F-1)
+      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract collapsed all operations models into this single variant (F-1)
     overlap:
       overlaps_with: defect_analysis_model
       recommendation: >-
         Overlaps defect_analysis_model (both reason about failures/blast-radius). Recommend reuse
         of defect_analysis_model for the failure-reasoning core, layering only the
-        severity-classification specifics. Decide in Phase E. Note pipeline_catalog.yaml represents
-        ALL four operations models with a single `operations_reasoning_profile` (recorded as alias).
+        severity-classification specifics. Decide in Phase E. Note the pre-R9 pipeline_catalog.yaml
+        definition_contract represented ALL four operations models with a single
+        `operations_reasoning_profile` (recorded as alias).
     notes: >-
-      Markdown operations-pipeline.md §1 lists four distinct operations models; the YAML
-      definition_contract collapses them into one `operations_reasoning_profile`. Markdown is
-      authoritative (F-1), so the four are registered separately with the YAML name as a shared alias.
+      Markdown operations-pipeline.md §1 lists four distinct operations models; the pre-R9
+      pipeline_catalog.yaml definition_contract collapsed them into one `operations_reasoning_profile`.
+      Markdown is authoritative (F-1), so the four are registered separately with that YAML name as a
+      shared alias. R9 has since made pipeline_catalog.yaml summary-only; the authoritative per-pipeline
+      source is the markdown definition_doc.
 
   - id: operations_analysis_model
     name: Operations Analysis Model
@@ -783,7 +791,7 @@ profiles:
       stages: [rollback_or_fix, mitigation]
       core_abilities: []
     aliases:
-      - operations_reasoning_profile        # pipeline_catalog.yaml single-profile variant (F-1)
+      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
     overlap:
       overlaps_with: release_reasoning_model
       recommendation: >-
@@ -838,7 +846,7 @@ profiles:
       stages: [postmortem]
       core_abilities: []
     aliases:
-      - operations_reasoning_profile        # pipeline_catalog.yaml single-profile variant (F-1)
+      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
@@ -887,7 +895,7 @@ profiles:
       stages: [learning_update]
       core_abilities: []
     aliases:
-      - operations_reasoning_profile        # pipeline_catalog.yaml single-profile variant (F-1)
+      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
@@ -941,7 +949,7 @@ profiles:
       stages: [skill_intake, skill_binding_proposal, skill_activation_decision]
       core_abilities: []
     aliases:
-      - skill_analysis_model                # pipeline_catalog.yaml collapses skill models into this single variant (F-1)
+      - skill_analysis_model                # pre-R9 pipeline_catalog.yaml definition_contract collapsed skill models into this single variant (F-1)
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
@@ -988,7 +996,7 @@ profiles:
       stages: [skill_semantic_extraction]
       core_abilities: []
     aliases:
-      - skill_analysis_model                   # pipeline_catalog.yaml single-profile variant (F-1)
+      - skill_analysis_model                   # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
     overlap:
       overlaps_with: null
       recommendation: >-
@@ -1035,7 +1043,7 @@ profiles:
       stages: [script_reference_audit]
       core_abilities: []
     aliases:
-      - skill_analysis_model                   # pipeline_catalog.yaml single-profile variant (F-1)
+      - skill_analysis_model                   # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
     overlap:
       overlaps_with: security_analysis_model
       recommendation: >-
@@ -1085,7 +1093,7 @@ profiles:
       stages: [memory_candidate_evaluation, retrieval_profile_update]
       core_abilities: []
     aliases:
-      - memory_reasoning_profile               # pipeline_catalog.yaml variant (F-1); markdown `knowledge_reasoning_profile` authoritative
+      - memory_reasoning_profile               # pre-R9 pipeline_catalog.yaml definition_contract variant (F-1); markdown `knowledge_reasoning_profile` authoritative
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
