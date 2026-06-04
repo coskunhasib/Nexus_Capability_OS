@@ -36,6 +36,7 @@ uses_core_abilities:
   - Memory
   - Web
   - OS
+  - Vision
 
 uses_skills:
   - prism
@@ -48,6 +49,8 @@ uses_skills:
   - prompt-fidelity
   - calibrate
   - refraction
+  - fermi-decompose
+  - bayesian-update
 
 uses_tools:
   - artifact_writer
@@ -62,6 +65,19 @@ uses_tools:
   - migration_checker
   - contract_test_runner
   - resource_budget_checker
+  - compliance_matrix_builder
+  - requirements_trace_checker
+  - prompt_injection_tester
+  - tool_misuse_tester
+  - context_poisoning_tester
+  - evidence_consistency_checker
+  - agent_permission_auditor
+  - eval_runner
+  - backup_plan_checker
+  - restore_test_runner
+  - dr_runbook_checker
+  - cost_estimator
+  - quota_policy_checker
 
 uses_governance_profiles:
   - sdlc_pipeline_governance
@@ -71,17 +87,23 @@ uses_governance_profiles:
   - supply_chain_governance
   - privacy_lifecycle_governance
   - data_migration_governance
+  - domain_compliance_governance
   - release_candidate_governance
 
 uses_audit_schemas:
   - sdlc_pipeline_evidence_schema
   - stage_gate_trace_schema
   - release_evidence_schema
+  - compliance_matrix_schema
+  - regulatory_evidence_schema
 
 uses_model_provider_profiles:
   - sdlc_reasoning_profile
   - coder_engineering_model
   - supervisor_routing_model
+  - architecture_reasoning_model
+  - security_analysis_model
+  - release_reasoning_model
 
 uses_context_memory_profiles:
   - sdlc_run_context
@@ -114,6 +136,7 @@ supply_chain_sbom_license
 ai_agent_safety_evaluation
 privacy_data_lifecycle_validation
 api_contract_compatibility_validation
+domain_regulatory_compliance_validation_if_applicable
 data_migration_validation_if_applicable
 accessibility_ux_validation_if_applicable
 performance_resilience
@@ -136,6 +159,7 @@ nfr_coverage_complete
 architecture_complete
 adr_coverage_complete
 security_privacy_design_complete
+risk_register_reviewed
 implementation_scope_clean
 code_review_pass
 tests_pass
@@ -144,11 +168,19 @@ security_validation_pass
 supply_chain_pass
 license_pass
 sbom_present
+performance_resilience_pass_or_accepted
 agentic_safety_eval_pass
 operations_readiness_pass
 evidence_graph_complete
 no_blocking_policy_failure
 ```
+
+> Reconciliation vs doc 06 §8: this always-required set =
+> (doc 06 §8 always gates) + `agentic_safety_eval_pass`. The two always-on BLOCKER gates
+> `risk_register_reviewed` (produced by stage 9 premortem_fmea) and
+> `performance_resilience_pass_or_accepted` (produced by stage 24 performance_resilience)
+> are members of both sets, so doc 08 §4 and doc 06 §8 agree. (`agentic_safety_eval_pass`
+> is the one always gate doc 08 §4 adds beyond doc 06 §8, for the AI-agent safety stage.)
 
 Conditional required:
 
@@ -223,22 +255,22 @@ Development Completion pass olabilmesi için `06`, `06a`, `06b` dokümanlarında
 
 Release Candidate, Development Completion pass olmadan üretilemez.
 
-Minimum evidence set:
+Minimum evidence set (canonical artifact names from
+`configs/nexus-ai/artifact_registry.yaml` → `release_evidence_required.core`):
 
 ```text
 REQUIREMENTS_SPEC
 NFR_CATALOG
-ARCHITECTURE_DECISION / ADR
+ARCHITECTURE_DOC
+ADR_INDEX
 THREAT_MODEL
-RISK_REGISTER
-IMPLEMENTATION_SUMMARY
+FMEA_RISK_REGISTER
 CODE_REVIEW_REPORT
 TEST_EXECUTION_REPORT
 BUG_FINDING_REPORT
 SECURITY_SCAN_REPORT
 SBOM
 LICENSE_REPORT
-SUPPLY_CHAIN_GATE_RESULT
 AGENTIC_SAFETY_EVAL_REPORT
 PERFORMANCE_REPORT
 RUNBOOK
@@ -249,20 +281,39 @@ DEVELOPMENT_COMPLETION_REPORT
 RELEASE_CANDIDATE_REPORT
 ```
 
-Conditional evidence:
+> Naming reconciliation vs the artifact registry (earlier prose names → canonical names):
+> `ARCHITECTURE_DECISION / ADR` → `ARCHITECTURE_DOC` + `ADR_INDEX`; `RISK_REGISTER` →
+> `FMEA_RISK_REGISTER`. The prose-only `IMPLEMENTATION_SUMMARY` and `SUPPLY_CHAIN_GATE_RESULT`
+> are not registry release-evidence items (the registry tracks `CODE_CHANGESET_SUMMARY` /
+> `IMPLEMENTATION_NOTES` and `SUPPLY_CHAIN_GATE_RESULT` as stage artifacts, not in
+> `release_evidence_required`), so they are dropped from the release-evidence set.
+> `PERFORMANCE_REPORT` is retained as semantically required and is already the registry's
+> exact name.
+
+Conditional evidence (canonical artifact names from
+`release_evidence_required.conditional`):
 
 ```text
-ACCESSIBILITY_REPORT_IF_APPLICABLE
-UX_VALIDATION_REPORT_IF_APPLICABLE
-DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE
-MIGRATION_VALIDATION_REPORT_IF_APPLICABLE
-DATA_INTEGRITY_REPORT_IF_APPLICABLE
 COMPLIANCE_MATRIX_IF_APPLICABLE
-PRIVACY_LIFECYCLE_REPORT_IF_APPLICABLE
-API_CONTRACT_REPORT_IF_APPLICABLE
-BACKUP_RESTORE_DR_REPORT_IF_APPLICABLE
-COST_RESOURCE_REPORT_IF_APPLICABLE
+REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE
+DATA_LIFECYCLE_REPORT
+API_CONTRACT_REPORT
+MIGRATION_VALIDATION_REPORT
+ACCESSIBILITY_REPORT
+COST_ESTIMATE_REPORT
+RESTORE_TEST_REPORT
 ```
+
+> Conditional naming reconciliation (earlier prose names → canonical names):
+> `ACCESSIBILITY_REPORT_IF_APPLICABLE` → `ACCESSIBILITY_REPORT`;
+> `UX_VALIDATION_REPORT_IF_APPLICABLE` is covered by `accessibility_ux_validation` evidence
+> and is not a separate registry release item; `DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE` /
+> `DATA_INTEGRITY_REPORT_IF_APPLICABLE` fold into `MIGRATION_VALIDATION_REPORT`;
+> `PRIVACY_LIFECYCLE_REPORT_IF_APPLICABLE` → `DATA_LIFECYCLE_REPORT`;
+> `API_CONTRACT_REPORT_IF_APPLICABLE` → `API_CONTRACT_REPORT`;
+> `BACKUP_RESTORE_DR_REPORT_IF_APPLICABLE` → `RESTORE_TEST_REPORT`;
+> `COST_RESOURCE_REPORT_IF_APPLICABLE` → `COST_ESTIMATE_REPORT`; and
+> `REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE` is added to match the registry set.
 
 ## 8. Remaining work
 

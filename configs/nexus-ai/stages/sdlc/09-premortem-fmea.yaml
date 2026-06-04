@@ -1,0 +1,93 @@
+# SDLC Pipeline — Stage #9 contract
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set)
+# Reconciled against: docs/ai-sdlc-factory/sdlc-stages/02-design-risk-and-planning.md (stage prose),
+#   docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale owner/profile names superseded),
+#   docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Required / always-on status),
+#   docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract format),
+#   docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (routing: on_pass=planning),
+#   configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names).
+# Always-on stage (no applicability_decision).
+
+stage_id: premortem_fmea
+name: Premortem / FMEA
+purpose: >-
+  Mimari ve güvenlik/gizlilik tasarımının ardından failure mode, abuse case, edge case ve
+  release öncesi riskleri yapılandırılmış (premortem + FMEA) biçimde inceleyip, her kritik
+  risk için kabul kararı veya sahipli bir mitigation içeren bir risk register üretmek.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: risk_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+
+uses_skills:
+  - sentinel
+  - prism
+  - fmea
+  - gap-audit
+
+uses_tools:
+  - evidence_reader
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - risk_review_governance
+  - fmea_required_gate
+  - no_self_approval_policy
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - risk_register_schema
+  - premortem_evidence_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - architecture_context_pack
+
+inputs:
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - THREAT_MODEL
+  - PRIVACY_RISK_REGISTER
+  - SECURITY_REQUIREMENTS
+
+outputs:
+  - SENTINEL_PREMORTEM
+  - FMEA_RISK_REGISTER
+
+evidence:
+  - SENTINEL_PREMORTEM
+  - FMEA_RISK_REGISTER
+
+trace:
+  - premortem_fmea_stage_trace
+  - sentinel_skill_activation_trace
+  - fmea_skill_activation_trace
+  - risk_register_decision_trace
+
+gates:
+  - no_unaccepted_critical_risk
+  - mitigation_owner_present
+  - risk_register_reviewed
+  - failure_modes_traced_to_architecture
+
+on_pass: planning
+on_fail: architecture
+rework_route: architecture
+
+blocking_conditions:
+  - unaccepted_critical_risk
+  - missing_mitigation_owner
+  - critical_failure_mode_without_detection_or_mitigation
+
+optional_conditions: []
+conditional_required_gates: []
+max_iterations: 3

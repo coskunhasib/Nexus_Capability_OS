@@ -1,0 +1,727 @@
+# =============================================================================
+# Nexus AI — GLOBAL-scope Governance Profiles (applicable config layer)
+# =============================================================================
+# Phase E / doc 19 (19-governance-audit-readiness-plan.md). This file IMPLEMENTS
+# the global-scope governance profiles that already EXIST as catalog entries in
+# the Phase C registry (configs/nexus-ai/governance_profiles.yaml -> scope:global)
+# and turns them into a GRANULAR, APPLICABLE config: every rule carries the full
+# doc 19 §5 rule contract (required_when / pass_condition / fail_condition /
+# on_fail / rework_route / evidence_required / trace_required) so that "SDLC
+# required gates can be evaluated from configs" (doc 19 §15 exit criterion).
+#
+# Documentation / blueprint ONLY. NO runtime code, NO merge, NO deploy.
+#
+# -----------------------------------------------------------------------------
+# RELATIONSHIP TO THE REGISTRY (registry = WHAT exists; this = HOW it applies)
+# -----------------------------------------------------------------------------
+#   - configs/nexus-ai/governance_profiles.yaml  -> the CATALOG: 105 profiles by
+#     scope, each with id/scope/purpose/applies_to/severity_default/used_by. It
+#     answers "what governance exists?".
+#   - THIS FILE (governance/global.yaml)         -> the APPLICABLE layer for the
+#     GLOBAL scope only: each profile restated under the doc 19 §4 profile
+#     contract, with concrete, evaluable §5 rules. It answers "how is each global
+#     profile evaluated against a gate decision?".
+#   Sibling applicable layers (doc 19 §13 outputs) live under:
+#     configs/nexus-ai/governance/pipeline/*.yaml
+#     configs/nexus-ai/governance/team/*.yaml
+#     configs/nexus-ai/governance/stage/*.yaml
+#     configs/nexus-ai/governance/core-ability/*.yaml
+#     configs/nexus-ai/governance/skill/*.yaml
+#     configs/nexus-ai/governance/tool/*.yaml
+#   Audit schemas (Evidence + Trace, kept in SEPARATE dirs) live under:
+#     configs/nexus-ai/audit/evidence_schemas/*.yaml
+#     configs/nexus-ai/audit/trace_schemas/*.yaml
+#
+# -----------------------------------------------------------------------------
+# LOCKED DECISIONS honored here (.memory/0002-locked-decisions.md; doc 19 §14)
+# -----------------------------------------------------------------------------
+#   - Plugin is CANCELLED and never reintroduced. `plugin_absent` ENFORCES the
+#     absence; it does not create a plugin concept. No plugin registry, ever.
+#   - Governance != Audit. This file holds GOVERNANCE only (Policy/Gates/
+#     Permissions/Risk Rules). It REFERENCES audit schemas by id under
+#     required_evidence / required_trace but defines none.
+#   - Evidence != Trace, and they are NEVER merged. required_evidence points only
+#     at Evidence-family schemas (configs/nexus-ai/audit/evidence_schemas/);
+#     required_trace points only at Trace-family schemas
+#     (configs/nexus-ai/audit/trace_schemas/). A profile/rule may need BOTH, but
+#     the two lists are kept strictly distinct.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents and NOT team members. They never appear as an owner/approver.
+#     Supervisor != any *_team_lead. (Referenced by capitalized Name as a label,
+#     but the registry lowercase id is preferred in config — neither is broken.)
+#   - Skill != Tool. prism = brainstorming/divergence; verification-loop =
+#     bug/defect finding. Supervisor != team lead.
+#
+# -----------------------------------------------------------------------------
+# RECONCILIATION INPUTS APPLIED (doc 19; pipeline-catalog-review.md §4.7)
+# -----------------------------------------------------------------------------
+#   (a) `no_self_approval` and `evidence_required` are promoted to FIRST-CLASS
+#       global governance_profile_ids here; the `*_policy` spellings used across
+#       the 31 SDLC stage files and the 5 new pipelines are recorded under
+#       `aliases` (never as a second id). The canonical-source policy aliases
+#       already in the registry (e.g. no_plugin_core / no_secret_read /
+#       no_silent_mutation / no_destructive_action_without_gate) are preserved.
+#   (b) Authoritative team names are used in escalation targets (knowledge_team,
+#       NOT knowledge_memory_team).
+#   (d) Core Abilities referenced by registry id (lowercase) with the Name kept
+#       only as a human label.
+#
+# -----------------------------------------------------------------------------
+# PROFILE CONTRACT (doc 19 §4) — every profile below carries exactly:
+#   governance_profile_id, scope, purpose, applies_to, severity_default, rules,
+#   required_evidence, required_trace, owner, escalation
+#   (+ registry-linkage helpers: registry_id, status, aliases, notes — additive,
+#    contract-compatible; they make the registry<->applicable mapping checkable.)
+#
+# RULE CONTRACT (doc 19 §5) — every rule below carries exactly:
+#   rule_id, description, severity, required_when, pass_condition,
+#   fail_condition, on_fail, rework_route, evidence_required, trace_required
+#
+# AUDIT SCHEMA REFERENCES — only ids that EXIST in
+# configs/nexus-ai/audit_schemas.yaml are referenced:
+#   evidence_schemas: sdlc_pipeline_evidence_schema
+#   trace_schemas:    stage_gate_trace_schema, gate_decision_trace_schema
+# (decision_record_schema / gate_result_schema are TYPE names, not item ids, so
+#  they are NOT referenced as concrete schema ids. The repo-wide token
+#  `stage_gate_decision_trace` has no defining item id yet — see open_questions.)
+# =============================================================================
+
+config_id: nexus_ai_governance_global
+config_name: Nexus AI — Global Governance (Applicable Layer)
+config_version: draft-0.1
+config_status: draft
+layer: governance
+scope: global
+governance_not_audit: true        # Governance != Audit (this file: governance only)
+evidence_not_trace: true          # Evidence != Trace (required_evidence vs required_trace kept distinct)
+no_plugin: true                   # Plugin cancelled; absence enforced by plugin_absent
+
+# --- provenance: sources this applicable layer was derived from ----------------
+canonical_sources:
+  - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md        # §4 profile, §5 rule, §6 global minimum, §14 validation
+  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md          # §3 global governance set
+  - docs/ai-sdlc-factory/06-governance-policy-evidence.md             # §2 rule shape (on_fail.action: block_stage), §3 blocker policies
+  - configs/nexus-ai/governance_profiles.yaml                         # Phase C registry (scope:global catalog being implemented)
+  - configs/nexus-ai/audit_schemas.yaml                              # evidence/trace schema ids referenced (never redefined)
+  - configs/nexus-ai/sdlc_pipeline.yaml                              # pipeline-level uses_governance_profiles bindings
+  - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml                 # anti_patterns / locked_decision_guards these rules enforce
+  - configs/nexus-ai/stages/sdlc/*.yaml                              # 31 stage gates + on_fail/rework_route this layer must evaluate
+
+# --- closed vocabularies (doc 19 §5 severity; 06 §2 on_fail action) ------------
+severity_vocabulary: [blocker, major, advisory, informational]
+on_fail_action_vocabulary:
+  - block_stage          # 06 §2 canonical on_fail.action — halt the stage; gate cannot pass
+  - block_release        # halt release_candidate production (RC-boundary rules)
+  - record_risk          # advisory: do not block; write into residual-risk / evidence
+  - flag_for_review      # informational: surface for human/owner attention, non-blocking
+rework_route_vocabulary:
+  - none                 # no rework target (global guards have no single owning stage)
+  - implementation       # most SDLC stage on_fail routes back to implementation (stage 11)
+  - originating_stage    # route back to whichever stage emitted the failing action
+
+# Validation invariants this file satisfies (doc 19 §14), machine-checkable:
+self_validation:
+  - "Every profile declares scope: global (a known scope)."                       # §14
+  - "Every rule has a severity from severity_vocabulary."                         # §14
+  - "Every blocker rule has an on_fail behavior (block_stage / block_release)."   # §14
+  - "required_evidence references only evidence_schema ids; required_trace references only trace_schema ids (Evidence != Trace; never merged)."  # §11/§14
+  - "No plugin governance is introduced (plugin_absent asserts absence only)."    # §14
+
+# =============================================================================
+# GLOBAL GOVERNANCE PROFILES
+#   6 doc 19 §6 minimums:
+#     plugin_absent, no_secret_exposure, no_policy_bypass, trace_required,
+#     raw_credential_redaction, high_risk_action_default_deny
+#   + 2 cross-cutting first-class profiles (promoted per reconciliation (a)):
+#     no_self_approval, evidence_required
+# =============================================================================
+governance_profiles:
+
+  # ---------------------------------------------------------------------------
+  # 1. plugin_absent  (doc 19 §6; registry scope:global)
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: plugin_absent
+    registry_id: plugin_absent
+    status: canonical
+    scope: global
+    purpose: >-
+      Enforce the locked decision that Plugin is cancelled and never reintroduced:
+      no plugin concept, field, stage, registry, or governance may exist anywhere
+      in Nexus AI. This profile ASSERTS absence as a standing guard; it does not
+      create, gate, or "manage" any plugin (there is nothing to manage).
+    applies_to:
+      - all_pipelines
+      - all_stages
+      - shared_registry
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - governance_owner
+        - operations_team        # platform-level invariant breach
+      authority_note: >-
+        No actor may waive this. Reintroducing a plugin concept is a locked-decision
+        breach, not a risk to be accepted (06 §13 risk-acceptance limits).
+    aliases:
+      - no_plugin_core           # 06 §3 plugin_must_not_be_required_by_core_pipeline
+      - no_plugin                # pipeline_catalog.yaml `no_plugin: true`
+    required_evidence:
+      - sdlc_pipeline_evidence_schema     # absence-attestation recorded as decision-proof when a gate checks it
+    required_trace:
+      - stage_gate_trace_schema           # the guard's evaluation is traced
+    rules:
+      - rule_id: no_plugin_concept_present
+        description: >-
+          No pipeline, stage, registry, profile, or field may introduce a plugin
+          concept of any kind anywhere in Nexus AI.
+        severity: blocker
+        required_when: always
+        pass_condition: plugin_concept_count == 0
+        fail_condition: plugin_concept_count > 0
+        on_fail: block_stage
+        rework_route: none
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: no_plugin_required_by_core_pipeline
+        description: >-
+          No core pipeline may require, depend on, or reference a plugin to
+          complete any stage (06 §3 plugin_must_not_be_required_by_core_pipeline).
+        severity: blocker
+        required_when: always
+        pass_condition: core_pipeline_plugin_dependency_count == 0
+        fail_condition: core_pipeline_plugin_dependency_count > 0
+        on_fail: block_stage
+        rework_route: none
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+    notes: >-
+      Implements registry profile `plugin_absent`. Restates the runtime-rules
+      anti_pattern `plugin_stage` and locked_decision guard. LOCKED: no plugin
+      registry, ever.
+
+  # ---------------------------------------------------------------------------
+  # 2. no_secret_exposure  (doc 19 §6; registry scope:global)
+  #    Forbids the READ/exposure of raw secrets. Distinct from
+  #    raw_credential_redaction (which masks secrets in OUTPUTS).
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: no_secret_exposure
+    registry_id: no_secret_exposure
+    status: canonical
+    scope: global
+    purpose: >-
+      Agents/LLMs/sub-agents must never read, emit, log, or leak raw secrets or
+      credentials. This profile forbids the exposure/read ITSELF (the surfacing of
+      an un-redacted secret is governed by raw_credential_redaction).
+    applies_to:
+      - all_pipelines
+      - all_stages
+      - all_tools
+      - all_core_abilities
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - security_validation_agent       # security-sensitive breach (snake_case agent role, not a Core Ability)
+        - governance_owner
+      authority_note: >-
+        A secret read/leak is a blocker; it cannot be auto-accepted (06 §13).
+    aliases:
+      - no_secret_read           # 06 §3 agents_cannot_read_raw_secrets
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    rules:
+      - rule_id: no_raw_secret_read
+        description: >-
+          No agent/sub-agent/tool/core-ability invocation may read raw secret or
+          credential material (06 §3 agents_cannot_read_raw_secrets).
+        severity: blocker
+        required_when: always
+        pass_condition: raw_secret_read_count == 0
+        fail_condition: raw_secret_read_count > 0
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: no_secret_leak_in_output
+        description: >-
+          No emitted artifact, log, or trace may contain a leaked raw secret. This
+          is the global expression of the stage-16 no_secret_leak_gate.
+        severity: blocker
+        required_when: stage_emits_output_or_log
+        pass_condition: detected_secret_leak_count == 0
+        fail_condition: detected_secret_leak_count > 0
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+    notes: >-
+      Implements registry profile `no_secret_exposure`. The stage-scope
+      `no_secret_leak_gate` (security_validation, stage 16) is the stage expression
+      of no_secret_leak_in_output and belongs in governance/stage/*.
+
+  # ---------------------------------------------------------------------------
+  # 3. no_policy_bypass  (doc 19 §6; registry scope:global)
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: no_policy_bypass
+    registry_id: no_policy_bypass
+    status: canonical
+    scope: global
+    purpose: >-
+      No actor — including any *_team_lead orchestrator, LLM council, or prompt —
+      may override, skip, or force-"pass" a blocking governance gate. Prompt does
+      not replace policy; Team Lead does not replace policy; LLM council does not
+      replace policy (06 §1).
+    applies_to:
+      - all_pipelines
+      - all_team_leads
+      - all_gates
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - governance_owner
+      authority_note: >-
+        This is the invariant behind every *_team_lead "cannot bypass a gate"
+        constraint. A bypass is never an acceptable risk.
+    aliases:
+      - team_lead_cannot_override_blocking_gate   # 06 §3 phrasing
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+      - gate_decision_trace_schema       # aggregate go/no-go lineage where a bypass would show
+    rules:
+      - rule_id: no_blocking_gate_override
+        description: >-
+          A blocking gate that did not satisfy its pass_condition must not be
+          recorded as passed by any actor (team_lead_cannot_override_blocking_gate).
+        severity: blocker
+        required_when: gate_is_blocking
+        pass_condition: overridden_blocking_gate_count == 0
+        fail_condition: overridden_blocking_gate_count > 0
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: no_prompt_or_council_gate_pass
+        description: >-
+          A gate may not be marked pass on the basis of prompt content or an LLM/
+          council opinion alone, with no satisfied pass_condition + evidence
+          (06 §1; anti-pattern "LLM output ile gate pass etmek").
+        severity: blocker
+        required_when: gate_decision_recorded
+        pass_condition: gate_pass_backed_by_satisfied_condition_and_evidence == true
+        fail_condition: gate_pass_backed_by_satisfied_condition_and_evidence == false
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - gate_decision_trace_schema
+    notes: >-
+      Implements registry profile `no_policy_bypass`. Reinforces the runtime-rules
+      anti_patterns `release_candidate_without_policy_gate` and `self_approval_gate`.
+
+  # ---------------------------------------------------------------------------
+  # 4. trace_required  (doc 19 §6; registry scope:global)
+  #    GOVERNANCE rule that MANDATES trace. The trace record SHAPES are audit
+  #    schemas (Governance != Audit): this profile points at trace schemas but is
+  #    not one, and references NO evidence schema in its trace-mandate rules.
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: trace_required
+    registry_id: trace_required
+    status: canonical
+    scope: global
+    purpose: >-
+      Every governed action (agent / sub-agent / skill / tool / core-ability
+      invocation, handoff, policy evaluation, pipeline transition, gate decision)
+      must emit a trace record. This MANDATES trace; it does not define the trace
+      shape (that is an audit schema).
+    applies_to:
+      - all_pipelines
+      - all_stages
+      - all_tools
+      - all_skills
+      - all_core_abilities
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - governance_owner
+        - operations_team
+      authority_note: >-
+        An untraced governed action (or a silent mutation) is a blocker; it cannot
+        be retroactively accepted.
+    aliases:
+      - no_silent_mutation               # 06 §3 no_environment_or_repo_mutation_without_explicit_tool_and_trace
+      - global_trace_required_policy      # spelling used by audit_schemas.yaml cross-references
+    # NOTE: required_evidence is intentionally EMPTY here — a trace-mandate profile
+    # requires TRACE, not evidence (Evidence != Trace). Keeping the key present (as
+    # an empty list) preserves the §4 contract shape without merging the families.
+    required_evidence: []
+    required_trace:
+      - stage_gate_trace_schema
+      - gate_decision_trace_schema
+    rules:
+      - rule_id: every_governed_action_traced
+        description: >-
+          Each agent/sub-agent/skill/tool/core-ability invocation, handoff, policy
+          evaluation, pipeline transition, and gate decision must produce a trace
+          record.
+        severity: blocker
+        required_when: governed_action_executed
+        pass_condition: untraced_governed_action_count == 0
+        fail_condition: untraced_governed_action_count > 0
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required: []            # trace-only mandate; no evidence requirement here
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: no_silent_mutation
+        description: >-
+          No environment or repository mutation may occur without an explicit tool
+          call AND an accompanying trace (06 §3 no_silent_mutation).
+        severity: blocker
+        required_when: mutation_attempted
+        pass_condition: mutation_has_explicit_tool_and_trace == true
+        fail_condition: mutation_has_explicit_tool_and_trace == false
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required: []
+        trace_required:
+          - stage_gate_trace_schema
+    notes: >-
+      Implements registry profile `trace_required`. `global_trace_required_policy`
+      is recorded as an alias because audit_schemas.yaml references the trace
+      mandate under that spelling — reconciled here (see open_questions for the
+      reverse fix).
+
+  # ---------------------------------------------------------------------------
+  # 5. raw_credential_redaction  (doc 19 §6; registry scope:global)
+  #    Complements no_secret_exposure: that forbids the READ; this forbids the
+  #    un-redacted SURFACING in any output / artifact / evidence / trace.
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: raw_credential_redaction
+    registry_id: raw_credential_redaction
+    status: canonical
+    scope: global
+    purpose: >-
+      Any credential/secret material that would otherwise appear in an output,
+      log, artifact, evidence record, or trace MUST be redacted/masked before it
+      is surfaced or stored.
+    applies_to:
+      - all_pipelines
+      - all_stages
+      - all_tools
+      - all_evidence_records
+      - all_trace_records
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - security_validation_agent
+        - governance_owner
+      authority_note: >-
+        Surfacing an un-redacted credential is a blocker even if "only internal".
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    rules:
+      - rule_id: credentials_redacted_in_outputs
+        description: >-
+          Credential-like tokens in any emitted artifact, log, evidence, or trace
+          must be masked/redacted (the global redaction rule referenced by every
+          audit schema's redaction_rules: raw_credential_redaction).
+        severity: blocker
+        required_when: output_or_record_emitted
+        pass_condition: unredacted_credential_token_count == 0
+        fail_condition: unredacted_credential_token_count > 0
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+    notes: >-
+      Implements registry profile `raw_credential_redaction`. Distinct from the
+      knowledge/memory stage `redaction_required_gate` (sensitive-content redaction
+      before summarization/storage), which belongs in governance/stage/*.
+
+  # ---------------------------------------------------------------------------
+  # 6. high_risk_action_default_deny  (doc 19 §6; registry scope:global)
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: high_risk_action_default_deny
+    registry_id: high_risk_action_default_deny
+    status: canonical
+    scope: global
+    purpose: >-
+      High-risk / destructive actions are DENIED by default. They may execute only
+      when an explicit enabling policy + gate + evidence permits them. The default
+      posture for any high-risk action is deny (03 §3).
+    applies_to:
+      - all_pipelines
+      - all_tools
+      - high_risk_actions
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - governance_owner
+        - operations_team
+      authority_note: >-
+        A destructive action without an explicit policy+gate+evidence is denied;
+        critical/destructive risk cannot be auto-accepted (06 §13).
+    aliases:
+      - no_destructive_action_without_gate   # 06 §3 destructive_tools_require_explicit_policy_and_evidence
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    rules:
+      - rule_id: high_risk_action_denied_by_default
+        description: >-
+          A high-risk/destructive action must be denied unless an explicit enabling
+          policy is present for it.
+        severity: blocker
+        required_when: action_classified_high_risk
+        pass_condition: high_risk_action_has_explicit_enabling_policy == true
+        fail_condition: high_risk_action_has_explicit_enabling_policy == false
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: destructive_tool_requires_gate_and_evidence
+        description: >-
+          A destructive tool action requires an explicit policy AND a gate AND an
+          evidence record before it may execute (06 §3
+          destructive_tools_require_explicit_policy_and_evidence).
+        severity: blocker
+        required_when: destructive_tool_invoked
+        pass_condition: destructive_action_has_policy_gate_and_evidence == true
+        fail_condition: destructive_action_has_policy_gate_and_evidence == false
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+    notes: >-
+      Implements registry profile `high_risk_action_default_deny`. Tool-scope
+      expressions (e.g. sandbox_execution_governance) belong in governance/tool/*;
+      this is the global default-deny posture they specialize.
+
+  # ---------------------------------------------------------------------------
+  # 7. no_self_approval  (cross-cutting, promoted FIRST-CLASS per reconciliation (a))
+  #    doc 19 §6 cross-cutting; registry scope:global. Most-referenced policy in
+  #    the repo (every SDLC review/validation gate + all 5 new pipelines).
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: no_self_approval
+    registry_id: no_self_approval
+    status: canonical
+    scope: global
+    purpose: >-
+      A producing agent may not be the sole approver/validator of its own output:
+      producer_agent_id != approver_agent_id for any review/validation/decision gate
+      (06 §2-§3, §6 no-self-approval matrix). DISTINCT from a HUMAN/owner authority
+      gate (e.g. owner_activation_decision_gate), which is a separate concept, not
+      autonomous-agent self-approval.
+    applies_to:
+      - all_review_and_validation_gates
+      - all_decision_gates
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - governance_owner
+      fallback_reviewer: team_lead_role        # per pipeline (e.g. sdlc_team_lead) where no dedicated reviewer role fits (SDLC 05/07)
+      authority_note: >-
+        The fallback reviewer is the owning pipeline's *_team_lead, which is NEVER
+        the Supervisor Core Ability (locked). Self-approval is never acceptable.
+    aliases:
+      - no_self_approval_policy    # spelling used by all 31 SDLC stage files + all 5 new pipelines
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    rules:
+      - rule_id: producer_is_not_sole_approver
+        description: >-
+          For any review/validation/decision gate, the approver/validator must
+          differ from the producer of the artifact being adjudicated
+          (producer_agent_id != approver_agent_id).
+        severity: blocker
+        required_when: gate_is_review_validation_or_decision
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: producer_agent_id == approver_agent_id
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: reviewer_role_distinct_from_producer_role
+        description: >-
+          Where roles (not just agent ids) are structurally separated (e.g. research
+          cross_validation, skill activation proposer != decider), the validator
+          ROLE must differ from the producer ROLE.
+        severity: blocker
+        required_when: roles_structurally_separated
+        pass_condition: validator_role != producer_role
+        fail_condition: validator_role == producer_role
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+    notes: >-
+      Promoted to first-class global id `no_self_approval`; `no_self_approval_policy`
+      recorded as alias (reconciliation (a)). Enforced concretely by stage-scope
+      review gates (code_review_gate, architecture_review_gate, etc.) in
+      governance/stage/* and team rules in governance/team/*.
+
+  # ---------------------------------------------------------------------------
+  # 8. evidence_required  (cross-cutting, promoted FIRST-CLASS per reconciliation (a))
+  #    doc 19 §6 cross-cutting; registry scope:global. Bound by ALL 31 SDLC stages
+  #    and all 5 new pipelines. Backs SDLC gate evaluability from configs.
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: evidence_required
+    registry_id: evidence_required
+    status: canonical
+    scope: global
+    purpose: >-
+      Every gate decision must be backed by a machine-readable EVIDENCE record:
+      no pass/approve/release without an evidence record (06 §3
+      every_gate_decision_requires_evidence). Evidence != Trace — a trace alone
+      cannot satisfy this; an evidence-family record is required.
+    applies_to:
+      - all_gates
+      - all_decisions
+    severity_default: blocker
+    owner: nexus_global_governance
+    escalation:
+      on_violation: halt_and_report
+      notify:
+        - governance_owner
+        - evidence_graph_agent       # consumer of evidence into the EVIDENCE_GRAPH (stage 28); snake_case agent role
+      authority_note: >-
+        Missing evidence cannot be auto-accepted (06 §13). An approval resting on
+        LLM output alone is rejected.
+    aliases:
+      - evidence_required_policy    # spelling used by every SDLC stage file + the 5 new pipelines
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    rules:
+      - rule_id: every_gate_decision_has_evidence
+        description: >-
+          A gate decision (pass/fail/approve) must reference at least one evidence
+          record before it is valid (06 §3 every_gate_decision_requires_evidence).
+        severity: blocker
+        required_when: gate_decision_recorded
+        pass_condition: gate_decision_evidence_record_count >= 1
+        fail_condition: gate_decision_evidence_record_count == 0
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: evidence_is_linked_not_arbitrary_artifact
+        description: >-
+          An artifact counts as evidence only when linked to a stage/agent/gate
+          decision; an arbitrary unlinked artifact is not evidence (06 §7; 11 §1).
+        severity: blocker
+        required_when: artifact_offered_as_evidence
+        pass_condition: evidence_record_has_stage_agent_gate_linkage == true
+        fail_condition: evidence_record_has_stage_agent_gate_linkage == false
+        on_fail: block_stage
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+      - rule_id: no_release_without_complete_evidence
+        description: >-
+          A release candidate may not be produced unless the required release
+          evidence set is complete and no blocking policy failure remains (06 §12).
+          Release-boundary expression of evidence_required.
+        severity: blocker
+        required_when: release_candidate_requested
+        pass_condition: release_evidence_complete_and_no_blocking_failure == true
+        fail_condition: release_evidence_complete_and_no_blocking_failure == false
+        on_fail: block_release
+        rework_route: originating_stage
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - gate_decision_trace_schema
+    notes: >-
+      Promoted to first-class global id `evidence_required`; `evidence_required_policy`
+      recorded as alias (reconciliation (a)). Knowledge/Memory has no explicit
+      `evidence_required_policy` token but is governed via memory provenance
+      completeness — flagged in open_questions for Phase E confirmation.
+
+# =============================================================================
+# REGISTRY <-> APPLICABLE-LAYER MAP (doc 19 §15: SDLC required gates evaluable
+# from configs). Lets a reader confirm every scope:global registry profile has a
+# corresponding applicable profile here, and how the *_policy aliases resolve.
+# =============================================================================
+registry_to_config_map:
+  implements_scope: global
+  source_registry: configs/nexus-ai/governance_profiles.yaml
+  profiles_implemented:
+    - registry_id: plugin_absent
+      config_profile_id: plugin_absent
+    - registry_id: no_secret_exposure
+      config_profile_id: no_secret_exposure
+    - registry_id: no_policy_bypass
+      config_profile_id: no_policy_bypass
+    - registry_id: trace_required
+      config_profile_id: trace_required
+    - registry_id: raw_credential_redaction
+      config_profile_id: raw_credential_redaction
+    - registry_id: high_risk_action_default_deny
+      config_profile_id: high_risk_action_default_deny
+    - registry_id: no_self_approval
+      config_profile_id: no_self_approval
+    - registry_id: evidence_required
+      config_profile_id: evidence_required
+  alias_resolution:
+    no_self_approval_policy: no_self_approval
+    evidence_required_policy: evidence_required
+    global_trace_required_policy: trace_required
+    no_plugin_core: plugin_absent
+    no_plugin: plugin_absent
+    no_secret_read: no_secret_exposure
+    no_silent_mutation: trace_required
+    no_destructive_action_without_gate: high_risk_action_default_deny
+    team_lead_cannot_override_blocking_gate: no_policy_bypass
+  coverage_note: >-
+    All 8 scope:global registry profiles are implemented (6 doc 19 §6 minimums + 2
+    cross-cutting first-class). Stage/pipeline/team/core-ability/skill/tool
+    applicable layers (which SPECIALIZE these globals) are authored in their own
+    files under configs/nexus-ai/governance/<scope>/.

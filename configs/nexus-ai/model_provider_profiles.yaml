@@ -1,0 +1,1308 @@
+# Nexus AI — Shared Registry: Model / Provider Profiles
+# Phase C / doc 17 (17-shared-registry-formalization-plan.md §9).
+#
+# Scope: this file is the machine-readable Model / Provider Profiles registry — the
+# single answer to "which model/provider/inference profiles exist in Nexus AI?".
+# It is a documentation/blueprint artifact. NO runtime code, NO merge, NO deploy.
+#
+# A Model / Provider Profile names the model, provider, and inference behaviour used by a
+# Core Ability or by a pipeline role/stage. It is NOT a Core Ability, NOT an Agent, NOT a
+# team member, NOT a Skill, NOT a Tool. Core Abilities [Supervisor, Coder, Vision, Audio,
+# Creative, Memory, Web, OS] *consume* these profiles; they are never listed here as items.
+#
+# Item contract (doc 17 §3) — every item carries:
+#   id, name, type, status, purpose, owner_domain, allowed_usage, forbidden_usage,
+#   governance_profiles, audit_schemas, notes
+# plus the category-specific fields (doc 17 §9):
+#   used_by, provider_type, model_family, capability_scope, resource_limits, fallback_policy
+# plus (doc 17 §13) used_by so the usage-mapping rule is enforceable from registry data,
+# and (where applicable) aliases for reconciled *_policy / *_model / *_profile name variants.
+#
+# STATUS vocabulary:
+#   canonical   — locked/established (the 8 SDLC model/provider profiles).
+#   candidate   — referenced by a pipeline/stage but not yet ratified (the new pipeline profiles).
+#   deprecated  — superseded; kept only for traceability.
+#
+# SOURCES SCANNED:
+#   - configs/nexus-ai/stages/sdlc/*.yaml (31 SDLC stage contracts; uses_model_provider_profiles
+#     + inline NON-CANONICAL reconciliation annotations) — authoritative per-stage used_by.
+#   - configs/nexus-ai/sdlc_pipeline.yaml (pipeline-level uses_model_provider_profiles).
+#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §uses_model_provider_profiles.
+#   - docs/ai-sdlc-factory/TRACEABILITY_OVERVIEW.md §7.6 (canonical 8-profile registry + the
+#     19 finer-grained legacy names that collapse onto the canonical set).
+#   - docs/ai-sdlc-factory/01-nexus-ai-operating-model.md §11 (Core Ability -> profile binding).
+#   - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md §11.
+#   - docs/ai-sdlc-factory/pipeline-catalog/{research,activation,operations,skill-governance,
+#     knowledge-memory}.md (markdown = authoritative per pipeline-catalog-review F-1) and
+#     configs/nexus-ai/pipeline_catalog.yaml definition_contract blocks (divergent YAML variants
+#     recorded under aliases per F-1).
+#   - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md §4.4 (consolidated new profiles).
+#
+# LOCKED DECISIONS honoured: Plugin cancelled (no plugin profiles, ever). Core Abilities are NOT
+# items here. owner_domain is a domain label, never a Core Ability. Skill != Tool, Governance !=
+# Audit, Evidence != Trace.
+
+registry_id: nexus_ai_model_provider_profiles
+category: model_provider_profile
+version: draft-0.1
+status: draft
+owner: nexus_ai_shared_registry
+purpose: >-
+  Canonical and candidate Model / Provider Profiles used across the Nexus AI Orchestration Model
+  (SDLC pipeline + the 5 non-SDLC catalog pipelines). One profile = one named model/provider/
+  inference behaviour consumed by a Core Ability or a pipeline role/stage.
+
+naming_rules:
+  case: snake_case
+  note: >-
+    Two suffix families occur in source: `*_reasoning_profile` (broad reasoning behaviour, often
+    pipeline-wide) and `*_model` (narrower task-specialised behaviour). Both are valid Model /
+    Provider Profile ids. Where a source used a divergent `*_profile`/`*_model` variant of a
+    registered id, the variant is recorded under `aliases` (see doc 17 NAMING RECONCILIATION and
+    pipeline-catalog-review F-1), and the markdown catalog name is treated as authoritative.
+
+# Engine-agnostic by design: provider_type / model_family below are abstract capability classes,
+# NOT vendor SKUs. Concrete vendor binding is a later (Phase E+/runtime) concern and is out of
+# scope for this blueprint registry.
+provider_type_vocabulary: [reasoning_llm, code_llm, vision_llm, routing_llm]
+
+# ---------------------------------------------------------------------------------------------
+# CANONICAL profiles (the locked 8). Source of truth: TRACEABILITY_OVERVIEW.md §7.6 +
+# sdlc_pipeline.yaml + the 31 stage contracts.
+# ---------------------------------------------------------------------------------------------
+profiles:
+
+  - id: sdlc_reasoning_profile
+    name: SDLC General Reasoning Profile
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      General-purpose SDLC reasoning and gate-decision profile for stages that are not
+      code-, security-, architecture-, release-, defect- or vision-specialised.
+    owner_domain: sdlc
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - general_reasoning
+      - requirement_and_scope_analysis
+      - gate_decision
+      - reflection_and_calibration
+    resource_limits:
+      context_window: standard
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none      # general reasoning has no specialised substitute; do not silently downgrade
+      escalation: supervisor_routing_model
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema   # TRACE: model invocation history (Evidence != Trace)
+    allowed_usage:
+      - general SDLC stage reasoning and gate decisions
+      - post-run reflection / learning (refraction_learning)
+    forbidden_usage:
+      - standing in for a code/security/vision-specialised profile where one is required
+      - being treated as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - intake
+        - domain_risk_profile
+        - skill_semantic_extraction
+        - requirements
+        - requirements_review
+        - premortem_fmea
+        - planning
+        - code_review
+        - api_contract_compatibility_validation
+        - domain_regulatory_compliance_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - performance_resilience
+        - cost_resource_governance
+        - refraction_learning
+      core_abilities: []
+    aliases:
+      # Legacy NON-CANONICAL stage model names reconciled onto sdlc_reasoning_profile
+      # (per the 31 stage headers + TRACEABILITY_OVERVIEW.md §7.6).
+      - planning_reasoning_model            # stage 10 planning (legacy doc 05)
+      - performance_analysis_model          # stage 24 performance_resilience
+      - cost_resource_analysis_model        # stage 25 cost_resource_governance
+      - compliance_reasoning_model          # stage 21 (also -> security_analysis_model)
+      - contract_analysis_model             # stage 20 (also -> architecture_reasoning_model)
+      - ux_accessibility_model              # stage 23 (also -> vision_model)
+      - learning_reflection_model           # stage 31 refraction_learning (NOTE: SAME name is a NEW operations-pipeline profile; see candidate entry + open_questions)
+      - risk_reasoning_model                # TRACEABILITY_OVERVIEW §7.6 finer-grained list
+    notes: >-
+      Most-used canonical profile (14 SDLC stages). Many legacy finer-grained `*_analysis_model`
+      names collapse onto it (see aliases). The legacy SDLC stage-31 name `learning_reflection_model`
+      was reconciled HERE, but a DISTINCT candidate profile of the same name is introduced by the
+      operations pipeline — these are tracked as two entries and flagged for de-duplication in
+      open_questions (potential naming collision).
+
+  - id: coder_engineering_model
+    name: Coder Engineering Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Code-domain reasoning: authoring, code review, test generation/execution analysis,
+      data-migration and code-level performance reasoning. The profile consumed by the Coder
+      Core Ability.
+    owner_domain: engineering
+    provider_type: code_llm
+    model_family: code_reasoning
+    capability_scope:
+      - code_generation
+      - code_review_reasoning
+      - test_authoring_and_analysis
+      - migration_and_data_change_reasoning
+      - code_level_performance_reasoning
+    resource_limits:
+      context_window: large            # large code/diff context
+      max_output_tokens: large
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: sdlc_reasoning_profile   # generic reasoning fallback for non-code-critical steps only
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - code_generation_governance
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - code authoring, review, test generation/execution analysis, migration reasoning
+      - consumed by the Coder Core Ability
+    forbidden_usage:
+      - security adjudication where security_analysis_model is required
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - implementation
+        - code_review
+        - test_generation
+        - test_execution
+        - data_migration_validation_if_applicable
+        - performance_resilience
+      core_abilities: [Coder]
+    aliases:
+      - code_review_model                   # stage 12 code_review (legacy)
+      - test_generation_model               # stage 13 test_generation (legacy)
+      - test_analysis_model                 # stage 14 test_execution (legacy)
+      - data_migration_analysis_model       # stage 22 data_migration_validation (legacy)
+    notes: >-
+      Bound to the Coder Core Ability (01-nexus-ai-operating-model.md §11). Four legacy
+      stage-specific model names collapse onto it (see aliases).
+
+  - id: supervisor_routing_model
+    name: Supervisor Routing Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Routing / orchestration reasoning consumed by the Supervisor Core Ability to dispatch and
+      sequence work across pipelines and stages. Pipeline-level, not a per-stage analyst profile.
+    owner_domain: orchestration
+    provider_type: routing_llm
+    model_family: routing_orchestration
+    capability_scope:
+      - task_routing
+      - stage_sequencing
+      - delegation_decisioning
+    resource_limits:
+      context_window: standard
+      max_output_tokens: small        # routing decisions are compact
+      tool_use: enabled
+      concurrency: high               # routes many flows
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: conservative_routing   # prefer safe/no-op routing over speculative dispatch
+      escalation: human_owner               # routing failure is orchestration-critical
+    governance_profiles:
+      - global_governance
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - Supervisor Core Ability routing and orchestration across all pipelines
+    forbidden_usage:
+      - being treated as a team_lead (Supervisor is a Core Ability, NOT any *_team_lead)
+      - performing domain analysis it does not own (it routes, it does not adjudicate artifacts)
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      stages: []                       # pipeline-level routing, not a single stage
+      core_abilities: [Supervisor]
+    aliases: []
+    notes: >-
+      Bound to the Supervisor Core Ability. Reused (not re-owned) by all 5 new catalog pipelines —
+      each markdown catalog entry lists it under uses_model_provider_profiles as an EXISTING shared
+      profile (research §297-300; knowledge-memory §305-309). Supervisor != team_lead is preserved.
+
+  - id: architecture_reasoning_model
+    name: Architecture Reasoning Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Architecture / interface / contract design reasoning and option trade-off analysis.
+    owner_domain: architecture
+    provider_type: reasoning_llm
+    model_family: architecture_reasoning
+    capability_scope:
+      - architecture_option_reasoning
+      - interface_and_contract_design
+      - trade_off_analysis
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: sdlc_reasoning_profile
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - architecture design/review and API/contract compatibility reasoning
+    forbidden_usage:
+      - code authoring where coder_engineering_model is the correct profile
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - architecture
+        - architecture_review
+        - api_contract_compatibility_validation
+      core_abilities: []
+    aliases:
+      - architecture_review_model           # TRACEABILITY_OVERVIEW §7.6 finer-grained list
+    notes: >-
+      Used by both architecture stages and (paired with sdlc_reasoning_profile) by API contract
+      compatibility validation. Legacy `contract_analysis_model` partly reconciled here (also onto
+      sdlc_reasoning_profile).
+
+  - id: security_analysis_model
+    name: Security Analysis Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Security / privacy / adversarial-safety / regulatory-control reasoning across the SDLC
+      security and validation surfaces.
+    owner_domain: security
+    provider_type: reasoning_llm
+    model_family: security_reasoning
+    capability_scope:
+      - threat_and_privacy_reasoning
+      - supply_chain_and_sbom_reasoning
+      - adversarial_safety_reasoning
+      - regulatory_control_judgement
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none        # security reasoning must not silently downgrade
+      escalation: human_owner    # security-critical: escalate rather than degrade
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - security_validation_gate
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - security/privacy design, security validation, supply-chain, agentic-safety, regulatory reasoning
+    forbidden_usage:
+      - substituting for defect_analysis_model on pure bug/defect sweeps where that profile is required
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - security_privacy_design
+        - security_validation
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - privacy_data_lifecycle_validation
+        - domain_regulatory_compliance_validation_if_applicable
+      core_abilities: []
+    aliases:
+      - security_reasoning_model            # TRACEABILITY_OVERVIEW §7.6 finer-grained list
+      - supply_chain_analysis_model         # stage 17 supply_chain_sbom_license (legacy)
+      - agentic_safety_eval_model           # stage 18 (legacy; also -> defect_analysis_model)
+      - privacy_analysis_model              # stage 19 privacy_data_lifecycle_validation (legacy)
+      - compliance_reasoning_model          # stage 21 (legacy; also -> sdlc_reasoning_profile)
+    notes: >-
+      Broadest security profile; absorbs five legacy stage-specific security/privacy/compliance
+      model names (see aliases). On stage 18 it pairs with defect_analysis_model.
+
+  - id: release_reasoning_model
+    name: Release Reasoning Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Release-readiness, operations-readiness, DR/backup-restore and evidence-graph assembly
+      reasoning ahead of development completion and release candidate.
+    owner_domain: release
+    provider_type: reasoning_llm
+    model_family: release_reasoning
+    capability_scope:
+      - release_readiness_reasoning
+      - operations_readiness_reasoning
+      - dr_and_backup_restore_reasoning
+      - evidence_chain_assembly
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: human_owner    # release/go-live gating is owner-critical
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - DR/backup-restore validation, operations readiness, evidence-graph build, development
+        completion, release candidate reasoning
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - backup_restore_dr_validation_if_applicable
+        - operations_readiness
+        - evidence_graph_build
+        - development_completion
+        - release_candidate
+      core_abilities: []
+    aliases:
+      - operations_analysis_model           # stages 26 & 27 (legacy SDLC reconciliation). NOTE: SAME name is a NEW operations-pipeline profile; see candidate entry + open_questions.
+      - evidence_graph_model                # stage 28 evidence_graph_build (legacy; dropped/reconciled)
+    notes: >-
+      Used by the five release/operations-readiness SDLC stages. The legacy SDLC name
+      `operations_analysis_model` was reconciled HERE (stages 26/27), but the operations pipeline
+      introduces a DISTINCT candidate profile of the same name — flagged for de-duplication in
+      open_questions (naming collision).
+
+  - id: defect_analysis_model
+    name: Defect Analysis Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Bug/defect-finding reasoning for the verification loop and adversarial defect sweeps
+      (e.g. prompt-injection / tool-misuse defects). Pairs with the verification-loop skill.
+    owner_domain: quality
+    provider_type: reasoning_llm
+    model_family: defect_reasoning
+    capability_scope:
+      - defect_and_bug_finding
+      - adversarial_defect_reasoning
+      - failure_reproduction_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: sdlc_reasoning_profile
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - verification_loop_bug_gate
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - bug/defect finding in verification_loop_bug_finding and ai_agent_safety_evaluation
+    forbidden_usage:
+      - being used as a general readiness checklist (mirrors the verification-loop skill boundary)
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - verification_loop_bug_finding
+        - ai_agent_safety_evaluation
+      core_abilities: []
+    aliases: []
+    notes: >-
+      Defect-specialised; on stage 18 it pairs with security_analysis_model. The incident-triage
+      candidate profile (operations pipeline) overlaps this profile — see that entry's overlap note.
+
+  - id: vision_model
+    name: Vision Model
+    type: model_provider_profile
+    status: canonical
+    purpose: >-
+      Visual reasoning over rendered UI for accessibility/UX validation. The profile consumed by
+      the Vision Core Ability.
+    owner_domain: vision
+    provider_type: vision_llm
+    model_family: vision_reasoning
+    capability_scope:
+      - visual_ui_reasoning
+      - accessibility_visual_assessment
+    resource_limits:
+      context_window: standard
+      max_output_tokens: standard
+      tool_use: enabled
+      image_input: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none        # no non-visual substitute for visual a11y assessment
+      escalation: sdlc_reasoning_profile
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - visual accessibility / UX reasoning over rendered UI (consumed by Vision Core Ability)
+    forbidden_usage:
+      - text-only reasoning tasks where a reasoning profile is the correct choice
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages:
+        - accessibility_ux_validation_if_applicable
+      core_abilities: [Vision]
+    aliases:
+      - ux_accessibility_model              # stage 23 (legacy; also -> sdlc_reasoning_profile)
+    notes: >-
+      Bound to the Vision Core Ability (01-nexus-ai-operating-model.md §11). On stage 23 it pairs
+      with sdlc_reasoning_profile for the general gate decision.
+
+  # -------------------------------------------------------------------------------------------
+  # CANDIDATE profiles — newly introduced by the 5 non-SDLC catalog pipelines (Phase B / doc 16).
+  # Referenced but not yet ratified. Markdown catalog docs are authoritative (pipeline-catalog
+  # -review F-1); divergent pipeline_catalog.yaml definition_contract names are recorded under
+  # aliases. Each candidate carries an overlap/consolidation recommendation where it shadows a
+  # canonical profile (doc 17 task requirement).
+  # -------------------------------------------------------------------------------------------
+
+  # ---- Research pipeline ----
+  - id: research_reasoning_profile
+    name: Research Reasoning Profile
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      General reasoning profile for the research pipeline: scope/question framing, claim
+      extraction, cross-validation, uncertainty reporting and synthesis.
+    owner_domain: research_and_knowledge
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - research_scope_and_question_reasoning
+      - claim_extraction_and_mapping
+      - cross_validation_reasoning
+      - uncertainty_and_synthesis_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: large
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: supervisor_routing_model
+    governance_profiles:
+      - research_pipeline_governance       # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - research pipeline reasoning stages
+    forbidden_usage:
+      - source reliability scoring where source_evaluation_model is the intended profile
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [research_pipeline]
+      stages: [scope_and_questions, claim_extraction, cross_validation, uncertainty_reporting, synthesis]
+      core_abilities: []
+    aliases: []
+    overlap:
+      overlaps_with: sdlc_reasoning_profile
+      recommendation: >-
+        Strong overlap with sdlc_reasoning_profile (both are general_reasoning). Recommend
+        consolidating onto a single shared `general_reasoning_profile` parameterised per pipeline,
+        OR keeping distinct only if research needs different resource_limits/governance. Decide in
+        Phase E.
+    notes: >-
+      Markdown research-pipeline.md §1 lists it under uses_model_provider_profiles. Marked candidate
+      pending ratification.
+
+  - id: source_evaluation_model
+    name: Source Evaluation Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Source reliability / credibility assessment for the research pipeline (scoring sources during
+      source discovery and reliability assessment).
+    owner_domain: research_and_knowledge
+    provider_type: reasoning_llm
+    model_family: source_assessment_reasoning
+    capability_scope:
+      - source_reliability_scoring
+      - provenance_and_bias_assessment
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: research_reasoning_profile
+    governance_profiles:
+      - research_source_governance         # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - source reliability/credibility scoring in the research pipeline
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [research_pipeline]
+      stages: [source_reliability_assessment, source_discovery]
+      core_abilities: []
+    aliases: []
+    overlap:
+      overlaps_with: null
+      recommendation: >-
+        No canonical equivalent — source-reliability scoring is a genuinely new specialisation.
+        Keep as its own profile; ratify in Phase E.
+    notes: >-
+      Markdown research-pipeline.md §1 + §3 ("Model/Provider profiles introduced ... to be
+      registered in phase C").
+
+  # ---- Activation pipeline ----
+  - id: activation_reasoning_model
+    name: Activation Reasoning Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Reasoning over preview/pilot evidence and activation transitions in the activation pipeline
+      (preview -> pilot -> public activation decisioning support).
+    owner_domain: activation_and_release_operations
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - activation_evidence_reasoning
+      - preview_pilot_assessment
+      - activation_transition_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: supervisor_routing_model
+    governance_profiles:
+      - activation_pipeline_governance     # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - activation pipeline reasoning stages
+    forbidden_usage:
+      - making the public-activation decision autonomously (that is an owner/human decision gate per
+        activation §2.5 / pipeline-catalog-review F-4)
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [activation_pipeline]
+      stages: [preview, pilot, activation_decision]
+      core_abilities: []
+    aliases:
+      - activation_reasoning_profile        # pipeline_catalog.yaml definition_contract variant (F-1); markdown `activation_reasoning_model` authoritative
+    overlap:
+      overlaps_with: sdlc_reasoning_profile
+      recommendation: >-
+        Overlaps the general_reasoning family. Recommend reusing a shared general reasoning profile
+        unless activation needs distinct governance (owner-gate sensitivity). Decide in Phase E.
+    notes: >-
+      Markdown activation-pipeline.md §1 lists `activation_reasoning_model`; pipeline_catalog.yaml
+      lists the `activation_reasoning_profile` variant (recorded as alias per F-1).
+
+  - id: risk_analysis_model
+    name: Risk Analysis Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Risk / blast-radius / rollback-readiness reasoning for activation decisions (assessing the
+      risk of activating a capability to a wider cohort).
+    owner_domain: activation_and_release_operations
+    provider_type: reasoning_llm
+    model_family: risk_reasoning
+    capability_scope:
+      - activation_risk_assessment
+      - blast_radius_reasoning
+      - rollback_readiness_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: activation_reasoning_model
+    governance_profiles:
+      - activation_pipeline_governance     # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - activation risk / blast-radius / rollback-readiness reasoning
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [activation_pipeline]
+      stages: [risk_assessment, pilot, activation_decision]
+      core_abilities: []
+    aliases: []
+    overlap:
+      overlaps_with: security_analysis_model
+      recommendation: >-
+        OVERLAP with canonical security_analysis_model (which already owns risk/blast-radius and
+        adversarial reasoning in the SDLC; note the legacy `risk_reasoning_model` alias also folded
+        into sdlc_reasoning_profile). Recommend REUSE of security_analysis_model for activation risk
+        unless the activation risk domain is materially non-security (operational/business risk). If
+        kept distinct, scope it explicitly to operational activation risk to avoid duplicating the
+        security profile. Resolve in Phase E.
+    notes: >-
+      Task doc 17 explicitly calls out this overlap (risk_analysis_model vs security_analysis_model).
+
+  # ---- Operations pipeline ----
+  - id: incident_triage_model
+    name: Incident Triage Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Incident detection/triage and severity classification reasoning (failure-mode + blast-radius
+      reasoning to assign incident severity) in the operations pipeline.
+    owner_domain: operations_reliability
+    provider_type: reasoning_llm
+    model_family: defect_reasoning
+    capability_scope:
+      - incident_triage
+      - severity_classification
+      - blast_radius_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: high            # incident response is latency-sensitive
+    fallback_policy:
+      on_unavailable: escalate_immediately   # live-incident path: do not silently queue
+      degraded_mode: conservative_high_severity   # if uncertain, bias to higher severity
+      escalation: human_owner
+    governance_profiles:
+      - operations_pipeline_governance     # candidate (Phase E)
+      - incident_severity_required_gate    # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - incident intake, triage and severity classification in the operations pipeline
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [incident_intake, severity_classification]
+      core_abilities: []
+    aliases:
+      - operations_reasoning_profile        # pipeline_catalog.yaml collapses all operations models into this single variant (F-1)
+    overlap:
+      overlaps_with: defect_analysis_model
+      recommendation: >-
+        Overlaps defect_analysis_model (both reason about failures/blast-radius). Recommend reuse
+        of defect_analysis_model for the failure-reasoning core, layering only the
+        severity-classification specifics. Decide in Phase E. Note pipeline_catalog.yaml represents
+        ALL four operations models with a single `operations_reasoning_profile` (recorded as alias).
+    notes: >-
+      Markdown operations-pipeline.md §1 lists four distinct operations models; the YAML
+      definition_contract collapses them into one `operations_reasoning_profile`. Markdown is
+      authoritative (F-1), so the four are registered separately with the YAML name as a shared alias.
+
+  - id: operations_analysis_model
+    name: Operations Analysis Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      General operations reasoning for the operations pipeline: monitoring/alert correlation and
+      mitigation-plan reasoning for live/already-released capabilities.
+    owner_domain: operations_reliability
+    provider_type: reasoning_llm
+    model_family: operations_reasoning
+    capability_scope:
+      - monitoring_and_alert_correlation
+      - mitigation_plan_reasoning
+      - operational_state_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: high
+    fallback_policy:
+      on_unavailable: escalate_immediately
+      degraded_mode: none
+      escalation: human_owner
+    governance_profiles:
+      - operations_pipeline_governance     # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - operations pipeline monitoring/mitigation reasoning
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [rollback_or_fix, mitigation]
+      core_abilities: []
+    aliases:
+      - operations_reasoning_profile        # pipeline_catalog.yaml single-profile variant (F-1)
+    overlap:
+      overlaps_with: release_reasoning_model
+      recommendation: >-
+        NAME COLLISION + overlap. `operations_analysis_model` is ALSO the legacy SDLC name that was
+        reconciled onto canonical release_reasoning_model at SDLC stages 26 (backup_restore_dr) and
+        27 (operations_readiness). The operations pipeline now re-introduces the same name as a
+        live-ops reasoning profile. Recommend EITHER (a) rename this operations-pipeline profile to
+        avoid colliding with the reconciled-away SDLC alias, OR (b) formally split SDLC release-time
+        readiness (release_reasoning_model) from live-incident operations reasoning and let this
+        profile own the latter unambiguously. MUST be resolved in Phase E to keep the registry
+        unambiguous. See open_questions.
+    notes: >-
+      Same id appears as a legacy alias under release_reasoning_model (SDLC stages 26/27) — this is
+      the central de-duplication finding for this registry.
+
+  - id: postmortem_reasoning_model
+    name: Postmortem Reasoning Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Blameless postmortem reasoning: timeline reconstruction, root-cause analysis and
+      corrective-action derivation after an operations incident.
+    owner_domain: operations_reliability
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - timeline_reconstruction
+      - root_cause_analysis
+      - corrective_action_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: large
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: operations_analysis_model
+    governance_profiles:
+      - operations_pipeline_governance     # candidate (Phase E)
+      - postmortem_required_gate           # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - postmortem timeline/root-cause/corrective-action reasoning in the operations pipeline
+    forbidden_usage:
+      - self-approving its own postmortem (no_self_approved_postmortem gate applies)
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [postmortem]
+      core_abilities: []
+    aliases:
+      - operations_reasoning_profile        # pipeline_catalog.yaml single-profile variant (F-1)
+    overlap:
+      overlaps_with: sdlc_reasoning_profile
+      recommendation: >-
+        Postmortem reasoning is general reflective reasoning; overlaps sdlc_reasoning_profile
+        (which absorbed the analogous SDLC learning_reflection step). Recommend reuse of a shared
+        general/reflective reasoning profile unless the postmortem governance gate warrants a
+        distinct profile. Decide in Phase E.
+    notes: >-
+      Markdown operations-pipeline.md §1 + §2.5 (postmortem stage). Postmortem is mandatory for
+      qualifying severities.
+
+  - id: learning_reflection_model
+    name: Learning Reflection Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Convert postmortem output into durable operational learning (operational_learning_record)
+      in the operations pipeline learning_update stage.
+    owner_domain: operations_reliability
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - operational_learning_synthesis
+      - reflection_and_calibration
+      - knowledge_update_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: operations_analysis_model
+    governance_profiles:
+      - operations_pipeline_governance     # candidate (Phase E)
+      - model_invocation_governance        # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema      # candidate (Phase E)
+    allowed_usage:
+      - operational learning synthesis in the operations pipeline learning_update stage
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [learning_update]
+      core_abilities: []
+    aliases:
+      - operations_reasoning_profile        # pipeline_catalog.yaml single-profile variant (F-1)
+    overlap:
+      overlaps_with: sdlc_reasoning_profile
+      recommendation: >-
+        NAME COLLISION + overlap. `learning_reflection_model` is ALSO the legacy SDLC name that was
+        reconciled onto canonical sdlc_reasoning_profile at SDLC stage 31 (refraction_learning). The
+        operations pipeline re-introduces the same name for operational learning. Recommend EITHER
+        (a) reuse sdlc_reasoning_profile (general reflective reasoning) for both, OR (b) rename this
+        operations profile to avoid colliding with the reconciled-away SDLC alias. Resolve in Phase
+        E. See open_questions.
+    notes: >-
+      Same id appears as a legacy alias under sdlc_reasoning_profile (SDLC stage 31) — second
+      de-duplication finding (mirrors operations_analysis_model).
+
+  # ---- Skill Governance pipeline (in §4.4 of the review; beyond the task's explicit NEW list but
+  #      registered for registry completeness so the usage-mapping rule is enforceable; flagged in
+  #      open_questions) ----
+  - id: skill_governance_reasoning_profile
+    name: Skill Governance Reasoning Profile
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      General reasoning for the skill governance pipeline (skill intake, binding-proposal and
+      activation-decision reasoning).
+    owner_domain: skill_governance
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - skill_intake_reasoning
+      - skill_binding_proposal_reasoning
+      - skill_activation_decision_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: supervisor_routing_model
+    governance_profiles:
+      - skill_governance_pipeline_governance   # candidate (Phase E)
+      - model_invocation_governance            # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema          # candidate (Phase E)
+    allowed_usage:
+      - skill governance pipeline reasoning stages
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [skill_intake, skill_binding_proposal, skill_activation_decision]
+      core_abilities: []
+    aliases:
+      - skill_analysis_model                # pipeline_catalog.yaml collapses skill models into this single variant (F-1)
+    overlap:
+      overlaps_with: sdlc_reasoning_profile
+      recommendation: >-
+        Overlaps the general_reasoning family. Recommend reuse of a shared general reasoning profile.
+        Decide in Phase E.
+    notes: >-
+      Beyond the task's explicit NEW-profile list but present in pipeline-catalog-review §4.4 and
+      skill-governance-pipeline.md §1; registered as candidate for completeness. Flagged in
+      open_questions.
+
+  - id: skill_semantic_extraction_model
+    name: Skill Semantic Extraction Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Extract skill semantics, capabilities and misuse warnings from a skill package in the skill
+      governance pipeline.
+    owner_domain: skill_governance
+    provider_type: reasoning_llm
+    model_family: semantic_extraction_reasoning
+    capability_scope:
+      - skill_semantic_extraction
+      - capability_and_misuse_inference
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: skill_governance_reasoning_profile
+    governance_profiles:
+      - skill_semantic_required_gate           # candidate (Phase E)
+      - model_invocation_governance            # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema          # candidate (Phase E)
+    allowed_usage:
+      - skill semantic extraction in the skill governance pipeline
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [skill_semantic_extraction]
+      core_abilities: []
+    aliases:
+      - skill_analysis_model                   # pipeline_catalog.yaml single-profile variant (F-1)
+    overlap:
+      overlaps_with: null
+      recommendation: >-
+        Loosely related to the SDLC skill_semantic_extraction stage (which uses
+        sdlc_reasoning_profile). Consider reusing sdlc_reasoning_profile, or keep as a specialised
+        extractor. Decide in Phase E.
+    notes: >-
+      Beyond the task's explicit NEW list; present in pipeline-catalog-review §4.4 and
+      skill-governance-pipeline.md §1. Candidate; flagged in open_questions.
+
+  - id: script_safety_analysis_model
+    name: Script Safety Analysis Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Static safety analysis of skill scripts / referenced code (script_reference_audit) in the
+      skill governance pipeline.
+    owner_domain: skill_governance
+    provider_type: reasoning_llm
+    model_family: security_reasoning
+    capability_scope:
+      - script_static_safety_analysis
+      - dangerous_call_detection
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none        # safety analysis must not silently downgrade
+      escalation: security_analysis_model
+    governance_profiles:
+      - script_reference_audit_gate            # candidate (Phase E)
+      - model_invocation_governance            # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema          # candidate (Phase E)
+    allowed_usage:
+      - static safety analysis of skill scripts in the skill governance pipeline
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [script_reference_audit]
+      core_abilities: []
+    aliases:
+      - skill_analysis_model                   # pipeline_catalog.yaml single-profile variant (F-1)
+    overlap:
+      overlaps_with: security_analysis_model
+      recommendation: >-
+        Overlaps canonical security_analysis_model (static safety / dangerous-call reasoning is a
+        security task). Recommend REUSE of security_analysis_model for script safety. Decide in
+        Phase E.
+    notes: >-
+      Beyond the task's explicit NEW list; present in pipeline-catalog-review §4.4 and
+      skill-governance-pipeline.md §1. Candidate; flagged in open_questions.
+
+  # ---- Knowledge / Memory pipeline (in §4.4; beyond the task's explicit NEW list; registered for
+  #      completeness; flagged in open_questions) ----
+  - id: knowledge_reasoning_profile
+    name: Knowledge Reasoning Profile
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      General reasoning for the knowledge/memory pipeline: memory candidate evaluation, validity
+      and retrieval-profile reasoning.
+    owner_domain: knowledge_management
+    provider_type: reasoning_llm
+    model_family: general_reasoning
+    capability_scope:
+      - memory_candidate_reasoning
+      - validity_window_reasoning
+      - retrieval_profile_reasoning
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: supervisor_routing_model
+    governance_profiles:
+      - memory_source_governance               # candidate (Phase E)
+      - model_invocation_governance            # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema          # candidate (Phase E)
+    allowed_usage:
+      - knowledge/memory pipeline reasoning stages
+    forbidden_usage:
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      stages: [memory_candidate_evaluation, retrieval_profile_update]
+      core_abilities: []
+    aliases:
+      - memory_reasoning_profile               # pipeline_catalog.yaml variant (F-1); markdown `knowledge_reasoning_profile` authoritative
+    overlap:
+      overlaps_with: sdlc_reasoning_profile
+      recommendation: >-
+        Overlaps the general_reasoning family. Recommend reuse of a shared general reasoning profile.
+        Decide in Phase E.
+    notes: >-
+      Beyond the task's explicit NEW list; present in pipeline-catalog-review §4.4 and
+      knowledge-memory-pipeline.md §1. Markdown name authoritative; YAML `memory_reasoning_profile`
+      recorded as alias (F-1). Candidate; flagged in open_questions.
+
+  - id: summarization_model
+    name: Summarization Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Summarise/condense candidate memory and source content for durable storage in the
+      knowledge/memory pipeline.
+    owner_domain: knowledge_management
+    provider_type: reasoning_llm
+    model_family: summarization_reasoning
+    capability_scope:
+      - content_summarization
+      - condensation_for_storage
+    resource_limits:
+      context_window: large
+      max_output_tokens: standard
+      tool_use: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none
+      escalation: knowledge_reasoning_profile
+    governance_profiles:
+      - redaction_required_gate                # candidate (Phase E) — redact before summarization/storage
+      - model_invocation_governance            # candidate (Phase E)
+    audit_schemas:
+      - model_invocation_trace_schema          # candidate (Phase E)
+    allowed_usage:
+      - summarising memory candidates / source content for storage in the knowledge/memory pipeline
+    forbidden_usage:
+      - summarising un-redacted sensitive content (redaction_required_gate applies first)
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      stages: [memory_summarization]
+      core_abilities: []
+    aliases: []
+    overlap:
+      overlaps_with: null
+      recommendation: >-
+        No canonical equivalent — summarization is a distinct specialisation. Keep as its own
+        profile; ratify in Phase E.
+    notes: >-
+      Markdown knowledge-memory-pipeline.md §1 + §2 (memory_summarization stage, Model/Provider
+      [summarization_model]). Candidate; flagged in open_questions.
+
+  # -------------------------------------------------------------------------------------------
+  # CANDIDATE profiles — locked Core Ability model profiles (Audio / Creative).
+  # Reconciliation sweep: core_abilities.yaml binds these via the Audio and Creative Core
+  # Abilities' `model_provider_profiles` and already declares them under `referenced_candidates`
+  # (owned_by: configs/nexus-ai/model_provider_profiles.yaml, status: candidate). They are
+  # registered here as first-class candidate items so the model-profile edge from each unused-
+  # but-locked Core Ability resolves to a registry item — mirroring how vision_model is the
+  # first-class profile consumed by the Vision Core Ability. Audio/Creative are NOT bound by any
+  # current pipeline/stage (K-003: the NAME is locked; usage is reserved), so used_by.pipelines
+  # and used_by.stages are empty and the only consumer is the Core Ability. Do not ratify until a
+  # pipeline binds Audio / Creative.
+  # -------------------------------------------------------------------------------------------
+
+  - id: audio_model
+    name: Audio Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Audio perception and reasoning over speech/audio signals (transcription, analysis). The
+      profile consumed by the Audio Core Ability. Reserved/locked; no current pipeline binds it.
+    owner_domain: audio_perception
+    provider_type: vision_llm        # nearest multimodal-perception type in provider_type_vocabulary; refine when Audio is bound
+    model_family: audio_reasoning
+    capability_scope:
+      - speech_and_audio_transcription
+      - audio_signal_reasoning
+    resource_limits:
+      context_window: standard
+      max_output_tokens: standard
+      tool_use: enabled
+      audio_input: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none            # no non-audio substitute for audio perception
+      escalation: sdlc_reasoning_profile
+    governance_profiles:
+      - audio_governance             # candidate (Phase E) — audio-perception use rules
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - transcribe / analyze / reason over audio artifacts (consumed by the Audio Core Ability)
+    forbidden_usage:
+      - extracting secrets/PII from audio content
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: []                  # K-003: locked NAME, no current pipeline binding
+      stages: []
+      core_abilities: [Audio]
+    aliases: []
+    overlap:
+      overlaps_with: null
+      recommendation: >-
+        No canonical equivalent — audio perception is a distinct multimodal specialisation. Keep
+        as its own profile; ratify in Phase E when a pipeline binds the Audio Core Ability.
+    notes: >-
+      Reconciliation sweep: previously referenced only via core_abilities.yaml (Audio Core Ability
+      `model_provider_profiles` + `referenced_candidates`); now a first-class candidate item so the
+      edge resolves. Bound to the Audio Core Ability (01-nexus-ai-operating-model.md §11). Currently
+      UNUSED by any pipeline/stage; do not ratify until Audio is bound.
+
+  - id: creative_generation_model
+    name: Creative Generation Model
+    type: model_provider_profile
+    status: candidate
+    purpose: >-
+      Creative generation and reasoning over generated creative artifacts (visual, multi-format,
+      design-oriented). The profile consumed by the Creative Core Ability. Reserved/locked; no
+      current pipeline binds it.
+    owner_domain: creative_generation
+    provider_type: vision_llm        # nearest multimodal-generation type in provider_type_vocabulary; refine when Creative is bound
+    model_family: creative_generation
+    capability_scope:
+      - creative_artifact_generation
+      - multi_format_design_reasoning
+    resource_limits:
+      context_window: standard
+      max_output_tokens: standard
+      tool_use: enabled
+      image_input: enabled
+      concurrency: pipeline_default
+    fallback_policy:
+      on_unavailable: queue_and_retry
+      degraded_mode: none            # no non-creative substitute for creative generation
+      escalation: sdlc_reasoning_profile
+    governance_profiles:
+      - creative_governance          # candidate (Phase E) — creative-generation use rules
+      - model_invocation_governance
+    audit_schemas:
+      - model_invocation_trace_schema
+    allowed_usage:
+      - generate / reason over creative artifacts (consumed by the Creative Core Ability)
+    forbidden_usage:
+      - embedding secrets/PII into generated artifacts
+      - being listed/used as a Core Ability, Agent, Skill or Tool
+    used_by:
+      pipelines: []                  # K-003: locked NAME, no current pipeline binding
+      stages: []
+      core_abilities: [Creative]
+    aliases: []
+    overlap:
+      overlaps_with: null
+      recommendation: >-
+        No canonical equivalent — creative generation is a distinct multimodal specialisation. Keep
+        as its own profile; ratify in Phase E when a pipeline binds the Creative Core Ability.
+    notes: >-
+      Reconciliation sweep: previously referenced only via core_abilities.yaml (Creative Core Ability
+      `model_provider_profiles` + `referenced_candidates`); now a first-class candidate item so the
+      edge resolves. Bound to the Creative Core Ability (01-nexus-ai-operating-model.md §11).
+      Currently UNUSED by any pipeline/stage; do not ratify until Creative is bound.
+
+# ---------------------------------------------------------------------------------------------
+# Cross-cutting reconciliation summary (doc 17 NAMING RECONCILIATION + pipeline-catalog-review F-1).
+# All legacy NON-CANONICAL SDLC model names were reconciled onto the canonical 8 (TRACEABILITY_
+# OVERVIEW.md §7.6); they survive only as `aliases` on the canonical entries above.
+# ---------------------------------------------------------------------------------------------
+reconciliation:
+  canonical_count: 8
+  candidate_count: 15   # +2 (reconciliation sweep): audio_model, creative_generation_model — locked Core Ability profiles materialized as first-class candidates so the core_abilities.yaml edges resolve
+  legacy_sdlc_names_reconciled_to_canonical:
+    architecture_review_model: architecture_reasoning_model
+    security_reasoning_model: security_analysis_model
+    risk_reasoning_model: sdlc_reasoning_profile
+    planning_reasoning_model: sdlc_reasoning_profile
+    code_review_model: coder_engineering_model
+    test_generation_model: coder_engineering_model
+    test_analysis_model: coder_engineering_model
+    supply_chain_analysis_model: security_analysis_model
+    agentic_safety_eval_model: [security_analysis_model, defect_analysis_model]
+    privacy_analysis_model: security_analysis_model
+    contract_analysis_model: [architecture_reasoning_model, sdlc_reasoning_profile]
+    data_migration_analysis_model: coder_engineering_model
+    ux_accessibility_model: [vision_model, sdlc_reasoning_profile]
+    performance_analysis_model: [sdlc_reasoning_profile, coder_engineering_model]
+    cost_resource_analysis_model: sdlc_reasoning_profile
+    compliance_reasoning_model: [sdlc_reasoning_profile, security_analysis_model]
+    operations_analysis_model: release_reasoning_model   # SDLC stages 26/27 (collides with NEW operations-pipeline candidate of same id)
+    evidence_graph_model: release_reasoning_model
+    learning_reflection_model: sdlc_reasoning_profile     # SDLC stage 31 (collides with NEW operations-pipeline candidate of same id)
+  yaml_catalog_variants_recorded_as_aliases:
+    activation_reasoning_profile: activation_reasoning_model
+    operations_reasoning_profile: [incident_triage_model, operations_analysis_model, postmortem_reasoning_model, learning_reflection_model]
+    skill_analysis_model: [skill_governance_reasoning_profile, skill_semantic_extraction_model, script_safety_analysis_model]
+    memory_reasoning_profile: knowledge_reasoning_profile
+  name_collisions_requiring_phase_e_decision:
+    - id: operations_analysis_model
+      issue: >-
+        Used as a legacy alias of canonical release_reasoning_model (SDLC 26/27) AND re-introduced
+        as a distinct operations-pipeline candidate. Rename or formally split before ratification.
+    - id: learning_reflection_model
+      issue: >-
+        Used as a legacy alias of canonical sdlc_reasoning_profile (SDLC 31) AND re-introduced as a
+        distinct operations-pipeline candidate. Rename or reuse sdlc_reasoning_profile before
+        ratification.
+
+# Locked-decision compliance restated for this registry:
+locked_decision_compliance:
+  no_plugin_registry: true
+  core_abilities_not_items: true        # Supervisor/Coder/Vision/etc. appear only as `used_by.core_abilities` consumers
+  supervisor_not_team_lead: true
+  skill_not_tool: true                  # this registry holds neither skills nor tools
+  governance_not_audit: true            # governance_profiles vs audit_schemas kept distinct on every item
+  evidence_not_trace: true              # audit_schemas here are TRACE schemas (model_invocation_trace_schema)

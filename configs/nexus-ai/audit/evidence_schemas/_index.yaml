@@ -1,0 +1,153 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — INDEX
+# =============================================================================
+# Phase E / doc 19 §12–§13 output. Documentation/blueprint ONLY — NO runtime
+# code, NO merge, NO deploy.
+#
+# This index ties together the applicable per-scope EVIDENCE audit-schema config
+# layer materialized under configs/nexus-ai/audit/evidence_schemas/ from the
+# single Phase C catalog configs/nexus-ai/audit_schemas.yaml.
+#
+# -----------------------------------------------------------------------------
+# WHAT THIS LAYER IS
+# -----------------------------------------------------------------------------
+# doc 19 §13 requires the audit family to be materialized as applicable configs:
+#     configs/nexus-ai/audit/evidence_schemas/*.yaml   <-- THIS directory
+#     configs/nexus-ai/audit/trace_schemas/*.yaml      <-- SEPARATE (Evidence != Trace)
+# Each evidence item is implemented to the doc 19 §12 AUDIT SCHEMA CONTRACT:
+#     audit_schema_id, type, applies_to, required_fields, producer, consumer,
+#     retention, redaction_rules
+# Values are transcribed verbatim from the catalog so the applicable layer stays
+# in lock-step with the registry (doc 19 §15: SDLC required gates evaluable from
+# configs; §14 validation: every audit schema preserves the evidence/trace
+# distinction).
+#
+# -----------------------------------------------------------------------------
+# LOCKED DECISIONS honored across this whole directory
+# -----------------------------------------------------------------------------
+#   - Plugin CANCELLED — no plugin schema/registry/concept anywhere.
+#   - Governance != Audit — this directory is AUDIT only.
+#   - Evidence != Trace — these files hold ONLY type: evidence_schema items.
+#     Trace schemas live in configs/nexus-ai/audit/trace_schemas/ and are NEVER
+#     merged in. Decision proofs (Evidence family) and process history (Trace
+#     family) are kept in physically separate directories.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents — never appear as producer/consumer. Supervisor != team lead.
+#   - prism = brainstorming/divergence ; verification-loop = bug/defect finding.
+#
+# -----------------------------------------------------------------------------
+# SCOPE OF THIS DIRECTORY — type: evidence_schema ONLY (55 materialized of 56 in catalog)
+# -----------------------------------------------------------------------------
+# The catalog's Evidence FAMILY spans three `type` values (doc 19 §12 vocabulary):
+#     evidence_schema | decision_record_schema | gate_result_schema
+# This task scopes the evidence-schema files to `type: evidence_schema` items.
+# Therefore:
+#   - INCLUDED here: 55 of the catalog's 56 `type: evidence_schema` items (the one
+#     omitted is evidence_item_schema, status: candidate — see COVERAGE below).
+#   - NOT included here (Evidence family, but a DISTINCT type — to be materialized
+#     in a separate decision-record file, NOT in trace_schemas/):
+#       * activation_decision_evidence_schema   (type: decision_record_schema)
+#       * skill_binding_decision_schema         (type: decision_record_schema)
+#     The catalog defines NO type: gate_result_schema item today (gate results are
+#     carried as required_fields/related_gate on evidence_schema items and on the
+#     release_evidence_schema). See OPEN QUESTIONS.
+#   - EXCLUDED entirely from this directory (Trace family — different directory):
+#       9 trace_schema items (stage_gate_trace_schema, architecture_decision_trace_schema,
+#       code_change_trace_schema, security_finding_trace_schema, gate_decision_trace_schema,
+#       release_decision_trace_schema, memory_update_trace_schema,
+#       activation_transition_trace_schema, skill_governance_trace_schema).
+#
+# -----------------------------------------------------------------------------
+# FILE LAYOUT — one file per pipeline (grouped by owner_domain)
+# -----------------------------------------------------------------------------
+version: draft-0.1
+index_id: nexus_ai_audit_evidence_schemas_index
+family: audit
+audit_kind: evidence
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+concept_ref: docs/ai-sdlc-factory/03-governance-and-audit-layering.md
+sibling_directory: configs/nexus-ai/audit/trace_schemas/   # Trace family (separate; never merged)
+
+files:
+  - file: sdlc_pipeline_evidence_schemas.yaml
+    pipeline: sdlc_pipeline
+    owner_domain: sdlc
+    status: canonical
+    evidence_schema_count: 40
+  - file: research_pipeline_evidence_schemas.yaml
+    pipeline: research_pipeline
+    owner_domain: research_and_knowledge
+    status: candidate
+    evidence_schema_count: 2
+  - file: activation_pipeline_evidence_schemas.yaml
+    pipeline: activation_pipeline
+    owner_domain: activation_and_release_operations
+    status: candidate
+    evidence_schema_count: 2
+  - file: operations_pipeline_evidence_schemas.yaml
+    pipeline: operations_pipeline
+    owner_domain: operations_reliability
+    status: candidate
+    evidence_schema_count: 6
+  - file: skill_governance_pipeline_evidence_schemas.yaml
+    pipeline: skill_governance_pipeline
+    owner_domain: skill_governance
+    status: candidate
+    evidence_schema_count: 4
+  - file: knowledge_memory_pipeline_evidence_schemas.yaml
+    pipeline: knowledge_memory_pipeline
+    owner_domain: knowledge_management
+    status: candidate
+    evidence_schema_count: 1
+
+# -----------------------------------------------------------------------------
+# COVERAGE — must equal the catalog's count of type: evidence_schema items
+# -----------------------------------------------------------------------------
+coverage:
+  total_evidence_schema_items_in_catalog: 56   # catalog (audit_schemas.yaml) `type: evidence_schema` items
+  total_materialized_here: 55                   # the catalog's evidence_item_schema (status: candidate) is NOT materialized here
+  unmaterialized_candidates:
+    - evidence_item_schema   # type: evidence_schema, status: candidate — defined in the catalog, no per-pipeline file here yet
+  by_pipeline:
+    sdlc_pipeline: 40
+    research_pipeline: 2
+    activation_pipeline: 2
+    operations_pipeline: 6
+    skill_governance_pipeline: 4
+    knowledge_memory_pipeline: 1
+
+# -----------------------------------------------------------------------------
+# VALIDATION SELF-CHECK (doc 19 §14)
+# -----------------------------------------------------------------------------
+validation_self_check:
+  - Every item carries the full §12 contract (audit_schema_id, type, applies_to,
+    required_fields, producer, consumer, retention, redaction_rules).
+  - "Every item is type evidence_schema (evidence/trace distinction preserved;
+    no trace_schema, decision_record_schema, or gate_result_schema appears here)."
+  - No producer/consumer is a Core Ability (Supervisor, Coder, Vision, Audio,
+    Creative, Memory, Web, OS).
+  - No plugin key/concept appears anywhere.
+  - "Field values of every materialized item are transcribed verbatim from the source
+    registry (no field drift). Coverage is NOT one-to-one with the catalog's evidence_schema
+    set: the catalog defines 56 `type: evidence_schema` items and 55 are materialized here —
+    evidence_item_schema (status: candidate) is the one catalog item with no file in this directory."
+
+# -----------------------------------------------------------------------------
+# OPEN QUESTIONS (for the Phase E governance-audit-readiness review)
+# -----------------------------------------------------------------------------
+open_questions:
+  - >-
+    Decision-record placement: activation_decision_evidence_schema and
+    skill_binding_decision_schema are Evidence FAMILY (decision proofs) but are of
+    the decision_record_schema type, so they are intentionally NOT in these
+    evidence_schema files. They must NOT go under trace_schemas/. Confirm whether
+    Phase E wants a dedicated configs/nexus-ai/audit/decision_records/*.yaml file
+    (recommended) or a decision_record section appended to the relevant pipeline
+    evidence file. Either way the evidence/trace separation is preserved.
+  - >-
+    gate_result_schema: the §12 type vocabulary lists gate_result_schema, but the
+    catalog defines no standalone item of that type (gate outcomes ride on
+    related_gate + count fields of evidence items and on release_evidence_schema).
+    Confirm whether a first-class gate_result_schema should be introduced in
+    Phase E or whether the current embedded-on-evidence approach is final.

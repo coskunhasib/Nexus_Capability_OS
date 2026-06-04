@@ -1,0 +1,108 @@
+version: draft-0.1
+pipeline_id: sdlc_pipeline
+stage_id: security_privacy_design
+name: Security / Privacy Design
+purpose: >-
+  Mimari ve gereksinim çıktılarından hareketle threat model, security
+  requirements, data inventory, privacy risk register ve auth/authz +
+  data-lifecycle stratejisi üretmek; güvenlik ve gizlilik tasarımını
+  implementasyon öncesinde no-human governance ile karara bağlamak.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: security_privacy_agent
+sub_agents:
+  - threat_modeling_subagent
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Memory
+  - Web
+  - Coder
+uses_skills:
+  - sentinel
+  - fmea
+  - gap-audit
+uses_tools:
+  - repo_reader
+  - policy_query
+  - artifact_writer
+  - evidence_writer
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - privacy_lifecycle_governance
+  - security_privacy_governance
+  - threat_model_required_gate
+uses_audit_schemas:
+  - threat_model_evidence_schema
+  - privacy_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - security_analysis_model
+uses_context_memory_profiles:
+  - security_context_pack
+
+inputs:
+  - ARCHITECTURE_DOC
+  - SYSTEM_CONTEXT_DIAGRAM
+  - ADR_INDEX
+  - ARCHITECTURE_REVIEW_REPORT
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - DOMAIN_PROFILE_DECISION
+  - RISK_PROFILE
+
+outputs:
+  - THREAT_MODEL
+  - SECURITY_REQUIREMENTS
+  - DATA_INVENTORY
+  - PRIVACY_RISK_REGISTER
+  - SECURITY_PRIVACY_DESIGN_GATE_RESULT
+
+evidence:
+  - THREAT_MODEL
+  - SECURITY_REQUIREMENTS
+  - DATA_INVENTORY
+  - PRIVACY_RISK_REGISTER
+  - SECURITY_PRIVACY_DESIGN_GATE_RESULT
+
+trace:
+  - security_privacy_design_stage_trace
+  - threat_modeling_subagent_trace
+  - sentinel_skill_activation_trace
+  - fmea_skill_activation_trace
+  - policy_query_tool_trace
+
+gates:
+  - threat_model_present
+  - privacy_risks_classified
+  - authz_authn_strategy_present
+  - data_lifecycle_visible
+  - security_requirements_trace_to_nfr
+  - security_privacy_design_complete
+
+on_pass: premortem_fmea
+on_fail: architecture
+rework_route: architecture
+
+blocking_conditions:
+  - missing_threat_model
+  - unclassified_privacy_risk
+  - missing_auth_strategy
+  - undefined_data_lifecycle
+  - security_requirement_without_nfr_trace
+
+optional_conditions:
+  - product_handles_personal_data
+  - product_is_multi_tenant
+  - product_exposes_external_interface
+  - regulated_domain
+
+conditional_required_gates:
+  - gate_id: privacy_risks_classified
+    required_when: product_handles_personal_data == true
+  - gate_id: data_lifecycle_visible
+    required_when: product_handles_personal_data == true or product_is_multi_tenant == true
+
+max_iterations: 3

@@ -1,0 +1,297 @@
+# =============================================================================
+# Nexus AI — Pipeline-Scope Governance Profile: Knowledge / Memory Pipeline
+# =============================================================================
+# Phase E / doc 19. Documentation / blueprint ONLY — NO runtime code, NO merge,
+# NO deploy.
+#
+# Applicable pipeline-scope governance LAYER for the Knowledge / Memory Pipeline.
+# Implements (makes evaluable from config) the registry umbrella
+# governance_profiles.yaml -> pipeline.memory_source_governance.
+#
+# DERIVED FROM (doc 19 §4):
+#   - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md (MARKDOWN
+#     authoritative; §1 uses_governance_profiles + §2 per-stage key gates + §3.2
+#     governance placeholders):
+#       uses_governance_profiles:
+#         memory_source_governance, validity_window_required_gate,
+#         redaction_required_gate
+#   - configs/nexus-ai/pipeline_catalog.yaml (knowledge_memory_pipeline) adds
+#     no_self_approval_policy at pipeline level; the Phase C registry binds
+#     no_self_approval + evidence_required under memory_source_governance. Both are
+#     carried here as cross-cutting rules (the registry notes evidence_required is
+#     governed via memory_provenance completeness — see open_questions).
+#   - SDLC §7 minimums applied AS RELEVANT (doc 19 §4): this is a knowledge-
+#     lifecycle pipeline, not a build pipeline; SDLC build/security/supply-chain
+#     minimums do not apply. The "required gates" minimum is realized as the
+#     lifecycle invariants (classify -> redact-if-required -> validity window ->
+#     retrieval bound to window -> explicit expiration outcome) +
+#     memory_provenance evidence completeness at exit.
+#
+# RECONCILIATION (doc 19 (b)+(c)+(a)):
+#   - AUTHORITATIVE team name is knowledge_team / knowledge_team_lead (NOT
+#     knowledge_memory_team) — see configs/nexus-ai/team_templates.yaml.
+#   - memory_source_governance is the canonical-source (markdown) id; the catalog
+#     YAML's divergent `memory_governance_profile` is recorded as an ALIAS.
+#   - no_self_approval / evidence_required are first-class ids; *_policy spellings
+#     recorded as aliases.
+#
+# LOCKED DECISIONS: Plugin cancelled. Governance != Audit. Evidence != Trace.
+#   Memory stays a Core Ability and is NEVER promoted to an agent/owner; owner
+#   agents are snake_case Agent roles; knowledge_team_lead != Supervisor.
+#   redaction_required_gate (sensitive-content redaction before summarize/store)
+#   is DISTINCT from the global raw_credential_redaction (credential masking in
+#   outputs).
+# =============================================================================
+
+governance_profile_id: memory_source_governance
+scope: pipeline
+purpose: >-
+  Pipeline-wide governance for the Knowledge / Memory Pipeline, made evaluable
+  from config: every candidate memory has a classified source (trust tier +
+  sensitivity); sensitive content is redacted before summarization/storage/
+  retrieval; every retained memory carries an explicit validity window; retrieval
+  updates are bound to that window and never exceed classified sensitivity; and
+  every reviewed item gets an explicit expiration outcome (knowledge does not
+  silently rot). Curates what the Memory Core Ability may remember — does NOT turn
+  Memory into an agent. Umbrella re-shown under each knowledge stage.
+
+applies_to:
+  pipeline: knowledge_memory_pipeline
+  team: knowledge_team               # authoritative name (not knowledge_memory_team)
+  stages:
+    - memory_intake
+    - source_classification
+    - summary_generation
+    - validity_window_assignment
+    - retrieval_profile_update
+    - memory_expiration_review
+
+severity_default: blocker
+
+binds_governance_profiles:
+  - memory_source_governance        # registry umbrella (self); alias: memory_governance_profile
+  - validity_window_required_gate
+  - redaction_required_gate
+  - no_self_approval                # alias: no_self_approval_policy (catalog YAML + registry binding)
+  - evidence_required               # alias: evidence_required_policy (registry binding; see open_questions)
+
+aliases:
+  - memory_governance_profile       # divergent catalog-YAML name reconciled to this id
+
+rules:
+
+  # ---- source classification mandatory (memory_source_governance core) ---------
+  - rule_id: knowledge_source_classification_required
+    description: >-
+      Every candidate memory's source must be classified — origin type, trust
+      tier, sensitivity — before any later decision (summary, validity, retrieval)
+      can inherit a governed classification. Plus a provenance seed at intake
+      (knowledge-memory-pipeline.md §2.1 / §2.2).
+    severity: blocker
+    required_when: stage == source_classification
+    pass_condition: >-
+      source_trust_tier_assigned == true AND sensitivity_classified == true
+    fail_condition: source_classification_missing == true
+    on_fail: route_to_memory_intake
+    rework_route: memory_intake
+    evidence_required:
+      - SOURCE_CLASSIFICATION_REPORT
+      - MEMORY_PROVENANCE_RECORD
+    trace_required:
+      - stage_gate_trace_schema
+      - source_classification_trace
+
+  # ---- redaction before summarization/storage (redaction_required_gate) --------
+  - rule_id: knowledge_redaction_required
+    description: >-
+      Sensitive content must be redacted before it can be summarized, stored, or
+      exposed via retrieval. Enforces redaction_required_gate; conditional on
+      sensitivity_requires_redaction == true. DISTINCT from the global credential
+      redaction (knowledge-memory-pipeline.md §2.2 / §3.2).
+    severity: blocker
+    required_when: >-
+      stage == source_classification AND sensitivity_requires_redaction == true
+    pass_condition: redaction_applied_if_required == true
+    fail_condition: unredacted_sensitive_content_detected == true
+    on_fail: route_to_source_classification
+    rework_route: source_classification
+    evidence_required:
+      - SOURCE_CLASSIFICATION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- summary grounded in source ---------------------------------------------
+  - rule_id: knowledge_summary_grounded_in_source
+    description: >-
+      The summary must cite/link the classified source with no unsupported
+      additions, and stated confidence must be calibrated to actual support
+      (knowledge-memory-pipeline.md §2.3).
+    severity: blocker
+    required_when: stage == summary_generation
+    pass_condition: summary_grounded_in_source == true
+    fail_condition: summary_grounded_in_source == false
+    on_fail: route_to_source_classification
+    rework_route: source_classification
+    evidence_required:
+      - MEMORY_SUMMARY
+    trace_required:
+      - stage_gate_trace_schema
+      - summary_generation_skill_activation_trace
+
+  # ---- validity window required (validity_window_required_gate) -----------------
+  - rule_id: knowledge_validity_window_required
+    description: >-
+      Every retained memory must carry an explicit validity window with recorded
+      rationale; "no window" is not an allowed state. Enforces
+      validity_window_required_gate (knowledge-memory-pipeline.md §2.4 / §3.2).
+    severity: blocker
+    required_when: stage == validity_window_assignment
+    pass_condition: validity_window_present == true
+    fail_condition: validity_window_missing == true
+    on_fail: route_to_source_classification
+    rework_route: source_classification
+    evidence_required:
+      - VALIDITY_WINDOW_DECISION
+    trace_required:
+      - stage_gate_trace_schema
+      - validity_window_assignment_trace
+
+  # ---- retrieval update bound to validity window + sensitivity ------------------
+  - rule_id: knowledge_retrieval_bound_to_validity_window
+    description: >-
+      No retrieval profile update may be written for a memory without a validity
+      window, and retrieval exposure must not exceed the classified sensitivity.
+      Enforces validity_window_required_gate at the retrieval boundary
+      (knowledge-memory-pipeline.md §2.5).
+    severity: blocker
+    required_when: stage == retrieval_profile_update
+    pass_condition: >-
+      update_bound_to_validity_window == true AND sensitivity_exposure_consistent == true
+    fail_condition: retrieval_profile_update_without_validity_window == true
+    on_fail: route_to_validity_window_assignment
+    rework_route: validity_window_assignment
+    evidence_required:
+      - RETRIEVAL_PROFILE_UPDATE_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - retrieval_profile_update_trace
+
+  # ---- explicit expiration outcome (no silent rot) -----------------------------
+  - rule_id: knowledge_expiration_outcome_required
+    description: >-
+      Every reviewed memory must get an explicit outcome (refreshed / re-validated
+      / downgraded / expired); silent retention is not allowed, and expired memory
+      is removed from the active retrieval profile
+      (knowledge-memory-pipeline.md §2.6).
+    severity: blocker
+    required_when: stage == memory_expiration_review
+    pass_condition: >-
+      expiration_outcome_recorded == true AND
+      expired_memory_retired_from_retrieval_if_expired == true
+    fail_condition: >-
+      expiration_outcome_recorded == false OR
+      (outcome == expired AND expired_memory_retired_from_retrieval == false)
+    on_fail: route_to_validity_window_assignment
+    rework_route: validity_window_assignment
+    evidence_required:
+      - MEMORY_EXPIRATION_REVIEW_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - memory_expiration_review_trace
+
+  # ---- provenance completeness (memory provenance evidence) --------------------
+  - rule_id: knowledge_provenance_record_required
+    description: >-
+      A provenance record must exist for every memory item, capturing origin
+      reference, classification, summary linkage, validity window, retrieval
+      changes, and expiration outcome. Memory provenance evidence completeness is
+      an exit criterion (knowledge-memory-pipeline.md §3.3).
+    severity: blocker
+    required_when: always
+    pass_condition: memory_provenance_evidence_complete == true
+    fail_condition: provenance_record_missing == true
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - MEMORY_PROVENANCE_RECORD
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- cross-cutting: no_self_approval (first-class; alias no_self_approval_policy)
+  - rule_id: knowledge_no_self_approval
+    description: >-
+      No actor may be the sole approver/validator of a memory classification,
+      summary, or validity decision it produced. Binds canonical no_self_approval
+      (alias: no_self_approval_policy); knowledge_team_lead orchestrates but may
+      not self-approve or expose memory that fails a blocking gate
+      (knowledge-memory-pipeline.md §3.1).
+    severity: blocker
+    required_when: stage_has_validation_or_decision_gate == true
+    pass_condition: approver_agent_id != produced_artifact_author_agent_id
+    fail_condition: approver_agent_id == produced_artifact_author_agent_id
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - SOURCE_CLASSIFICATION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- cross-cutting: evidence_required (first-class; alias evidence_required_policy)
+  - rule_id: knowledge_evidence_required
+    description: >-
+      Every gate decision in the Knowledge / Memory Pipeline must be backed by a
+      machine-readable evidence record. Binds canonical evidence_required (alias:
+      evidence_required_policy); the registry notes this pipeline is governed by it
+      via memory_provenance completeness (see open_questions). Evidence != Trace.
+    severity: blocker
+    required_when: any_gate_decision == true
+    pass_condition: gate_decision_has_evidence_record == true
+    fail_condition: gate_decision_has_evidence_record == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - MEMORY_PROVENANCE_RECORD
+    trace_required:
+      - stage_gate_trace_schema
+
+required_evidence:
+  evidence_schemas:
+    - memory_provenance_schema
+  evidence_artifacts:
+    - MEMORY_INTAKE_RECORD
+    - SOURCE_CLASSIFICATION_REPORT
+    - MEMORY_SUMMARY
+    - VALIDITY_WINDOW_DECISION
+    - RETRIEVAL_PROFILE_UPDATE_REPORT
+    - MEMORY_EXPIRATION_REVIEW_REPORT
+    - MEMORY_PROVENANCE_RECORD
+
+required_trace:
+  trace_schemas:
+    - stage_gate_trace_schema
+  trace_records:
+    - memory_intake_trace
+    - source_classification_trace
+    - summary_generation_skill_activation_trace
+    - validity_window_assignment_trace
+    - retrieval_profile_update_trace
+    - memory_expiration_review_trace
+
+owner: knowledge_management
+escalation:
+  on_blocker: knowledge_team_lead    # authoritative role name (not knowledge_memory_team_lead)
+  on_unredacted_sensitive_content: block_and_report
+  on_unresolved_blocking_policy_failure: block_and_report
+  cannot_override_gate: true         # knowledge_team_lead != Supervisor; no gate bypass
+
+provenance:
+  registry_profile: governance_profiles.yaml#pipeline.memory_source_governance
+  derived_from:
+    - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md  # markdown authoritative
+    - configs/nexus-ai/pipeline_catalog.yaml                               # knowledge_memory_pipeline entry (memory_governance_profile alias)
+    - configs/nexus-ai/team_templates.yaml                                 # knowledge_team / knowledge_team_lead (authoritative names)
+    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md           # §4, §5
+    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md             # §4 memory/knowledge governance
+no_plugin: true
+governance_not_audit: true
+evidence_not_trace: true

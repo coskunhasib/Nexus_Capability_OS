@@ -1,0 +1,2484 @@
+# Nexus AI — Tools Registry
+# Phase C / doc 17 (§6 Tools Registry). Output of the Shared Registry Formalization plan
+#   docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md.
+#
+# WHAT THIS FILE IS
+#   The single machine-readable answer to "what tools exist in the system?" (Shared Registry =
+#   ownership/existence, per docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md §3 and
+#   00a-shared-registry-decisions.md D-011/D-012). The *usage* relationship ("who/which stage/agent
+#   uses a tool") is ALSO carried here per-item via `used_by`, so the usage-mapping rule is
+#   enforceable from registry data alone (doc 17 §13 exit criterion). The same tools are additionally
+#   shown under each stage's `uses_tools:` block in configs/nexus-ai/stages/sdlc/*.yaml and each
+#   pipeline catalog entry — that repetition is usage, not re-ownership (05 §5, D-014).
+#
+# BLUEPRINT-ONLY. No runtime code, no merge, no deploy. Tool definitions are contracts, not
+#   executables. `input_schema` / `output_schema` are logical shapes for later formalization.
+#
+# LOCKED-DECISION BOUNDARIES (carried verbatim from the task and the decision log):
+#   - Plugin is cancelled and never reintroduced. There is no plugin registry and no plugin tool.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are NOT agents and
+#     NOT team members; they live only in the Core Abilities registry. A Tool MAY be *provided_by* a
+#     Core Ability (D-014: "Core Ability sub-operations appear as Tools"), but a Core Ability is never
+#     itself a tool and never an `allowed_caller` value (callers are Agent roles / team leads).
+#   - Skill != Tool. None of the canonical skills (prism, verification-loop, sentinel, llm-council,
+#     fmea, adr-builder, gap-audit, prompt-fidelity, calibrate, refraction, fermi-decompose,
+#     bayesian-update) and none of the 6 undeclared skills from
+#     reviews/claude-code-skill-agent-review.md §8 (skill-architect, handoff-designer,
+#     context-pack-builder, scanner-result-normalizer, evidence-graph-builder, release-readiness-judge)
+#     are registered here — they belong in configs/nexus-ai/skills_registry.yaml.
+#   - Governance != Audit; Evidence != Trace. `governance_profiles` reference the Governance Profiles
+#     registry (configs/nexus-ai/governance_profiles.yaml, Phase E); `audit_schemas` reference the
+#     Audit Schemas registry (configs/nexus-ai/audit_schemas.yaml, Phase E). Both are referenced by
+#     id here; their definitions are NOT inlined.
+
+registry_id: nexus_ai_tools_registry
+version: draft-0.1
+category: tool
+owner_doc: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
+applies_rule: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md   # Shared Registry + Usage Mapping
+
+# STATUS VOCABULARY (doc 17 §3 / task)
+status_vocabulary:
+  canonical: Locked/established — present in the Phase A canonical SDLC stage contracts and/or the
+             shared-registry usage example (05 §3). Ratified.
+  candidate: Referenced by a stage or pipeline but not yet ratified into the canonical shared set.
+             All NON-CANONICAL inline SDLC tools and all newly pipeline-introduced tools are candidate.
+  deprecated: Superseded; retained only so existing references resolve. (None defined yet — superseded
+              legacy tool names are recorded as `aliases` on the canonical tool that absorbed them,
+              not as standalone deprecated items.)
+
+# ITEM CONTRACT (doc 17 §3 + §6 category fields). EVERY tool below carries, at minimum:
+#   §3 base:     id, name, type, status, purpose, owner_domain, allowed_usage, forbidden_usage,
+#                governance_profiles, audit_schemas, notes
+#   §6 category: category(=tool), provided_by_core_ability, input_schema, output_schema, side_effects,
+#                risk_level, requires_sandbox, governance_profiles, audit_schemas, allowed_callers
+#   usage-map:   used_by  (pipelines/stages/agents that reference it; doc 17 §13)
+#   plus:        aliases  (only where a *_variant / dropped legacy name reconciles to this canonical id)
+item_contract_fields:
+  base: [id, name, type, status, purpose, owner_domain, allowed_usage, forbidden_usage, governance_profiles, audit_schemas, notes]
+  category: [category, provided_by_core_ability, input_schema, output_schema, side_effects, risk_level, requires_sandbox, governance_profiles, audit_schemas, allowed_callers]
+  usage_mapping: [used_by]
+  reconciliation: [aliases]
+
+# SIDE-EFFECT RULE (task + 03-governance-and-audit-layering.md §9 Tool Governance):
+#   Any side-effect tool (shell_exec-class, repo_writer, *_executor, *_runner, persistent writers,
+#   and any tool that runs/executes code or scanners or mutates state) MUST set:
+#     requires_sandbox: true
+#     governance_profiles: include `tool_call_governance` and `sandbox_execution_governance`
+#     audit_schemas: include `tool_call_trace_schema`  (the trace requirement)
+#   Side-effect-free analysis/query/read tools set requires_sandbox: false and side_effects: none.
+side_effect_rule:
+  side_effecting_requires:
+    requires_sandbox: true
+    governance_profiles_include: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas_include: [tool_call_trace_schema]   # trace requirement
+  side_effect_free_default:
+    requires_sandbox: false
+    side_effects: none
+
+# Shared governance/audit ids referenced by tools below. Defined in Phase E registries; listed here
+# only so the references are discoverable. Governance != Audit kept distinct.
+referenced_governance_profiles:
+  - global_no_secret_policy          # global: no secret leakage / no raw credential exposure (03 §3)
+  - high_risk_action_default_deny    # global: high-risk action default deny (03 §3)
+  - tool_call_governance             # tool-layer: permission scoping for any tool call (03 §9)
+  - sandbox_execution_governance     # tool-layer: sandbox + timeout required for side-effecting tools (03 §9)
+  - evidence_required_policy         # blocker family: gate decisions require evidence (canonical: evidence_required)
+referenced_audit_schemas:
+  - tool_call_trace_schema           # trace: tool-call provenance (Trace, not Evidence) (03 §12)
+  - evidence_item_schema             # evidence record shape (see configs/nexus-ai/artifact_registry.yaml)
+
+# NAMING RECONCILIATION (doc 17): legacy tool names that were dropped/folded into a canonical tool
+# during the Phase A SDLC contract reconciliation are recorded as `aliases` on the absorbing tool —
+# never as separate entries (verified in-file in the stage YAML headers):
+#   secret_scanner        -> folded into scanner_runner (16-security-validation.yaml header)
+#   scanner_report_reader -> reconciled to evidence_reader (16 header)
+#   schema_diff_checker   -> folded into migration_checker (22 header)
+#   data_integrity_checker-> dropped; covered by test_runner + evidence_consistency_checker (22 header)
+#   runbook_checker       -> covered by dr_runbook_checker (27 header)
+# NOTE on *_policy variants: the no_self_approval_policy / evidence_required_policy naming variants
+#   flagged in reviews/pipeline-catalog-review.md §4.7 are GOVERNANCE PROFILE names, not tools; their
+#   alias reconciliation belongs in configs/nexus-ai/governance_profiles.yaml (Phase E), not here.
+
+tools:
+
+  # =====================================================================================
+  # GROUP A — Canonical cross-cutting evidence / artifact / trace tooling
+  # Side-effect-free readers vs. side-effecting writers are split. Used by nearly every SDLC stage.
+  # provided_by_core_ability: null — these are pipeline-substrate tools, not a single Core Ability's
+  #   sub-operation. (Listing them under a Core Ability would misattribute ownership.)
+  # =====================================================================================
+
+  - id: artifact_writer
+    name: Artifact Writer
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Persist a named pipeline artifact (canonical UPPER_SNAKE artifact id per
+      configs/nexus-ai/artifact_registry.yaml) produced by a stage — e.g. PRODUCT_BRIEF,
+      CODE_CHANGESET_SUMMARY, COMPLIANCE_MATRIX, RELEASE_CANDIDATE_REPORT.
+    owner_domain: shared_platform
+    provided_by_core_ability: null
+    input_schema:
+      artifact_id: string                # canonical artifact name
+      content: object                    # artifact body (shape per artifact contract)
+      related_pipeline: string
+      related_run: string
+      related_stage: string
+    output_schema:
+      artifact_ref: string
+      written: boolean
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true               # side-effect tool -> governance + trace required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [any_stage_owner_agent]   # authored by the stage owner_agent of each stage that lists it
+    allowed_usage:
+      - Persist canonical-named artifacts under a stage's own scope with provenance.
+    forbidden_usage:
+      - Writing outside the sandboxed artifact store.
+      - Emitting raw secrets/credentials into an artifact (global_no_secret_policy).
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline, knowledge_memory_pipeline]
+      sdlc_stages: [intake, domain_risk_profile, skill_semantic_extraction, requirements, requirements_review, architecture, architecture_review, security_privacy_design, premortem_fmea, planning, implementation, code_review, test_generation, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, development_completion, release_candidate, refraction_learning]
+    notes: >-
+      Present in all 31 SDLC stage contracts and every pipeline catalog entry. Distinct from
+      evidence_writer: artifact_writer persists the deliverable; evidence_writer persists the
+      decision evidence about it (Evidence != Trace and artifact != evidence boundaries).
+
+  - id: evidence_writer
+    name: Evidence Writer
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Persist stage evidence items and gate results (evidence_item_schema shape) that prove what a
+      gate decided and on what basis — the Evidence half of the Audit family (03 §11).
+    owner_domain: shared_platform
+    provided_by_core_ability: null
+    input_schema:
+      evidence_id: string
+      artifact_id: string
+      related_gate: string
+      producer: string
+      summary: string
+      trace_refs: [string]
+    output_schema:
+      evidence_ref: string
+      written: boolean
+    side_effects: writes_evidence_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, evidence_required_policy, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [any_stage_owner_agent]
+    allowed_usage:
+      - Persist evidence records / gate results with trace_refs back to the producing operation.
+    forbidden_usage:
+      - Recording a gate result without backing evidence (evidence_required_policy).
+      - Storing trace history in place of evidence (Evidence != Trace).
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline, knowledge_memory_pipeline]
+      sdlc_stages: [intake, domain_risk_profile, skill_semantic_extraction, requirements, requirements_review, architecture, architecture_review, security_privacy_design, premortem_fmea, planning, implementation, code_review, test_generation, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, development_completion, release_candidate, refraction_learning]
+    notes: Present in all 31 SDLC stage contracts and every pipeline catalog entry.
+
+  - id: evidence_reader
+    name: Evidence Reader
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Read upstream evidence items, gate results, and prior-stage artifacts so a downstream stage can
+      adjudicate without re-producing them (read-only). Absorbs the legacy scanner_report_reader.
+    owner_domain: shared_platform
+    provided_by_core_ability: null
+    input_schema:
+      query: object                      # {related_run, related_stage?, artifact_id?, evidence_id?}
+    output_schema:
+      evidence_items: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [any_stage_owner_agent]
+    allowed_usage:
+      - Read-only retrieval of already-persisted evidence/artifacts within the run scope.
+    forbidden_usage:
+      - Mutating or re-attesting evidence (that is evidence_writer under separate ownership).
+    aliases: [scanner_report_reader]     # 16-security-validation.yaml: legacy scanner_report_reader -> evidence_reader
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, activation_pipeline, operations_pipeline]
+      sdlc_stages: [requirements_review, architecture_review, premortem_fmea, planning, security_validation, privacy_data_lifecycle_validation, domain_regulatory_compliance_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, development_completion, release_candidate, refraction_learning]
+    notes: >-
+      Used by 16 SDLC stages and the research/activation/operations pipelines (research
+      claim_evidence_mapping/cross_validation/synthesis/completion; activation/operations evidence
+      reviews). Read-only — no sandbox.
+
+  # =====================================================================================
+  # GROUP B — Coder/OS repository & build tooling (provided_by_core_ability: Coder / OS)
+  # =====================================================================================
+
+  - id: repo_reader
+    name: Repository Reader
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Read existing source, specs, manifests, and markup for context before authoring/analysis.
+    owner_domain: engineering
+    provided_by_core_ability: Coder
+    input_schema:
+      path_or_glob: string
+      ref: string
+    output_schema:
+      files: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [architecture_agent, security_privacy_agent, engineering_agent, code_reviewer_agent, qa_agent, supply_chain_agent, contract_validation_agent, ux_accessibility_agent, performance_resilience_agent]
+    allowed_usage: [Read-only inspection of repository content.]
+    forbidden_usage: [Writing to the repository (use repo_writer).]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [architecture, security_privacy_design, implementation, code_review, test_execution, supply_chain_sbom_license, api_contract_compatibility_validation, accessibility_ux_validation_if_applicable, performance_resilience]
+    notes: Read-only counterpart to repo_writer.
+
+  - id: repo_writer
+    name: Repository Writer
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Author the code changeset within the planned scope (the only repository-mutating tool).
+    owner_domain: engineering
+    provided_by_core_ability: Coder
+    input_schema:
+      changeset: object                  # files + diffs, bounded by IMPLEMENTATION_PLAN/TASK_BREAKDOWN
+    output_schema:
+      change_summary_ref: string
+      files_written: [string]
+    side_effects: writes_repository
+    risk_level: high
+    requires_sandbox: true               # side-effect tool -> sandbox + governance + trace required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [engineering_agent]
+    allowed_usage: [Author in-scope code changes during the implementation stage only.]
+    forbidden_usage:
+      - Out-of-scope changes (implementation_scope_clean / no_out_of_scope_change_gate).
+      - Merge or deploy (no merge, no deploy — repo_writer authors a changeset only).
+      - Committing secrets/credentials (global_no_secret_policy).
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [implementation]
+    notes: >-
+      Single-stage, high-risk side-effect tool. Authoring only; no-self-approval is enforced
+      downstream by the separate code_review stage (owner_agent: code_reviewer_agent).
+
+  - id: repo_diff_reader
+    name: Repository Diff Reader
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Read the changeset diff (changed lines/files) to target review, test generation, and defect sweeps.
+    owner_domain: engineering
+    provided_by_core_ability: Coder
+    input_schema:
+      base_ref: string
+      head_ref: string
+    output_schema:
+      diff: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [code_reviewer_agent, qa_agent, contract_validation_agent]
+    allowed_usage: [Read-only retrieval of changeset diffs.]
+    forbidden_usage: [Mutating the diff or repository.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [code_review, test_generation, verification_loop_bug_finding, api_contract_compatibility_validation]
+    notes: Read-only; distinct from repo_reader (whole-file context) by targeting the diff.
+
+  - id: test_runner
+    name: Test Runner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Execute build/compile/lint smoke checks and test suites; reproduce/confirm suspected defects;
+      run data-integrity/migration assertions. Executes code -> side-effecting.
+    owner_domain: engineering
+    provided_by_core_ability: OS
+    input_schema:
+      target: string                     # suite / build target / assertion set
+      config: object
+    output_schema:
+      result: string                     # pass | fail
+      report_ref: string
+      logs_ref: string
+    side_effects: executes_code_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_runner side-effect tool -> sandbox + governance + trace required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [engineering_agent, qa_agent, data_migration_agent]
+    allowed_usage: [Execute builds/tests/assertions inside the sandbox and emit results as evidence.]
+    forbidden_usage: [Executing outside the sandbox; deploying; mutating production state.]
+    aliases: [data_integrity_checker]    # 22: data_integrity_checker integrity assertions executed via test_runner (+ evidence_consistency_checker)
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [implementation, test_execution, verification_loop_bug_finding, data_migration_validation_if_applicable]
+    notes: >-
+      Covers baseline local build (stage 11), suite execution (14), defect reproduction (15), and
+      migration/integrity assertions (22). The dropped legacy data_integrity_checker is recorded as an
+      alias (integrity assertions run via test_runner + evidence_consistency_checker).
+
+  - id: test_writer
+    name: Test Writer
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Author/generate test cases derived from changed behavior and acceptance criteria.
+    owner_domain: engineering
+    provided_by_core_ability: Coder
+    input_schema:
+      changed_behavior: object
+      acceptance_criteria: object
+    output_schema:
+      generated_tests_ref: string
+    side_effects: writes_test_files
+    risk_level: medium
+    requires_sandbox: true               # authors test files -> side-effect tool
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [qa_agent]
+    allowed_usage: [Generate test artifacts for the changeset under test.]
+    forbidden_usage: [Modifying production source; executing tests (that is test_runner).]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [test_generation]
+    notes: Authors tests only; execution is test_runner.
+
+  - id: coverage_parser
+    name: Coverage Parser
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Parse coverage output and map planned/generated tests against critical-path & regression scope.
+    owner_domain: engineering
+    provided_by_core_ability: Coder
+    input_schema:
+      coverage_report: object
+      scope: object
+    output_schema:
+      coverage_summary: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [qa_agent]
+    allowed_usage: [Read-only parsing/mapping of coverage data for the coverage_policy_pass gate.]
+    forbidden_usage: [Executing tests or mutating coverage data.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [test_generation, test_execution]
+    notes: Side-effect-free analysis tool.
+
+  - id: defect_tracker
+    name: Defect Tracker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Record, triage, and correlate found defects and rework for bug/decision pattern mining.
+    owner_domain: engineering
+    provided_by_core_ability: null
+    input_schema:
+      defect: object
+    output_schema:
+      defect_id: string
+      defect_records: [object]
+    side_effects: writes_defect_store
+    risk_level: medium
+    requires_sandbox: true               # records/triages defects -> state mutation
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [qa_agent, memory_curator_agent]
+    allowed_usage: [Record/triage defects (stage 15); read/correlate defects for learning (stage 31).]
+    forbidden_usage: [Closing defects without evidence; altering defect history silently.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [verification_loop_bug_finding, refraction_learning]
+    notes: >-
+      Write/triage at stage 15 (qa_agent); read/correlate at stage 31 (memory_curator_agent). Bound to
+      the verification-loop bug-finding semantic, not a general readiness check.
+
+  # =====================================================================================
+  # GROUP C — Policy / traceability / diagram tooling
+  # =====================================================================================
+
+  - id: policy_query
+    name: Policy Query
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Query policy-as-data (forbidden/allowed licenses, breaking-change/deprecation policy, retention,
+      quota/cost-cap, observability/on-call/SLO, governance/regulatory obligations) for gate decisions.
+    owner_domain: governance
+    provided_by_core_ability: null
+    input_schema:
+      policy_domain: string
+      subject: object
+    output_schema:
+      policy_result: object              # allowed | blocked | obligations[]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [sdlc_team_lead, security_privacy_agent, code_reviewer_agent, supply_chain_agent, privacy_agent, contract_validation_agent, compliance_agent, cost_resource_agent, operations_readiness_agent, release_manager_agent, activation_team_lead, operations_team_lead]
+    allowed_usage: [Read-only evaluation of policy-as-data; Governance != Audit (this reads governance, it does not write audit).]
+    forbidden_usage: [Mutating policy; bypassing a blocking policy result.]
+    used_by:
+      pipelines: [sdlc_pipeline, activation_pipeline, operations_pipeline]
+      sdlc_stages: [architecture_review, security_privacy_design, code_review, supply_chain_sbom_license, privacy_data_lifecycle_validation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, cost_resource_governance, operations_readiness, development_completion, release_candidate]
+    notes: >-
+      Used by 11 SDLC stages plus activation/operations pipelines. Side-effect-free policy read; the
+      decision it informs is recorded via evidence_writer (Governance != Audit boundary).
+
+  - id: requirements_trace_checker
+    name: Requirements Trace Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Seed and validate requirement->artifact->test traceability (REQUIREMENTS_TRACE_START linkage,
+      tasks_trace_to_requirements, obligation->requirement->control coverage).
+    owner_domain: requirements
+    provided_by_core_ability: null
+    input_schema:
+      trace_graph: object
+      requirements: object
+    output_schema:
+      trace_coverage: object
+      gaps: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [product_requirements_agent, sdlc_team_lead, planning_agent, code_reviewer_agent, compliance_agent, evidence_graph_agent]
+    allowed_usage: [Read-only traceability validation supporting trace-coverage gates.]
+    forbidden_usage: [Fabricating trace links not backed by artifacts.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [requirements, requirements_review, planning, code_review, domain_regulatory_compliance_validation_if_applicable, evidence_graph_build]
+    notes: Used across 6 SDLC stages. Side-effect-free.
+
+  - id: diagram_generator
+    name: Diagram Generator
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Render architecture/system-context and evidence-graph artifacts as diagram outputs.
+    owner_domain: architecture
+    provided_by_core_ability: null
+    input_schema:
+      graph_or_model: object
+      diagram_type: string
+    output_schema:
+      diagram_artifact_ref: string
+    side_effects: writes_artifact_store
+    risk_level: low
+    requires_sandbox: true               # renders & persists a diagram artifact -> side-effecting writer
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [architecture_agent, evidence_graph_agent]
+    allowed_usage: [Render SYSTEM_CONTEXT_DIAGRAM (stage 6) and EVIDENCE_GRAPH (stage 28).]
+    forbidden_usage: [Persisting outside the artifact store.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [architecture, evidence_graph_build]
+    notes: Produces a persisted artifact, hence treated as a side-effecting writer.
+
+  # =====================================================================================
+  # GROUP D — Security / supply-chain / agentic-safety tooling
+  # =====================================================================================
+
+  - id: scanner_runner
+    name: Scanner Runner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Run SAST / SCA / secret / container / IaC scans and emit findings. Secret scanning is one
+      scanner mode (the legacy secret_scanner is folded in here).
+    owner_domain: security
+    provided_by_core_ability: null
+    input_schema:
+      scan_targets: [string]
+      scan_modes: [string]               # sast | sca | secret | container | iac
+    output_schema:
+      findings: [object]
+      report_ref: string
+    side_effects: executes_scanners_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_runner side-effect tool -> sandbox + governance + trace required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [security_validation_agent]
+    allowed_usage: [Execute security scans inside the sandbox; emit SECURITY_SCAN_REPORT findings.]
+    forbidden_usage: [Scanning out-of-scope targets; suppressing high/critical findings.]
+    aliases: [secret_scanner]            # 16: legacy secret_scanner folded into scanner_runner (secret scanning is one mode)
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [security_validation]
+    notes: >-
+      Raw scanner output normalization/dedup is the skill `scanner-result-normalizer` (Skill != Tool),
+      not part of this tool.
+
+  - id: dependency_scanner
+    name: Dependency Scanner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Scan dependencies / lockfiles for known vulnerabilities (SCA findings).
+    owner_domain: security
+    provided_by_core_ability: null
+    input_schema:
+      manifests: [string]
+    output_schema:
+      vulnerabilities: [object]
+    side_effects: executes_scanners_in_sandbox
+    risk_level: high
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [security_validation_agent, supply_chain_agent]
+    allowed_usage: [Scan dependency manifests for known vulnerabilities.]
+    forbidden_usage: [Installing/upgrading dependencies; deploying.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [security_validation, supply_chain_sbom_license]
+    notes: Shared by security_validation (16) and supply_chain_sbom_license (17).
+
+  - id: sbom_generator
+    name: SBOM Generator
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Generate the Software Bill of Materials (SBOM) from resolved dependencies.
+    owner_domain: security
+    provided_by_core_ability: null
+    input_schema:
+      dependency_graph: object
+    output_schema:
+      sbom_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [supply_chain_agent]
+    allowed_usage: [Generate and persist the SBOM artifact.]
+    forbidden_usage: [Omitting resolved components from the SBOM.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [supply_chain_sbom_license]
+    notes: Generates a persisted artifact (SBOM).
+
+  - id: license_checker
+    name: License Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Resolve and evaluate component licenses against forbidden/allowed-license policy.
+    owner_domain: security
+    provided_by_core_ability: null
+    input_schema:
+      components: [object]
+      license_policy: object
+    output_schema:
+      license_findings: [object]
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [supply_chain_agent]
+    allowed_usage: [Evaluate licenses and emit LICENSE_REPORT against policy.]
+    forbidden_usage: [Approving a forbidden license without policy basis.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [supply_chain_sbom_license]
+    notes: Policy basis comes from policy_query; this tool resolves and evaluates licenses.
+
+  - id: prompt_injection_tester
+    name: Prompt Injection Tester
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Probe the agent/system for prompt-injection susceptibility; emit PROMPT_INJECTION_TEST_REPORT.
+    owner_domain: ai_safety
+    provided_by_core_ability: null
+    input_schema:
+      target_agent_or_system: object
+      attack_suite: object
+    output_schema:
+      injection_findings: [object]
+    side_effects: executes_adversarial_probes_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_tester executes adversarial probes -> sandbox required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [agentic_safety_agent]
+    allowed_usage: [Run injection probes against the target inside the sandbox.]
+    forbidden_usage: [Running adversarial probes against production/non-sandboxed targets.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [ai_agent_safety_evaluation]
+    notes: Part of the agentic safety eval suite (stage 18).
+
+  - id: tool_misuse_tester
+    name: Tool Misuse Tester
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Test for tool-permission misuse / privilege-escalation paths; emit TOOL_MISUSE_TEST_REPORT.
+    owner_domain: ai_safety
+    provided_by_core_ability: null
+    input_schema:
+      tool_permission_map: object
+    output_schema:
+      misuse_findings: [object]
+    side_effects: executes_adversarial_probes_in_sandbox
+    risk_level: high
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [agentic_safety_agent]
+    allowed_usage: [Probe for tool misuse / least-privilege violations inside the sandbox.]
+    forbidden_usage: [Exercising real privileged tools outside the sandbox.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [ai_agent_safety_evaluation]
+    notes: Consumes the TOOL_PERMISSION_MAP emitted by implementation (stage 11).
+
+  - id: context_poisoning_tester
+    name: Context Poisoning Tester
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Test resistance to context/memory poisoning; emit CONTEXT_POISONING_TEST_REPORT.
+    owner_domain: ai_safety
+    provided_by_core_ability: null
+    input_schema:
+      context_policy: object
+      poisoning_suite: object
+    output_schema:
+      poisoning_findings: [object]
+    side_effects: executes_adversarial_probes_in_sandbox
+    risk_level: high
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [agentic_safety_agent]
+    allowed_usage: [Run context-poisoning probes inside the sandbox.]
+    forbidden_usage: [Injecting poisoned context into production memory stores.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [ai_agent_safety_evaluation]
+    notes: Consumes the CONTEXT_POLICY emitted by implementation (stage 11).
+
+  - id: evidence_consistency_checker
+    name: Evidence Consistency Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Detect hallucinated/inconsistent/contradictory evidence and verify internal consistency of the
+      evidence graph and integrity assertions.
+    owner_domain: ai_safety
+    provided_by_core_ability: null
+    input_schema:
+      evidence_set: [object]
+    output_schema:
+      consistency_findings: [object]
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true               # emits an integrity/consistency report (evidence) -> side-effecting
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [agentic_safety_agent, data_migration_agent, evidence_graph_agent, release_manager_agent]
+    allowed_usage: [Cross-check evidence for contradictions/hallucination across stages 18/22/28/30.]
+    forbidden_usage: [Asserting consistency without examining the cited evidence.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [ai_agent_safety_evaluation, data_migration_validation_if_applicable, evidence_graph_build, release_candidate]
+    notes: Used by 4 SDLC stages; co-covers the dropped data_integrity_checker role with test_runner.
+
+  - id: agent_permission_auditor
+    name: Agent Permission Auditor
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Audit an agent's tool-permission scope against least-privilege expectations.
+    owner_domain: ai_safety
+    provided_by_core_ability: null
+    input_schema:
+      agent_permission_map: object
+      least_privilege_baseline: object
+    output_schema:
+      permission_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [agentic_safety_agent]
+    allowed_usage: [Read-only audit of permission scope vs least-privilege.]
+    forbidden_usage: [Granting or modifying permissions (audit only).]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [ai_agent_safety_evaluation]
+    notes: Read-only auditor (Audit family is read/observe; Governance grants/denies).
+
+  - id: eval_runner
+    name: Eval Runner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Run the agentic safety eval suite and aggregate AGENTIC_SAFETY_EVAL_REPORT results.
+    owner_domain: ai_safety
+    provided_by_core_ability: null
+    input_schema:
+      eval_suite: object
+      target: object
+    output_schema:
+      eval_results: object
+    side_effects: executes_evals_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_runner executes an eval suite -> sandbox required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [agentic_safety_agent]
+    allowed_usage: [Execute the agentic safety eval suite inside the sandbox.]
+    forbidden_usage: [Running evals against production agents/state.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [ai_agent_safety_evaluation]
+    notes: Orchestrates the injection/misuse/poisoning testers' suite at stage 18.
+
+  # =====================================================================================
+  # GROUP E — Compatibility / migration / compliance / a11y validation tooling
+  # =====================================================================================
+
+  - id: contract_test_runner
+    name: Contract Test Runner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Run consumer/provider + backward-compatibility contract tests and detect breaking changes / invariant violations.
+    owner_domain: api_contracts
+    provided_by_core_ability: OS
+    input_schema:
+      contracts: object
+      change_set: object
+    output_schema:
+      contract_test_results: object
+      breaking_changes: [object]
+    side_effects: executes_tests_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_runner executes contract tests -> sandbox required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [contract_validation_agent, data_migration_agent]
+    allowed_usage: [Run contract/compat tests for stages 20 and 22 inside the sandbox.]
+    forbidden_usage: [Approving an unapproved breaking change (no_unapproved_breaking_change gate).]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [api_contract_compatibility_validation, data_migration_validation_if_applicable]
+    notes: Shared by API-contract (20) and data-migration (22) validation.
+
+  - id: migration_checker
+    name: Migration Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Validate/forward-migrate with rollback-replay and schema-diff coverage. Absorbs the legacy
+      schema_diff_checker (schema-diff coverage folded in).
+    owner_domain: data_migration
+    provided_by_core_ability: OS
+    input_schema:
+      migration_files: object
+      source_schema: object
+      target_schema: object
+    output_schema:
+      migration_validation: object
+      rollback_replay_result: object
+    side_effects: executes_migration_in_sandbox
+    risk_level: high
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [data_migration_agent]
+    allowed_usage: [Validate forward-migration + rollback-replay against sandboxed schemas/data.]
+    forbidden_usage: [Running migrations against production data; deploying.]
+    aliases: [schema_diff_checker]       # 22: schema-diff coverage folded into migration_checker
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [data_migration_validation_if_applicable]
+    notes: Schema-diff coverage is folded in (legacy schema_diff_checker recorded as alias).
+
+  - id: compliance_matrix_builder
+    name: Compliance Matrix Builder
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Build the obligation->requirement->control COMPLIANCE_MATRIX for applicable regulatory obligations.
+    owner_domain: compliance
+    provided_by_core_ability: null
+    input_schema:
+      obligations: [object]
+      requirements: object
+      controls: object
+    output_schema:
+      compliance_matrix_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true               # builds & persists the compliance matrix artifact
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [compliance_agent]
+    allowed_usage: [Assemble the COMPLIANCE_MATRIX from policy obligations and trace coverage.]
+    forbidden_usage: [Asserting coverage for an obligation lacking a traced control.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [domain_regulatory_compliance_validation_if_applicable]
+    notes: Conditional (if-applicable) stage 21.
+
+  - id: accessibility_auditor
+    name: Accessibility Auditor
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Automated WCAG-style accessibility audit of UI source/markup; emit ACCESSIBILITY_REPORT.
+    owner_domain: accessibility_ux
+    provided_by_core_ability: null
+    input_schema:
+      ui_source: object
+      a11y_ruleset: object
+    output_schema:
+      a11y_findings: [object]
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true               # runs an audit pass and persists a report
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [ux_accessibility_agent]
+    allowed_usage: [Run automated a11y audit for stage 23.]
+    forbidden_usage: [Passing the a11y gate without addressing blocking violations.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [accessibility_ux_validation_if_applicable]
+    notes: Canonical a11y tool; ux_flow_checker and contrast_checker (below) are NON-CANONICAL legacy companions.
+
+  # =====================================================================================
+  # GROUP F — Performance / cost / resilience tooling
+  # =====================================================================================
+
+  - id: benchmark_runner
+    name: Benchmark Runner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Run latency/throughput/capacity and resilience probes; measure resource-consumption baselines.
+    owner_domain: performance
+    provided_by_core_ability: OS
+    input_schema:
+      benchmark_suite: object
+      target: object
+    output_schema:
+      performance_metrics: object
+    side_effects: executes_benchmarks_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_runner executes load/resilience probes -> sandbox required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [performance_resilience_agent, cost_resource_agent]
+    allowed_usage: [Run perf/resilience probes (24) and resource-consumption baselines (25) in the sandbox.]
+    forbidden_usage: [Load-testing production systems.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [performance_resilience, cost_resource_governance]
+    notes: Shared by performance_resilience (24) and cost_resource_governance (25).
+
+  - id: resource_budget_checker
+    name: Resource Budget Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Verify CPU/RAM/IO/resource footprint against NFR limits and budgets.
+    owner_domain: cost_resource
+    provided_by_core_ability: null
+    input_schema:
+      resource_usage: object
+      budgets: object
+    output_schema:
+      budget_findings: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [performance_resilience_agent, cost_resource_agent]
+    allowed_usage: [Read-only check of resource footprint vs budgets/NFR limits.]
+    forbidden_usage: [Mutating budgets to force a pass.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [performance_resilience, cost_resource_governance]
+    notes: Side-effect-free check; consumes RESOURCE_USAGE_DATA / NFR_CATALOG.
+
+  - id: cost_estimator
+    name: Cost Estimator
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Estimate token/model/inference/compute cost for the changeset; emit COST_ESTIMATE_REPORT.
+    owner_domain: cost_resource
+    provided_by_core_ability: null
+    input_schema:
+      usage_profile: object
+      pricing_model: object
+    output_schema:
+      cost_estimate: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [cost_resource_agent]
+    allowed_usage: [Read-only cost estimation for the cost/resource governance gate.]
+    forbidden_usage: [Understating cost to pass a cost-cap gate.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [cost_resource_governance]
+    notes: Side-effect-free estimation.
+
+  - id: quota_policy_checker
+    name: Quota Policy Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Verify quota / rate-limit / cost-cap policy compliance.
+    owner_domain: cost_resource
+    provided_by_core_ability: null
+    input_schema:
+      usage: object
+      quota_policy: object
+    output_schema:
+      quota_findings: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [cost_resource_agent]
+    allowed_usage: [Read-only quota/cost-cap compliance check; policy basis via policy_query.]
+    forbidden_usage: [Raising quota silently to force compliance.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [cost_resource_governance]
+    notes: Side-effect-free check.
+
+  # =====================================================================================
+  # GROUP G — Backup / restore / DR / operations-readiness tooling (canonical)
+  # =====================================================================================
+
+  - id: backup_plan_checker
+    name: Backup Plan Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Verify backup scope/frequency/retention adequacy vs recovery objectives and rollback prerequisites.
+    owner_domain: operations_readiness
+    provided_by_core_ability: null
+    input_schema:
+      backup_plan: object
+      recovery_objectives: object
+    output_schema:
+      backup_findings: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [operations_readiness_agent]
+    allowed_usage: [Read-only adequacy check of the backup plan (stages 26, 27).]
+    forbidden_usage: [Asserting adequacy without checking recovery objectives.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [backup_restore_dr_validation_if_applicable, operations_readiness]
+    notes: Shared by stage 26 (if-applicable) and stage 27.
+
+  - id: restore_test_runner
+    name: Restore Test Runner
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Execute a restore test (and rollback/restore readiness check) and capture RESTORE_TEST_REPORT.
+    owner_domain: operations_readiness
+    provided_by_core_ability: OS
+    input_schema:
+      backup_artifact: object
+      restore_target: object
+    output_schema:
+      restore_test_report_ref: string
+    side_effects: executes_restore_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_runner executes a restore -> sandbox required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [operations_readiness_agent]
+    allowed_usage: [Execute restore/rollback-readiness tests inside the sandbox (stages 26, 27).]
+    forbidden_usage: [Restoring over production data.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [backup_restore_dr_validation_if_applicable, operations_readiness]
+    notes: Shared by stage 26 and stage 27.
+
+  - id: dr_runbook_checker
+    name: DR Runbook Checker
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Verify runbook / DR-runbook completeness, RTO/RPO coverage, failover steps, and executability.
+      Absorbs the legacy generic runbook_checker.
+    owner_domain: operations_readiness
+    provided_by_core_ability: null
+    input_schema:
+      runbook: object
+      dr_objectives: object
+    output_schema:
+      runbook_findings: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [operations_readiness_agent]
+    allowed_usage: [Read-only completeness/executability check of runbook/DR-runbook (stages 26, 27).]
+    forbidden_usage: [Marking a runbook complete without RTO/RPO/failover coverage.]
+    aliases: [runbook_checker]           # 27: legacy generic runbook_checker covered by dr_runbook_checker
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [backup_restore_dr_validation_if_applicable, operations_readiness]
+    notes: Canonical runbook checker; absorbs the legacy runbook_checker name.
+
+  # =====================================================================================
+  # GROUP H — NON-CANONICAL inline SDLC tools (referenced but not ratified -> candidate)
+  # Each is flagged NON-CANONICAL/legacy in its stage YAML and is load-bearing for that stage.
+  # Per task: register them, mark candidate, carry used_by.
+  # =====================================================================================
+
+  - id: package_reputation_checker
+    name: Package Reputation Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Assess package provenance/reputation risk for resolved dependencies (provenance/typosquat/abandonment signals).
+    owner_domain: security
+    provided_by_core_ability: null
+    input_schema:
+      packages: [object]
+    output_schema:
+      reputation_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [supply_chain_agent]
+    allowed_usage: [Read-only reputation/provenance risk assessment of dependencies.]
+    forbidden_usage: [Blocking a dependency without recorded reputation evidence.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [supply_chain_sbom_license]
+    notes: >-
+      NON-CANONICAL (legacy doc 04) per 17-supply-chain-sbom-license.yaml. Candidate for Phase E
+      ratification; may be folded into dependency_scanner if not ratified standalone.
+
+  - id: data_inventory_checker
+    name: Data Inventory Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Reconcile code data-flows against the declared DATA_INVENTORY.
+    owner_domain: privacy
+    provided_by_core_ability: null
+    input_schema:
+      code_data_flows: object
+      data_inventory: object
+    output_schema:
+      inventory_discrepancies: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [privacy_agent]
+    allowed_usage: [Read-only reconciliation of data flows vs DATA_INVENTORY.]
+    forbidden_usage: [Asserting parity without examining actual data flows.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [privacy_data_lifecycle_validation]
+    notes: NON-CANONICAL (legacy) per 19-privacy-data-lifecycle-validation.yaml. Candidate.
+
+  - id: retention_policy_checker
+    name: Retention Policy Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Verify retention windows / TTL enforcement against retention policy.
+    owner_domain: privacy
+    provided_by_core_ability: null
+    input_schema:
+      retention_config: object
+      retention_policy: object
+    output_schema:
+      retention_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [privacy_agent]
+    allowed_usage: [Read-only verification of retention/TTL enforcement.]
+    forbidden_usage: [Passing the privacy gate with unbounded retention.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [privacy_data_lifecycle_validation]
+    notes: NON-CANONICAL (legacy) per stage 19. Candidate; policy basis via policy_query.
+
+  - id: deletion_flow_checker
+    name: Deletion Flow Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Verify deletion/erasure and export flows (e.g. right-to-erasure, data export).
+    owner_domain: privacy
+    provided_by_core_ability: null
+    input_schema:
+      deletion_flows: object
+    output_schema:
+      deletion_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [privacy_agent]
+    allowed_usage: [Read-only verification of deletion/erasure/export flows.]
+    forbidden_usage: [Asserting erasure coverage without verifying the flow.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [privacy_data_lifecycle_validation]
+    notes: NON-CANONICAL (legacy) per stage 19. Candidate.
+
+  - id: tenant_isolation_checker
+    name: Tenant Isolation Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Verify per-tenant data isolation (no cross-tenant data exposure).
+    owner_domain: privacy
+    provided_by_core_ability: null
+    input_schema:
+      tenant_model: object
+      access_paths: object
+    output_schema:
+      isolation_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [privacy_agent]
+    allowed_usage: [Read-only verification of per-tenant isolation boundaries.]
+    forbidden_usage: [Passing the gate with an unverified cross-tenant path.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [privacy_data_lifecycle_validation]
+    notes: NON-CANONICAL (legacy) per stage 19. Candidate.
+
+  - id: ux_flow_checker
+    name: UX Flow Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Check primary-flow / error / empty / loading-state coverage of UI flows.
+    owner_domain: accessibility_ux
+    provided_by_core_ability: null
+    input_schema:
+      ui_flows: object
+    output_schema:
+      ux_flow_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [ux_accessibility_agent]
+    allowed_usage: [Read-only UX-flow coverage check (companion to accessibility_auditor).]
+    forbidden_usage: [Substituting for the canonical a11y audit.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [accessibility_ux_validation_if_applicable]
+    notes: NON-CANONICAL (legacy) per 23-accessibility-ux-validation-if-applicable.yaml. Candidate.
+
+  - id: contrast_checker
+    name: Contrast Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Color-contrast / perceivability checks for UI.
+    owner_domain: accessibility_ux
+    provided_by_core_ability: null
+    input_schema:
+      ui_styles: object
+    output_schema:
+      contrast_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [ux_accessibility_agent]
+    allowed_usage: [Read-only color-contrast/perceivability check.]
+    forbidden_usage: [Substituting for the canonical a11y audit.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [accessibility_ux_validation_if_applicable]
+    notes: >-
+      NON-CANONICAL (legacy) per stage 23. Candidate; likely foldable into accessibility_auditor
+      (contrast is a WCAG ruleset).
+
+  - id: rollback_validator
+    name: Rollback Validator
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Validate the rollback procedure and emit ROLLBACK_VALIDATION_REPORT.
+    owner_domain: operations_readiness
+    provided_by_core_ability: null
+    input_schema:
+      rollback_plan: object
+    output_schema:
+      rollback_validation_report_ref: string
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [operations_readiness_agent]
+    allowed_usage: [Read-only validation of the rollback procedure (stage 26).]
+    forbidden_usage: [Executing a rollback (that is rollback_executor, a side-effecting tool).]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [backup_restore_dr_validation_if_applicable]
+    notes: >-
+      NON-CANONICAL (legacy) per 26-backup-restore-dr-validation-if-applicable.yaml. Candidate.
+      Distinct from rollback_executor: this validates the plan (read-only); rollback_executor performs it.
+
+  - id: observability_plan_checker
+    name: Observability Plan Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Verify monitoring/alerting/SLO coverage of the observability plan.
+    owner_domain: operations_readiness
+    provided_by_core_ability: null
+    input_schema:
+      observability_plan: object
+      slo_policy: object
+    output_schema:
+      observability_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [operations_readiness_agent]
+    allowed_usage: [Read-only verification of monitoring/alerting/SLO coverage (stage 27).]
+    forbidden_usage: [Marking observability complete without SLO/alert coverage.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [operations_readiness]
+    notes: NON-CANONICAL (legacy) per 27-operations-readiness.yaml. Candidate; policy basis via policy_query.
+
+  - id: incident_runbook_checker
+    name: Incident Runbook Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Verify incident-response plan / runbook completeness (INCIDENT_RESPONSE_PLAN).
+    owner_domain: operations_readiness
+    provided_by_core_ability: null
+    input_schema:
+      incident_response_plan: object
+    output_schema:
+      incident_runbook_findings: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [operations_readiness_agent]
+    allowed_usage: [Read-only completeness check of the incident-response plan (stage 27).]
+    forbidden_usage: [Marking incident readiness complete with missing response steps.]
+    used_by:
+      pipelines: [sdlc_pipeline]
+      sdlc_stages: [operations_readiness]
+    notes: >-
+      NON-CANONICAL (legacy) per stage 27. Candidate. Distinct from the operations_pipeline runtime
+      incident tooling (incident_intake_tool etc.) — this validates the *plan* pre-release.
+
+  # =====================================================================================
+  # GROUP I — Cross-pipeline reused/shared tools (Core Ability sub-operations) — candidate
+  # Listed in reviews/pipeline-catalog-review.md §4.3 as "reused/shared (assumed existing)" but NOT
+  # present in any canonical Phase A SDLC stage; first ratified usage is in the 5 new pipelines, so
+  # marked candidate pending Phase C/E ratification (do_not regenerate SDLC — these are NEW bindings).
+  # =====================================================================================
+
+  - id: web_search
+    name: Web Search
+    type: tool
+    category: tool
+    status: canonical                    # R7: exposed_tool of the canonical Web Core Ability (core_abilities.yaml; K-011/D-014) -> ratified canonical alongside web_scrape
+    purpose: Search the web for candidate sources/information for a query.
+    owner_domain: web_access
+    provided_by_core_ability: Web
+    input_schema:
+      query: string
+      filters: object
+    output_schema:
+      results: [object]                  # {title, url, snippet}
+    side_effects: external_network_read
+    risk_level: medium
+    requires_sandbox: true               # external network egress -> sandboxed + governed
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [source_discovery_agent]
+    allowed_usage: [Discover candidate sources during research source_discovery.]
+    forbidden_usage: [Sending secrets in queries; treating results as evidence without reliability scoring.]
+    used_by:
+      pipelines: [research_pipeline]
+      pipeline_stages: [research_pipeline.source_discovery]
+    notes: >-
+      Sub-operation of the Web Core Ability (D-014); Web exposes web_search as an exposed_tool in
+      core_abilities.yaml, and Web is locked-canonical (K-003/K-011), so web_search is canonical for
+      the same reason web_scrape is (R7). Required trace web_search_tool_trace is declared in
+      research-pipeline.md.
+
+  - id: web_fetch
+    name: Web Fetch
+    type: tool
+    category: tool
+    status: canonical                    # R7: exposed_tool of the canonical Web Core Ability (core_abilities.yaml; K-011/D-014) -> ratified canonical alongside web_scrape
+    purpose: Fetch a specific URL and capture its content plus provenance (publisher, date, access timestamp).
+    owner_domain: web_access
+    provided_by_core_ability: Web
+    input_schema:
+      url: string
+    output_schema:
+      content: object
+      provenance: object
+    side_effects: external_network_read
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [source_discovery_agent]
+    allowed_usage: [Fetch candidate source content with provenance during source_discovery.]
+    forbidden_usage: [Fetching from disallowed targets; omitting provenance.]
+    used_by:
+      pipelines: [research_pipeline]
+      pipeline_stages: [research_pipeline.source_discovery]
+    notes: >-
+      Sub-operation of Web (D-014); exposed_tool of the canonical Web ability in core_abilities.yaml,
+      hence canonical (R7). Trace web_fetch_tool_trace.
+
+  # ---- Core-Ability primitive sub-operations exposed by the CANONICAL Web/OS/Memory abilities ----
+  # These are the exact `exposed_tools` declared on Web/OS/Memory in configs/nexus-ai/core_abilities.yaml
+  # (web_scrape; file_read/file_write/shell_exec/process_run; memory_search/memory_summarize/
+  # context_recall). They are CANONICAL because their exposing Core Ability is locked-canonical (K-003,
+  # K-011/D-014). provided_by_core_ability is the exposing ability; the side-effect rule (§ side_effect_rule)
+  # is applied verbatim — file_write/shell_exec/process_run are side-effecting/high-risk and carry
+  # system_access_governance + sandbox_execution_governance + tool_call_trace_schema; file_read/web_scrape/
+  # memory_search/memory_summarize/context_recall are read-only. used_by mirrors the exposing ability's
+  # pipeline/SDLC-stage binding in core_abilities.yaml; allowed_callers are that ability's Agent-tier
+  # callers (a Core Ability is never itself an allowed_caller).
+
+  - id: web_scrape
+    name: Web Scrape
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Extract structured content from already-fetched external pages (DOM/markup -> structured fields), preserving provenance.
+    owner_domain: web_access
+    provided_by_core_ability: Web
+    input_schema:
+      content: object                    # fetched page content/markup
+      extraction_rules: object
+    output_schema:
+      structured_content: object
+      provenance: object
+    side_effects: external_network_read
+    risk_level: medium
+    requires_sandbox: true               # external network egress -> sandboxed + governed (matches web_search/web_fetch)
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [product_requirements_agent, architecture_agent, security_privacy_agent, security_validation_agent, compliance_agent, contract_validation_agent, accessibility_ux_agent, operations_readiness_agent, research_intake_agent, knowledge_memory_agents]
+    allowed_usage: [Extract structured fields from fetched external content with provenance preserved.]
+    forbidden_usage:
+      - Transmitting secrets/credentials/PII in outbound requests (global_no_secret_policy).
+      - Treating scraped content as trusted without a provenance trace.
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, knowledge_memory_pipeline]
+      sdlc_stages: [intake, domain_risk_profile, requirements, architecture, architecture_review, security_privacy_design, supply_chain_sbom_license, ai_agent_safety_evaluation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, accessibility_ux_validation_if_applicable, operations_readiness]
+    notes: >-
+      Exposed_tool of the canonical Web Core Ability (core_abilities.yaml web.exposed_tools; K-011/D-014).
+      Same external-egress posture as web_search/web_fetch; used_by mirrors Web's pipeline + SDLC-stage
+      binding in core_abilities.yaml.
+
+  - id: file_read
+    name: File Read
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Read a file from the sandboxed build environment (read-only) so OS-driven tools and Coder reasoning have file context.
+    owner_domain: system_execution
+    provided_by_core_ability: OS
+    input_schema:
+      path: string
+    output_schema:
+      content: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [skill_librarian_agent, engineering_agent, code_reviewer_agent, qa_agent, security_validation_agent, privacy_agent, data_migration_agent, accessibility_ux_agent, performance_resilience_agent, operations_readiness_agent, evidence_graph_agent, refraction_learning_agent]
+    allowed_usage: [Read-only retrieval of files from the sandboxed environment.]
+    forbidden_usage:
+      - Writing/modifying files (that is file_write).
+      - Reading or emitting raw secrets (no_secret_read on the OS ability).
+    used_by:
+      pipelines: [sdlc_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline]
+      sdlc_stages: [skill_semantic_extraction, implementation, code_review, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical OS Core Ability (core_abilities.yaml os.exposed_tools; K-011/D-014).
+      Read-only primitive; the higher-level repo_reader (provided_by Coder) reasons over repository
+      content while file_read is the OS filesystem primitive. used_by mirrors OS's binding.
+
+  - id: file_write
+    name: File Write
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Write or modify a file in the sandboxed build environment (the OS filesystem write primitive).
+    owner_domain: system_execution
+    provided_by_core_ability: OS
+    input_schema:
+      path: string
+      content: object
+    output_schema:
+      path_written: string
+      written: boolean
+    side_effects: writes_file_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # side-effect tool -> sandbox + governance + trace required (side_effect_rule)
+    governance_profiles: [tool_call_governance, system_access_governance, sandbox_execution_governance, high_risk_action_default_deny, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_librarian_agent, engineering_agent, code_reviewer_agent, qa_agent, security_validation_agent, privacy_agent, data_migration_agent, accessibility_ux_agent, performance_resilience_agent, operations_readiness_agent, evidence_graph_agent, refraction_learning_agent]
+    allowed_usage: [Write/modify files inside the sandbox with trace (no_silent_mutation on the OS ability).]
+    forbidden_usage:
+      - Mutating the environment/repository silently (no_silent_mutation).
+      - Destructive actions without an explicit policy gate + evidence (no_destructive_action_without_gate).
+      - Writing outside the sandbox; performing a production deploy.
+      - Committing secrets/credentials (global_no_secret_policy).
+    used_by:
+      pipelines: [sdlc_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline]
+      sdlc_stages: [skill_semantic_extraction, implementation, code_review, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical OS Core Ability (core_abilities.yaml os.exposed_tools; K-011/D-014).
+      Side-effecting filesystem write primitive -> carries the OS system_access_governance +
+      sandbox_execution_governance stack and the tool_call_trace_schema trace requirement. The
+      repository-scoped writer repo_writer (provided_by Coder) is distinct; file_write is the OS primitive.
+
+  - id: shell_exec
+    name: Shell Exec
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Execute a shell command in the sandboxed build environment (the OS shell primitive underpinning runners/scanners/harnesses).
+    owner_domain: system_execution
+    provided_by_core_ability: OS
+    input_schema:
+      command: string
+      args: [string]
+      timeout: string
+    output_schema:
+      exit_code: string
+      stdout_ref: string
+      stderr_ref: string
+    side_effects: executes_shell_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # side-effect tool -> sandbox + timeout + governance + trace required (doc 03 §9)
+    governance_profiles: [tool_call_governance, system_access_governance, sandbox_execution_governance, high_risk_action_default_deny, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_librarian_agent, engineering_agent, code_reviewer_agent, qa_agent, security_validation_agent, privacy_agent, data_migration_agent, accessibility_ux_agent, performance_resilience_agent, operations_readiness_agent, evidence_graph_agent, refraction_learning_agent]
+    allowed_usage: [Execute shell commands inside the sandbox with a timeout and trace (doc 03 §9).]
+    forbidden_usage:
+      - Executing shell outside a sandbox or without timeout and trace.
+      - Destructive actions without an explicit policy gate + evidence (no_destructive_action_without_gate).
+      - Performing a production deploy; reading/emitting raw secrets.
+    used_by:
+      pipelines: [sdlc_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline]
+      sdlc_stages: [skill_semantic_extraction, implementation, code_review, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical OS Core Ability (core_abilities.yaml os.exposed_tools; K-011/D-014).
+      Highest-risk OS primitive; the higher-level test_runner/scanner_runner/eval_runner/etc. are driven
+      on top of it. Mandatory sandbox + timeout + trace per doc 03 §9.
+
+  - id: process_run
+    name: Process Run
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Run a process / harness in the sandboxed build environment (the OS process-execution primitive).
+    owner_domain: system_execution
+    provided_by_core_ability: OS
+    input_schema:
+      executable: string
+      args: [string]
+      timeout: string
+    output_schema:
+      exit_code: string
+      result_ref: string
+    side_effects: executes_process_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # side-effect tool -> sandbox + timeout + governance + trace required (doc 03 §9)
+    governance_profiles: [tool_call_governance, system_access_governance, sandbox_execution_governance, high_risk_action_default_deny, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_librarian_agent, engineering_agent, code_reviewer_agent, qa_agent, security_validation_agent, privacy_agent, data_migration_agent, accessibility_ux_agent, performance_resilience_agent, operations_readiness_agent, evidence_graph_agent, refraction_learning_agent]
+    allowed_usage: [Run processes/harnesses inside the sandbox with a timeout and trace (doc 03 §9).]
+    forbidden_usage:
+      - Executing processes outside a sandbox or without timeout and trace.
+      - Destructive actions without an explicit policy gate + evidence (no_destructive_action_without_gate).
+      - Performing a production deploy; reading/emitting raw secrets.
+    used_by:
+      pipelines: [sdlc_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline]
+      sdlc_stages: [skill_semantic_extraction, implementation, code_review, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical OS Core Ability (core_abilities.yaml os.exposed_tools; K-011/D-014).
+      Side-effecting process-execution primitive that eval/benchmark/restore/migration runners build on.
+      Mandatory sandbox + timeout + trace per doc 03 §9.
+
+  - id: memory_write
+    name: Memory Write
+    type: tool
+    category: tool
+    status: canonical                    # R7: exposed_tool of the canonical Memory Core Ability (core_abilities.yaml; K-011/D-014) -> ratified canonical alongside memory_search/memory_summarize/context_recall
+    purpose: Write durable operational/knowledge learning into the Memory ability's store.
+    owner_domain: knowledge_management
+    provided_by_core_ability: Memory
+    input_schema:
+      memory_item: object
+      validity_window: object
+      provenance: object
+    output_schema:
+      memory_ref: string
+    side_effects: writes_memory_store
+    risk_level: high
+    requires_sandbox: true               # mutates durable memory -> governed + traced
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [operational_learning_agent]
+    allowed_usage: [Persist lessons-learned into memory at operations learning_update.]
+    forbidden_usage: [Writing unredacted sensitive content; writing without a validity window/provenance.]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.learning_update]
+    notes: >-
+      Sub-operation of the Memory Core Ability (D-014); Memory stays a Core Ability, not an agent.
+      memory_write is an exposed_tool of the canonical Memory ability in core_abilities.yaml, so it is
+      canonical for the same reason memory_search/memory_summarize/context_recall are (R7). The
+      knowledge_memory_pipeline curates memory via dedicated tools (memory_ingestor etc.) rather than
+      this raw writer.
+
+  - id: memory_search
+    name: Memory Search
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Read-only recall query over the Memory ability's store for relevant prior run/project memory items.
+    owner_domain: knowledge_memory
+    provided_by_core_ability: Memory
+    input_schema:
+      query: object                      # {scope, filters, topic}
+    output_schema:
+      memory_items: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [all_sdlc_agents, research_intake_agent, knowledge_memory_agents, operations_agents, skill_librarian_agent]
+    allowed_usage: [Read-only recall query of stored memory within the requested scope.]
+    forbidden_usage:
+      - Mutating memory (that is memory_write).
+      - Surfacing raw secrets from stored memory (no_secret_read on the Memory ability).
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline, knowledge_memory_pipeline]
+      sdlc_stages: [intake, domain_risk_profile, skill_semantic_extraction, requirements, requirements_review, architecture, architecture_review, security_privacy_design, premortem_fmea, planning, implementation, code_review, test_generation, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, development_completion, release_candidate, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical Memory Core Ability (core_abilities.yaml memory.exposed_tools;
+      K-011/D-014). Read-only recall primitive; Memory is bound by all 31 SDLC stages + all 6 pipelines,
+      so used_by mirrors that binding. Distinct from context_recall (working context) and from the
+      Context/Memory Profiles registry.
+
+  - id: memory_summarize
+    name: Memory Summarize
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Summarize recalled memory items / run history into a grounded, source-linked summary (read-only over the memory store).
+    owner_domain: knowledge_memory
+    provided_by_core_ability: Memory
+    input_schema:
+      memory_items: [object]
+      summarization_scope: object
+    output_schema:
+      memory_summary: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [all_sdlc_agents, research_intake_agent, knowledge_memory_agents, operations_agents, skill_librarian_agent]
+    allowed_usage: [Read-only summarization of recalled memory/run history, grounded in the cited items.]
+    forbidden_usage:
+      - Persisting the summary (persistence is memory_write / knowledge_memory_pipeline tools).
+      - Adding unsupported content not grounded in the recalled memory.
+      - Surfacing raw secrets from stored memory (no_secret_read on the Memory ability).
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline, knowledge_memory_pipeline]
+      sdlc_stages: [intake, domain_risk_profile, skill_semantic_extraction, requirements, requirements_review, architecture, architecture_review, security_privacy_design, premortem_fmea, planning, implementation, code_review, test_generation, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, development_completion, release_candidate, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical Memory Core Ability (core_abilities.yaml memory.exposed_tools;
+      K-011/D-014). Read-only summarization primitive (no persistence -> side_effects: none); used_by
+      mirrors Memory's all-stage/all-pipeline binding. The knowledge_memory_pipeline summary_writer
+      persists a curated MEMORY_SUMMARY artifact and is distinct.
+
+  - id: context_recall
+    name: Context Recall
+    type: tool
+    category: tool
+    status: canonical
+    purpose: Recall the current run/agent working context (prior decisions, gate results, in-scope artifacts) for the calling stage (read-only).
+    owner_domain: knowledge_memory
+    provided_by_core_ability: Memory
+    input_schema:
+      context_query: object              # {related_run, related_stage?, agent?}
+    output_schema:
+      working_context: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [all_sdlc_agents, research_intake_agent, knowledge_memory_agents, operations_agents, skill_librarian_agent]
+    allowed_usage: [Read-only recall of run/agent working context for the calling stage.]
+    forbidden_usage:
+      - Mutating context or memory (read-only recall).
+      - Being conflated with the Context/Memory Profiles registry (a separate registry that owns context profiles).
+      - Surfacing raw secrets from recalled context (no_secret_read on the Memory ability).
+    used_by:
+      pipelines: [sdlc_pipeline, research_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline, knowledge_memory_pipeline]
+      sdlc_stages: [intake, domain_risk_profile, skill_semantic_extraction, requirements, requirements_review, architecture, architecture_review, security_privacy_design, premortem_fmea, planning, implementation, code_review, test_generation, test_execution, verification_loop_bug_finding, security_validation, supply_chain_sbom_license, ai_agent_safety_evaluation, privacy_data_lifecycle_validation, api_contract_compatibility_validation, domain_regulatory_compliance_validation_if_applicable, data_migration_validation_if_applicable, accessibility_ux_validation_if_applicable, performance_resilience, cost_resource_governance, backup_restore_dr_validation_if_applicable, operations_readiness, evidence_graph_build, development_completion, release_candidate, refraction_learning]
+    notes: >-
+      Exposed_tool of the canonical Memory Core Ability (core_abilities.yaml memory.exposed_tools;
+      K-011/D-014). Read-only working-context recall primitive. Memory (the ability + its tools) is NOT
+      the Context/Memory Profiles registry (configs/nexus-ai/context_memory_profiles.yaml), which owns
+      run/agent context profiles; this tool only recalls context, it does not own the profiles.
+
+  - id: runbook_executor
+    name: Runbook Executor
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Execute (or dry-run) a runbook step to apply a forward fix or readiness check.
+    owner_domain: operations_reliability
+    provided_by_core_ability: OS
+    input_schema:
+      runbook_ref: string
+      step_selector: object
+      mode: string                       # dry_run | execute
+    output_schema:
+      execution_result: object
+    side_effects: executes_runbook_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_executor side-effect tool -> sandbox + governance + trace required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [mitigation_planning_agent, incident_response_agent]
+    allowed_usage:
+      - Dry-run/readiness check at mitigation_plan; execute a forward fix at rollback_or_fix.
+    forbidden_usage:
+      - Executing without runbook/rollback evidence (rollback_runbook_evidence_gate).
+      - Self-approved resolution (no_self_approval_policy).
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.mitigation_plan, operations_pipeline.rollback_or_fix]
+    notes: Sub-operation of OS (D-014). Side-effecting executor — sandbox + governance + trace mandatory.
+
+  - id: rollback_executor
+    name: Rollback Executor
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Execute a rollback to a known-good state (activation rollback drill / operations rollback).
+    owner_domain: operations_reliability
+    provided_by_core_ability: OS
+    input_schema:
+      rollback_plan_ref: string
+      mode: string                       # drill | execute
+    output_schema:
+      rollback_result: object
+    side_effects: executes_rollback_in_sandbox
+    risk_level: high
+    requires_sandbox: true               # *_executor side-effect tool -> sandbox + governance + trace required
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [rollback_readiness_agent, incident_response_agent]
+    allowed_usage:
+      - Perform the rollback drill/dry-run at activation rollback_readiness; execute rollback at operations rollback_or_fix.
+    forbidden_usage:
+      - Rolling back without a validated rollback plan (rollback_required_gate).
+      - Self-approved rollback execution (no_self_approval_policy).
+    used_by:
+      pipelines: [activation_pipeline, operations_pipeline]
+      pipeline_stages: [activation_pipeline.rollback_readiness, operations_pipeline.rollback_or_fix]
+    notes: >-
+      Sub-operation of OS (D-014). Side-effecting executor. Distinct from the SDLC candidate
+      rollback_validator (which only validates the plan read-only).
+
+  - id: skill_package_reader
+    name: Skill Package Reader
+    type: tool
+    category: tool
+    status: canonical
+    purpose: >-
+      Read a skill package's structure (SKILL.md, scripts/**, references/**, assets/**, metadata) for
+      inventory and semantic extraction (read-only).
+    owner_domain: skill_governance
+    provided_by_core_ability: null
+    input_schema:
+      package_path_or_hash: string
+    output_schema:
+      package_manifest: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [skill_librarian_agent]
+    allowed_usage: [Read-only inventory of skill package contents.]
+    forbidden_usage: [Executing package scripts (that is script_static_analyzer/analysis, not reading).]
+    used_by:
+      pipelines: [sdlc_pipeline, skill_governance_pipeline]
+      sdlc_stages: [skill_semantic_extraction]
+      pipeline_stages: [skill_governance_pipeline.skill_intake]
+    notes: >-
+      Canonical: present in SDLC stage 03 (owner skill_librarian_agent) AND the skill_governance
+      pipeline skill_intake stage. Read-only; produces SKILL_INVENTORY_ENTRY input.
+
+  # =====================================================================================
+  # GROUP J — Research pipeline NEW tools (candidate)
+  # =====================================================================================
+
+  - id: source_reliability_checker
+    name: Source Reliability Checker
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Score a source's reliability (authority, independence, recency, corroboration, bias signals) with rationale.
+    owner_domain: research_and_knowledge
+    provided_by_core_ability: null
+    input_schema:
+      source: object
+      scoring_criteria: object
+    output_schema:
+      reliability_score: object          # score + rationale
+    side_effects: writes_evidence_store
+    risk_level: medium
+    requires_sandbox: true               # persists scored-source evidence
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [source_reliability_agent, cross_validation_agent]
+    allowed_usage: [Score sources (source_reliability_assessment) and re-check scores (cross_validation, distinct role).]
+    forbidden_usage: [Asserting a score without rationale; sole self-validation of one's own source (no_self_approval_policy).]
+    used_by:
+      pipelines: [research_pipeline]
+      pipeline_stages: [research_pipeline.source_reliability_assessment, research_pipeline.cross_validation]
+    notes: NEW (research) per review §4.3 and research-pipeline.md. Trace source_reliability_checker_tool_trace.
+
+  - id: claim_mapper
+    name: Claim Mapper
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Extract atomic claims and map each to supporting/contradicting evidence with support strength.
+    owner_domain: research_and_knowledge
+    provided_by_core_ability: null
+    input_schema:
+      source_corpus: object
+      claims: object
+    output_schema:
+      claim_evidence_map: object
+    side_effects: writes_evidence_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [claim_extraction_agent, claim_evidence_agent]
+    allowed_usage: [Extract claims (claim_extraction) and build the CLAIM_EVIDENCE_MAP (claim_evidence_mapping).]
+    forbidden_usage: [Recording an unsupported claim as evidenced.]
+    used_by:
+      pipelines: [research_pipeline]
+      pipeline_stages: [research_pipeline.claim_extraction, research_pipeline.claim_evidence_mapping]
+    notes: NEW (research) per review §4.3. Trace claim_mapper_tool_trace.
+
+  # =====================================================================================
+  # GROUP K — Activation pipeline NEW tools (candidate)
+  # =====================================================================================
+
+  - id: activation_flag_controller
+    name: Activation Flag Controller
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Control the activation/feature flag across preview -> pilot -> public scopes (toggle/scope changes).
+    owner_domain: activation_and_release_operations
+    provided_by_core_ability: OS
+    input_schema:
+      flag_id: string
+      scope: string                      # preview | pilot | public
+      state: string                      # on | off
+    output_schema:
+      flag_state: object
+    side_effects: mutates_activation_state
+    risk_level: high
+    requires_sandbox: true               # controller mutates live activation state -> governed + traced
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [activation_manager_agent, pilot_activation_agent]
+    allowed_usage: [Toggle/scope the activation flag for preview and pilot exposure.]
+    forbidden_usage:
+      - Public activation without owner decision (owner_activation_decision_gate) and validated rollback (rollback_required_gate).
+      - Pilot activation without a passing preview (preview_required_gate).
+    used_by:
+      pipelines: [activation_pipeline]
+      pipeline_stages: [activation_pipeline.superadmin_preview, activation_pipeline.pilot_activation, activation_pipeline.activation_completion]
+    notes: >-
+      NEW (activation) per review §4.3 (markdown authoritative; YAML variant feature_flag_controller is
+      a divergence flagged in review F-1, not a separate tool).
+
+  - id: cohort_selector
+    name: Cohort Selector
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Select/define the bounded pilot cohort for staged activation.
+    owner_domain: activation_and_release_operations
+    provided_by_core_ability: null
+    input_schema:
+      cohort_criteria: object
+    output_schema:
+      cohort: object
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [pilot_activation_agent]
+    allowed_usage: [Define the bounded pilot cohort (pilot_activation).]
+    forbidden_usage: [Selecting an unbounded/public cohort during pilot.]
+    used_by:
+      pipelines: [activation_pipeline]
+      pipeline_stages: [activation_pipeline.pilot_activation]
+    notes: NEW (activation) per review §4.3.
+
+  - id: telemetry_reader
+    name: Telemetry Reader
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Read real-usage telemetry, error rates, and incident signals during preview/pilot.
+    owner_domain: activation_and_release_operations
+    provided_by_core_ability: null
+    input_schema:
+      query: object                      # metric/timeframe/cohort
+    output_schema:
+      telemetry: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [activation_manager_agent, pilot_activation_agent, activation_reviewer_agent]
+    allowed_usage: [Read-only retrieval of telemetry for preview confirmation and pilot evidence.]
+    forbidden_usage: [Mutating telemetry; treating telemetry as the owner decision itself.]
+    used_by:
+      pipelines: [activation_pipeline]
+      pipeline_stages: [activation_pipeline.superadmin_preview, activation_pipeline.pilot_activation, activation_pipeline.pilot_evidence_review]
+    notes: NEW (activation) per review §4.3. Read-only.
+
+  # =====================================================================================
+  # GROUP L — Operations pipeline NEW tools (candidate)
+  # =====================================================================================
+
+  - id: incident_intake_tool
+    name: Incident Intake Tool
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Receive, deduplicate, and normalize an incident signal into a single INCIDENT_RECORD.
+    owner_domain: operations_reliability
+    provided_by_core_ability: null
+    input_schema:
+      incident_signal: object
+    output_schema:
+      incident_record_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [incident_intake_agent]
+    allowed_usage: [Normalize incident signals into an INCIDENT_RECORD (incident_intake).]
+    forbidden_usage: [Discarding a signal without recording it.]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.incident_intake]
+    notes: >-
+      NEW (operations) per review §4.3 (markdown authoritative; YAML variant incident_intake_recorder
+      flagged in review F-1).
+
+  - id: monitoring_query_tool
+    name: Monitoring Query Tool
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Query monitoring systems for metrics/alerts/recovery signals during incident handling.
+    owner_domain: operations_reliability
+    provided_by_core_ability: null
+    input_schema:
+      query: object
+    output_schema:
+      monitoring_result: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [incident_intake_agent, severity_classification_agent, incident_response_agent]
+    allowed_usage: [Read-only monitoring queries for intake, severity, and recovery confirmation.]
+    forbidden_usage: [Mutating monitoring configuration.]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.incident_intake, operations_pipeline.severity_classification, operations_pipeline.rollback_or_fix]
+    notes: NEW (operations) per review §4.3. Read-only.
+
+  - id: alert_correlator
+    name: Alert Correlator
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Correlate alerts so duplicate signals collapse into one incident.
+    owner_domain: operations_reliability
+    provided_by_core_ability: null
+    input_schema:
+      alerts: [object]
+    output_schema:
+      correlated_incident: object
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [incident_intake_agent]
+    allowed_usage: [Read-only correlation/deduplication of alert signals at intake.]
+    forbidden_usage: [Suppressing distinct incidents by over-correlating.]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.incident_intake]
+    notes: NEW (operations) per review §4.3.
+
+  - id: severity_classifier_tool
+    name: Severity Classifier Tool
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Assign an incident severity with blast-radius and customer/safety impact and confidence.
+    owner_domain: operations_reliability
+    provided_by_core_ability: null
+    input_schema:
+      incident_record: object
+      blast_radius_signals: object
+    output_schema:
+      severity_classification: object
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [severity_classification_agent]
+    allowed_usage: [Produce SEVERITY_CLASSIFICATION_REPORT (severity_classification).]
+    forbidden_usage: [Proceeding to mitigation without a recorded severity (incident_severity_required_gate).]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.severity_classification]
+    notes: NEW (operations) per review §4.3.
+
+  - id: mitigation_plan_builder
+    name: Mitigation Plan Builder
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Build an actionable MITIGATION_PLAN with options, chosen option, rollback-vs-fix recommendation, and runbook references.
+    owner_domain: operations_reliability
+    provided_by_core_ability: null
+    input_schema:
+      severity_classification: object
+      runbook_refs: object
+    output_schema:
+      mitigation_plan_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [mitigation_planning_agent]
+    allowed_usage: [Produce the MITIGATION_PLAN for an active incident (mitigation_plan).]
+    forbidden_usage: [Recommending execution without a resolved runbook reference.]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.mitigation_plan]
+    notes: NEW (operations) per review §4.3. Plan-building only; execution is runbook_executor/rollback_executor.
+
+  - id: postmortem_builder
+    name: Postmortem Builder
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Build a blameless POSTMORTEM_REPORT (timeline, root causes, contributing failure modes, corrective actions).
+    owner_domain: operations_reliability
+    provided_by_core_ability: null
+    input_schema:
+      incident_evidence: object
+    output_schema:
+      postmortem_report_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [postmortem_agent]
+    allowed_usage: [Assemble the POSTMORTEM_REPORT (postmortem).]
+    forbidden_usage: [Self-approved postmortem (no_self_approval_policy / postmortem_required_gate).]
+    used_by:
+      pipelines: [operations_pipeline]
+      pipeline_stages: [operations_pipeline.postmortem]
+    notes: NEW (operations) per review §4.3.
+
+  # =====================================================================================
+  # GROUP M — Skill Governance pipeline NEW tools (candidate)
+  # =====================================================================================
+
+  - id: skill_semantic_extractor
+    name: Skill Semantic Extractor
+    type: tool
+    category: tool
+    status: candidate
+    purpose: >-
+      Extract a skill's primary_purpose, semantic_category, trigger_phrases, not_for, inputs/outputs,
+      handoffs, and draft misuse_warnings (mandatory before any binding).
+    owner_domain: skill_governance
+    provided_by_core_ability: null
+    input_schema:
+      package_manifest: object
+    output_schema:
+      skill_semantic_extract: object
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_semantic_extractor_subagent]
+    allowed_usage: [Produce SKILL_SEMANTIC_EXTRACT (skill_semantic_extraction).]
+    forbidden_usage:
+      - Altering locked semantics (locked_semantics_enforcement_policy): prism=divergence, verification-loop=defect-finding.
+      - Producing a binding (this extracts semantics only; binding is skill_binding_proposer).
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      pipeline_stages: [skill_governance_pipeline.skill_semantic_extraction]
+    notes: NEW (skill governance) per review §4.3. Owner is a sub-agent (parent skill_librarian_agent).
+
+  - id: script_static_analyzer
+    name: Script Static Analyzer
+    type: tool
+    category: tool
+    status: candidate
+    purpose: >-
+      Statically analyze scripts/** and references/** for dangerous side-effects, hidden tool calls,
+      sandbox-escape, or policy-bypass risk (defect/bug-finding sweep).
+    owner_domain: skill_governance
+    provided_by_core_ability: Coder
+    input_schema:
+      scripts: object
+      references: object
+    output_schema:
+      script_audit_findings: [object]
+    side_effects: none
+    risk_level: medium
+    requires_sandbox: false              # STATIC analysis (no execution) -> read-only; no sandbox required
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_runtime_safety_agent]
+    allowed_usage: [Static (non-executing) safety analysis of skill scripts/references.]
+    forbidden_usage:
+      - Executing the analyzed scripts (analysis is static; execution would be a side-effecting runner).
+      - Passing script_reference_audit_gate with unmitigated unsafe scripts.
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      pipeline_stages: [skill_governance_pipeline.script_reference_audit]
+    notes: >-
+      NEW (skill governance) per review §4.3. Static analysis -> requires_sandbox:false (no code is
+      executed). Emits SCRIPT_REFERENCE_AUDIT_REPORT (evidence).
+
+  - id: reference_index_builder
+    name: Reference Index Builder
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Index a skill's reference files into a SKILL_REFERENCE_INDEX.
+    owner_domain: skill_governance
+    provided_by_core_ability: null
+    input_schema:
+      references: object
+    output_schema:
+      skill_reference_index_ref: string
+    side_effects: writes_artifact_store
+    risk_level: low
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_runtime_safety_agent]
+    allowed_usage: [Build the SKILL_REFERENCE_INDEX during script_reference_audit.]
+    forbidden_usage: [Indexing references not present in the package.]
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      pipeline_stages: [skill_governance_pipeline.script_reference_audit]
+    notes: NEW (skill governance) per review §4.3.
+
+  - id: skill_binding_proposer
+    name: Skill Binding Proposer
+    type: tool
+    category: tool
+    status: candidate
+    purpose: >-
+      Propose (not decide) which agents/sub-agents and stages a skill may bind to
+      (allowed_as_subskill_of, used_by_agents, used_in_stages).
+    owner_domain: skill_governance
+    provided_by_core_ability: null
+    input_schema:
+      skill_semantic_extract: object
+      script_audit_findings: object
+      misuse_warnings: object
+    output_schema:
+      skill_binding_proposal_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [skill_librarian_agent]
+    allowed_usage: [Produce SKILL_BINDING_PROPOSAL (skill_binding_proposal) after semantics+audit+misuse-warnings exist.]
+    forbidden_usage:
+      - Binding without semantics (skill_binding_proposal_gate; anti-pattern: binding_proposed_without_semantics).
+      - Making the activation decision (that is the separate skill_activation_decision stage; no_self_approval_policy).
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      pipeline_stages: [skill_governance_pipeline.skill_binding_proposal]
+    notes: NEW (skill governance) per review §4.3. Produces a proposal only; activation decision is a distinct owner.
+
+  # =====================================================================================
+  # GROUP N — Knowledge / Memory pipeline NEW tools (candidate)
+  # =====================================================================================
+
+  - id: memory_ingestor
+    name: Memory Ingestor
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Normalize a candidate memory item plus its origin reference into a candidate record (MEMORY_INTAKE_RECORD).
+    owner_domain: knowledge_management
+    provided_by_core_ability: Memory
+    input_schema:
+      candidate_item: object
+      origin_reference: object
+    output_schema:
+      memory_intake_record_ref: string
+    side_effects: writes_memory_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [knowledge_intake_agent]
+    allowed_usage: [Ingest a candidate memory item at memory_intake.]
+    forbidden_usage: [Ingesting without an origin reference / provenance seed.]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.memory_intake]
+    notes: NEW (knowledge/memory) per review §4.3. Sub-operation of Memory (D-014); Memory stays a Core Ability.
+
+  - id: source_classifier
+    name: Source Classifier
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Classify a memory candidate's source (origin type, trust tier, sensitivity, redaction-required).
+    owner_domain: knowledge_management
+    provided_by_core_ability: null
+    input_schema:
+      memory_candidate: object
+    output_schema:
+      source_classification: object
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [source_classification_agent]
+    allowed_usage: [Produce SOURCE_CLASSIFICATION_REPORT (source_classification).]
+    forbidden_usage: [Proceeding without a trust tier and sensitivity classification.]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.source_classification]
+    notes: NEW (knowledge/memory) per review §4.3.
+
+  - id: summary_writer
+    name: Summary Writer
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Produce a faithful, source-grounded MEMORY_SUMMARY of the classified/redacted memory item.
+    owner_domain: knowledge_management
+    provided_by_core_ability: null
+    input_schema:
+      classified_item: object
+    output_schema:
+      memory_summary_ref: string
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [memory_summarization_agent]
+    allowed_usage: [Produce the grounded MEMORY_SUMMARY (summary_generation).]
+    forbidden_usage: [Adding unsupported content not grounded in the classified source.]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.summary_generation]
+    notes: NEW (knowledge/memory) per review §4.3. Uses summarization_model; calibrated by the calibrate skill.
+
+  - id: validity_window_calculator
+    name: Validity Window Calculator
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Assign a validity window (start, expiry/review horizon, rationale) from trust tier and decay expectations.
+    owner_domain: knowledge_management
+    provided_by_core_ability: null
+    input_schema:
+      source_classification: object
+      decay_model: object
+    output_schema:
+      validity_window_decision: object
+    side_effects: writes_artifact_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [validity_window_agent]
+    allowed_usage: [Produce VALIDITY_WINDOW_DECISION (validity_window_assignment).]
+    forbidden_usage: [Leaving "no window" (validity_window_required_gate forbids it).]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.validity_window_assignment]
+    notes: NEW (knowledge/memory) per review §4.3.
+
+  - id: retrieval_profile_writer
+    name: Retrieval Profile Writer
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Update the affected retrieval profile / context pack so curated memory becomes retrievable within bounded scope.
+    owner_domain: knowledge_management
+    provided_by_core_ability: Memory
+    input_schema:
+      memory_summary: object
+      validity_window: object
+      sensitivity: object
+    output_schema:
+      retrieval_profile_update_report_ref: string
+    side_effects: writes_memory_store
+    risk_level: high
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [retrieval_profile_agent, memory_expiration_agent]
+    allowed_usage: [Update retrieval profiles bound to a validity window (retrieval_profile_update; retire on expiry).]
+    forbidden_usage:
+      - Updating a profile for a memory with no validity window (retrieval_profile_update_without_validity_window).
+      - Exposing sensitive memory beyond its classified sensitivity.
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.retrieval_profile_update, knowledge_memory_pipeline.memory_expiration_review]
+    notes: NEW (knowledge/memory) per review §4.3. Sub-operation of Memory (D-014).
+
+  - id: expiration_scanner
+    name: Expiration Scanner
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Scan for memories whose validity window has reached its horizon for refresh/re-validate/downgrade/expire review.
+    owner_domain: knowledge_management
+    provided_by_core_ability: Memory
+    input_schema:
+      now: string
+      scope: object
+    output_schema:
+      expiring_items: [object]
+    side_effects: none
+    risk_level: low
+    requires_sandbox: false
+    governance_profiles: [tool_call_governance]
+    audit_schemas: [tool_call_trace_schema]
+    allowed_callers: [memory_expiration_agent]
+    allowed_usage: [Read-only scan for items at/over their validity horizon (memory_expiration_review).]
+    forbidden_usage: [Silently retaining expired memory (expiration_outcome_recorded must follow).]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.memory_expiration_review]
+    notes: NEW (knowledge/memory) per review §4.3. Read-only scan; retirement is via retrieval_profile_writer.
+
+  - id: redaction_tool
+    name: Redaction Tool
+    type: tool
+    category: tool
+    status: candidate
+    purpose: Redact sensitive content before summarization, storage, or retrieval exposure.
+    owner_domain: knowledge_management
+    provided_by_core_ability: null
+    input_schema:
+      content: object
+      sensitivity_rules: object
+    output_schema:
+      redacted_content: object
+    side_effects: writes_artifact_store
+    risk_level: high
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance, global_no_secret_policy]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [source_classification_agent]
+    allowed_usage: [Redact sensitive content when redaction_required_gate applies.]
+    forbidden_usage: [Storing/exposing unredacted sensitive content (unredacted_sensitive_content_detected blocker).]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.source_classification]
+    notes: NEW (knowledge/memory) per review §4.3.
+
+  - id: provenance_recorder
+    name: Provenance Recorder
+    type: tool
+    category: tool
+    status: candidate
+    purpose: >-
+      Record/extend the MEMORY_PROVENANCE_RECORD (origin reference, classification, summary linkage,
+      validity window, retrieval changes, expiration outcome) across the memory lifecycle.
+    owner_domain: knowledge_management
+    provided_by_core_ability: Memory
+    input_schema:
+      memory_ref: string
+      provenance_event: object
+    output_schema:
+      memory_provenance_record_ref: string
+    side_effects: writes_evidence_store
+    risk_level: medium
+    requires_sandbox: true
+    governance_profiles: [tool_call_governance, sandbox_execution_governance]
+    audit_schemas: [tool_call_trace_schema, evidence_item_schema]
+    allowed_callers: [knowledge_intake_agent, source_classification_agent, memory_summarization_agent, validity_window_agent, retrieval_profile_agent, memory_expiration_agent]
+    allowed_usage: [Seed and extend the memory provenance record at every lifecycle stage.]
+    forbidden_usage: [Proceeding past intake without a provenance seed (provenance_seed_recorded / provenance_record_missing).]
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      pipeline_stages: [knowledge_memory_pipeline.memory_intake, knowledge_memory_pipeline.source_classification, knowledge_memory_pipeline.summary_generation, knowledge_memory_pipeline.validity_window_assignment, knowledge_memory_pipeline.retrieval_profile_update, knowledge_memory_pipeline.memory_expiration_review]
+    notes: >-
+      NEW (knowledge/memory) per review §4.3. Records provenance evidence (uses memory_provenance_schema
+      in the Audit registry); the MEMORY_PROVENANCE_RECORD is evidence, distinct from the *_trace items.
+
+# =====================================================================================
+# REGISTRY SELF-CHECK (doc 17 §11 / §13 — informational; not runtime)
+# =====================================================================================
+registry_self_check:
+  # Counts below were derived programmatically by parsing this file's `tools:` list.
+  total_tools: 81
+  by_status:
+    canonical: 46   # R7: +3 (web_search, web_fetch, memory_write promoted candidate -> canonical as exposed_tools of canonical Web/Memory abilities)
+    candidate: 35   # R7: -3 (same)
+    deprecated: 0
+  composition:
+    canonical_locked_sdlc_tools: 34   # the locked Phase A tools present in configs/nexus-ai/stages/sdlc/*.yaml
+    canonical_cross_pipeline: 1       # skill_package_reader (SDLC stage 03 + skill_governance_pipeline)
+    canonical_core_ability_sub_operations: 11   # R7: web_search, web_fetch, web_scrape (Web); file_read, file_write, shell_exec, process_run (OS); memory_search, memory_write, memory_summarize, context_recall (Memory) — exposed_tools of the canonical Web/OS/Memory abilities (core_abilities.yaml; K-011/D-014). web_search/web_fetch/memory_write promoted from candidate (R7).
+    candidate_non_canonical_inline_sdlc: 10  # package_reputation_checker, data_inventory_checker, retention_policy_checker, deletion_flow_checker, tenant_isolation_checker, ux_flow_checker, contrast_checker, rollback_validator, observability_plan_checker, incident_runbook_checker
+    candidate_reused_shared_cross_pipeline: 2  # runbook_executor, rollback_executor (web_search, web_fetch, memory_write promoted to canonical core-ability sub-operations — R7)
+    candidate_research_new: 2          # source_reliability_checker, claim_mapper
+    candidate_activation_new: 3        # activation_flag_controller, cohort_selector, telemetry_reader
+    candidate_operations_new: 6        # incident_intake_tool, monitoring_query_tool, alert_correlator, severity_classifier_tool, mitigation_plan_builder, postmortem_builder
+    candidate_skill_governance_new: 4  # skill_semantic_extractor, script_static_analyzer, reference_index_builder, skill_binding_proposer
+    candidate_knowledge_memory_new: 8  # memory_ingestor, source_classifier, summary_writer, validity_window_calculator, retrieval_profile_writer, expiration_scanner, redaction_tool, provenance_recorder
+  aliases_recorded: [secret_scanner, scanner_report_reader, schema_diff_checker, data_integrity_checker, runbook_checker]  # 5 legacy tool names folded onto canonical tools (no standalone deprecated entries)
+  invariants:   # all verified by parsing this file
+    every_item_has_status: true
+    every_item_has_at_least_one_used_by_entry: true   # all 81 tools carry >=1 used_by (candidate-only fallback never needed)
+    every_item_has_section3_contract_fields: true       # id,name,type,status,purpose,owner_domain,allowed_usage,forbidden_usage,governance_profiles,audit_schemas,notes
+    every_item_has_category_fields: true                # category,provided_by_core_ability,input_schema,output_schema,side_effects,risk_level,requires_sandbox,governance_profiles,audit_schemas,allowed_callers
+    ids_unique: true
+    no_plugin_registry_or_plugin_tool: true
+    no_core_ability_registered_as_tool: true            # Core Abilities only appear under provided_by_core_ability
+    no_core_ability_as_allowed_caller: true             # allowed_callers are Agent roles / team leads only
+    skill_not_tool_preserved: true                      # no canonical/undeclared skill registered as a tool
+    side_effect_tools_require_sandbox_gov_trace: true   # every tool with side_effects != none sets requires_sandbox:true + tool_call_governance + sandbox_execution_governance + tool_call_trace_schema (0 violations)

@@ -1,0 +1,840 @@
+# Nexus AI — Team Templates Registry
+# =============================================================================
+# Phase D / doc 18 — Team / Agent / Sub-agent Catalog.
+# Conforms to: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md §4
+#   (Team Template Contract). One team_template per team; all 6 teams present.
+#
+# A Team is a PASSIVE ownership / policy boundary (04-team-agent-subagent-model.md §4,
+#   §9) — NOT a runtime-active object. It declares which agents/sub-agents it owns and
+#   which Shared Registry items the team is permitted to use. Agents own and execute
+#   stages; the team_lead orchestrates (assigns agents, manages handoffs, routes rework)
+#   but never owns a stage, never authors the reviewed artifact, and never bypasses a gate.
+#
+# AUTHORITATIVE SOURCES (read from disk, reconciled):
+#   - configs/nexus-ai/stages/sdlc/*.yaml          — 31 SDLC stage contracts (owner_agent + sub_agents).
+#   - docs/ai-sdlc-factory/pipeline-catalog/*.md    — 5 non-SDLC pipeline definitions (rosters + uses_*).
+#   - configs/nexus-ai/{core_abilities,skills_registry,tools_registry,governance_profiles,
+#       audit_schemas,model_provider_profiles,context_memory_profiles}.yaml — Shared Registry.
+#
+# LOCKED DECISIONS / BOUNDARY RULES honored (doc 18 §11; 04 §8):
+#   - Plugin cancelled — no plugin field anywhere.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are a
+#     separate capability layer agents USE via uses_core_abilities; they MUST NOT appear as
+#     team members (agents / direct_sub_agents). Encoded in every forbidden_actions block.
+#   - Supervisor MUST NOT be a Team Lead. Every team_lead_role below is a pipeline-specific
+#     *_team_lead role, never `Supervisor`.
+#   - Every sub-agent has a parent_agent UNLESS team_lead_direct_call_allowed: true (no
+#     orphans). All 8 distinct sub-agents in scope are PARENTED; `direct_sub_agents` is therefore []
+#     for every team. (skill_semantic_extractor_subagent serves both the SDLC stage #3 and the
+#     skill_governance pipeline stage #2, but is ONE sub-agent — not two.) Parent links live in
+#     agent_roles.yaml / sub_agent_roles.yaml (doc 18 §6–§7).
+#   - An Agent cannot approve its own work; a Reviewer cannot mutate the reviewed artifact;
+#     Release Manager cannot bypass a failed governance gate. Encoded in forbidden_actions.
+#   - Skill != Tool; Governance != Audit; Evidence != Trace (the uses_* groups are kept distinct).
+#
+# FIELD SEMANTICS (doc 18 §4):
+#   team_id / team_type / pipeline_id / purpose / team_lead_role
+#   agents                 — Agent roles (snake_case) owned by this team boundary.
+#   direct_sub_agents      — sub-agents the team_lead may call directly
+#                            (team_lead_direct_call_allowed: true). [] when all sub-agents are parented.
+#   uses_*                 — Shared Registry items this team is permitted to use (union across the
+#                            team's stages/agents). USAGE, not ownership (05-shared-registry-and-usage-mapping.md).
+#   permissions            — coarse allow-list at the team boundary.
+#   forbidden_actions      — boundary rules this team must never violate.
+#
+# REGISTRY VERIFICATION (performed against the 7 registries on disk):
+#   - All SDLC uses_* items resolve: 18 skills, 45 tools, 68 governance profiles, 47 audit
+#     schemas, 7 model/provider profiles, 10 context/memory profiles.
+#   - All 5 non-SDLC pipelines' uses_* items resolve against the registries.
+#   - `no_self_approval_policy` and `evidence_required_policy` are NAMING VARIANTS of the
+#     canonical governance ids `no_self_approval` / `evidence_required`; the registry records
+#     them under each policy's `aliases:` field (governance_profiles.yaml). The `_policy` spelling
+#     used here matches every SDLC stage file and all 5 pipeline contracts. See open_questions.
+#   - Core Abilities are referenced by their canonical NAME (Supervisor, Coder, ...); the registry
+#     `id` is lowercase (supervisor, coder, ...). Names match the stage/pipeline contracts.
+
+version: draft-0.1
+registry_name: Nexus AI Orchestration Model — Team Templates
+status: draft
+total_teams: 6
+
+# -----------------------------------------------------------------------------
+# Cross-team invariants (apply to every team_template below).
+# -----------------------------------------------------------------------------
+boundary_invariants:
+  - core_abilities_are_capabilities_not_team_members   # Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS
+  - supervisor_is_never_team_lead
+  - every_sub_agent_has_parent_or_team_lead_direct_call_allowed   # no orphan sub-agents
+  - agent_cannot_approve_its_own_work
+  - reviewer_cannot_mutate_reviewed_artifact
+  - release_manager_cannot_bypass_failed_governance_gate
+  - team_lead_cannot_bypass_blocking_gate
+  - team_lead_is_never_a_stage_owner_agent
+  - no_plugin_field
+  - skill_is_not_tool_governance_is_not_audit_evidence_is_not_trace
+
+core_abilities_layer:   # the capability layer agents USE; NEVER team members / agents
+  - Supervisor
+  - Coder
+  - Vision
+  - Audio
+  - Creative
+  - Memory
+  - Web
+  - OS
+
+team_templates:
+
+  # ===========================================================================
+  # 1) SDLC TEAM — owns the 31-stage SDLC pipeline.
+  #    Roster is AUTHORITATIVE from configs/nexus-ai/stages/sdlc/*.yaml owner_agent values.
+  #    24 distinct owner_agents == the full roster below. The two review-gate stages
+  #    (requirements_review #5, architecture_review #7) are owned by sdlc_team_lead as the
+  #    no-self-approval fallback — sdlc_team_lead is the Team Lead, NOT an agents[] entry.
+  # ===========================================================================
+  - team_id: sdlc_team
+    team_type: sdlc_team
+    pipeline_id: sdlc_pipeline
+    purpose: >-
+      Own and execute the end-to-end 31-stage SDLC pipeline: intake, domain/risk profiling,
+      skill semantic extraction, requirements + review, architecture + review, security/privacy
+      design, premortem/FMEA, planning, implementation, code review, test generation/execution,
+      verification-loop bug finding, and the full validation gate chain (security, supply chain,
+      agentic safety, privacy, API contract, compliance, data migration, accessibility/UX,
+      performance/resilience, cost/resource, backup/restore/DR, operations readiness), evidence
+      graph build, development completion, release candidate, and refraction/learning. No merge,
+      no deploy: the team produces a governed, fully-traceable release candidate plus evidence.
+    team_lead_role: sdlc_team_lead   # NOT Supervisor; owns the review-gate stages as no-self-approval fallback
+    agents:
+      # --- exactly the 24 distinct SDLC stage owner_agents (verified zero-diff vs roster) ---
+      - product_requirements_agent      # owns: intake (#1), requirements (#4)
+      - domain_risk_agent               # owns: domain_risk_profile (#2)
+      - skill_librarian_agent           # owns: skill_semantic_extraction (#3) [also in skill_governance_team]
+      - architecture_agent              # owns: architecture (#6)
+      - security_privacy_agent          # owns: security_privacy_design (#8)
+      - risk_agent                      # owns: premortem_fmea (#9)
+      - planning_agent                  # owns: planning (#10)
+      - engineering_agent               # owns: implementation (#11)
+      - code_reviewer_agent             # owns: code_review (#12) — reviewer; cannot mutate reviewed code
+      - qa_agent                        # owns: test_generation (#13), test_execution (#14), verification_loop_bug_finding (#15)
+      - security_validation_agent       # owns: security_validation (#16)
+      - supply_chain_agent              # owns: supply_chain_sbom_license (#17)
+      - agentic_safety_agent            # owns: ai_agent_safety_evaluation (#18)
+      - privacy_agent                   # owns: privacy_data_lifecycle_validation (#19)
+      - contract_validation_agent       # owns: api_contract_compatibility_validation (#20)
+      - compliance_agent                # owns: domain_regulatory_compliance_validation_if_applicable (#21)
+      - data_migration_agent            # owns: data_migration_validation_if_applicable (#22)
+      - ux_accessibility_agent          # owns: accessibility_ux_validation_if_applicable (#23)
+      - performance_resilience_agent    # owns: performance_resilience (#24)
+      - cost_resource_agent             # owns: cost_resource_governance (#25)
+      - operations_readiness_agent      # owns: backup_restore_dr_validation_if_applicable (#26), operations_readiness (#27)
+      - evidence_graph_agent            # owns: evidence_graph_build (#28)
+      - release_manager_agent           # owns: development_completion (#29), release_candidate (#30)
+      - memory_curator_agent            # owns: refraction_learning (#31)
+    # All 8 SDLC sub-agents are PARENTED to an agent (no orphans), so none are team-lead-direct-call.
+    # Parent links (defined in sub_agent_roles.yaml):
+    #   skill_semantic_extractor_subagent      -> skill_librarian_agent   (stage #3)
+    #   api_design_subagent                     -> architecture_agent      (stage #6)
+    #   data_model_subagent                     -> architecture_agent      (stage #6)
+    #   threat_modeling_subagent                -> security_privacy_agent  (stage #8)
+    #   test_generation_subagent                -> qa_agent                (stage #13)
+    #   bug_hunter_subagent                     -> qa_agent                (stage #15)
+    #   security_scan_interpreter_subagent      -> security_validation_agent (stage #16)
+    #   evidence_trace_subagent                 -> evidence_graph_agent    (stage #28)
+    direct_sub_agents: []   # none: every SDLC sub-agent has a parent_agent
+    uses_core_abilities:    # capability layer USED by SDLC agents (never members)
+      - Supervisor
+      - Coder
+      - Vision
+      - Memory
+      - Web
+      - OS
+    uses_skills:            # union across all 31 SDLC stage uses_skills (all 18 resolve in skills_registry.yaml)
+      - adr-builder
+      - bayesian-update
+      - calibrate
+      - context-pack-builder
+      - evidence-graph-builder
+      - fermi-decompose
+      - fmea
+      - gap-audit
+      - handoff-designer
+      - llm-council
+      - prism
+      - prompt-fidelity
+      - refraction
+      - release-readiness-judge
+      - scanner-result-normalizer
+      - sentinel
+      - skill-architect
+      - verification-loop
+    uses_tools:             # union across all 31 SDLC stage uses_tools (all resolve in tools_registry.yaml)
+      - accessibility_auditor
+      - agent_permission_auditor
+      - artifact_writer
+      - backup_plan_checker
+      - benchmark_runner
+      - compliance_matrix_builder
+      - context_poisoning_tester
+      - contract_test_runner
+      - contrast_checker
+      - cost_estimator
+      - coverage_parser
+      - data_inventory_checker
+      - defect_tracker
+      - deletion_flow_checker
+      - dependency_scanner
+      - diagram_generator
+      - dr_runbook_checker
+      - eval_runner
+      - evidence_consistency_checker
+      - evidence_reader
+      - evidence_writer
+      - incident_runbook_checker
+      - license_checker
+      - migration_checker
+      - observability_plan_checker
+      - package_reputation_checker
+      - policy_query
+      - prompt_injection_tester
+      - quota_policy_checker
+      - repo_diff_reader
+      - repo_reader
+      - repo_writer
+      - requirements_trace_checker
+      - resource_budget_checker
+      - restore_test_runner
+      - retention_policy_checker
+      - rollback_validator
+      - sbom_generator
+      - scanner_runner
+      - skill_package_reader
+      - tenant_isolation_checker
+      - test_runner
+      - test_writer
+      - tool_misuse_tester
+      - ux_flow_checker
+    uses_governance_profiles:   # union across all 31 SDLC stages (all resolve; _policy variants via aliases)
+      - sdlc_pipeline_governance
+      - evidence_required_policy           # alias of canonical `evidence_required`
+      - no_self_approval_policy            # alias of canonical `no_self_approval`
+      - no_blocking_policy_failure_gate
+      - no_secret_leak_gate
+      - intake_scope_gate
+      - domain_risk_governance
+      - domain_risk_profile_gate
+      - skill_governance
+      - skill_semantic_extraction_gate
+      - requirements_acceptance_gate
+      - prompt_fidelity_gate
+      - requirements_review_governance
+      - architecture_design_governance
+      - adr_required_gate
+      - architecture_review_gate
+      - security_privacy_governance
+      - threat_model_required_gate
+      - risk_review_governance
+      - fmea_required_gate
+      - planning_handoff_completeness_gate
+      - implementation_governance
+      - no_out_of_scope_change_gate
+      - code_review_gate
+      - regression_scope_gate
+      - test_execution_governance
+      - test_coverage_completeness_gate
+      - coverage_policy_gate
+      - flaky_test_quarantine_gate
+      - verification_loop_bug_gate
+      - security_validation_gate
+      - supply_chain_governance
+      - supply_chain_sbom_license_gate
+      - sbom_required_gate
+      - license_compliance_gate
+      - agentic_safety_governance
+      - context_safety_governance
+      - tool_misuse_governance
+      - privacy_lifecycle_governance
+      - data_retention_gate
+      - api_contract_governance
+      - compatibility_gate
+      - breaking_change_gate
+      - domain_compliance_governance
+      - regulatory_traceability_gate
+      - data_migration_governance
+      - data_integrity_gate
+      - accessibility_governance
+      - ux_validation_governance
+      - ui_release_gate
+      - performance_governance
+      - resilience_governance
+      - cost_resource_governance
+      - resource_budget_gate
+      - quota_governance
+      - backup_restore_governance
+      - disaster_recovery_gate
+      - rollback_required_gate
+      - operations_readiness_gate
+      - evidence_graph_gate
+      - evidence_integrity_gate
+      - traceability_required_gate
+      - development_completion_gate
+      - release_candidate_governance
+      - release_after_development_completion_gate
+      - memory_update_governance
+      - learning_record_gate
+      - tenant_isolation_gate
+    uses_audit_schemas:     # union across all 31 SDLC stages (all 47 resolve in audit_schemas.yaml)
+      - sdlc_pipeline_evidence_schema
+      - stage_gate_trace_schema
+      - gate_decision_trace_schema
+      - domain_risk_evidence_schema
+      - skill_semantic_evidence_schema
+      - requirements_review_evidence_schema
+      - architecture_evidence_schema
+      - architecture_decision_trace_schema
+      - architecture_review_evidence_schema
+      - threat_model_evidence_schema
+      - premortem_evidence_schema
+      - risk_register_schema
+      - implementation_evidence_schema
+      - code_change_trace_schema
+      - code_review_evidence_schema
+      - test_plan_evidence_schema
+      - test_execution_evidence_schema
+      - bug_finding_evidence_schema
+      - security_scan_evidence_schema
+      - security_finding_trace_schema
+      - supply_chain_evidence_schema
+      - agentic_eval_evidence_schema
+      - prompt_injection_test_schema
+      - privacy_evidence_schema
+      - data_lifecycle_report_schema
+      - api_contract_evidence_schema
+      - compatibility_report_schema
+      - compliance_matrix_schema
+      - regulatory_evidence_schema
+      - migration_evidence_schema
+      - accessibility_evidence_schema
+      - ux_validation_report_schema
+      - performance_evidence_schema
+      - resilience_report_schema
+      - cost_evidence_schema
+      - resource_budget_report_schema
+      - backup_restore_evidence_schema
+      - dr_validation_schema
+      - rollback_validation_schema
+      - evidence_graph_evidence_schema
+      - evidence_integrity_report_schema
+      - traceability_matrix_schema
+      - release_evidence_schema
+      - release_decision_trace_schema
+      - learning_record_schema
+      - memory_update_trace_schema
+      - tenant_isolation_report_schema
+    uses_model_provider_profiles:   # union across SDLC stages (all 7 resolve in model_provider_profiles.yaml)
+      - sdlc_reasoning_profile
+      - architecture_reasoning_model
+      - coder_engineering_model
+      - defect_analysis_model
+      - security_analysis_model
+      - release_reasoning_model
+      - vision_model
+    uses_context_memory_profiles:   # union across SDLC stages (all 10 resolve in context_memory_profiles.yaml)
+      - sdlc_run_context
+      - domain_risk_context_pack
+      - skill_semantic_context_pack
+      - requirements_context_pack
+      - architecture_context_pack
+      - security_context_pack
+      - implementation_context_pack
+      - verification_context_pack
+      - operations_context_pack
+      - release_context_pack
+    permissions:
+      - own_and_execute_sdlc_stages
+      - assign_stage_owner_agents
+      - invoke_parented_sub_agents_via_their_parent_agent
+      - read_and_write_artifacts_and_evidence
+      - run_side_effect_tools_under_governance_and_trace   # repo_writer, test_runner, scanners, etc.
+      - request_rework_along_allowed_routes
+      - emit_release_candidate_with_evidence
+    forbidden_actions:
+      - core_ability_as_team_member            # [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] never agents
+      - supervisor_as_team_lead                # sdlc_team_lead is the lead, never Supervisor
+      - agent_approves_own_work                # producer_agent_id != approver_agent_id (no_self_approval)
+      - reviewer_mutates_reviewed_artifact     # code_reviewer_agent cannot edit reviewed code
+      - release_manager_bypasses_failed_gate   # release_manager_agent cannot pass a failed blocking gate
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage_as_self_authored_then_self_approves
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - merge_or_deploy_to_production
+      - read_secret
+      - introduce_plugin
+
+  # ===========================================================================
+  # 2) RESEARCH TEAM — owns the research_pipeline (10 stages, no sub-agents).
+  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md §1–§2.
+  #    No-self-approval is structural: cross_validation_agent is distinct from the
+  #    producer agents (source_reliability / claim_extraction / claim_evidence).
+  # ===========================================================================
+  - team_id: research_team
+    team_type: research_team
+    pipeline_id: research_pipeline
+    purpose: >-
+      Run sourced research under no-human governance: capture the research goal, decompose it into
+      bounded questions, discover candidate sources with recorded provenance, score source
+      reliability, extract atomic checkable claims, map each load-bearing claim to supporting and
+      contradicting evidence, independently cross-validate (distinct role), report residual
+      uncertainty, and synthesize a fully-cited research output with an assembled evidence graph.
+    team_lead_role: research_team_lead   # pipeline-specific; NOT Supervisor
+    agents:
+      - research_intake_agent            # owns: research_intake
+      - research_scoping_agent           # owns: scope_and_questions (prism = divergence here)
+      - source_discovery_agent           # owns: source_discovery
+      - source_reliability_agent         # owns: source_reliability_assessment
+      - claim_extraction_agent           # owns: claim_extraction
+      - claim_evidence_agent             # owns: claim_evidence_mapping
+      - cross_validation_agent           # owns: cross_validation — DISTINCT from producers (no self-approval)
+      - uncertainty_reporting_agent      # owns: uncertainty_reporting
+      - research_synthesis_agent         # owns: synthesis (citation_required_gate)
+      - research_completion_agent        # owns: research_completion (final evidence-graph gate)
+    direct_sub_agents: []   # research pipeline defines no sub-agents
+    uses_core_abilities:
+      - Web
+      - Memory
+      - Supervisor
+    uses_skills:
+      - prism                # divergence only (scope_and_questions)
+      - llm-council          # multi-perspective cross-check (cross_validation)
+      - calibrate
+      - gap-audit
+      - bayesian-update
+    uses_tools:
+      - web_search
+      - web_fetch
+      - source_reliability_checker
+      - claim_mapper
+      - artifact_writer
+      - evidence_writer
+      - evidence_reader
+    uses_governance_profiles:
+      - research_source_governance
+      - citation_required_gate
+      - no_self_approval_policy            # alias of canonical `no_self_approval`
+      - evidence_required_policy           # alias of canonical `evidence_required`
+    uses_audit_schemas:
+      - source_evidence_schema
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles:
+      - research_reasoning_profile
+      - supervisor_routing_model
+      - source_evaluation_model
+    uses_context_memory_profiles:
+      - research_run_context
+      - source_corpus_context_pack
+      - claim_evidence_context_pack
+    permissions:
+      - own_and_execute_research_stages
+      - assign_stage_owner_agents
+      - discover_and_fetch_sources_with_provenance
+      - score_sources_and_map_claims_to_evidence
+      - cross_validate_with_a_distinct_role
+      - emit_cited_synthesis_with_evidence_graph
+      - request_rework_along_allowed_routes
+    forbidden_actions:
+      - core_ability_as_team_member
+      - supervisor_as_team_lead                # research_team_lead is the lead, never Supervisor
+      - producer_role_is_sole_validator_of_own_source   # cross_validation must be a distinct agent
+      - agent_approves_own_work
+      - uncited_load_bearing_claim_in_synthesis
+      - unscored_source_used_in_synthesis
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - introduce_plugin
+
+  # ===========================================================================
+  # 3) ACTIVATION TEAM — owns the activation_pipeline (preview -> pilot -> public).
+  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md §1–§3.
+  #    activation_owner_decision_agent RECORDS a human/owner decision (not an autonomous
+  #    approver). Reviewer/decision owners are distinct from pilot/activation owners.
+  # ===========================================================================
+  - team_id: activation_team
+    team_type: activation_team
+    pipeline_id: activation_pipeline
+    purpose: >-
+      Stage the activation of an already release-candidate artifact (produced by the SDLC pipeline)
+      through preview -> pilot -> public, with mandatory rollback readiness and a human/owner
+      decision gate before any public activation. Confirms release-candidate evidence on intake,
+      runs a superadmin preview, executes a bounded pilot, independently reviews pilot evidence,
+      records the owner's public-activation decision, validates rollback readiness, and completes
+      activation with a full evidence package — under no-self-approval governance.
+    team_lead_role: activation_team_lead   # pipeline-specific; NOT Supervisor
+    agents:
+      - activation_manager_agent          # owns: activation_intake, superadmin_preview, activation_completion
+      - pilot_activation_agent            # owns: pilot_activation
+      - activation_reviewer_agent         # owns: pilot_evidence_review — distinct from pilot owner (no self-approval)
+      - activation_owner_decision_agent   # owns: public_activation_decision — RECORDS human/owner decision, not autonomous approver
+      - rollback_readiness_agent          # owns: rollback_readiness
+    direct_sub_agents: []   # activation pipeline defines no sub-agents
+    uses_core_abilities:
+      - Supervisor
+      - Memory
+      - OS
+      - Web
+    uses_skills:
+      - sentinel             # premortem/foresight before activation steps
+      - gap-audit
+      - llm-council
+      - calibrate
+      - prompt-fidelity
+      - refraction
+    uses_tools:
+      - activation_flag_controller
+      - cohort_selector
+      - rollback_executor
+      - telemetry_reader
+      - artifact_writer
+      - evidence_writer
+      - evidence_reader
+      - policy_query
+    uses_governance_profiles:
+      - activation_pipeline_governance
+      - no_self_approval_policy            # alias of canonical `no_self_approval`
+      - evidence_required_policy           # alias of canonical `evidence_required`
+      - preview_required_gate
+      - pilot_evidence_gate
+      - rollback_required_gate
+      - owner_activation_decision_gate     # HUMAN/owner authority gate (distinct from autonomous self-approval)
+    uses_audit_schemas:
+      - activation_evidence_schema
+      - activation_decision_evidence_schema
+      - rollback_readiness_evidence_schema
+      - stage_gate_trace_schema
+      - activation_transition_trace_schema
+    uses_model_provider_profiles:
+      - supervisor_routing_model
+      - activation_reasoning_model
+      - risk_analysis_model
+    uses_context_memory_profiles:
+      - activation_run_context
+      - preview_context_pack
+      - pilot_evidence_context_pack
+      - activation_decision_context_pack
+    permissions:
+      - own_and_execute_activation_stages
+      - assign_stage_owner_agents
+      - control_activation_flags_and_cohorts
+      - execute_validated_rollback
+      - record_owner_activation_decision
+      - emit_activation_evidence_package
+      - request_rework_along_allowed_routes
+    forbidden_actions:
+      - core_ability_as_team_member
+      - supervisor_as_team_lead                # activation_team_lead is the lead, never Supervisor
+      - self_approval_of_activation_decision   # decision/reviewer roles distinct from pilot/activation owners
+      - agent_approves_own_work
+      - public_activation_without_owner_decision
+      - public_activation_without_validated_rollback_plan
+      - pilot_activation_without_passing_preview
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - introduce_plugin
+
+  # ===========================================================================
+  # 4) OPERATIONS TEAM — owns the operations_pipeline (live-incident lifecycle).
+  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md §1–§3.
+  #    Consumes SDLC operations-readiness artifacts; does not regenerate SDLC.
+  # ===========================================================================
+  - team_id: operations_team
+    team_type: operations_team
+    pipeline_id: operations_pipeline
+    purpose: >-
+      Run the live-operations lifecycle for released Nexus AI capabilities: intake and deduplicate
+      incident signals, classify severity (mandatory before mitigation), build a mitigation plan,
+      decide and execute rollback-or-fix backed by runbook/rollback evidence, run a mandatory
+      postmortem for qualifying severities, and feed operational learning back into memory and the
+      SDLC. Consumes SDLC operations-readiness artifacts (RUNBOOK, ROLLBACK_PLAN, OBSERVABILITY_PLAN,
+      INCIDENT_RESPONSE_PLAN); references the SDLC pipeline rather than regenerating it.
+    team_lead_role: operations_team_lead   # pipeline-specific; NOT Supervisor
+    agents:
+      - incident_intake_agent              # owns: incident_intake
+      - severity_classification_agent      # owns: severity_classification
+      - mitigation_planning_agent          # owns: mitigation_plan
+      - incident_response_agent            # owns: rollback_or_fix
+      - postmortem_agent                   # owns: postmortem
+      - operational_learning_agent         # owns: learning_update
+    direct_sub_agents: []   # operations pipeline defines no sub-agents
+    uses_core_abilities:
+      - Supervisor
+      - Memory
+      - OS
+      - Web
+      - Coder
+    uses_skills:
+      - sentinel
+      - fmea
+      - gap-audit
+      - refraction
+      - bayesian-update
+      - calibrate
+      # verification-loop is used conditionally inside rollback_or_fix (forward-fix defect confirmation),
+      # per operations-pipeline.md §2.4; bound at stage level, not separately at team level.
+    uses_tools:
+      - incident_intake_tool
+      - monitoring_query_tool
+      - alert_correlator
+      - severity_classifier_tool
+      - runbook_executor
+      - rollback_executor
+      - mitigation_plan_builder
+      - postmortem_builder
+      - artifact_writer
+      - evidence_writer
+      - evidence_reader
+      - memory_write
+      - policy_query
+    uses_governance_profiles:
+      - operations_pipeline_governance
+      - no_self_approval_policy            # alias of canonical `no_self_approval`
+      - evidence_required_policy           # alias of canonical `evidence_required`
+      - incident_severity_required_gate
+      - mitigation_plan_required_gate
+      - rollback_runbook_evidence_gate
+      - postmortem_required_gate
+    uses_audit_schemas:
+      - incident_evidence_schema
+      - severity_classification_evidence_schema
+      - mitigation_plan_evidence_schema
+      - rollback_fix_evidence_schema
+      - postmortem_evidence_schema
+      - operational_learning_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles:
+      - supervisor_routing_model
+      - incident_triage_model
+      - operations_analysis_model
+      - postmortem_reasoning_model
+      - learning_reflection_model
+    uses_context_memory_profiles:
+      - operations_run_context
+      - incident_context_pack
+      - operations_context_pack
+      - postmortem_context_pack
+      - learning_context_pack
+    permissions:
+      - own_and_execute_operations_stages
+      - assign_stage_owner_agents
+      - intake_and_correlate_incident_signals
+      - classify_severity_and_build_mitigation_plan
+      - execute_rollback_or_fix_with_runbook_or_rollback_evidence
+      - run_postmortem_and_record_operational_learning
+      - hand_improvement_backlog_back_toward_sdlc
+      - request_rework_along_allowed_routes
+    forbidden_actions:
+      - core_ability_as_team_member
+      - supervisor_as_team_lead                # operations_team_lead is the lead, never Supervisor
+      - self_approved_resolution               # actor approving its own mitigation/postmortem
+      - agent_approves_own_work
+      - rollback_or_fix_without_runbook_or_rollback_evidence
+      - missing_severity_classification_before_mitigation
+      - team_lead_executes_rollback_or_fix     # owned by incident_response_agent, not the lead
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage
+      - regenerate_sdlc_pipeline
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - introduce_plugin
+
+  # ===========================================================================
+  # 5) SKILL GOVERNANCE TEAM — owns the skill_governance_pipeline.
+  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+  #    §1–§3 (reconciled with 04 §4.7). skill_librarian_agent is shared with sdlc_team.
+  #    skill_semantic_extractor_subagent is a PARENTED sub-agent (parent: skill_librarian_agent).
+  #    Anti-pattern blocked: binding without semantics. Activation decider (skill_runtime_safety_agent)
+  #    is distinct from the binding proposer (skill_librarian_agent) -> no self-approval.
+  # ===========================================================================
+  - team_id: skill_governance_team
+    team_type: skill_governance_team
+    pipeline_id: skill_governance_pipeline
+    purpose: >-
+      Govern the skill lifecycle under no-human governance: inventory candidate skill packages,
+      perform MANDATORY semantic extraction before any binding, run script/reference safety audit,
+      generate misuse warnings, propose agent/stage bindings, and record the activate/hold/deprecate
+      decision — enforcing locked semantics (prism = brainstorming/divergence, verification-loop =
+      bug/defect finding) and the rule that no skill is bound or activated before its semantics and
+      misuse warnings exist.
+    team_lead_role: skill_governance_team_lead   # pipeline-specific; NOT Supervisor (D-006)
+    agents:
+      - skill_librarian_agent          # owns: skill_intake, skill_binding_proposal, skill_deprecation_update [also in sdlc_team]
+      - skill_runtime_safety_agent     # owns: script_reference_audit, misuse_warning_generation, skill_activation_decision (review independence)
+    # skill_semantic_extractor_subagent owns skill_semantic_extraction (#2) and is PARENTED to
+    # skill_librarian_agent (sub_agent_roles.yaml) — not a team-lead-direct-call sub-agent.
+    direct_sub_agents: []   # the one sub-agent is parented to skill_librarian_agent (no orphan)
+    uses_core_abilities:
+      - Supervisor
+      - Memory
+      - OS
+      - Coder
+      - Web
+    uses_skills:
+      - gap-audit
+      - fmea
+      - calibrate
+      - llm-council
+      - sentinel
+      - prism                # divergence only (expand candidate categories/bindings)
+      - verification-loop     # bug/defect-finding semantics only (script defect sweep)
+    uses_tools:
+      - skill_package_reader
+      - skill_semantic_extractor
+      - script_static_analyzer
+      - reference_index_builder
+      - skill_binding_proposer
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - skill_governance_pipeline_governance
+      - skill_semantic_required_gate
+      - script_reference_audit_gate
+      - misuse_warning_required_gate
+      - skill_binding_proposal_gate
+      - skill_activation_decision_gate
+      - locked_semantics_enforcement_policy   # prism=brainstorming, verification-loop=bug-finding
+      - no_self_approval_policy               # alias of canonical `no_self_approval`
+      - evidence_required_policy              # alias of canonical `evidence_required`
+    uses_audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_semantic_extract_schema
+      - script_audit_evidence_schema
+      - skill_misuse_warning_schema
+      - skill_binding_decision_schema
+      - skill_governance_trace_schema
+    uses_model_provider_profiles:
+      - skill_governance_reasoning_profile
+      - skill_semantic_extraction_model
+      - script_safety_analysis_model
+      - supervisor_routing_model
+    uses_context_memory_profiles:
+      - skill_governance_run_context
+      - skill_semantic_context_pack
+      - skill_registry_context_pack
+    permissions:
+      - own_and_execute_skill_governance_stages
+      - assign_stage_owner_agents
+      - invoke_parented_sub_agents_via_their_parent_agent   # skill_semantic_extractor_subagent
+      - inventory_and_read_skill_packages
+      - perform_mandatory_semantic_extraction_before_binding
+      - audit_scripts_and_references_for_safety
+      - generate_misuse_warnings
+      - propose_bindings_and_record_activation_decision
+      - request_rework_along_allowed_routes
+    forbidden_actions:
+      - core_ability_as_team_member
+      - supervisor_as_team_lead                # skill_governance_team_lead is the lead, never Supervisor
+      - binding_proposed_without_semantics      # anti-pattern: binding before semantic extraction
+      - skill_activated_without_misuse_warnings
+      - locked_semantics_violation              # never redefine prism / verification-loop semantics
+      - self_approval_of_activation_decision    # proposer (librarian) != decider (runtime_safety)
+      - agent_approves_own_work
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - introduce_plugin
+
+  # ===========================================================================
+  # 6) KNOWLEDGE TEAM — owns the knowledge_memory_pipeline.
+  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md §1–§3.
+  #    Memory stays a Core Ability USED by these agents — it is never promoted to an agent/owner.
+  # ===========================================================================
+  - team_id: knowledge_team
+    team_type: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    purpose: >-
+      Govern the knowledge/memory lifecycle: ingest candidate memory with provenance, classify its
+      source (trust tier, sensitivity, redaction need), summarize it grounded in the source, assign
+      an explicit validity window, update the affected retrieval profile bounded by sensitivity and
+      validity, and review expiration so knowledge does not silently rot. Memory remains a Core
+      Ability that agents USE; this pipeline curates what may be remembered, for how long, and how
+      it is retrieved — it never turns Memory into an agent.
+    team_lead_role: knowledge_team_lead   # pipeline-specific; NOT Supervisor
+    agents:
+      - knowledge_intake_agent             # owns: memory_intake
+      - source_classification_agent        # owns: source_classification
+      - memory_summarization_agent         # owns: summary_generation
+      - validity_window_agent              # owns: validity_window_assignment
+      - retrieval_profile_agent            # owns: retrieval_profile_update
+      - memory_expiration_agent            # owns: memory_expiration_review
+    direct_sub_agents: []   # knowledge pipeline defines no sub-agents
+    uses_core_abilities:
+      - Memory               # USED by the agents; never the owner / never an agent
+      - Supervisor
+      - Web
+    uses_skills:
+      - gap-audit
+      - calibrate
+      - refraction
+      - bayesian-update
+    uses_tools:
+      - memory_ingestor
+      - source_classifier
+      - summary_writer
+      - validity_window_calculator
+      - retrieval_profile_writer
+      - expiration_scanner
+      - redaction_tool
+      - provenance_recorder
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - memory_source_governance
+      - validity_window_required_gate
+      - redaction_required_gate
+      # evidence/no-self-approval are honored via the shared registry; this pipeline's catalog
+      # entry binds only the three profiles above at pipeline level (knowledge-memory-pipeline.md §1).
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles:
+      - knowledge_reasoning_profile
+      - summarization_model
+      - supervisor_routing_model
+    uses_context_memory_profiles:
+      - knowledge_run_context
+      - memory_candidate_context_pack
+      - retrieval_profile_context_pack
+    permissions:
+      - own_and_execute_knowledge_memory_stages
+      - assign_stage_owner_agents
+      - ingest_classify_and_summarize_memory_with_provenance
+      - assign_validity_windows
+      - update_retrieval_profiles_bound_to_validity_and_sensitivity
+      - review_and_record_expiration_outcomes
+      - request_rework_along_allowed_routes
+    forbidden_actions:
+      - core_ability_as_team_member            # Memory (and the others) are abilities, never agents/owners
+      - memory_core_ability_promoted_to_agent
+      - supervisor_as_team_lead                # knowledge_team_lead is the lead, never Supervisor
+      - retrieval_profile_update_without_validity_window
+      - unredacted_sensitive_content_exposed
+      - agent_approves_own_work
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - introduce_plugin
+
+# -----------------------------------------------------------------------------
+# Cross-reference summary (for the catalog review, doc 18 §12 validation):
+#   - 6 team_templates; pipeline_id per team is unique and matches pipeline_catalog.yaml.
+#   - sdlc_team.agents == the 24 distinct SDLC stage owner_agents (zero-diff vs roster).
+#   - All SDLC sub-agents (8) are parented to an sdlc_team agent; skill_governance's one
+#     sub-agent is parented to skill_librarian_agent. No orphan sub-agents; direct_sub_agents
+#     is [] for every team.
+#   - Shared roles across teams: skill_librarian_agent (sdlc_team + skill_governance_team);
+#     skill_semantic_extractor_subagent is parented to skill_librarian_agent and owns
+#     skill_semantic_extraction in BOTH the SDLC stage (#3) and the skill_governance pipeline (#2).
+#   - source_classification_agent is the knowledge_team agent (distinct from research_team's
+#     source_reliability_agent / cross_validation_agent).
+#   - Every uses_* item was verified to resolve against the 7 Shared Registry files on disk,
+#     with no_self_approval_policy / evidence_required_policy resolving via registered aliases.

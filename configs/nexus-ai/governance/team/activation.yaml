@@ -1,0 +1,251 @@
+# =============================================================================
+# Nexus AI — Team-Scope Governance (APPLICABLE LAYER): activation_team
+# =============================================================================
+# Phase E / doc 19. DEDICATED team-scope governance profile CREATED here — the
+# Phase C registry (governance_profiles.yaml, scope: team) had team-scope
+# profiles ONLY for sdlc_team and research_team; activation_team lacked one
+# (doc 19 reconciliation input c: "create dedicated team-scope governance for
+# activation_team, operations_team, skill_governance_team, knowledge_team").
+# This profile expresses the activation_team's role-separation rules per §4/§5 so
+# the activation pipeline's required gates can be evaluated from config.
+#
+# Documentation / blueprint ONLY. NO runtime code. NO merge. NO deploy.
+#
+# LOCKED DECISIONS honored: plugin cancelled (no plugin field); Governance !=
+# Audit; Evidence != Trace (required_evidence vs required_trace never merged);
+# Core Abilities are not agents (Supervisor != activation_team_lead); a Team is a
+# passive boundary, the team_lead orchestrates and never owns a stage / bypasses
+# a gate. The public-activation decision RECORDS a HUMAN/owner decision via
+# activation_owner_decision_agent — it is a human authority gate, NOT autonomous
+# agent self-approval; no_self_approval here means "no autonomous agent approves
+# its own activation step", not "an agent may grant the owner gate".
+#
+# NAMING RECONCILIATION: no_self_approval / evidence_required are first-class ids;
+# *_policy spellings are aliases. Authoritative team name: activation_team.
+#
+# AUTHORITATIVE SOURCES (read from disk)
+#   - configs/nexus-ai/governance_profiles.yaml  # activation_pipeline_governance; preview_required_gate; pilot_evidence_gate; rollback_required_gate; owner_activation_decision_gate; global no_self_approval / no_policy_bypass / evidence_required / trace_required
+#   - configs/nexus-ai/team_templates.yaml       # activation_team roster (5 agents) + team_lead + forbidden_actions (self_approval_of_activation_decision, public_activation_without_owner_decision, ...)
+#   - configs/nexus-ai/team_lead_roles.yaml      # activation_team_lead forbidden_actions / blocking_limits
+#   - configs/nexus-ai/audit_schemas.yaml        # activation_evidence_schema; activation_decision_evidence_schema (decision_record_schema, producer activation_owner_decision_agent); rollback_readiness_evidence_schema; activation_transition_trace_schema; stage_gate_trace_schema
+#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §4  # activation rules (no pilot without preview; no public without pilot evidence; rollback mandatory)
+# =============================================================================
+
+version: draft-0.1
+config_kind: team_scope_governance_profile
+status: candidate                      # NEW dedicated team-scope profile (reconciliation input c)
+no_plugin: true
+registry_ref: null                     # no pre-existing team-scope catalog entry; layered over activation_pipeline_governance (pipeline scope)
+composes_pipeline_profile: activation_pipeline_governance
+
+governance_id_aliases:
+  no_self_approval: [no_self_approval_policy]
+  evidence_required: [evidence_required_policy]
+
+# =============================================================================
+# GOVERNANCE PROFILE (doc 19 §4)
+# =============================================================================
+governance_profile_id: activation_team_governance
+scope: team
+purpose: >-
+  Intra-team role-separation governance for the activation_team: the agent that
+  runs the pilot (pilot_activation_agent) cannot be the agent that independently
+  reviews pilot evidence (activation_reviewer_agent) — reviewer != pilot owner;
+  no autonomous agent may self-approve an activation step; public activation
+  requires a RECORDED human/owner decision (activation_owner_decision_agent) plus
+  a validated rollback plan; pilot may not begin without a passing superadmin
+  preview; and the activation_team_lead orchestrates but is not the Supervisor
+  Core Ability and may never bypass a gate. Makes the preview->pilot->public
+  staged-activation separation evaluable from config.
+applies_to:
+  team: activation_team
+  team_lead: activation_team_lead
+  pipeline: activation_pipeline
+  agents:
+    - activation_manager_agent        # activation_intake, superadmin_preview, activation_completion
+    - pilot_activation_agent          # pilot_activation (pilot owner)
+    - activation_reviewer_agent       # pilot_evidence_review — distinct reviewer (no self-approval)
+    - activation_owner_decision_agent # public_activation_decision — RECORDS human/owner decision (not autonomous approver)
+    - rollback_readiness_agent        # rollback_readiness
+  stages:
+    - superadmin_preview
+    - pilot_activation
+    - pilot_evidence_review
+    - public_activation_decision
+    - rollback_readiness
+    - activation_completion
+severity_default: blocker
+owner: activation_team_lead            # orchestrator/escalation owner; NOT a stage owner, NOT Supervisor
+escalation:
+  on_blocker: halt_pipeline_and_record_gate_failure
+  notify: activation_team_lead
+  forbidden_resolution:
+    - team_lead_override_of_failed_gate
+    - supervisor_core_ability_acts_as_team_lead
+    - autonomous_agent_grants_owner_activation_decision   # owner gate is human authority
+    - public_activation_without_recorded_owner_decision
+
+required_evidence:                     # EVIDENCE family — audit/evidence_schemas/
+  - activation_evidence_schema
+  - activation_decision_evidence_schema      # decision_record_schema (Evidence family), producer activation_owner_decision_agent
+  - rollback_readiness_evidence_schema
+required_trace:                        # TRACE family — audit/trace_schemas/
+  - stage_gate_trace_schema
+  - activation_transition_trace_schema
+
+composes_governance_profiles:
+  - no_self_approval
+  - no_policy_bypass
+  - evidence_required
+  - trace_required
+  - activation_pipeline_governance     # pipeline-scope umbrella re-shown in team context
+  - preview_required_gate
+  - pilot_evidence_gate
+  - rollback_required_gate
+  - owner_activation_decision_gate      # HUMAN/owner authority gate (distinct from autonomous self-approval)
+
+# =============================================================================
+# RULES (doc 19 §5)
+# =============================================================================
+rules:
+
+  - rule_id: activation_pilot_owner_ne_pilot_evidence_reviewer
+    description: >-
+      The agent that executed the pilot (pilot_activation_agent) cannot own the
+      pilot_evidence_review gate: that gate is owned by activation_reviewer_agent,
+      distinct from the pilot owner (reviewer != pilot owner; no self-approval of
+      one's own pilot result).
+    severity: blocker
+    required_when: stage == pilot_evidence_review
+    pass_condition: >-
+      pilot_evidence_review.owner_agent == activation_reviewer_agent AND
+      pilot_evidence_review.owner_agent != pilot_activation.owner_agent
+    fail_condition: pilot_evidence_review.owner_agent == pilot_activation.owner_agent
+    on_fail: block_pilot_evidence_review_and_reassign_to_distinct_reviewer
+    rework_route: pilot_activation
+    evidence_required:
+      - activation_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: activation_no_self_approval_of_activation_step
+    description: >-
+      No autonomous activation_team agent may be the sole approver of an
+      activation step it produced (global no_self_approval re-shown). The
+      public_activation_decision is the explicit exception in mechanism only: it is
+      authorized by the HUMAN owner and merely RECORDED by
+      activation_owner_decision_agent — an autonomous agent never grants it.
+    severity: blocker
+    required_when: an_activation_gate_other_than_a_human_owner_gate_is_evaluated
+    pass_condition: gate.approver_agent_id != produced_artifact.producer_agent_id
+    fail_condition: gate.approver_agent_id == produced_artifact.producer_agent_id
+    on_fail: block_gate_and_reassign_to_independent_reviewer
+    rework_route: reassign_to_non_author_agent
+    evidence_required:
+      - activation_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: activation_public_requires_recorded_owner_decision
+    description: >-
+      Public activation requires a recorded human/owner go decision
+      (owner_activation_decision_gate) backed by the activation decision record;
+      an autonomous agent may NOT authorize public activation. Direct expression
+      of activation forbidden_action public_activation_without_owner_decision.
+    severity: blocker
+    required_when: stage == public_activation_decision
+    pass_condition: >-
+      owner_decision_recorded == true AND
+      public_activation_decision.authorizing_actor == human_owner AND
+      public_activation_decision.recorded_by == activation_owner_decision_agent
+    fail_condition: >-
+      owner_decision_recorded == false OR
+      public_activation_decision.authorizing_actor != human_owner
+    on_fail: block_public_activation
+    rework_route: pilot_evidence_review
+    evidence_required:
+      - activation_decision_evidence_schema
+    trace_required:
+      - activation_transition_trace_schema
+
+  - rule_id: activation_public_requires_validated_rollback
+    description: >-
+      Public activation may not complete without a validated rollback plan
+      (rollback_required_gate), and a pilot may not begin without a passing
+      superadmin preview (preview_required_gate). Direct expression of activation
+      forbidden_actions public_activation_without_validated_rollback_plan and
+      pilot_activation_without_passing_preview.
+    severity: blocker
+    required_when: stage in [pilot_activation, activation_completion]
+    pass_condition: >-
+      (stage == pilot_activation IMPLIES superadmin_preview_passed == true) AND
+      (stage == activation_completion IMPLIES validated_rollback_plan_present == true)
+    fail_condition: >-
+      (stage == pilot_activation AND superadmin_preview_passed == false) OR
+      (stage == activation_completion AND validated_rollback_plan_present == false)
+    on_fail: block_stage_and_halt
+    rework_route: rollback_readiness
+    evidence_required:
+      - rollback_readiness_evidence_schema
+      - activation_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: activation_no_failed_gate_bypass
+    description: >-
+      No actor in the activation_team — including the activation_team_lead — may
+      override, skip, or pass a blocking governance gate (global no_policy_bypass
+      re-shown in team context).
+    severity: blocker
+    required_when: any_blocking_gate_is_evaluated
+    pass_condition: blocking_gate_satisfied_before_progression == true
+    fail_condition: blocking_gate_overridden_without_satisfaction == true
+    on_fail: halt_pipeline_and_record_policy_bypass_attempt
+    rework_route: return_to_blocking_gate_owner_stage
+    evidence_required:
+      - activation_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: activation_team_lead_role_separation
+    description: >-
+      The activation_team_lead orchestrates only: it never owns a stage, never
+      authors then approves the same artifact, never self-approves an activation
+      decision, is never the Supervisor Core Ability, and never bypasses a gate
+      (supervisor_as_team_lead and team_as_stage_owner anti-patterns).
+    severity: blocker
+    required_when: activation_team_lead_acts_on_a_gate_or_stage
+    pass_condition: >-
+      activation_team_lead != supervisor_core_ability AND
+      activation_team_lead_owns_no_stage == true AND
+      activation_team_lead_did_not_self_approve_activation == true AND
+      activation_team_lead_did_not_bypass_any_gate == true
+    fail_condition: >-
+      activation_team_lead_is_supervisor_core_ability == true OR
+      activation_team_lead_owns_a_stage == true OR
+      activation_team_lead_self_approved_activation == true OR
+      activation_team_lead_bypassed_a_gate == true
+    on_fail: reject_team_lead_action_and_reassign
+    rework_route: reassign_to_compliant_owner_or_independent_reviewer
+    evidence_required:
+      - activation_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+# =============================================================================
+# VALIDATION SELF-CHECK (doc 19 §14)
+# =============================================================================
+validation_self_check:
+  scope_is_known: true
+  every_rule_has_severity: true
+  every_blocker_rule_has_on_fail: true
+  evidence_and_trace_kept_distinct: true
+  no_plugin_governance_introduced: true
+  core_ability_is_not_an_agent: true                # Supervisor != activation_team_lead
+notes: >-
+  NEW dedicated team-scope governance for activation_team (reconciliation input c).
+  Layered over the pipeline-scope activation_pipeline_governance and the gate
+  profiles preview_required_gate / pilot_evidence_gate / rollback_required_gate /
+  owner_activation_decision_gate. The public-activation owner gate is a HUMAN
+  authority gate recorded by activation_owner_decision_agent, distinct from
+  autonomous agent self-approval.

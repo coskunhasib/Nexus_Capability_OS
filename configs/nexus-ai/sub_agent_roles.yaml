@@ -1,0 +1,639 @@
+# Nexus AI Orchestration Model — Sub-agent Role Catalog
+# Documentation / blueprint only — NO runtime code, NO merge, NO deploy.
+#
+# Scope: one role per DISTINCT sub_agent referenced across the authoritative sources:
+#   - configs/nexus-ai/stages/sdlc/*.yaml  (31 SDLC stage contracts — AUTHORITATIVE for SDLC
+#     owner_agent + sub_agents). Only 8 stages declare a non-empty `sub_agents:` list.
+#   - docs/ai-sdlc-factory/pipeline-catalog/*.md  (5 non-SDLC pipelines). Of these, only the
+#     skill_governance pipeline references a sub-agent, and it REUSES the SDLC
+#     `skill_semantic_extractor_subagent` (it owns stage 2.2 skill_semantic_extraction there,
+#     parent: skill_librarian_agent). research / activation / operations / knowledge-memory
+#     pipelines declare only Agents — no sub-agents. => 8 distinct sub-agents total.
+#
+# Contract shape: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md §7 (Sub-agent Role
+#   Contract). Boundary rules: doc 18 §11 (and task LOCKED DECISIONS):
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are a separate
+#     capability LAYER that agents/sub-agents USE via uses_core_abilities; they are NEVER agents.
+#   - Every sub-agent MUST have a parent_agent UNLESS team_lead_direct_call_allowed: true
+#     (no orphans). All 8 here have a parent_agent (team_lead_direct_call_allowed: false).
+#   - A reviewer cannot mutate the reviewed artifact; an agent cannot approve its own work.
+#   - Skill != Tool; Governance != Audit; Evidence != Trace (honored throughout).
+#
+# Registry alignment (validated against the formalized Phase C/E registries on disk):
+#   - uses_core_abilities use the PascalCase `name:` form (Memory, OS, Coder, Web) exactly as the
+#     authoritative SDLC stage contracts reference them (core_abilities.yaml ids are lower-case:
+#     memory/os/coder/web — same entities).
+#   - uses_skills / uses_tools / uses_model_provider_profiles / uses_context_memory_profiles /
+#     uses_audit_schemas reference canonical registry ids and were each verified to exist.
+#   - uses_governance_profiles use CANONICAL governance_profiles.yaml ids. NOTE: several SDLC stage
+#     contracts reference `_policy`-suffixed names (no_self_approval_policy, evidence_required_policy);
+#     the canonical registry ids are `no_self_approval`, `evidence_required`, `trace_required`,
+#     `skill_governance` (no `_policy` suffix). The canonical ids are used here; the suffix drift is
+#     flagged in open_questions for stage-contract normalization.
+#
+# A sub-agent NEVER owns a stage gate decision and NEVER self-approves: it returns its work product
+# to its parent_agent (returns_to), which (or whose independent reviewer) adjudicates the gate.
+
+version: draft-0.1
+catalog_id: nexus_ai_sub_agent_roles
+category: sub_agent_role
+status: draft
+owner_doc: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md
+contract_shape_ref: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md#7-sub-agent-role-contract
+plugin_registry: false   # locked: no plugin registry, ever
+
+# Convention applied to every entry:
+#   team_lead_direct_call_allowed: false  -> a parent_agent is mandatory (no orphan).
+#   Sub-agents are AUTHORS/ANALYSTS that hand a work product up; they do not decide gates.
+
+sub_agents:
+
+  # ---------------------------------------------------------------------------
+  # 1) skill_semantic_extractor_subagent
+  #    SDLC stage #3 (skill_semantic_extraction, owner: skill_librarian_agent).
+  #    ALSO owns stage 2.2 of the skill_governance pipeline (parent still skill_librarian_agent).
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: skill_semantic_extractor_subagent
+    parent_agent: skill_librarian_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Read each selected skill package (SKILL.md, scripts, references, assets, metadata) and extract
+      its primary_purpose, semantic_category, trigger/anti-trigger (not_for) phrases, inputs/outputs,
+      side effects, handoffs and a draft misuse-warning set, with a confidence score. Lock the two
+      high-risk semantics — prism = divergence/brainstorming, verification-loop = bug/defect finding —
+      so no skill is wired into a pipeline before its meaning is verified. Produces analysis only; the
+      semantic gate and any binding/activation decision belong to the parent agent / reviewer.
+    activation_conditions:
+      - parent_agent_invokes_for_skill_semantic_extraction
+      - selected_skill_package_present_and_readable
+      - skill_semantics_unknown_or_stale_or_version_hash_changed
+    inputs:
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+      - SKILL_PACKAGES
+    outputs:
+      - SKILL_SEMANTIC_CATALOG
+      - SKILL_MISUSE_WARNINGS          # DRAFT only; final misuse-warning gate is the parent/reviewer's
+      - SKILL_SEMANTIC_CONFIDENCE
+    uses_core_abilities:
+      - Memory   # recall prior skill semantics / registry state to detect drift
+      - OS       # invoke the skill package reader / static analyzer over package files
+    uses_skills:
+      - skill-architect   # structure the extracted semantics into the catalog shape
+      - gap-audit         # detect missing semantic fields / missing misuse warnings
+    uses_tools:
+      - skill_package_reader      # read SKILL.md / scripts / references / assets / metadata
+      - skill_semantic_extractor  # derive primary_purpose / semantic_category / triggers (side-effect: governance + trace)
+      - artifact_writer           # write SKILL_SEMANTIC_CATALOG (side-effect: governance + trace)
+      - evidence_writer           # write semantic evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - skill_governance                       # canonical
+      - skill_semantic_extraction_gate         # stage-specific semantic gate profile
+      - skill_semantic_required_gate           # semantics-before-binding enforcement
+      - locked_semantics_enforcement_policy     # prism=divergence / verification-loop=defect-finding locked
+      - evidence_required                       # canonical (stage contract used evidence_required_policy)
+      - no_self_approval                        # canonical (stage contract used no_self_approval_policy)
+    uses_audit_schemas:
+      - skill_semantic_evidence_schema   # evidence schema (artifact this sub-agent authors)
+      - skill_semantic_extract_schema    # evidence schema: the extracted-semantics record
+      - skill_misuse_warning_schema      # evidence schema: the draft misuse warnings
+      - stage_gate_trace_schema          # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - skill_semantic_extraction_model   # dedicated semantic-extraction reasoning profile
+    uses_context_memory_profiles:
+      - skill_semantic_context_pack
+      - skill_registry_context_pack       # skill_governance-pipeline context for the binding surface
+    permissions:
+      - read_skill_packages
+      - extract_skill_semantics
+      - write_semantic_analysis_artifacts
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_skill_semantic_extraction_gate   # gate decision belongs to the parent/reviewer
+      - propose_or_record_skill_binding                       # binding is a separate stage/role
+      - record_skill_activation_decision                      # activation is skill_runtime_safety_agent's decision
+      - reclassify_prism_or_verification_loop_locked_semantics
+      - mutate_skill_package_source_files
+      - bypass_a_blocking_governance_gate
+    returns_to: skill_librarian_agent
+    blocks_when:
+      - unknown_skill_semantics
+      - missing_misuse_warning_for_locked_semantics_skill
+      - skill_semantic_confidence_below_threshold
+      - prism_misclassified_as_bug_finding_or_readiness_gate
+      - verification_loop_misclassified_as_readiness_or_test_execution
+
+  # ---------------------------------------------------------------------------
+  # 2) api_design_subagent
+  #    SDLC stage #6 (architecture, owner: architecture_agent). Conditional engagement.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: api_design_subagent
+    parent_agent: architecture_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      When the system exposes an external/public API surface, design the API contract for the chosen
+      architecture: resources/operations, request/response shapes, versioning and compatibility
+      strategy, error model and auth touchpoints — traceable to the requirements and NFRs — and feed
+      it into the architecture document and ADRs. Authors the API design portion only; the
+      architecture gate and architecture_review are decided elsewhere.
+    activation_conditions:
+      - parent_agent_invokes_during_architecture
+      - api_surface_present   # optional_condition gate from stage #6 (external/public API exists)
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - ARCHITECTURE_DOC          # in-progress architecture context from the parent
+    outputs:
+      - API_DESIGN_PROPOSAL
+      - API_DESIGN_ADR_INPUTS     # ADR material handed to architecture_agent (which owns ADR_INDEX)
+    uses_core_abilities:
+      - Coder    # express API contracts / schemas
+      - Memory   # recall requirements, NFRs and prior API decisions
+      - Web      # consult external API/protocol standards where needed
+    uses_skills:
+      - adr-builder   # capture API design decisions as structured ADR inputs
+      - gap-audit     # verify the API surface covers required/NFR-driven capabilities
+    uses_tools:
+      - repo_reader        # read existing interface/code context
+      - diagram_generator  # render API/interaction diagrams (side-effect: governance + trace)
+      - artifact_writer    # write API_DESIGN_PROPOSAL (side-effect: governance + trace)
+      - evidence_writer    # write design evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - architecture_design_governance   # stage-specific design governance
+      - adr_required_gate                # API decisions must be ADR-captured
+      - evidence_required                # canonical
+      - no_self_approval                 # canonical
+    uses_audit_schemas:
+      - architecture_evidence_schema        # evidence schema (design artifact)
+      - api_contract_evidence_schema        # evidence schema: the API contract proposal
+      - architecture_decision_trace_schema  # trace schema: ADR/decision provenance
+      - stage_gate_trace_schema             # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - architecture_reasoning_model
+    uses_context_memory_profiles:
+      - architecture_context_pack
+    permissions:
+      - read_requirements_and_architecture_context
+      - author_api_design_proposal
+      - produce_adr_inputs
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_architecture_gate         # gate is decided by the architecture_review stage
+      - finalize_the_architecture_doc_or_adr_index     # parent architecture_agent owns these artifacts
+      - mutate_requirements_spec_or_nfr_catalog
+      - implement_or_modify_production_code
+      - bypass_a_blocking_governance_gate
+    returns_to: architecture_agent
+    blocks_when:
+      - api_surface_undefined_while_external_api_present
+      - api_contract_not_traceable_to_requirements_or_nfr
+      - missing_adr_for_major_api_decision
+
+  # ---------------------------------------------------------------------------
+  # 3) data_model_subagent
+  #    SDLC stage #6 (architecture, owner: architecture_agent). Conditional engagement.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: data_model_subagent
+    parent_agent: architecture_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      When the system owns persistent data, design the data model for the chosen architecture:
+      entities/relationships, ownership and tenancy boundaries, retention/lifecycle and integrity
+      constraints — traceable to requirements and NFRs — and feed it into the architecture document
+      and ADRs so that downstream privacy/data-migration validation has a concrete model. Authors the
+      data-model portion only; gate adjudication and review happen elsewhere.
+    activation_conditions:
+      - parent_agent_invokes_during_architecture
+      - persistent_data_model_present   # optional_condition gate from stage #6 (system owns persistent data)
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - DOMAIN_PROFILE_DECISION   # tenancy / regulated-data signals
+      - ARCHITECTURE_DOC          # in-progress architecture context from the parent
+    outputs:
+      - DATA_MODEL_PROPOSAL
+      - DATA_MODEL_ADR_INPUTS     # ADR material handed to architecture_agent (which owns ADR_INDEX)
+    uses_core_abilities:
+      - Coder    # express schemas / data structures
+      - Memory   # recall requirements, NFRs, domain/tenancy decisions
+    uses_skills:
+      - adr-builder   # capture data-model decisions as structured ADR inputs
+      - gap-audit     # verify the model covers required entities / retention / integrity NFRs
+    uses_tools:
+      - repo_reader        # read existing schema/code context
+      - diagram_generator  # render ER / data-flow diagrams (side-effect: governance + trace)
+      - artifact_writer    # write DATA_MODEL_PROPOSAL (side-effect: governance + trace)
+      - evidence_writer    # write design evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - architecture_design_governance   # stage-specific design governance
+      - adr_required_gate                # data-model decisions must be ADR-captured
+      - evidence_required                # canonical
+      - no_self_approval                 # canonical
+    uses_audit_schemas:
+      - architecture_evidence_schema        # evidence schema (design artifact)
+      - data_lifecycle_report_schema        # evidence schema: data model / retention / lifecycle
+      - architecture_decision_trace_schema  # trace schema: ADR/decision provenance
+      - stage_gate_trace_schema             # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - architecture_reasoning_model
+    uses_context_memory_profiles:
+      - architecture_context_pack
+    permissions:
+      - read_requirements_and_architecture_context
+      - author_data_model_proposal
+      - produce_adr_inputs
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_architecture_gate         # gate is decided by the architecture_review stage
+      - finalize_the_architecture_doc_or_adr_index     # parent architecture_agent owns these artifacts
+      - mutate_requirements_spec_or_nfr_catalog
+      - implement_or_migrate_production_data
+      - bypass_a_blocking_governance_gate
+    returns_to: architecture_agent
+    blocks_when:
+      - persistent_data_model_undefined_while_system_owns_data
+      - data_model_not_traceable_to_requirements_or_nfr
+      - missing_retention_or_integrity_constraints_for_regulated_or_personal_data
+      - missing_adr_for_major_data_decision
+
+  # ---------------------------------------------------------------------------
+  # 4) threat_modeling_subagent
+  #    SDLC stage #8 (security_privacy_design, owner: security_privacy_agent).
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: threat_modeling_subagent
+    parent_agent: security_privacy_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      From the architecture and requirements, produce the threat model: trust boundaries, assets,
+      entry points, attacker goals, threats (e.g. STRIDE-style) with likelihood/impact, and proposed
+      mitigations mapped to security requirements/NFRs. Hands the threat model to the parent security
+      agent, which assembles the full security/privacy design and owns the design gate. Authors the
+      threat-model artifact only; it does not approve the gate.
+    activation_conditions:
+      - parent_agent_invokes_during_security_privacy_design
+      - architecture_doc_available_for_threat_analysis
+    inputs:
+      - ARCHITECTURE_DOC
+      - SYSTEM_CONTEXT_DIAGRAM
+      - ADR_INDEX
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+    outputs:
+      - THREAT_MODEL
+      - THREAT_MITIGATION_PROPOSALS   # mitigations mapped to SECURITY_REQUIREMENTS (parent owns final set)
+    uses_core_abilities:
+      - Memory   # recall architecture, prior threat models and the risk profile
+      - Web      # consult known attack patterns / advisories
+      - Coder    # reason over code/architecture entry points and data flows
+    uses_skills:
+      - sentinel    # premortem / surface hidden attack assumptions and trade-off risks
+      - fmea        # enumerate failure/abuse modes and their effects
+      - gap-audit   # detect uncovered assets / entry points / unmitigated threats
+    uses_tools:
+      - repo_reader      # read code/architecture to ground the trust boundaries
+      - policy_query     # query security policy constraints (side-effect: governance + trace)
+      - artifact_writer  # write THREAT_MODEL (side-effect: governance + trace)
+      - evidence_writer  # write threat-model evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - security_privacy_governance   # stage-specific security/privacy governance
+      - threat_model_required_gate    # threat model is mandatory before progression
+      - evidence_required             # canonical
+      - no_self_approval              # canonical
+    uses_audit_schemas:
+      - threat_model_evidence_schema   # evidence schema (the threat model)
+      - stage_gate_trace_schema        # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - security_analysis_model
+    uses_context_memory_profiles:
+      - security_context_pack
+    permissions:
+      - read_architecture_and_requirements_context
+      - author_threat_model
+      - propose_threat_mitigations
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_security_privacy_design_gate   # parent security_privacy_agent / review owns the gate
+      - finalize_security_requirements_or_privacy_risk_register   # parent owns these artifacts
+      - mutate_architecture_doc_or_requirements
+      - implement_or_modify_production_code
+      - bypass_a_blocking_governance_gate
+    returns_to: security_privacy_agent
+    blocks_when:
+      - missing_threat_model
+      - trust_boundaries_or_assets_undefined
+      - threat_without_proposed_mitigation
+      - mitigation_not_traceable_to_security_requirement_or_nfr
+
+  # ---------------------------------------------------------------------------
+  # 5) test_generation_subagent
+  #    SDLC stage #13 (test_generation, owner: qa_agent).
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: test_generation_subagent
+    parent_agent: qa_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Derive test COVERAGE from requirements, NFRs, the FMEA risk register, the code changeset and
+      prior bug history: author the test plan and the generated/planned-test summary that cover
+      critical paths, changed behavior and the regression surface, all traceable to requirements.
+      This sub-agent does NOT run tests (that is test_execution, stage #14) and does NOT hunt defects
+      (that is verification_loop_bug_finding, stage #15); it hands the plan up to qa_agent.
+    activation_conditions:
+      - parent_agent_invokes_during_test_generation
+      - code_changeset_and_requirements_available_for_coverage_derivation
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - FMEA_RISK_REGISTER
+      - CODE_CHANGESET_SUMMARY
+      - CODE_REVIEW_REPORT
+    outputs:
+      - TEST_PLAN
+      - GENERATED_TESTS_SUMMARY
+    uses_core_abilities:
+      - Coder    # author test code / scaffolding
+      - Memory   # recall requirements, risk register, bug history and the changeset
+    uses_skills:
+      - gap-audit   # coverage-gap detection (critical paths / changed behavior lacking tests)
+                    # NOTE: verification-loop is intentionally NOT bound (LOCKED: bug-finding only)
+    uses_tools:
+      - repo_diff_reader   # read the changeset to derive changed-behavior tests
+      - test_writer        # author/generate test cases (side-effect: governance + trace)
+      - coverage_parser    # map planned tests against critical-path & regression scope (side-effect: trace)
+      - artifact_writer    # write TEST_PLAN / GENERATED_TESTS_SUMMARY (side-effect: governance + trace)
+      - evidence_writer    # write stage evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - test_coverage_completeness_gate   # stage-specific coverage gate
+      - regression_scope_gate             # stage-specific regression-scope gate
+      - evidence_required                 # canonical
+      - no_self_approval                  # canonical
+    uses_audit_schemas:
+      - test_plan_evidence_schema   # evidence schema (the test plan)
+      - stage_gate_trace_schema     # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - coder_engineering_model
+    uses_context_memory_profiles:
+      - implementation_context_pack   # consumed: changeset / implementation context
+      - verification_context_pack     # produced/seeded for the downstream execution + bug-finding stages
+    permissions:
+      - read_changeset_and_requirements_context
+      - author_test_plan_and_generated_tests
+      - write_evidence_and_trace
+    forbidden_actions:
+      - execute_or_run_the_test_suite           # test_execution (stage #14) is a separate stage/role
+      - perform_defect_or_bug_finding_sweep      # verification_loop_bug_finding (stage #15) is separate
+      - approve_or_block_the_test_generation_gate   # gate decision belongs to parent qa_agent
+      - mutate_production_code_or_requirements
+      - bypass_a_blocking_governance_gate
+    returns_to: qa_agent
+    blocks_when:
+      - missing_critical_path_tests
+      - changed_behavior_without_tests
+      - undefined_regression_scope
+      - untraceable_test_to_requirement
+
+  # ---------------------------------------------------------------------------
+  # 6) bug_hunter_subagent
+  #    SDLC stage #15 (verification_loop_bug_finding, owner: qa_agent).
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: bug_hunter_subagent
+    parent_agent: qa_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Run a rigorous verification-loop defect sweep over the implemented changeset and its executed
+      test results — multi-lens probing, invariant/mutation/regression red-teaming — to surface real
+      defects beyond what the test suite caught, reproduce and triage each by severity, and hand a
+      defect report to qa_agent. LOCKED semantics: this is defect FINDING only — not a readiness
+      checklist and not a re-run of test_execution. The blocking gate decision belongs to qa_agent.
+    activation_conditions:
+      - parent_agent_invokes_during_verification_loop_bug_finding
+      - implemented_changeset_and_test_execution_report_available
+    inputs:
+      - CODE_CHANGESET_SUMMARY
+      - IMPLEMENTATION_NOTES
+      - TEST_EXECUTION_REPORT
+      - COVERAGE_REPORT
+      - CODE_REVIEW_REPORT
+      - REQUIREMENTS_SPEC
+      - FMEA_RISK_REGISTER
+    outputs:
+      - BUG_FINDING_REPORT
+      - TRIAGED_DEFECTS   # severity-classified defects handed to qa_agent for the gate decision
+    uses_core_abilities:
+      - Coder    # read/diff/reason over the changeset and probe defect hypotheses
+      - Memory   # recall requirements, prior defects and the risk register for regression red-teaming
+      - OS       # drive the test runner / repo tooling to reproduce and confirm defects
+    uses_skills:
+      - verification-loop   # LOCKED semantics: bug/defect finding ONLY (not readiness, not test_execution)
+    uses_tools:
+      - repo_diff_reader   # read the changeset under test to target the sweep
+      - test_runner        # reproduce/confirm suspected defects (side-effect: governance + trace)
+      - defect_tracker     # record and triage found defects (side-effect: governance + trace)
+      - artifact_writer    # write BUG_FINDING_REPORT (side-effect: governance + trace)
+      - evidence_writer    # write stage evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - verification_loop_bug_gate   # stage-specific defect gate profile
+      - defect_finding_skill_governance   # governs verification-loop used as defect-finding
+      - locked_semantics_enforcement_policy   # verification-loop must stay defect-finding
+      - evidence_required            # canonical
+      - no_self_approval             # canonical (qa_agent != engineering_agent, the changeset author)
+    uses_audit_schemas:
+      - bug_finding_evidence_schema   # evidence schema (the defect report)
+      - stage_gate_trace_schema       # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - defect_analysis_model
+    uses_context_memory_profiles:
+      - verification_context_pack
+    permissions:
+      - read_changeset_and_test_results
+      - reproduce_and_triage_defects
+      - author_bug_finding_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - use_verification_loop_as_a_readiness_checklist   # LOCKED semantic boundary
+      - re_run_test_suite_as_source_of_truth_replacing_test_execution
+      - approve_or_block_the_bug_finding_gate   # gate decision belongs to parent qa_agent
+      - mutate_the_reviewed_changeset_or_production_code   # reviewer must not mutate the reviewed artifact
+      - bypass_a_blocking_governance_gate
+    returns_to: qa_agent
+    blocks_when:
+      - open_blocker_bug_count_greater_than_zero
+      - open_major_bug_count_above_threshold
+      - untriaged_blocker_defect
+      - blocker_defect_not_traced_to_changeset
+
+  # ---------------------------------------------------------------------------
+  # 7) security_scan_interpreter_subagent
+  #    SDLC stage #16 (security_validation, owner: security_validation_agent).
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: security_scan_interpreter_subagent
+    parent_agent: security_validation_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Run the application security scanner suite (SAST/SCA, secret, container, IaC) over the
+      implemented changeset and normalize raw output into a deduplicated, severity-classified,
+      false-positive-calibrated SECURITY_FINDINGS_NORMALIZED set with per-finding lineage. Hands the
+      normalized findings to security_validation_agent, which decides the security gate. This
+      sub-agent interprets findings; it does not approve the gate and does not hunt logic defects
+      (that is verification_loop_bug_finding, stage #15).
+    activation_conditions:
+      - parent_agent_invokes_during_security_validation
+      - implemented_changeset_available_for_scanning
+    inputs:
+      - CODE_CHANGESET_SUMMARY
+      - IMPLEMENTATION_NOTES
+      - TEST_EXECUTION_REPORT
+      - THREAT_MODEL
+      - SECURITY_REQUIREMENTS
+    outputs:
+      - SECURITY_SCAN_REPORT
+      - SECURITY_FINDINGS_NORMALIZED
+    uses_core_abilities:
+      - Coder     # reason over code/dependency findings and map them to changed code
+      - Memory    # recall the threat model, security requirements and prior accepted findings
+      - OS        # invoke scanner tooling over the repository/build
+    uses_skills:
+      - calibrate                   # calibrate severity / true-positive confidence of raw findings
+      - gap-audit                   # find scan-coverage gaps (unscanned paths / missing scanner classes)
+      - scanner-result-normalizer   # normalize/dedupe raw scanner output into a single finding set
+    uses_tools:
+      - scanner_runner       # run SAST/SCA/secret/container/IaC scans (side-effect: governance + trace)
+      - dependency_scanner   # dependency/SCA vulnerability findings (side-effect: governance + trace)
+      - evidence_reader      # read upstream evidence (changeset, threat model, test report)
+      - artifact_writer      # write SECURITY_SCAN_REPORT / normalized findings (side-effect: governance + trace)
+      - evidence_writer      # write stage evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - security_validation_gate   # stage-specific security gate profile
+      - no_secret_leak_gate        # stage-specific secret-leak gate profile
+      - evidence_required          # canonical
+      - no_self_approval           # canonical
+    uses_audit_schemas:
+      - security_scan_evidence_schema   # evidence schema (the scan report / normalized findings)
+      - security_finding_trace_schema   # trace schema: per-finding lineage (distinct from evidence)
+      - stage_gate_trace_schema         # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - security_analysis_model
+    uses_context_memory_profiles:
+      - sdlc_run_context
+      - security_context_pack
+    permissions:
+      - run_security_scanners_over_the_changeset
+      - normalize_and_calibrate_findings
+      - author_security_scan_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_security_validation_gate   # gate decision belongs to security_validation_agent
+      - accept_or_waive_a_security_finding              # acceptance/waiver is an owned decision, not the interpreter's
+      - perform_logic_defect_or_bug_finding_sweep       # that is verification_loop_bug_finding (stage #15)
+      - mutate_the_reviewed_changeset_or_production_code
+      - bypass_a_blocking_governance_gate
+    returns_to: security_validation_agent
+    blocks_when:
+      - critical_security_finding_present
+      - high_security_finding_without_owned_acceptance
+      - secret_leak_detected
+      - security_scan_coverage_incomplete
+
+  # ---------------------------------------------------------------------------
+  # 8) evidence_trace_subagent
+  #    SDLC stage #28 (evidence_graph_build, owner: evidence_graph_agent).
+  #    NOTE: team-model §6.8 lists parent_agent = release_manager_agent; the stage #28 contract
+  #    reconciled the owner to evidence_graph_agent (artifact-author / gate-decider separation).
+  #    parent_agent here follows the stage contract (evidence_graph_agent). Flagged in open_questions.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: evidence_trace_subagent
+    parent_agent: evidence_graph_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Assemble the end-to-end evidence DAG and traceability matrix linking every requirement and NFR
+      through design, implementation, tests, bug-finding, security/supply-chain/safety results,
+      applicable product gates and operations-readiness artifacts up to the release-candidate
+      evidence; verify the chain is complete, internally consistent and free of orphan critical
+      artifacts or broken links. Hands EVIDENCE_GRAPH and TRACEABILITY_MATRIX to evidence_graph_agent.
+      This is evidence/trace assembly and integrity auditing — NOT defect finding and NOT brainstorming.
+    activation_conditions:
+      - parent_agent_invokes_during_evidence_graph_build
+      - upstream_stage_evidence_and_gate_results_available
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ARCHITECTURE_DOC
+      - ADR_INDEX
+      - THREAT_MODEL
+      - FMEA_RISK_REGISTER
+      - CODE_CHANGESET_SUMMARY
+      - CODE_REVIEW_REPORT
+      - TEST_EXECUTION_REPORT
+      - BUG_FINDING_REPORT
+      - SECURITY_SCAN_REPORT
+      - SUPPLY_CHAIN_GATE_RESULT
+      - AGENTIC_SAFETY_EVAL_REPORT
+      - RUNBOOK
+      - ROLLBACK_PLAN
+      - OBSERVABILITY_PLAN
+      - INCIDENT_RESPONSE_PLAN
+    outputs:
+      - EVIDENCE_GRAPH
+      - TRACEABILITY_MATRIX
+    uses_core_abilities:
+      - Memory   # recall the full run history: requirements, design, gate results, prior evidence
+      - OS       # invoke evidence/trace readers, checkers and the graph/diagram generator
+    uses_skills:
+      - evidence-graph-builder   # build the requirement -> ... -> release evidence DAG
+      - gap-audit                # detect orphan critical artifacts, missing nodes and broken links
+    uses_tools:
+      - evidence_reader               # read all upstream evidence + gate results to build the graph
+      - evidence_consistency_checker  # verify graph internal consistency (side-effect: governance + trace)
+      - requirements_trace_checker    # verify requirement -> artifact traceability coverage (side-effect: trace)
+      - diagram_generator             # render EVIDENCE_GRAPH as a graph artifact (side-effect: governance + trace)
+      - artifact_writer               # write EVIDENCE_GRAPH / TRACEABILITY_MATRIX (side-effect: governance + trace)
+      - evidence_writer               # write stage evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - evidence_graph_gate          # stage-specific evidence-graph gate profile
+      - traceability_required_gate   # stage-specific traceability gate profile
+      - evidence_integrity_gate      # graph must be internally consistent / no contradictions
+      - evidence_required            # canonical
+      - no_self_approval             # canonical (author != downstream release decider)
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema     # evidence schema (base)
+      - evidence_graph_evidence_schema    # evidence schema: the assembled graph
+      - traceability_matrix_schema        # evidence schema: requirement -> artifact matrix
+      - stage_gate_trace_schema           # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - release_reasoning_model   # canonical fit: assembles the release evidence chain pre-completion
+    uses_context_memory_profiles:
+      - sdlc_run_context
+      - release_context_pack
+    permissions:
+      - read_all_upstream_evidence_and_gate_results
+      - assemble_evidence_graph_and_traceability_matrix
+      - run_consistency_and_traceability_checks
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_evidence_graph_gate   # gate decision belongs to parent evidence_graph_agent
+      - make_the_development_completion_or_release_decision   # release_manager_agent owns those downstream
+      - fabricate_or_alter_upstream_evidence_artifacts        # may link/audit, must not mutate sources
+      - mutate_production_code
+      - bypass_a_blocking_governance_gate
+    returns_to: evidence_graph_agent
+    blocks_when:
+      - missing_required_evidence
+      - orphan_critical_artifact
+      - broken_traceability_link
+      - inconsistent_evidence_graph
+
+# ---------------------------------------------------------------------------------------------------
+# Coverage / invariant summary (for the catalog reviewer):
+#   - 8 distinct sub-agents = every distinct sub_agent referenced across the 31 SDLC stage YAMLs
+#     (stages 3, 6 [x2], 8, 13, 15, 16, 28) plus the 5 pipeline docs (skill_governance reuses
+#     skill_semantic_extractor_subagent; the other 4 pipelines declare no sub-agents).
+#   - No orphans: every entry has a parent_agent and team_lead_direct_call_allowed: false.
+#   - Every parent_agent is an SDLC agent_roles entry (skill_librarian_agent, architecture_agent,
+#     security_privacy_agent, qa_agent, security_validation_agent, evidence_graph_agent) — none is a
+#     Core Ability, none is a Team Lead.
+#   - No Core Ability appears as a sub_agent. Skill != Tool, Governance != Audit, Evidence != Trace.
+#   - No sub-agent decides a gate or approves its own work; each returns_to its parent_agent.

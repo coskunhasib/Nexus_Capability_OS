@@ -1,0 +1,2858 @@
+# =============================================================================
+# Nexus AI — Agent Role Catalog
+# =============================================================================
+# Phase D / doc 18 (docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md).
+#
+# This catalog defines ONE Agent role per distinct `owner_agent` discovered by
+# reading ALL 31 SDLC stage contracts (configs/nexus-ai/stages/sdlc/*.yaml),
+# PLUS the Agent roles defined by the 5 non-SDLC pipeline catalog entries
+# (docs/ai-sdlc-factory/pipeline-catalog/*.md). Field shape per doc 18 §6.
+#
+# AUTHORITATIVE SOURCES
+#   - SDLC owner_agent + sub_agents: the 31 files in configs/nexus-ai/stages/sdlc/
+#   - Non-SDLC rosters: docs/ai-sdlc-factory/pipeline-catalog/*.md (§2 per-stage)
+#   - uses_* references resolve against:
+#       core_abilities.yaml, skills_registry.yaml, tools_registry.yaml,
+#       governance_profiles.yaml, audit_schemas.yaml,
+#       model_provider_profiles.yaml, context_memory_profiles.yaml
+#
+# LOCKED BOUNDARY RULES (doc 18 §11; doc 18-plan task header)
+#   - Plugin cancelled — no plugin field anywhere.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web,
+#     OS] are a separate capability layer. They MUST NOT appear as Agents here;
+#     agents reference them only via `uses_core_abilities`.
+#   - Supervisor is never a Team Lead and is never an owner_agent.
+#   - sdlc_team_lead owns the two SDLC review-gate stages (requirements_review,
+#     architecture_review) as the no-self-approval fallback. It is a TEAM LEAD,
+#     NOT an Agent — so it is intentionally ABSENT from this file (it lives in
+#     team_lead_roles.yaml). The same holds for every *_team_lead role.
+#   - An Agent cannot approve its own work; a reviewer cannot mutate the
+#     reviewed artifact; Release Manager cannot bypass a failed governance gate.
+#   - Skill != Tool; Governance != Audit; Evidence != Trace.
+#   - Sub-agents are catalogued in sub_agent_roles.yaml; here they are only
+#     referenced by `sub_agents`. A sub-agent is never an Agent role.
+#
+# GOVERNANCE NAMING NOTE
+#   Stage/pipeline contracts spell the two global policies as
+#   `no_self_approval_policy` / `evidence_required_policy`. These are registered
+#   naming variants (aliases) of canonical `no_self_approval` / `evidence_required`
+#   in governance_profiles.yaml (governance_alias_reconciliation). Both forms are
+#   valid registry references; this catalog keeps the `_policy` spelling used by
+#   the source contracts.
+# =============================================================================
+
+catalog_id: nexus_ai_agent_roles
+version: draft-0.1
+status: draft
+category: agent_role
+phase: D
+doc_ref: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md
+
+# -----------------------------------------------------------------------------
+# Invariants asserted by this catalog (checked against the source contracts and
+# the shared registries during authoring).
+# -----------------------------------------------------------------------------
+invariants:
+  - id: every_sdlc_owner_agent_has_a_role
+    statement: >-
+      Every distinct owner_agent across the 31 SDLC stage contracts appears as
+      an agent_id here, EXCEPT sdlc_team_lead (a Team Lead, owns the two review
+      gates). 24 SDLC Agent roles result.
+  - id: no_core_ability_as_agent
+    statement: >-
+      None of [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+      appears as an agent_id. Core Abilities are referenced via uses_core_abilities.
+  - id: no_team_lead_as_agent
+    statement: >-
+      No *_team_lead role appears as an agent_id. Team Leads orchestrate; Agents
+      own stages.
+  - id: uses_items_resolve_to_registries
+    statement: >-
+      Every uses_* token resolves to an id in the corresponding shared registry
+      (or a registered alias). Unresolved tokens are listed in open_questions.
+  - id: sub_agents_reference_only
+    statement: >-
+      sub_agents lists reference ids defined in sub_agent_roles.yaml; no Agent is
+      its own sub-agent.
+  - id: reviewer_not_author
+    statement: >-
+      reviewed_by never equals agent_id for authoring stages; review-gate owners
+      are distinct from the authoring agent (no-self-approval).
+  - id: one_canonical_id_per_logical_agent
+    statement: >-
+      A logical agent that serves more than one team has exactly ONE canonical
+      agent_id; secondary team bindings are recorded inline via `also_serves` and
+      any legacy per-team spelling is recorded as an `aliases` entry + an
+      `alias_of` stub — never as a divergent second role (R12). Canonical example:
+      skill_librarian_agent (sdlc_team + skill_governance_team; alias
+      skill_librarian_agent_skill_governance).
+
+# -----------------------------------------------------------------------------
+# Distinct SDLC owner_agent -> stage(s) coverage map (from the 31 contracts).
+# sdlc_team_lead (requirements_review, architecture_review) is a Team Lead, not
+# an Agent, and is therefore NOT a key below.
+# -----------------------------------------------------------------------------
+sdlc_owner_agent_coverage:
+  product_requirements_agent: [intake, requirements]
+  domain_risk_agent: [domain_risk_profile]
+  skill_librarian_agent: [skill_semantic_extraction]
+  architecture_agent: [architecture]
+  security_privacy_agent: [security_privacy_design]
+  risk_agent: [premortem_fmea]
+  planning_agent: [planning]
+  engineering_agent: [implementation]
+  code_reviewer_agent: [code_review]
+  qa_agent: [test_generation, test_execution, verification_loop_bug_finding]
+  security_validation_agent: [security_validation]
+  supply_chain_agent: [supply_chain_sbom_license]
+  agentic_safety_agent: [ai_agent_safety_evaluation]
+  privacy_agent: [privacy_data_lifecycle_validation]
+  contract_validation_agent: [api_contract_compatibility_validation]
+  compliance_agent: [domain_regulatory_compliance_validation_if_applicable]
+  data_migration_agent: [data_migration_validation_if_applicable]
+  ux_accessibility_agent: [accessibility_ux_validation_if_applicable]
+  performance_resilience_agent: [performance_resilience]
+  cost_resource_agent: [cost_resource_governance]
+  operations_readiness_agent: [backup_restore_dr_validation_if_applicable, operations_readiness]
+  evidence_graph_agent: [evidence_graph_build]
+  release_manager_agent: [development_completion, release_candidate]
+  memory_curator_agent: [refraction_learning]
+
+# =============================================================================
+# AGENT ROLES
+# =============================================================================
+agents:
+
+  # ===========================================================================
+  # SDLC TEAM (team_id: sdlc_team, lead: sdlc_team_lead) — 24 Agent roles
+  # ===========================================================================
+
+  - agent_id: product_requirements_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Capture the user goal into a faithful product brief and scoped, traceable
+      requirements with NFRs and acceptance criteria. Front-of-pipeline product
+      ownership.
+    owned_stages:
+      - intake
+      - requirements
+    inputs:
+      - USER_GOAL
+      - PRODUCT_BRIEF
+      - INITIAL_SCOPE
+      - SUCCESS_METRICS
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+      - SKILL_SEMANTIC_CATALOG
+    outputs:
+      - PRODUCT_BRIEF
+      - INITIAL_SCOPE
+      - SUCCESS_METRICS
+      - INTAKE_GATE_RESULT
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - REQUIREMENTS_TRACE_START
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [prism, prompt-fidelity, gap-audit]
+    uses_tools: [artifact_writer, evidence_writer, requirements_trace_checker]
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - intake_scope_gate
+      - requirements_acceptance_gate
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, requirements_context_pack]
+    permissions:
+      - read_user_goal_and_upstream_context
+      - write_product_and_requirements_artifacts
+      - write_stage_evidence_and_trace
+      - emit_intake_and_requirements_gate_results
+    forbidden_actions:
+      - approve_own_requirements_at_the_requirements_review_gate
+      - mutate_artifacts_owned_by_downstream_agents
+      - alter_prism_or_verification_loop_locked_semantics
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - missing_product_goal
+      - unbounded_scope
+      - missing_success_metrics
+      - requirements_not_traceable
+      - acceptance_criteria_absent
+    reviewed_by: sdlc_team_lead   # requirements_review gate (no-self-approval)
+
+  - agent_id: domain_risk_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Select the domain profile and risk profile for the run and initialize the
+      conditional-gate flags that drive which if-applicable stages activate.
+    owned_stages:
+      - domain_risk_profile
+    inputs:
+      - PRODUCT_BRIEF
+      - INITIAL_SCOPE
+      - SUCCESS_METRICS
+    outputs:
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+      - CONDITIONAL_GATE_FLAGS
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [fermi-decompose, calibrate, gap-audit]
+    uses_tools: [artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - domain_risk_governance
+      - evidence_required_policy
+      - domain_risk_profile_gate
+    uses_audit_schemas:
+      - domain_risk_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, domain_risk_context_pack]
+    permissions:
+      - read_product_brief_and_scope
+      - select_domain_and_risk_profile
+      - initialize_conditional_gate_flags
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_own_profile_decision_as_a_review_gate
+      - mutate_downstream_validation_artifacts
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - unknown_domain
+      - unresolved_risk_class
+      - conditional_gate_flags_uninitialized
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: skill_librarian_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Produce the per-run skill semantic catalog, misuse warnings, and skill→stage
+      binding proposal so the pipeline only activates skills whose semantics are
+      known. Custodian of locked skill semantics (prism = divergence,
+      verification-loop = bug/defect finding).
+    owned_stages:
+      - skill_semantic_extraction
+    inputs:
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+      - SKILL_PACKAGES
+    outputs:
+      - SKILL_SEMANTIC_CATALOG
+      - SKILL_MISUSE_WARNINGS
+      - SKILL_STAGE_BINDING_PROPOSAL
+      - SKILL_SEMANTIC_EXTRACTION_GATE_RESULT
+    sub_agents:
+      - skill_semantic_extractor_subagent
+    uses_core_abilities: [Memory, OS]
+    uses_skills: [skill-architect, gap-audit]
+    uses_tools: [skill_package_reader, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - skill_governance
+      - skill_semantic_extraction_gate
+      - evidence_required_policy
+      - no_self_approval_policy
+    uses_audit_schemas:
+      - skill_semantic_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles: [skill_semantic_context_pack]
+    permissions:
+      - read_skill_packages_and_domain_risk_context
+      - extract_skill_semantics_and_misuse_warnings
+      - propose_skill_stage_bindings
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - alter_prism_or_verification_loop_locked_semantics
+      - bind_a_skill_to_a_stage_without_extracted_semantics
+      - self_approve_its_own_binding_proposal
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - unknown_skill_semantics
+      - misuse_warnings_absent
+      - skill_binding_proposed_without_semantics
+      - skill_semantic_confidence_below_threshold
+    reviewed_by: sdlc_team_lead
+    # R12: skill_librarian_agent is THE single canonical id for this logical agent across all files
+    #   (team_lead_roles.yaml, team_templates.yaml, skills_registry.yaml, the SDLC stage contract, and
+    #   the pipeline docs all spell it this way). The former divergent role-instance id
+    #   `skill_librarian_agent_skill_governance` is recorded as an explicit alias (below) instead of a
+    #   second, separately-maintained role. Its skill-governance cross-team binding is captured inline
+    #   here under `also_serves` so team_id/pipeline_id on THIS entry stay single-valued (sdlc_team).
+    aliases:
+      - skill_librarian_agent_skill_governance   # per-team instance spelling; same logical agent (alias, not a separate role)
+    also_serves:
+      # Secondary cross-team binding (skill_governance_team / skill_governance_pipeline). Same agent_id;
+      # listed here rather than as a divergent role so there is exactly one skill_librarian_agent.
+      - team_id: skill_governance_team
+        pipeline_id: skill_governance_pipeline
+        instance_alias: skill_librarian_agent_skill_governance
+        owned_stages:
+          - skill_intake
+          - skill_binding_proposal
+          - skill_deprecation_update
+        sub_agents:
+          - skill_semantic_extractor_subagent   # parented to skill_librarian_agent
+        uses_core_abilities: [Supervisor, Memory, OS, Coder, Web]
+        uses_skills: [gap-audit, prism, llm-council, calibrate]
+        uses_tools:
+          - skill_package_reader
+          - skill_binding_proposer
+          - artifact_writer
+          - evidence_writer
+        uses_governance_profiles:
+          - skill_governance_pipeline_governance
+          - skill_binding_proposal_gate
+          - skill_deprecation_required_gate
+          - locked_semantics_enforcement_policy
+          - no_self_approval_policy
+          - evidence_required_policy
+        uses_audit_schemas:
+          - skill_governance_evidence_schema
+          - skill_binding_decision_schema
+          - skill_governance_trace_schema
+        uses_model_provider_profiles: [skill_governance_reasoning_profile, supervisor_routing_model]
+        uses_context_memory_profiles: [skill_governance_run_context, skill_registry_context_pack]
+        reviewed_by: skill_runtime_safety_agent   # activation decision independent of the binding proposer (no self-approval)
+    notes: >-
+      Canonical, single-id shared role (R12). skill_librarian_agent owns skill_semantic_extraction on
+      sdlc_team AND (via `also_serves`) skill_intake / skill_binding_proposal / skill_deprecation_update
+      on skill_governance_team. The previously divergent `skill_librarian_agent_skill_governance` entry
+      is now an explicit alias / secondary cross-team binding, not a separate role — so all files spell
+      the agent identically. Custodian of locked skill semantics (prism = divergence, verification-loop =
+      bug/defect finding). No-self-approval holds in both bindings: sdlc review-gate fallback is
+      sdlc_team_lead; the skill-governance activation decision is owned by skill_runtime_safety_agent.
+
+  - agent_id: architecture_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Generate the system architecture, capture every major decision as an ADR,
+      and ensure NFR/requirement coverage. Authoring stage; reviewed downstream.
+    owned_stages:
+      - architecture
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - DOMAIN_PROFILE_DECISION
+      - REQUIREMENTS_REVIEW_REPORT
+    outputs:
+      - ARCHITECTURE_DOC
+      - SYSTEM_CONTEXT_DIAGRAM
+      - ADR_INDEX
+    sub_agents:
+      - api_design_subagent
+      - data_model_subagent
+    uses_core_abilities: [Coder, Memory, Web]
+    uses_skills: [prism, llm-council, adr-builder, gap-audit, sentinel]
+    uses_tools: [artifact_writer, evidence_writer, diagram_generator, repo_reader]
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - architecture_design_governance
+      - adr_required_gate
+    uses_audit_schemas:
+      - architecture_evidence_schema
+      - architecture_decision_trace_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [architecture_reasoning_model]
+    uses_context_memory_profiles: [architecture_context_pack]
+    permissions:
+      - read_requirements_and_review_context
+      - author_architecture_and_adrs
+      - generate_system_context_diagram
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_own_architecture_at_the_architecture_review_gate
+      - mutate_requirements_owned_by_product_requirements_agent
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - major_decision_without_adr
+      - nfr_or_requirement_not_covered_by_design
+    reviewed_by: sdlc_team_lead   # architecture_review gate (no-self-approval)
+
+  - agent_id: security_privacy_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Produce the threat model, security requirements, data inventory, and
+      privacy risk register from the reviewed architecture so security and
+      privacy are designed in, not bolted on.
+    owned_stages:
+      - security_privacy_design
+    inputs:
+      - ARCHITECTURE_DOC
+      - SYSTEM_CONTEXT_DIAGRAM
+      - ADR_INDEX
+      - ARCHITECTURE_REVIEW_REPORT
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+    outputs:
+      - THREAT_MODEL
+      - SECURITY_REQUIREMENTS
+      - DATA_INVENTORY
+      - PRIVACY_RISK_REGISTER
+      - SECURITY_PRIVACY_DESIGN_GATE_RESULT
+    sub_agents:
+      - threat_modeling_subagent
+    uses_core_abilities: [Memory, Web, Coder]
+    uses_skills: [sentinel, fmea, gap-audit]
+    uses_tools: [repo_reader, policy_query, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - privacy_lifecycle_governance
+      - security_privacy_governance
+      - threat_model_required_gate
+    uses_audit_schemas:
+      - threat_model_evidence_schema
+      - privacy_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [security_analysis_model]
+    uses_context_memory_profiles: [security_context_pack]
+    permissions:
+      - read_architecture_and_review_context
+      - author_threat_model_and_security_requirements
+      - author_data_inventory_and_privacy_risk_register
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_its_own_threat_model_as_the_validation_gate
+      - mutate_architecture_owned_by_architecture_agent
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - threat_model_absent
+      - unaddressed_critical_security_or_privacy_risk
+    reviewed_by: security_validation_agent
+
+  - agent_id: risk_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Run premortem and FMEA over the architecture, threat model, and privacy
+      register; produce the risk register with owned mitigations and no
+      unaccepted critical risk.
+    owned_stages:
+      - premortem_fmea
+    inputs:
+      - ARCHITECTURE_DOC
+      - ADR_INDEX
+      - THREAT_MODEL
+      - PRIVACY_RISK_REGISTER
+      - SECURITY_REQUIREMENTS
+    outputs:
+      - SENTINEL_PREMORTEM
+      - FMEA_RISK_REGISTER
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: [sentinel, prism, fmea, gap-audit]
+    uses_tools: [evidence_reader, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - risk_review_governance
+      - fmea_required_gate
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - risk_register_schema
+      - premortem_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles: [architecture_context_pack]
+    permissions:
+      - read_architecture_threat_and_privacy_artifacts
+      - author_premortem_and_fmea_risk_register
+      - assign_mitigation_owners
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_its_own_risk_acceptance
+      - mutate_threat_model_owned_by_security_privacy_agent
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - unaccepted_critical_risk
+      - missing_mitigation_owner
+      - failure_mode_not_traced_to_architecture
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: planning_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Decompose the reviewed design and risk picture into an implementation plan,
+      task breakdown, and complete executor handoff packets where every task
+      traces to a requirement.
+    owned_stages:
+      - planning
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - ARCHITECTURE_DOC
+      - ADR_INDEX
+      - THREAT_MODEL
+      - SECURITY_REQUIREMENTS
+      - SENTINEL_PREMORTEM
+      - FMEA_RISK_REGISTER
+    outputs:
+      - IMPLEMENTATION_PLAN
+      - TASK_BREAKDOWN
+      - HANDOFF_PACKETS
+      - EXECUTOR_WORKPACKAGE_DRAFTS
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory, Coder]
+    uses_skills: [fermi-decompose, prism, gap-audit, handoff-designer, context-pack-builder]
+    uses_tools: [evidence_reader, requirements_trace_checker, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - planning_handoff_completeness_gate
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles:
+      - sdlc_run_context
+      - requirements_context_pack
+      - architecture_context_pack
+      - implementation_context_pack
+    permissions:
+      - read_requirements_architecture_and_risk_artifacts
+      - author_plan_breakdown_and_handoff_packets
+      - seed_implementation_context_pack
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - author_the_code_changeset_itself
+      - approve_own_plan_as_a_review_gate
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - task_not_traceable_to_a_requirement
+      - incomplete_handoff_packet
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: engineering_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Author the code changeset for the planned scope, run baseline local build /
+      smoke verification, and emit the if-applicable downstream signals (data
+      model, migrations, API contracts, UI, resource usage, tool/context policy).
+    owned_stages:
+      - implementation
+    inputs:
+      - IMPLEMENTATION_PLAN
+      - TASK_BREAKDOWN
+      - HANDOFF_PACKETS
+    outputs:
+      - CODE_CHANGESET_SUMMARY
+      - IMPLEMENTATION_NOTES
+      - LOCAL_BUILD_RESULT
+      - DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE
+      - MIGRATION_FILES_IF_APPLICABLE
+      - API_CONTRACTS_IF_APPLICABLE
+      - UI_CHANGESET_SUMMARY_IF_APPLICABLE
+      - RESOURCE_USAGE_DATA_IF_APPLICABLE
+      - TOOL_PERMISSION_MAP
+      - CONTEXT_POLICY
+    sub_agents: []
+    uses_core_abilities: [Coder, Memory, OS]
+    uses_skills: [context-pack-builder, gap-audit]
+    uses_tools: [repo_reader, repo_writer, test_runner, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - implementation_governance
+      - no_out_of_scope_change_gate
+    uses_audit_schemas:
+      - implementation_evidence_schema
+      - code_change_trace_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [coder_engineering_model]
+    uses_context_memory_profiles: [implementation_context_pack]
+    permissions:
+      - read_plan_and_existing_code
+      - author_code_changeset_via_repo_writer
+      - run_baseline_local_build_and_smoke_tests
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_own_changeset_at_code_review_or_bug_finding_gates
+      - make_out_of_scope_changes_beyond_the_plan
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - out_of_scope_change_detected
+      - local_build_broken
+    reviewed_by: code_reviewer_agent
+
+  - agent_id: code_reviewer_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Independently review the changeset against requirements, architecture, and
+      security requirements; calibrate finding severity; gate on review pass.
+      Distinct from the changeset author (no-self-approval).
+    owned_stages:
+      - code_review
+    inputs:
+      - CODE_CHANGESET_SUMMARY
+      - IMPLEMENTATION_NOTES
+      - REQUIREMENTS_SPEC
+      - ARCHITECTURE_DOC
+      - ADR_INDEX
+      - SECURITY_REQUIREMENTS
+    outputs:
+      - CODE_REVIEW_REPORT
+      - CODE_REVIEW_FINDINGS
+      - CODE_REVIEW_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Coder, Memory, OS]
+    uses_skills: [gap-audit, prompt-fidelity, calibrate]
+    uses_tools:
+      - repo_diff_reader
+      - repo_reader
+      - requirements_trace_checker
+      - policy_query
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - code_review_gate
+    uses_audit_schemas:
+      - code_review_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [coder_engineering_model, sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, implementation_context_pack, verification_context_pack]
+    permissions:
+      - read_changeset_diff_and_surrounding_code
+      - author_code_review_report_and_findings
+      - emit_code_review_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - review_a_changeset_it_authored
+      - mutate_the_changeset_under_review
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - changeset_authored_by_the_reviewer
+      - changed_behavior_without_required_tests
+      - unresolved_major_review_finding
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: qa_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Own the verification spine: generate the test plan and tests, execute them
+      with coverage gating, and run the adversarial verification-loop bug/defect
+      sweep over the changeset.
+    owned_stages:
+      - test_generation
+      - test_execution
+      - verification_loop_bug_finding
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ACCEPTANCE_CRITERIA
+      - FMEA_RISK_REGISTER
+      - CODE_CHANGESET_SUMMARY
+      - CODE_REVIEW_REPORT
+      - IMPLEMENTATION_NOTES
+      - LOCAL_BUILD_RESULT
+      - TEST_PLAN
+      - GENERATED_TESTS_SUMMARY
+      - TEST_EXECUTION_REPORT
+      - COVERAGE_REPORT
+    outputs:
+      - TEST_PLAN
+      - GENERATED_TESTS_SUMMARY
+      - TEST_GENERATION_GATE_RESULT
+      - TEST_EXECUTION_REPORT
+      - COVERAGE_REPORT
+      - TEST_EXECUTION_GATE_RESULT
+      - BUG_FINDING_REPORT
+      - BUG_FINDING_GATE_RESULT
+    sub_agents:
+      - test_generation_subagent
+      - bug_hunter_subagent
+    uses_core_abilities: [Coder, Memory, OS]
+    uses_skills: [gap-audit, verification-loop]
+    uses_tools:
+      - repo_diff_reader
+      - repo_reader
+      - test_writer
+      - test_runner
+      - coverage_parser
+      - defect_tracker
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - no_self_approval_policy
+      - test_coverage_completeness_gate
+      - regression_scope_gate
+      - test_execution_governance
+      - coverage_policy_gate
+      - flaky_test_quarantine_gate
+      - verification_loop_bug_gate
+    uses_audit_schemas:
+      - test_plan_evidence_schema
+      - test_execution_evidence_schema
+      - bug_finding_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [coder_engineering_model, defect_analysis_model]
+    uses_context_memory_profiles: [implementation_context_pack, verification_context_pack, sdlc_run_context]
+    permissions:
+      - read_changeset_and_requirements
+      - author_tests_and_execute_test_suites
+      - parse_coverage_and_quarantine_flaky_tests
+      - run_verification_loop_defect_sweep_and_track_defects
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - use_verification_loop_as_a_readiness_checklist_or_test_execution_replacement
+      - validate_a_changeset_qa_itself_authored
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - critical_paths_without_tests
+      - coverage_below_policy
+      - open_blocker_bugs_nonzero
+    reviewed_by: sdlc_team_lead
+    notes: >-
+      qa_agent != engineering_agent (the changeset author), so the standing
+      no_self_approval_policy on the verification/bug-finding stages is satisfied.
+
+  - agent_id: security_validation_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Run SAST/SCA/secret/container/IaC scans over the changeset, normalize and
+      severity-calibrate findings, and gate on no unresolved security finding and
+      no secret leak. Validates work it did not author.
+    owned_stages:
+      - security_validation
+    inputs:
+      - CODE_CHANGESET_SUMMARY
+      - IMPLEMENTATION_NOTES
+      - TEST_EXECUTION_REPORT
+      - THREAT_MODEL
+      - SECURITY_REQUIREMENTS
+    outputs:
+      - SECURITY_SCAN_REPORT
+      - SECURITY_FINDINGS_NORMALIZED
+      - SECURITY_VALIDATION_GATE_RESULT
+    sub_agents:
+      - security_scan_interpreter_subagent
+    uses_core_abilities: [Coder, Memory, OS]
+    uses_skills: [calibrate, gap-audit, scanner-result-normalizer]
+    uses_tools:
+      - scanner_runner
+      - dependency_scanner
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - security_validation_gate
+      - no_secret_leak_gate
+    uses_audit_schemas:
+      - security_scan_evidence_schema
+      - stage_gate_trace_schema
+      - security_finding_trace_schema
+    uses_model_provider_profiles: [security_analysis_model]
+    uses_context_memory_profiles: [sdlc_run_context, security_context_pack]
+    permissions:
+      - run_security_and_dependency_scanners
+      - normalize_and_calibrate_findings
+      - emit_security_validation_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_a_changeset_it_authored
+      - suppress_a_true_positive_without_recorded_acceptance
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - unresolved_high_severity_finding
+      - secret_leak_detected
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: supply_chain_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Inventory dependencies, generate the SBOM, evaluate component licenses
+      against policy, and assess dependency/provenance risk; gate on license
+      compliance and SBOM presence.
+    owned_stages:
+      - supply_chain_sbom_license
+    inputs:
+      - CODE_CHANGESET_SUMMARY
+      - IMPLEMENTATION_NOTES
+      - SECURITY_FINDINGS_NORMALIZED
+    outputs:
+      - SBOM
+      - LICENSE_REPORT
+      - DEPENDENCY_RISK_REPORT
+      - SUPPLY_CHAIN_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Coder, Memory, Web, OS]
+    uses_skills: [gap-audit, calibrate]
+    uses_tools:
+      - repo_reader
+      - dependency_scanner
+      - sbom_generator
+      - license_checker
+      - package_reputation_checker
+      - policy_query
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - supply_chain_governance
+      - license_compliance_gate
+      - sbom_required_gate
+      - supply_chain_sbom_license_gate
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - supply_chain_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [security_analysis_model]
+    uses_context_memory_profiles: [sdlc_run_context, security_context_pack]
+    permissions:
+      - read_dependency_manifests_and_lockfiles
+      - generate_sbom_and_evaluate_licenses
+      - assess_dependency_and_provenance_risk
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_a_forbidden_license_without_recorded_exception
+      - validate_dependencies_it_introduced_without_independent_basis
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - forbidden_license_present
+      - sbom_missing
+      - uninventoried_dependency
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: agentic_safety_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Adversarially evaluate the agentic attack surface — prompt injection, tool
+      misuse, context poisoning, evidence integrity, and least-privilege of the
+      tool-permission map — and gate on safety.
+    owned_stages:
+      - ai_agent_safety_evaluation
+    inputs:
+      - THREAT_MODEL
+      - TOOL_PERMISSION_MAP
+      - CONTEXT_POLICY
+      - CODE_CHANGESET_SUMMARY
+      - TEST_EXECUTION_REPORT
+      - BUG_FINDING_REPORT
+    outputs:
+      - AGENTIC_SAFETY_EVAL_REPORT
+      - PROMPT_INJECTION_TEST_REPORT
+      - TOOL_MISUSE_TEST_REPORT
+      - CONTEXT_POISONING_TEST_REPORT
+      - EVIDENCE_INTEGRITY_REPORT
+      - AGENTIC_SAFETY_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Coder, Memory, Web, OS]
+    uses_skills: [verification-loop, sentinel, llm-council, calibrate, gap-audit]
+    uses_tools:
+      - prompt_injection_tester
+      - tool_misuse_tester
+      - context_poisoning_tester
+      - evidence_consistency_checker
+      - agent_permission_auditor
+      - eval_runner
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - agentic_safety_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - tool_misuse_governance
+      - context_safety_governance
+      - evidence_integrity_gate
+    uses_audit_schemas:
+      - agentic_eval_evidence_schema
+      - prompt_injection_test_schema
+      - evidence_integrity_report_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [security_analysis_model, defect_analysis_model]
+    uses_context_memory_profiles:
+      - sdlc_run_context
+      - security_context_pack
+      - verification_context_pack
+      - implementation_context_pack
+    permissions:
+      - run_injection_tool_misuse_and_poisoning_probes
+      - audit_tool_permission_scope_for_least_privilege
+      - check_evidence_consistency_and_integrity
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_its_own_safety_findings
+      - mutate_the_changeset_or_tool_permission_map_under_evaluation
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - exploitable_prompt_injection_or_tool_misuse_path
+      - tool_permission_exceeds_least_privilege
+      - hallucinated_or_inconsistent_evidence_detected
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: privacy_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Validate the data lifecycle in the changeset — retention, deletion/export,
+      tenant isolation — against the data inventory and privacy risk register;
+      gate on data-retention and tenant-isolation policy. Conditional (if-applicable).
+    owned_stages:
+      - privacy_data_lifecycle_validation
+    inputs:
+      - DATA_INVENTORY
+      - PRIVACY_RISK_REGISTER
+      - CODE_CHANGESET_SUMMARY
+      - DOMAIN_PROFILE_DECISION
+    outputs:
+      - PRIVACY_LIFECYCLE_APPLICABILITY_DECISION
+      - DATA_LIFECYCLE_REPORT
+      - RETENTION_POLICY_REPORT
+      - TENANT_ISOLATION_REPORT
+      - PRIVACY_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Memory, Coder, OS]
+    uses_skills: [gap-audit, fmea, sentinel]
+    uses_tools:
+      - data_inventory_checker
+      - retention_policy_checker
+      - deletion_flow_checker
+      - tenant_isolation_checker
+      - policy_query
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - privacy_lifecycle_governance
+      - data_retention_gate
+      - tenant_isolation_gate
+    uses_audit_schemas:
+      - privacy_evidence_schema
+      - data_lifecycle_report_schema
+      - tenant_isolation_report_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [security_analysis_model]
+    uses_context_memory_profiles: [sdlc_run_context, security_context_pack]
+    permissions:
+      - read_data_inventory_and_privacy_risk_register
+      - verify_retention_deletion_export_and_tenant_isolation
+      - decide_privacy_applicability_and_emit_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_data_handling_code_it_authored
+      - mutate_the_data_inventory_owned_by_security_privacy_agent
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - retention_window_not_enforced
+      - cross_tenant_data_leak_path
+      - unerasable_personal_data
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: contract_validation_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Validate API contract compatibility for the changeset — detect breaking
+      changes, run contract tests, and gate on no unapproved breaking change.
+      Conditional (if-applicable).
+    owned_stages:
+      - api_contract_compatibility_validation
+    inputs:
+      - API_CONTRACTS_IF_APPLICABLE
+      - CODE_CHANGESET_SUMMARY
+      - CONDITIONAL_GATE_FLAGS
+      - ARCHITECTURE_DOC
+      - ADR_INDEX
+      - REQUIREMENTS_SPEC
+    outputs:
+      - API_CONTRACT_APPLICABILITY_DECISION
+      - API_CONTRACT_REPORT
+      - BREAKING_CHANGE_REPORT
+      - CONTRACT_TEST_REPORT
+      - COMPATIBILITY_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Coder, Memory, Web]
+    uses_skills: [gap-audit, adr-builder, calibrate]
+    uses_tools:
+      - contract_test_runner
+      - repo_diff_reader
+      - repo_reader
+      - policy_query
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - api_contract_governance
+      - breaking_change_gate
+      - compatibility_gate
+    uses_audit_schemas:
+      - api_contract_evidence_schema
+      - compatibility_report_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [architecture_reasoning_model, sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, architecture_context_pack, implementation_context_pack]
+    permissions:
+      - read_api_contracts_and_changeset_diff
+      - detect_breaking_changes_and_run_contract_tests
+      - decide_applicability_and_emit_compatibility_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_api_contracts_it_authored
+      - approve_a_breaking_change_without_recorded_approval
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - unapproved_breaking_change
+      - contract_tests_failing
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: compliance_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Validate domain/regulatory compliance where applicable — build the
+      compliance matrix, trace regulatory requirements, and gate on regulatory
+      traceability. Conditional (if-applicable).
+    owned_stages:
+      - domain_regulatory_compliance_validation_if_applicable
+    inputs:
+      - DOMAIN_PROFILE_DECISION
+      - RISK_PROFILE
+      - REQUIREMENTS_SPEC
+      - SECURITY_REQUIREMENTS
+      - PRIVACY_RISK_REGISTER
+    outputs:
+      - COMPLIANCE_APPLICABILITY_DECISION
+      - COMPLIANCE_MATRIX_IF_APPLICABLE
+      - REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE
+      - COMPLIANCE_GATE_RESULT_IF_APPLICABLE
+    sub_agents: []
+    uses_core_abilities: [Memory, Web, Coder]
+    uses_skills: [gap-audit, llm-council, calibrate]
+    uses_tools:
+      - compliance_matrix_builder
+      - requirements_trace_checker
+      - policy_query
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - domain_compliance_governance
+      - regulatory_traceability_gate
+    uses_audit_schemas:
+      - compliance_matrix_schema
+      - regulatory_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile, security_analysis_model]
+    uses_context_memory_profiles: [sdlc_run_context, requirements_context_pack, security_context_pack]
+    permissions:
+      - read_domain_profile_requirements_and_risk_artifacts
+      - build_compliance_matrix_and_trace_regulatory_requirements
+      - decide_applicability_and_emit_compliance_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_its_own_compliance_determination
+      - mutate_requirements_owned_by_product_requirements_agent
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - regulatory_requirement_untraceable
+      - applicable_compliance_obligation_unmet
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: data_migration_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Validate data migrations where applicable — verify migration covers the
+      data-model delta, replay/rollback works, and data integrity holds; gate on
+      integrity and rollback. Conditional (if-applicable).
+    owned_stages:
+      - data_migration_validation_if_applicable
+    inputs:
+      - DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE
+      - MIGRATION_FILES_IF_APPLICABLE
+      - DATA_INVENTORY
+      - PRIVACY_RISK_REGISTER
+      - DOMAIN_PROFILE_DECISION
+    outputs:
+      - DATA_MIGRATION_APPLICABILITY_DECISION
+      - MIGRATION_VALIDATION_REPORT
+      - ROLLBACK_VALIDATION_REPORT
+      - DATA_INTEGRITY_REPORT
+      - DATA_MIGRATION_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Coder, OS, Memory]
+    uses_skills: [fmea, gap-audit, verification-loop]
+    uses_tools:
+      - migration_checker
+      - test_runner
+      - contract_test_runner
+      - evidence_consistency_checker
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - data_migration_governance
+      - rollback_required_gate
+      - data_integrity_gate
+    uses_audit_schemas:
+      - migration_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [coder_engineering_model]
+    uses_context_memory_profiles: [sdlc_run_context, implementation_context_pack, verification_context_pack]
+    permissions:
+      - read_data_model_delta_and_migration_files
+      - validate_migration_replay_and_rollback
+      - assert_data_integrity_and_emit_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_migrations_it_authored
+      - use_verification_loop_as_a_readiness_checklist
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - data_integrity_violation
+      - rollback_validation_failed
+      - migration_does_not_cover_data_model_delta
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: ux_accessibility_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Validate accessibility and UX of UI changes where applicable — audit a11y,
+      check UX flows and contrast against acceptance criteria and NFRs; gate on
+      the UI release gate. Conditional (if-applicable).
+    owned_stages:
+      - accessibility_ux_validation_if_applicable
+    inputs:
+      - UI_CHANGESET_SUMMARY_IF_APPLICABLE
+      - PRODUCT_BRIEF
+      - ACCEPTANCE_CRITERIA
+      - NFR_CATALOG
+      - DOMAIN_PROFILE_DECISION
+    outputs:
+      - ACCESSIBILITY_UX_APPLICABILITY_DECISION
+      - ACCESSIBILITY_REPORT
+      - UX_VALIDATION_REPORT
+      - UI_RELEASE_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Vision, Coder, Memory, Web, OS]
+    uses_skills: [gap-audit, prompt-fidelity, sentinel]
+    uses_tools:
+      - accessibility_auditor
+      - ux_flow_checker
+      - contrast_checker
+      - repo_reader
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - accessibility_governance
+      - ux_validation_governance
+      - ui_release_gate
+    uses_audit_schemas:
+      - accessibility_evidence_schema
+      - ux_validation_report_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [vision_model, sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, implementation_context_pack, requirements_context_pack]
+    permissions:
+      - read_ui_changeset_and_acceptance_criteria
+      - audit_accessibility_ux_flows_and_contrast
+      - decide_applicability_and_emit_ui_release_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_ui_changes_it_authored
+      - mutate_the_ui_changeset_under_review
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - accessibility_violation_unresolved
+      - ux_acceptance_criterion_unmet
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: performance_resilience_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Benchmark performance and assess resilience against NFRs and architecture;
+      ensure performance passes or resilience risks are explicitly accepted or
+      mitigated.
+    owned_stages:
+      - performance_resilience
+    inputs:
+      - CODE_CHANGESET_SUMMARY
+      - NFR_CATALOG
+      - ARCHITECTURE_DOC
+      - RESOURCE_USAGE_DATA_IF_APPLICABLE
+    outputs:
+      - PERFORMANCE_REPORT
+      - RESILIENCE_REPORT
+      - PERFORMANCE_RESILIENCE_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Coder, Memory, OS]
+    uses_skills: [fmea, gap-audit, calibrate]
+    uses_tools:
+      - benchmark_runner
+      - resource_budget_checker
+      - repo_reader
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - performance_governance
+      - resilience_governance
+    uses_audit_schemas:
+      - performance_evidence_schema
+      - resilience_report_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile, coder_engineering_model]
+    uses_context_memory_profiles: [sdlc_run_context, architecture_context_pack, implementation_context_pack]
+    permissions:
+      - run_benchmarks_and_resource_budget_checks
+      - assess_resilience_failure_modes
+      - emit_performance_resilience_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - benchmark_only_code_it_authored_without_independent_basis
+      - accept_a_resilience_risk_without_recorded_owner_acceptance
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - performance_nfr_unmet_and_not_accepted
+      - resilience_risk_unmitigated_and_unaccepted
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: cost_resource_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Estimate cost, check resource budgets and quota policy against NFRs and the
+      domain profile; gate on budget and quota. Conditional (if-applicable).
+    owned_stages:
+      - cost_resource_governance
+    inputs:
+      - PERFORMANCE_REPORT
+      - RESOURCE_USAGE_DATA_IF_APPLICABLE
+      - NFR_CATALOG
+      - DOMAIN_PROFILE_DECISION
+    outputs:
+      - COST_RESOURCE_APPLICABILITY_DECISION
+      - COST_ESTIMATE_REPORT
+      - RESOURCE_BUDGET_REPORT
+      - QUOTA_POLICY_REPORT
+      - RESOURCE_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Coder, Memory, OS]
+    uses_skills: [fermi-decompose, calibrate, gap-audit]
+    uses_tools:
+      - evidence_reader
+      - resource_budget_checker
+      - cost_estimator
+      - benchmark_runner
+      - quota_policy_checker
+      - policy_query
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - cost_resource_governance
+      - resource_budget_gate
+      - quota_governance
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - cost_evidence_schema
+      - resource_budget_report_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, operations_context_pack]
+    permissions:
+      - estimate_cost_and_check_resource_budgets
+      - evaluate_quota_policy
+      - decide_applicability_and_emit_resource_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_its_own_budget_overrun
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - cost_estimate_exceeds_budget
+      - quota_policy_violation
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: operations_readiness_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Validate backup/restore/DR readiness (if applicable) and assemble the
+      operations-readiness package — runbook, rollback plan, observability plan,
+      and incident-response plan — that downstream live operations consume.
+    owned_stages:
+      - backup_restore_dr_validation_if_applicable
+      - operations_readiness
+    inputs:
+      - BACKUP_RESTORE_DR_APPLICABILITY_DECISION
+      - DATA_INTEGRITY_REPORT
+      - RUNBOOK_DRAFT
+      - ROLLBACK_PLAN_DRAFT
+      - OPERATIONAL_READINESS_DRAFTS
+      - PERFORMANCE_REPORT
+      - DR_READINESS_REPORT
+      - ROLLBACK_VALIDATION_REPORT
+      - ARCHITECTURE_DOC
+      - NFR_CATALOG
+      - DOMAIN_PROFILE_DECISION
+    outputs:
+      - BACKUP_PLAN
+      - RESTORE_TEST_REPORT
+      - DR_READINESS_REPORT
+      - ROLLBACK_VALIDATION_REPORT
+      - RUNBOOK
+      - ROLLBACK_PLAN
+      - OBSERVABILITY_PLAN
+      - INCIDENT_RESPONSE_PLAN
+      - OPERATIONS_READINESS_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [OS, Memory, Coder, Web]
+    uses_skills: [sentinel, fmea, gap-audit]
+    uses_tools:
+      - backup_plan_checker
+      - restore_test_runner
+      - dr_runbook_checker
+      - rollback_validator
+      - observability_plan_checker
+      - incident_runbook_checker
+      - policy_query
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - backup_restore_governance
+      - disaster_recovery_gate
+      - rollback_required_gate
+      - release_candidate_governance
+      - operations_readiness_gate
+    uses_audit_schemas:
+      - backup_restore_evidence_schema
+      - dr_validation_schema
+      - rollback_validation_schema
+      - release_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [release_reasoning_model]
+    uses_context_memory_profiles: [sdlc_run_context, operations_context_pack]
+    permissions:
+      - validate_backup_restore_and_dr_readiness
+      - assemble_runbook_rollback_observability_and_incident_plans
+      - emit_operations_readiness_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_its_own_readiness_package_as_release_authority
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - restore_test_failed_if_applicable
+      - runbook_or_rollback_or_observability_or_incident_plan_missing
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: evidence_graph_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Build the evidence graph and traceability matrix across all stage outputs,
+      check internal consistency and orphan-free linkage, and gate on graph
+      completeness and traceability.
+    owned_stages:
+      - evidence_graph_build
+    inputs:
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - ARCHITECTURE_DOC
+      - ADR_INDEX
+      - THREAT_MODEL
+      - FMEA_RISK_REGISTER
+      - CODE_CHANGESET_SUMMARY
+      - CODE_REVIEW_REPORT
+      - TEST_EXECUTION_REPORT
+      - BUG_FINDING_REPORT
+      - SECURITY_SCAN_REPORT
+      - SUPPLY_CHAIN_GATE_RESULT
+      - AGENTIC_SAFETY_EVAL_REPORT
+      - RUNBOOK
+      - ROLLBACK_PLAN
+      - OBSERVABILITY_PLAN
+      - INCIDENT_RESPONSE_PLAN
+    outputs:
+      - EVIDENCE_GRAPH
+      - TRACEABILITY_MATRIX
+      - EVIDENCE_GRAPH_GATE_RESULT
+    sub_agents:
+      - evidence_trace_subagent
+    uses_core_abilities: [Memory, OS]
+    uses_skills: [evidence-graph-builder, gap-audit]
+    uses_tools:
+      - evidence_reader
+      - evidence_consistency_checker
+      - requirements_trace_checker
+      - diagram_generator
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - evidence_graph_gate
+      - traceability_required_gate
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - evidence_graph_evidence_schema
+      - traceability_matrix_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [release_reasoning_model]
+    uses_context_memory_profiles: [sdlc_run_context, release_context_pack]
+    permissions:
+      - read_all_stage_outputs_and_evidence
+      - build_evidence_graph_and_traceability_matrix
+      - emit_evidence_graph_gate_result
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - mutate_any_upstream_artifact_it_links
+      - self_approve_an_incomplete_or_inconsistent_graph
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - evidence_graph_incomplete
+      - traceability_matrix_incomplete
+      - orphan_critical_artifact_present
+      - evidence_graph_internally_inconsistent
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: release_manager_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Aggregate all gate results to judge development completion, then assemble
+      the release candidate and release evidence. Authority to declare readiness
+      but never to bypass a failed blocking gate.
+    owned_stages:
+      - development_completion
+      - release_candidate
+    inputs:
+      - EVIDENCE_GRAPH
+      - TRACEABILITY_MATRIX
+      - ALL_STAGE_GATE_RESULTS
+      - DEVELOPMENT_COMPLETION_REPORT
+      - DEVELOPMENT_COMPLETION_GATE_RESULT
+      - REQUIREMENTS_SPEC
+      - NFR_CATALOG
+      - CODE_REVIEW_REPORT
+      - TEST_EXECUTION_REPORT
+      - BUG_FINDING_REPORT
+      - SECURITY_SCAN_REPORT
+      - SUPPLY_CHAIN_GATE_RESULT
+      - SBOM
+      - LICENSE_REPORT
+      - AGENTIC_SAFETY_EVAL_REPORT
+      - RUNBOOK
+      - ROLLBACK_PLAN
+      - OBSERVABILITY_PLAN
+    outputs:
+      - DEVELOPMENT_COMPLETION_REPORT
+      - DEVELOPMENT_COMPLETION_GATE_RESULT
+      - RELEASE_CANDIDATE_REPORT
+      - RELEASE_EVIDENCE
+      - RELEASE_CANDIDATE_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory]
+    uses_skills: [release-readiness-judge, gap-audit, calibrate, prompt-fidelity]
+    uses_tools:
+      - policy_query
+      - evidence_reader
+      - evidence_consistency_checker
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - release_candidate_governance
+      - development_completion_gate
+      - no_blocking_policy_failure_gate
+      - release_after_development_completion_gate
+    uses_audit_schemas:
+      - release_evidence_schema
+      - sdlc_pipeline_evidence_schema
+      - stage_gate_trace_schema
+      - gate_decision_trace_schema
+      - release_decision_trace_schema
+    uses_model_provider_profiles: [release_reasoning_model]
+    uses_context_memory_profiles: [sdlc_run_context, release_context_pack]
+    permissions:
+      - aggregate_all_stage_gate_results
+      - judge_development_completion_and_assemble_release_candidate
+      - emit_development_completion_and_release_candidate_gate_results
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - bypass_or_override_a_failed_blocking_governance_gate
+      - declare_release_candidate_before_development_completion_passes
+      - self_approve_a_release_with_unresolved_blocking_failure
+      - mutate_upstream_validation_artifacts
+    blocking_conditions:
+      - any_blocking_policy_failure_open
+      - development_completion_not_passed
+      - release_evidence_incomplete_or_inconsistent
+    reviewed_by: sdlc_team_lead
+
+  - agent_id: memory_curator_agent
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Run refraction/learning at the end of the SDLC run — capture lessons,
+      propose calibrated memory updates, and emit the future-improvement backlog
+      under the memory-update governance.
+    owned_stages:
+      - refraction_learning
+    inputs:
+      - RELEASE_CANDIDATE_REPORT
+      - DEVELOPMENT_COMPLETION_REPORT
+      - EVIDENCE_GRAPH
+      - BUG_FINDING_REPORT
+      - REWORK_HISTORY
+    outputs:
+      - LESSONS_LEARNED
+      - MEMORY_UPDATE_PROPOSAL
+      - FUTURE_IMPROVEMENT_BACKLOG
+      - LEARNING_GATE_RESULT
+    sub_agents: []
+    uses_core_abilities: [Memory, OS]
+    uses_skills: [refraction, bayesian-update, calibrate]
+    uses_tools:
+      - evidence_reader
+      - defect_tracker
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - learning_record_gate
+      - memory_update_governance
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - learning_record_schema
+      - stage_gate_trace_schema
+      - memory_update_trace_schema
+    uses_model_provider_profiles: [sdlc_reasoning_profile]
+    uses_context_memory_profiles: [sdlc_run_context, release_context_pack]
+    permissions:
+      - read_run_outcomes_and_rework_history
+      - author_lessons_learned_and_improvement_backlog
+      - propose_memory_updates_for_governed_acceptance
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - directly_commit_unreviewed_memory_writes_outside_the_proposal
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - learning_record_absent
+    reviewed_by: sdlc_team_lead
+
+  # ===========================================================================
+  # RESEARCH TEAM (team_id: research_team, lead: research_team_lead) — 10 roles
+  # Source: docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md
+  # ===========================================================================
+
+  - agent_id: research_intake_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Capture the research goal, requester intent, the decision it must support,
+      scope boundaries, and risk profile.
+    owned_stages:
+      - research_intake
+    inputs:
+      - RESEARCH_REQUEST
+    outputs:
+      - RESEARCH_BRIEF
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [gap-audit]
+    uses_tools: [artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - source_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context]
+    permissions:
+      - capture_research_goal_and_scope
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - solely_validate_its_own_sources_or_claims
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - research_goal_absent
+      - risk_profile_unselected
+    reviewed_by: research_team_lead
+
+  - agent_id: research_scoping_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Decompose the goal into concrete, answerable research questions; mark which
+      are load-bearing. Uses prism for divergence only (not validation).
+    owned_stages:
+      - scope_and_questions
+    inputs:
+      - RESEARCH_BRIEF
+    outputs:
+      - RESEARCH_QUESTION_SET
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [prism, gap-audit]
+    uses_tools: [artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - source_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context]
+    permissions:
+      - decompose_goal_into_research_questions
+      - mark_load_bearing_questions
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - use_prism_to_decide_or_validate_rather_than_diverge
+      - solely_validate_its_own_claims
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - research_questions_unbounded
+      - major_question_gap
+    reviewed_by: research_team_lead
+
+  - agent_id: source_discovery_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Find candidate sources for each research question via web search/fetch and
+      record provenance for every candidate.
+    owned_stages:
+      - source_discovery
+    inputs:
+      - RESEARCH_QUESTION_SET
+    outputs:
+      - SOURCE_INVENTORY
+    sub_agents: []
+    uses_core_abilities: [Web, Memory]
+    uses_skills: [gap-audit]
+    uses_tools: [web_search, web_fetch, artifact_writer]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - source_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context, source_corpus_context_pack]
+    permissions:
+      - search_and_fetch_candidate_sources
+      - record_source_provenance
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - solely_validate_the_reliability_of_sources_it_discovered
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - question_without_candidate_sources
+      - source_provenance_missing
+    reviewed_by: research_team_lead
+
+  - agent_id: source_reliability_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Score each candidate source for reliability with rationale under
+      research_source_governance; flag low-reliability sources.
+    owned_stages:
+      - source_reliability_assessment
+    inputs:
+      - SOURCE_INVENTORY
+    outputs:
+      - SOURCE_RELIABILITY_REPORT
+    sub_agents: []
+    uses_core_abilities: [Web, Memory]
+    uses_skills: [calibrate, gap-audit]
+    uses_tools: [source_reliability_checker, evidence_writer]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - source_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile, source_evaluation_model]
+    uses_context_memory_profiles: [research_run_context, source_corpus_context_pack]
+    permissions:
+      - score_source_reliability_with_rationale
+      - flag_low_reliability_sources
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - act_as_the_sole_cross_validator_of_its_own_scores
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - candidate_source_unscored
+      - reliability_rationale_absent
+    reviewed_by: cross_validation_agent
+
+  - agent_id: claim_extraction_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Extract atomic, checkable claims from the scored source corpus; tag each
+      claim with its asserting source(s).
+    owned_stages:
+      - claim_extraction
+    inputs:
+      - SOURCE_RELIABILITY_REPORT
+    outputs:
+      - CLAIM_REGISTER
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [gap-audit]
+    uses_tools: [claim_mapper, artifact_writer]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context, claim_evidence_context_pack]
+    permissions:
+      - extract_atomic_checkable_claims
+      - tag_claims_with_asserting_sources
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - solely_validate_its_own_claim_evidence_mapping
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - claim_not_atomic_or_checkable
+      - claim_not_linked_to_asserting_source
+    reviewed_by: cross_validation_agent
+
+  - agent_id: claim_evidence_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Map every claim to supporting and contradicting evidence across sources,
+      record support strength and conflicts; produce the claim-evidence map.
+    owned_stages:
+      - claim_evidence_mapping
+    inputs:
+      - CLAIM_REGISTER
+    outputs:
+      - CLAIM_EVIDENCE_MAP
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [gap-audit]
+    uses_tools: [claim_mapper, evidence_writer, evidence_reader]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context, claim_evidence_context_pack]
+    permissions:
+      - map_claims_to_supporting_and_contradicting_evidence
+      - record_support_strength_and_conflicts
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - act_as_the_sole_validator_of_its_own_mapping
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - load_bearing_claim_without_mapped_evidence
+      - contradictions_unrecorded
+    reviewed_by: cross_validation_agent
+
+  - agent_id: cross_validation_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Independent verification by a DIFFERENT role: re-check reliability scores
+      and claim→evidence mappings, surface single-source claims, resolve or
+      escalate conflicts. Enforces no-self-approval structurally.
+    owned_stages:
+      - cross_validation
+    inputs:
+      - SOURCE_RELIABILITY_REPORT
+      - CLAIM_REGISTER
+      - CLAIM_EVIDENCE_MAP
+    outputs:
+      - CROSS_VALIDATION_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Web, Supervisor]
+    uses_skills: [llm-council, calibrate]
+    uses_tools: [source_reliability_checker, evidence_reader, artifact_writer]
+    uses_governance_profiles:
+      - no_self_approval_policy
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - source_evidence_schema
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile, source_evaluation_model]
+    uses_context_memory_profiles: [research_run_context, claim_evidence_context_pack]
+    permissions:
+      - independently_recheck_scores_and_mappings
+      - identify_single_source_claims
+      - resolve_or_escalate_source_conflicts
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_sources_or_claims_it_itself_produced
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - validator_role_not_distinct_from_producer
+      - unresolved_critical_source_conflict
+    reviewed_by: research_team_lead
+    notes: >-
+      Structurally distinct from source_reliability_agent, claim_extraction_agent,
+      and claim_evidence_agent to satisfy validator_role_distinct_from_producer.
+
+  - agent_id: uncertainty_reporting_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Quantify and document residual uncertainty per claim and per question —
+      confidence levels, evidence strength, contested points, known gaps.
+    owned_stages:
+      - uncertainty_reporting
+    inputs:
+      - CLAIM_EVIDENCE_MAP
+      - CROSS_VALIDATION_REPORT
+    outputs:
+      - UNCERTAINTY_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [bayesian-update, calibrate]
+    uses_tools: [artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context, claim_evidence_context_pack]
+    permissions:
+      - quantify_residual_uncertainty
+      - record_confidence_with_rationale
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - solely_validate_its_own_uncertainty_claims
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - uncertainty_report_absent
+      - confidence_levels_not_rationale_backed
+    reviewed_by: research_team_lead
+
+  - agent_id: research_synthesis_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Produce the final cited research synthesis with every load-bearing
+      statement traceable to mapped evidence and explicit uncertainty. The
+      citation_required_gate blocks any uncited load-bearing claim.
+    owned_stages:
+      - synthesis
+    inputs:
+      - CLAIM_EVIDENCE_MAP
+      - UNCERTAINTY_REPORT
+      - RESEARCH_QUESTION_SET
+    outputs:
+      - RESEARCH_SYNTHESIS
+      - CITATION_INDEX
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [gap-audit]
+    uses_tools: [artifact_writer, evidence_reader]
+    uses_governance_profiles:
+      - citation_required_gate
+      - research_source_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context, claim_evidence_context_pack]
+    permissions:
+      - author_cited_research_synthesis
+      - build_citation_index
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - emit_an_uncited_load_bearing_claim
+      - self_approve_synthesis_inconsistent_with_the_uncertainty_report
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - uncited_load_bearing_claim
+      - synthesis_inconsistent_with_uncertainty_report
+    reviewed_by: research_completion_agent
+
+  - agent_id: research_completion_agent
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Final gate: assemble the research evidence graph, confirm all exit criteria
+      and no-blocking-policy-failure, and emit the completion report.
+    owned_stages:
+      - research_completion
+    inputs:
+      - RESEARCH_SYNTHESIS
+      - CITATION_INDEX
+      - CROSS_VALIDATION_REPORT
+      - UNCERTAINTY_REPORT
+    outputs:
+      - RESEARCH_EVIDENCE_GRAPH
+      - RESEARCH_COMPLETION_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Supervisor]
+    uses_skills: [gap-audit]
+    uses_tools: [evidence_reader, artifact_writer]
+    uses_governance_profiles:
+      - evidence_required_policy
+      - no_self_approval_policy
+      - citation_required_gate
+    uses_audit_schemas:
+      - source_evidence_schema
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile]
+    uses_context_memory_profiles: [research_run_context]
+    permissions:
+      - assemble_research_evidence_graph
+      - confirm_exit_criteria_and_emit_completion_report
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - complete_a_run_with_an_open_blocking_policy_failure
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - research_evidence_graph_incomplete
+      - cross_validation_not_completed_by_separate_role
+      - blocking_policy_failure_open
+    reviewed_by: research_team_lead
+
+  # ===========================================================================
+  # ACTIVATION TEAM (team_id: activation_team, lead: activation_team_lead) — 5
+  # Source: docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md
+  # ===========================================================================
+
+  - agent_id: activation_manager_agent
+    team_id: activation_team
+    pipeline_id: activation_pipeline
+    mission: >-
+      Own activation intake, the superadmin preview, and activation completion —
+      confirm release-candidate evidence, run preview, then execute the
+      authorized activation and assemble the evidence package.
+    owned_stages:
+      - activation_intake
+      - superadmin_preview
+      - activation_completion
+    inputs:
+      - ACTIVATION_REQUEST
+      - PILOT_EVIDENCE_REVIEW_REPORT
+      - ACTIVATION_DECISION
+      - ROLLBACK_READINESS_REPORT
+    outputs:
+      - ACTIVATION_REQUEST
+      - PREVIEW_RESULT
+      - ACTIVATION_COMPLETION_REPORT
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory, OS, Web]
+    uses_skills: [gap-audit, prompt-fidelity, refraction]
+    uses_tools:
+      - activation_flag_controller
+      - telemetry_reader
+      - artifact_writer
+      - evidence_writer
+      - evidence_reader
+      - policy_query
+    uses_governance_profiles:
+      - activation_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - preview_required_gate
+    uses_audit_schemas:
+      - activation_evidence_schema
+      - stage_gate_trace_schema
+      - activation_transition_trace_schema
+    uses_model_provider_profiles: [supervisor_routing_model, activation_reasoning_model]
+    uses_context_memory_profiles: [activation_run_context, preview_context_pack]
+    permissions:
+      - confirm_release_candidate_evidence_and_define_scope
+      - run_superadmin_preview_and_control_activation_flag
+      - execute_authorized_activation_and_assemble_evidence
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_its_own_pilot_evidence_or_owner_decision
+      - execute_public_activation_without_owner_decision_and_validated_rollback
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - missing_release_candidate_evidence
+      - activation_scope_undefined
+      - preview_did_not_pass_before_pilot
+    reviewed_by: activation_reviewer_agent
+
+  - agent_id: pilot_activation_agent
+    team_id: activation_team
+    pipeline_id: activation_pipeline
+    mission: >-
+      Activate the target for a bounded pilot cohort, collect real-usage
+      telemetry and incident signals, keeping rollback reachable at all times.
+    owned_stages:
+      - pilot_activation
+    inputs:
+      - PREVIEW_RESULT
+    outputs:
+      - PILOT_RESULT
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory, OS]
+    uses_skills: [sentinel, gap-audit, calibrate]
+    uses_tools:
+      - activation_flag_controller
+      - cohort_selector
+      - telemetry_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - activation_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - pilot_evidence_gate
+    uses_audit_schemas:
+      - activation_evidence_schema
+      - stage_gate_trace_schema
+      - activation_transition_trace_schema
+    uses_model_provider_profiles: [activation_reasoning_model, risk_analysis_model]
+    uses_context_memory_profiles: [activation_run_context, pilot_evidence_context_pack]
+    permissions:
+      - select_pilot_cohort_and_activate_for_pilot
+      - collect_pilot_telemetry_and_incident_signal
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - review_or_approve_its_own_pilot_evidence
+      - run_a_pilot_without_a_reachable_rollback
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - pilot_cohort_unbounded
+      - pilot_telemetry_not_collected
+      - rollback_unreachable_during_pilot
+    reviewed_by: activation_reviewer_agent
+
+  - agent_id: activation_reviewer_agent
+    team_id: activation_team
+    pipeline_id: activation_pipeline
+    mission: >-
+      Independently review pilot evidence against activation acceptance
+      thresholds. Distinct from the pilot owner (no-self-approval).
+    owned_stages:
+      - pilot_evidence_review
+    inputs:
+      - PILOT_RESULT
+    outputs:
+      - PILOT_EVIDENCE_REVIEW_REPORT
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory, Web]
+    uses_skills: [llm-council, calibrate, gap-audit]
+    uses_tools:
+      - telemetry_reader
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+      - policy_query
+    uses_governance_profiles:
+      - activation_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - pilot_evidence_gate
+    uses_audit_schemas:
+      - activation_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [activation_reasoning_model, risk_analysis_model]
+    uses_context_memory_profiles: [activation_run_context, pilot_evidence_context_pack]
+    permissions:
+      - review_pilot_evidence_against_thresholds
+      - emit_pilot_evidence_review_report
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - review_pilot_evidence_for_a_pilot_it_owned
+      - mutate_the_pilot_result_under_review
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - pilot_acceptance_thresholds_unmet
+      - unresolved_pilot_blocker
+    reviewed_by: activation_team_lead
+
+  - agent_id: activation_owner_decision_agent
+    team_id: activation_team
+    pipeline_id: activation_pipeline
+    mission: >-
+      Record and route the human/owner public-activation decision. The
+      authorizing actor is the human owner; this agent records the decision and
+      cannot self-approve it.
+    owned_stages:
+      - public_activation_decision
+    inputs:
+      - PILOT_EVIDENCE_REVIEW_REPORT
+      - ROLLBACK_PLAN
+    outputs:
+      - ACTIVATION_DECISION
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory]
+    uses_skills: [sentinel, llm-council, calibrate]
+    uses_tools:
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+      - policy_query
+    uses_governance_profiles:
+      - activation_pipeline_governance
+      - owner_activation_decision_gate
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - activation_decision_evidence_schema
+      - stage_gate_trace_schema
+      - activation_transition_trace_schema
+    uses_model_provider_profiles: [activation_reasoning_model, risk_analysis_model]
+    uses_context_memory_profiles: [activation_run_context, activation_decision_context_pack]
+    permissions:
+      - present_evidence_and_rollback_plan_to_the_human_owner
+      - record_the_owner_public_activation_decision_as_evidence
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - autonomously_authorize_public_activation_without_a_human_owner_decision
+      - self_approve_the_activation_decision
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - owner_decision_not_recorded
+      - rollback_plan_absent
+    reviewed_by: activation_team_lead
+    notes: >-
+      RECORDS a human/owner decision; it is not an autonomous approver. The
+      owner_activation_decision_gate and no_self_approval_policy bind here.
+
+  - agent_id: rollback_readiness_agent
+    team_id: activation_team
+    pipeline_id: activation_pipeline
+    mission: >-
+      Validate that the rollback plan is real and executable before public
+      activation completes — owner assigned, executor wired, drill performed,
+      recovery signals observable.
+    owned_stages:
+      - rollback_readiness
+    inputs:
+      - ACTIVATION_DECISION
+      - ROLLBACK_PLAN
+    outputs:
+      - ROLLBACK_READINESS_REPORT
+    sub_agents: []
+    uses_core_abilities: [OS, Memory, Supervisor]
+    uses_skills: [sentinel, gap-audit, calibrate]
+    uses_tools:
+      - rollback_executor
+      - telemetry_reader
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - activation_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - rollback_required_gate
+    uses_audit_schemas:
+      - rollback_readiness_evidence_schema
+      - stage_gate_trace_schema
+      - activation_transition_trace_schema
+    uses_model_provider_profiles: [activation_reasoning_model, risk_analysis_model]
+    uses_context_memory_profiles: [activation_run_context, activation_decision_context_pack]
+    permissions:
+      - validate_rollback_owner_executor_and_drill
+      - confirm_recovery_signals_observable
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - self_approve_an_unproven_rollback_plan
+      - allow_public_completion_without_a_validated_rollback
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - rollback_plan_not_validated
+      - rollback_drill_failed
+    reviewed_by: activation_team_lead
+
+  # ===========================================================================
+  # OPERATIONS TEAM (team_id: operations_team, lead: operations_team_lead) — 6
+  # Source: docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md
+  # ===========================================================================
+
+  - agent_id: incident_intake_agent
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Receive, deduplicate, and normalize an incident signal into a single
+      INCIDENT_RECORD with timeline anchor, affected capability, and initial
+      observations.
+    owned_stages:
+      - incident_intake
+    inputs:
+      - INCIDENT_SIGNAL
+    outputs:
+      - INCIDENT_RECORD
+    sub_agents: []
+    uses_core_abilities: [Memory, OS, Web]
+    uses_skills: [gap-audit]
+    uses_tools:
+      - incident_intake_tool
+      - monitoring_query_tool
+      - alert_correlator
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - operations_pipeline_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - incident_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [incident_triage_model, supervisor_routing_model]
+    uses_context_memory_profiles: [operations_run_context, incident_context_pack]
+    permissions:
+      - intake_and_correlate_incident_signals
+      - normalize_into_a_single_incident_record
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_its_own_mitigation_or_postmortem
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - incident_record_absent
+      - affected_capability_unidentified
+    reviewed_by: operations_team_lead
+
+  - agent_id: severity_classification_agent
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Assign a severity level using failure-mode and blast-radius reasoning;
+      severity classification is mandatory before any mitigation begins.
+    owned_stages:
+      - severity_classification
+    inputs:
+      - INCIDENT_RECORD
+    outputs:
+      - SEVERITY_CLASSIFICATION_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [fmea, sentinel, bayesian-update, calibrate]
+    uses_tools:
+      - severity_classifier_tool
+      - monitoring_query_tool
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - incident_severity_required_gate
+      - operations_pipeline_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - severity_classification_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [incident_triage_model, operations_analysis_model]
+    uses_context_memory_profiles: [operations_run_context, incident_context_pack]
+    permissions:
+      - classify_severity_and_estimate_blast_radius
+      - record_severity_confidence
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_its_own_resolution
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - severity_unassigned
+      - blast_radius_unestimated
+    reviewed_by: operations_team_lead
+
+  - agent_id: mitigation_planning_agent
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Produce an actionable mitigation plan — options, chosen option with
+      rationale, rollback-vs-fix recommendation, and runbook reference(s).
+    owned_stages:
+      - mitigation_plan
+    inputs:
+      - SEVERITY_CLASSIFICATION_REPORT
+      - RUNBOOK
+      - ROLLBACK_PLAN
+    outputs:
+      - MITIGATION_PLAN
+    sub_agents: []
+    uses_core_abilities: [Supervisor, Memory]
+    uses_skills: [sentinel, fmea, gap-audit]
+    uses_tools:
+      - mitigation_plan_builder
+      - runbook_executor
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - mitigation_plan_required_gate
+      - operations_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - mitigation_plan_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [operations_analysis_model, supervisor_routing_model]
+    uses_context_memory_profiles: [operations_run_context, operations_context_pack]
+    permissions:
+      - build_mitigation_plan_and_recommend_rollback_or_fix
+      - resolve_runbook_references_via_dry_run_readiness_check
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - execute_the_rollback_or_fix_itself
+      - approve_its_own_mitigation_plan
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - mitigation_plan_absent
+      - runbook_reference_unresolved
+    reviewed_by: operations_team_lead
+
+  - agent_id: incident_response_agent
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Execute the chosen path — rollback to known-good via ROLLBACK_PLAN or apply
+      a forward fix via RUNBOOK — backed by runbook/rollback evidence and
+      confirmed recovery.
+    owned_stages:
+      - rollback_or_fix
+    inputs:
+      - MITIGATION_PLAN
+      - RUNBOOK
+      - ROLLBACK_PLAN
+    outputs:
+      - ROLLBACK_OR_FIX_REPORT
+    sub_agents: []
+    uses_core_abilities: [OS, Coder, Memory]
+    uses_skills: [verification-loop, sentinel]
+    uses_tools:
+      - rollback_executor
+      - runbook_executor
+      - monitoring_query_tool
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - rollback_runbook_evidence_gate
+      - operations_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - rollback_fix_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [operations_analysis_model, incident_triage_model]
+    uses_context_memory_profiles: [operations_run_context, operations_context_pack]
+    permissions:
+      - execute_rollback_or_forward_fix
+      - confirm_service_recovery
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - execute_without_runbook_or_rollback_evidence
+      - approve_its_own_resolution_or_postmortem
+      - use_verification_loop_as_a_readiness_checklist
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - runbook_or_rollback_evidence_absent
+      - service_recovery_unconfirmed
+    reviewed_by: operations_team_lead
+
+  - agent_id: postmortem_agent
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Run a blameless postmortem — reconstruct timeline, identify root causes and
+      contributing failure modes, and define corrective/preventive actions.
+    owned_stages:
+      - postmortem
+    inputs:
+      - ROLLBACK_OR_FIX_REPORT
+      - INCIDENT_RECORD
+      - SEVERITY_CLASSIFICATION_REPORT
+    outputs:
+      - POSTMORTEM_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Supervisor]
+    uses_skills: [fmea, gap-audit, calibrate]
+    uses_tools:
+      - postmortem_builder
+      - evidence_reader
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - postmortem_required_gate
+      - operations_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - postmortem_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [postmortem_reasoning_model, operations_analysis_model]
+    uses_context_memory_profiles: [operations_run_context, postmortem_context_pack]
+    permissions:
+      - reconstruct_timeline_and_identify_root_causes
+      - define_corrective_and_preventive_actions
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - postmortem_an_incident_response_it_executed_as_sole_approver
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - postmortem_absent_for_required_severity
+      - root_cause_unidentified
+    reviewed_by: operations_team_lead
+
+  - agent_id: operational_learning_agent
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Convert the postmortem into durable operational learning — update memory,
+      propose runbook/rollback/observability improvements, and hand a
+      future-improvement backlog back toward the SDLC.
+    owned_stages:
+      - learning_update
+    inputs:
+      - POSTMORTEM_REPORT
+    outputs:
+      - OPERATIONAL_LEARNING_RECORD
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: [refraction, bayesian-update, calibrate]
+    uses_tools:
+      - memory_write
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - operations_pipeline_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - operational_learning_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [learning_reflection_model]
+    uses_context_memory_profiles: [operations_run_context, learning_context_pack]
+    permissions:
+      - record_operational_learning_and_update_memory
+      - hand_off_improvement_backlog_toward_sdlc
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - regenerate_or_mutate_the_sdlc_pipeline
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - operational_learning_record_absent
+    reviewed_by: operations_team_lead
+
+  # ===========================================================================
+  # SKILL GOVERNANCE TEAM (team_id: skill_governance_team,
+  #   lead: skill_governance_team_lead)
+  # Source: docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+  # NOTE: skill_semantic_extraction is owned by skill_semantic_extractor_subagent
+  #   (a SUB-AGENT, parent skill_librarian_agent) — catalogued in
+  #   sub_agent_roles.yaml, NOT here (see open_questions).
+  # ===========================================================================
+
+  # R12: NOT a separate role. `skill_librarian_agent_skill_governance` is recorded as an explicit
+  #   ALIAS of the canonical skill_librarian_agent. Its full skill-governance binding (owned_stages
+  #   skill_intake / skill_binding_proposal / skill_deprecation_update, uses_*, reviewer
+  #   skill_runtime_safety_agent) now lives inline on skill_librarian_agent under `also_serves`
+  #   (see the SDLC TEAM section above). This stub keeps the legacy id resolvable while removing the
+  #   divergent second role, so every file spells the agent identically (skill_librarian_agent).
+  - alias_of: skill_librarian_agent
+    alias_id: skill_librarian_agent_skill_governance
+    team_id: skill_governance_team
+    pipeline_id: skill_governance_pipeline
+    binding_source: skill_librarian_agent.also_serves[skill_governance_team]
+    notes: >-
+      Per-team instance spelling of skill_librarian_agent (same logical agent). Resolves to the
+      canonical role; the skill-governance owned_stages/uses_*/reviewer are defined on that role's
+      `also_serves` block. No divergent semantics are maintained here (R12).
+
+  - agent_id: skill_runtime_safety_agent
+    team_id: skill_governance_team
+    pipeline_id: skill_governance_pipeline
+    mission: >-
+      Statically audit skill scripts/references for unsafe side-effects, generate
+      misuse warnings, and own the skill activation decision (activate/hold/
+      deprecate) as the independent reviewer of the librarian's binding proposal.
+    owned_stages:
+      - script_reference_audit
+      - misuse_warning_generation
+      - skill_activation_decision
+    inputs:
+      - SKILL_SEMANTIC_EXTRACT
+      - SKILL_BINDING_PROPOSAL
+      - SCRIPT_REFERENCE_AUDIT_REPORT
+      - SKILL_MISUSE_WARNINGS
+    outputs:
+      - SCRIPT_REFERENCE_AUDIT_REPORT
+      - SKILL_REFERENCE_INDEX
+      - SKILL_MISUSE_WARNINGS
+      - SKILL_ACTIVATION_DECISION
+    sub_agents: []
+    uses_core_abilities: [Coder, OS, Memory, Supervisor]
+    uses_skills: [verification-loop, fmea, sentinel, calibrate, llm-council]
+    uses_tools:
+      - script_static_analyzer
+      - reference_index_builder
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - skill_governance_pipeline_governance
+      - script_reference_audit_gate
+      - misuse_warning_required_gate
+      - skill_activation_decision_gate
+      - locked_semantics_enforcement_policy
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - script_audit_evidence_schema
+      - skill_misuse_warning_schema
+      - skill_binding_decision_schema
+      - skill_governance_trace_schema
+    uses_model_provider_profiles: [script_safety_analysis_model, skill_governance_reasoning_profile]
+    uses_context_memory_profiles: [skill_governance_run_context, skill_semantic_context_pack]
+    permissions:
+      - statically_audit_skill_scripts_and_index_references
+      - generate_skill_misuse_warnings
+      - decide_skill_activation_hold_or_deprecation
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_a_skill_whose_binding_it_proposed
+      - use_verification_loop_outside_defect_finding_semantics
+      - activate_a_skill_with_unmitigated_unsafe_scripts_or_missing_misuse_warnings
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - unsafe_skill_script_unmitigated
+      - missing_misuse_warnings
+      - locked_semantics_violation
+      - self_approval_of_activation_decision
+    reviewed_by: skill_governance_team_lead
+
+  # ===========================================================================
+  # KNOWLEDGE TEAM (team_id: knowledge_team, lead: knowledge_team_lead) — 6
+  # Source: docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md
+  # Memory stays a Core Ability; these agents USE it and are never the owner.
+  # ===========================================================================
+
+  - agent_id: knowledge_intake_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Receive a candidate memory item plus origin reference, normalize it into a
+      candidate record, and confirm intake metadata and a provenance seed before
+      anything is classified or stored.
+    owned_stages:
+      - memory_intake
+    inputs:
+      - MEMORY_CANDIDATE
+      - CANDIDATE_ORIGIN_REFERENCE
+    outputs:
+      - MEMORY_INTAKE_RECORD
+      - MEMORY_PROVENANCE_RECORD
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: []
+    uses_tools:
+      - memory_ingestor
+      - provenance_recorder
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - memory_source_governance
+    uses_audit_schemas:
+      - memory_provenance_schema
+    uses_model_provider_profiles: [knowledge_reasoning_profile]
+    uses_context_memory_profiles: [knowledge_run_context, memory_candidate_context_pack]
+    permissions:
+      - normalize_candidate_memory_and_seed_provenance
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - store_or_expose_a_candidate_that_cannot_be_provenance_seeded
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - intake_metadata_incomplete
+      - provenance_seed_not_recorded
+    reviewed_by: knowledge_team_lead
+
+  - agent_id: source_classification_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Classify the candidate's source — origin type, trust tier, sensitivity, and
+      whether redaction is required — so every later decision inherits a governed
+      classification.
+    owned_stages:
+      - source_classification
+    inputs:
+      - MEMORY_INTAKE_RECORD
+    outputs:
+      - SOURCE_CLASSIFICATION_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [gap-audit]
+    uses_tools:
+      - source_classifier
+      - redaction_tool
+      - provenance_recorder
+      - evidence_writer
+    uses_governance_profiles:
+      - memory_source_governance
+      - redaction_required_gate
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [knowledge_reasoning_profile]
+    uses_context_memory_profiles: [knowledge_run_context, memory_candidate_context_pack]
+    permissions:
+      - classify_source_trust_tier_and_sensitivity
+      - apply_redaction_when_required
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - allow_unredacted_sensitive_content_downstream
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - source_trust_tier_unassigned
+      - sensitivity_unclassified
+      - redaction_not_applied_when_required
+    reviewed_by: knowledge_team_lead
+
+  - agent_id: memory_summarization_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Produce a faithful, well-scoped summary of the classified, redacted memory
+      item, calibrated so stated confidence matches actual support in the source.
+    owned_stages:
+      - summary_generation
+    inputs:
+      - SOURCE_CLASSIFICATION_REPORT
+    outputs:
+      - MEMORY_SUMMARY
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: [calibrate]
+    uses_tools:
+      - summary_writer
+      - provenance_recorder
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - memory_source_governance
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [summarization_model, knowledge_reasoning_profile]
+    uses_context_memory_profiles: [knowledge_run_context, memory_candidate_context_pack]
+    permissions:
+      - author_grounded_calibrated_summary
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - add_unsupported_content_not_grounded_in_the_source
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - summary_not_grounded_in_source
+    reviewed_by: knowledge_team_lead
+
+  - agent_id: validity_window_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Assign how long this memory is considered valid — a validity window with
+      start, expiry/review horizon, and rationale — from source trust tier and
+      decay expectations.
+    owned_stages:
+      - validity_window_assignment
+    inputs:
+      - MEMORY_SUMMARY
+      - SOURCE_CLASSIFICATION_REPORT
+    outputs:
+      - VALIDITY_WINDOW_DECISION
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: [bayesian-update]
+    uses_tools:
+      - validity_window_calculator
+      - provenance_recorder
+      - evidence_writer
+    uses_governance_profiles:
+      - validity_window_required_gate
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [knowledge_reasoning_profile]
+    uses_context_memory_profiles: [knowledge_run_context]
+    permissions:
+      - assign_validity_window_with_rationale
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - leave_a_retained_memory_without_a_validity_window
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - validity_window_missing
+    reviewed_by: knowledge_team_lead
+
+  - agent_id: retrieval_profile_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Update the affected retrieval profile so curated memory becomes retrievable
+      under the right scope, with exposure bounded by sensitivity and validity
+      window.
+    owned_stages:
+      - retrieval_profile_update
+    inputs:
+      - VALIDITY_WINDOW_DECISION
+      - SOURCE_CLASSIFICATION_REPORT
+    outputs:
+      - RETRIEVAL_PROFILE_UPDATE_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: [gap-audit]
+    uses_tools:
+      - retrieval_profile_writer
+      - provenance_recorder
+      - evidence_writer
+    uses_governance_profiles:
+      - memory_source_governance
+      - validity_window_required_gate
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [knowledge_reasoning_profile]
+    uses_context_memory_profiles: [knowledge_run_context, retrieval_profile_context_pack]
+    permissions:
+      - update_retrieval_profile_within_validity_and_sensitivity_bounds
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - write_a_profile_update_for_a_memory_without_a_validity_window
+      - expose_memory_beyond_its_classified_sensitivity
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - retrieval_profile_update_without_validity_window
+      - sensitivity_exposure_inconsistent
+    reviewed_by: knowledge_team_lead
+
+  - agent_id: memory_expiration_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Review memories whose validity window reached its horizon — decide refresh,
+      re-validate, downgrade, or expire/retire — and feed lifecycle learning back
+      into how windows are set.
+    owned_stages:
+      - memory_expiration_review
+    inputs:
+      - RETRIEVAL_PROFILE_UPDATE_REPORT
+      - VALIDITY_WINDOW_DECISION
+    outputs:
+      - MEMORY_EXPIRATION_REVIEW_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory]
+    uses_skills: [refraction, bayesian-update]
+    uses_tools:
+      - expiration_scanner
+      - retrieval_profile_writer
+      - provenance_recorder
+      - evidence_writer
+    uses_governance_profiles:
+      - validity_window_required_gate
+      - memory_source_governance
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [knowledge_reasoning_profile]
+    uses_context_memory_profiles: [knowledge_run_context, retrieval_profile_context_pack]
+    permissions:
+      - review_expiring_memory_and_record_an_explicit_outcome
+      - retire_expired_memory_from_retrieval
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - silently_retain_memory_past_its_validity_window
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - expiration_outcome_not_recorded
+      - expired_memory_not_retired_from_retrieval
+    reviewed_by: knowledge_team_lead
+
+# =============================================================================
+# COVERAGE / VALIDATION SUMMARY (doc 18 §12 / §14)
+# =============================================================================
+coverage_summary:
+  sdlc_owner_agents_in_contracts: 25   # 24 Agents + sdlc_team_lead (Team Lead)
+  sdlc_agent_roles_emitted: 24         # sdlc_team_lead excluded (it is a Team Lead)
+  sdlc_team_lead_owned_stages: [requirements_review, architecture_review]
+  research_agent_roles: 10
+  activation_agent_roles: 5
+  operations_agent_roles: 6
+  # R12: skill_governance contributes ONE new distinct agent_id (skill_runtime_safety_agent). The
+  #   skill-governance librarian is the SHARED skill_librarian_agent (already counted in SDLC), now
+  #   cross-bound via its `also_serves` block — no longer a second role. So distinct-id counts changed:
+  skill_governance_new_agent_roles: 1  # skill_runtime_safety_agent (skill_librarian_agent is shared from sdlc_team via also_serves)
+  skill_governance_shared_agent_roles: 1  # skill_librarian_agent (cross-team; counted under sdlc_agent_roles_emitted)
+  knowledge_agent_roles: 6
+  total_distinct_agent_roles: 52       # R12: was 53 when skill_librarian_agent_skill_governance was a separate role; that id is now an alias of skill_librarian_agent
+  shared_cross_team_agent_roles:
+    - agent_id: skill_librarian_agent  # sdlc_team (primary) + skill_governance_team (also_serves); alias: skill_librarian_agent_skill_governance
+  core_abilities_as_agents: 0
+  team_leads_as_agents: 0
+  sub_agents_referenced:
+    - skill_semantic_extractor_subagent   # parent: skill_librarian_agent
+    - api_design_subagent                 # parent: architecture_agent
+    - data_model_subagent                 # parent: architecture_agent
+    - threat_modeling_subagent            # parent: security_privacy_agent
+    - test_generation_subagent            # parent: qa_agent
+    - bug_hunter_subagent                 # parent: qa_agent
+    - security_scan_interpreter_subagent  # parent: security_validation_agent
+    - evidence_trace_subagent             # parent: evidence_graph_agent
+  every_sdlc_stage_has_owner_in_this_file: true   # 29 of 31 stages here; 2 review gates -> sdlc_team_lead (team_lead_roles.yaml)

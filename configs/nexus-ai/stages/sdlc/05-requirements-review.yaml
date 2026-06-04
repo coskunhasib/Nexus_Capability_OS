@@ -1,0 +1,82 @@
+# SDLC Pipeline — Stage #5 contract: requirements_review
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Reconciliation notes:
+#   - owner_agent is sdlc_team_lead (review gate) per the locked no-self-approval
+#     policy: it MUST differ from the author of the reviewed artifact. The
+#     reviewed REQUIREMENTS_SPEC / NFR_CATALOG / ACCEPTANCE_CRITERIA are authored
+#     by the requirements stage (canonical author role: product_requirements_agent;
+#     legacy docs name it requirements_agent). The legacy prose
+#     (sdlc-stages/01-foundation-and-requirements.md §5) used a dedicated
+#     requirements_reviewer_agent, which is NOT in the Phase A canonical Agent-roles
+#     registry; per phase-0-context-lock-report item 2, authoring falls back to
+#     sdlc_team_lead and records the gap in open_questions.
+#   - Always-on stage: no applicability_decision block.
+#   - prism / verification-loop deliberately NOT used here: this is requirements
+#     review (intent/coverage/traceability), not divergent brainstorming and not
+#     bug/defect finding.
+
+stage_id: requirements_review
+name: Requirements Review
+purpose: >-
+  Gereksinim çıktılarını (REQUIREMENTS_SPEC, NFR_CATALOG, ACCEPTANCE_CRITERIA)
+  kullanıcı niyeti, kapsam uyumu, NFR kapsama, acceptance criteria yeterliliği ve
+  traceability açısından bağımsız bir review-gate ile doğrulamak; yazan agent'tan
+  farklı bir owner (sdlc_team_lead) tarafından no-self-approval altında onaylamak.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: sdlc_team_lead
+sub_agents: []
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - prompt-fidelity
+  - gap-audit
+  - calibrate
+uses_tools:
+  - evidence_reader
+  - requirements_trace_checker
+  - artifact_writer
+  - evidence_writer
+uses_governance_profiles:
+  - no_self_approval_policy
+  - evidence_required_policy
+  - requirements_review_governance
+  - prompt_fidelity_gate
+uses_audit_schemas:
+  - requirements_review_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+uses_context_memory_profiles:
+  - requirements_context_pack
+inputs:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ACCEPTANCE_CRITERIA
+  - REQUIREMENTS_TRACE_START
+  - PRODUCT_BRIEF
+  - DOMAIN_PROFILE_DECISION
+outputs:
+  - REQUIREMENTS_REVIEW_REPORT
+  - REQUIREMENTS_REVIEW_GATE_RESULT
+evidence:
+  - REQUIREMENTS_REVIEW_REPORT
+  - REQUIREMENTS_REVIEW_GATE_RESULT
+trace:
+  - requirements_review_trace
+  - requirements_trace_checker_tool_trace
+gates:
+  - prompt_fidelity_pass
+  - no_major_requirement_gap
+  - acceptance_criteria_reviewed
+  - requirements_traceable_reviewed
+on_pass: architecture
+on_fail: requirements
+rework_route: requirements
+blocking_conditions:
+  - prompt_fidelity_failure
+  - major_requirement_gap
+  - untraceable_requirement
+optional_conditions: []
+conditional_required_gates: []
+max_iterations: 3

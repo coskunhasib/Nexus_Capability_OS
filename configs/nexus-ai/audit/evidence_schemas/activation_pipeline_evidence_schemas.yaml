@@ -1,0 +1,100 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — Activation Pipeline
+# =============================================================================
+# Phase E / doc 19 §12 output. Documentation/blueprint ONLY — NO runtime code,
+# NO merge, NO deploy.
+#
+# Materializes the `type: evidence_schema` items with owner_domain
+# `activation_and_release_operations` from configs/nexus-ai/audit_schemas.yaml
+# into the applicable per-scope audit-schema config layer (doc 19 §13).
+#
+# LOCKED DECISIONS honored:
+#   - Plugin CANCELLED (no plugin concept anywhere).
+#   - Audit != Governance (this is an AUDIT file).
+#   - Evidence != Trace: EVIDENCE ONLY here; trace schemas live in the SEPARATE
+#     dir configs/nexus-ai/audit/trace_schemas/ and are never merged in.
+#   - Core Abilities are NOT agents: never producer/consumer.
+#
+# SCOPE NOTE — what is and is NOT in this file:
+#   The activation pipeline's catalog also defines `activation_decision_evidence_schema`,
+#   which is Evidence-FAMILY but has `type: decision_record_schema` (NOT
+#   `type: evidence_schema`). Per the doc 19 §12 type vocabulary (evidence_schema |
+#   trace_schema | decision_record_schema | gate_result_schema) and this task's
+#   scope ("implement every type: evidence_schema item"), decision_record_schema
+#   items are NOT emitted into this evidence-schema file. They are a distinct type
+#   and belong to a decision-record materialization. See index OPEN QUESTIONS.
+#   (It is still a decision PROOF and therefore NOT a trace — it must never end up
+#   in configs/nexus-ai/audit/trace_schemas/.)
+#
+# AUDIT SCHEMA CONTRACT (doc 19 §12): audit_schema_id, type, applies_to,
+# required_fields, producer, consumer, retention, redaction_rules.
+# Values transcribed verbatim from the catalog. registry_id/name kept as labels.
+#
+# STATUS: candidate (NEW, non-SDLC pipeline). Preserved per item.
+# =============================================================================
+
+version: draft-0.1
+layer_id: nexus_ai_audit_evidence_schemas_activation
+family: audit
+audit_kind: evidence
+scope: pipeline
+applies_to_pipeline: activation_pipeline
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+purpose: >-
+  Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
+  activation pipeline (preview/pilot activation evidence and rollback readiness).
+  decision_record_schema and trace items are excluded by design.
+
+evidence_schemas:
+
+  - audit_schema_id: activation_evidence_schema
+    registry_id: activation_evidence_schema
+    name: Activation Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - activation_pipeline
+      - activation_stage:superadmin_preview
+      - activation_stage:pilot_activation
+      - activation_stage:pilot_evidence_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - activation_phase
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: activation_manager_agent
+    consumer: activation_owner_decision_agent
+    retention: retain_with_activation_record
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_cohort_user_identifiers
+
+  - audit_schema_id: rollback_readiness_evidence_schema
+    registry_id: rollback_readiness_evidence_schema
+    name: Rollback Readiness Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - activation_pipeline
+      - activation_stage:rollback_readiness
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - rollback_plan_present
+      - rollback_drilled
+      - source_artifacts
+      - status
+      - created_at
+    producer: rollback_readiness_agent
+    consumer: activation_owner_decision_agent
+    retention: retain_with_activation_record
+    redaction_rules:
+      - no_raw_secret_exposure

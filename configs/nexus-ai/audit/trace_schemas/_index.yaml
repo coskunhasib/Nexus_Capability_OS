@@ -1,0 +1,101 @@
+# =============================================================================
+# Nexus AI — Trace Schemas Index (Audit / Trace family) — TRACE ONLY
+# =============================================================================
+# Phase E / doc 19 §12–§13 index for the per-schema TRACE files in this directory.
+# Documentation/blueprint only — NO runtime code, NO merge, NO deploy.
+#
+# This directory materializes EVERY `type: trace_schema` item from the Phase C
+# registry configs/nexus-ai/audit_schemas.yaml — and ONLY trace schemas. It is
+# the Trace half of the Audit family. The Evidence half lives in the SEPARATE
+# sibling directory configs/nexus-ai/audit/evidence_schemas/. The two are NEVER
+# merged (Evidence != Trace — K-008 / doc 03 §10–§12 / doc 19 §11).
+#
+# Invariant this directory enforces (doc 19 §14):
+#   - Every file here has `type: trace_schema` and `schema_family: trace`.
+#   - No evidence_schema / decision_record_schema / gate_result_schema appears in
+#     this directory (those are Evidence family → evidence_schemas/).
+#   - No plugin* key appears in any file.
+#   - No `producer`/`consumer` is a Core Ability (Supervisor, Coder, Vision,
+#     Audio, Creative, Memory, Web, OS); Memory may appear only as a
+#     related_core_ability capability-layer reference (memory_update_trace_schema).
+# =============================================================================
+
+version: draft-0.1
+index_id: nexus_ai_trace_schemas_index
+schema_family: trace
+source_registry: configs/nexus-ai/audit_schemas.yaml
+sibling_evidence_dir: configs/nexus-ai/audit/evidence_schemas/   # Evidence family — kept separate
+
+# Count check: the source registry (audit_schemas.yaml) defines 15 items with
+# `type: trace_schema` in total; 9 of those (the SDLC-canonical set + the two
+# non-SDLC candidates) are materialized here as one file each. Evidence-family
+# items (58 in total: 56 evidence_schema + 2 decision_record_schema) are NOT in
+# this directory — they belong to the Evidence half (evidence_schemas/).
+materialized_trace_schema_count: 9       # trace schemas given a per-schema file in THIS directory
+registry_trace_schema_total: 15          # all `type: trace_schema` items in audit_schemas.yaml
+registry_evidence_family_total: 58       # 56 evidence_schema + 2 decision_record_schema (Evidence half; not here)
+
+trace_schemas:
+  # ----- canonical (SDLC) ----------------------------------------------------
+  - audit_schema_id: stage_gate_trace_schema
+    file: stage_gate_trace_schema.yaml
+    status: canonical
+    scope: all_pipelines            # most reused trace schema in the system
+    producer: stage_owner_agent
+  - audit_schema_id: architecture_decision_trace_schema
+    file: architecture_decision_trace_schema.yaml
+    status: canonical
+    scope: sdlc_stage:architecture
+    producer: architecture_agent
+  - audit_schema_id: code_change_trace_schema
+    file: code_change_trace_schema.yaml
+    status: canonical
+    scope: sdlc_stage:implementation
+    producer: engineering_agent
+  - audit_schema_id: security_finding_trace_schema
+    file: security_finding_trace_schema.yaml
+    status: canonical
+    scope: sdlc_stage:security_validation
+    producer: security_validation_agent
+  - audit_schema_id: gate_decision_trace_schema
+    file: gate_decision_trace_schema.yaml
+    status: canonical
+    scope: sdlc_stage:development_completion
+    producer: release_manager_agent
+  - audit_schema_id: release_decision_trace_schema
+    file: release_decision_trace_schema.yaml
+    status: canonical
+    scope: sdlc_stage:release_candidate
+    producer: release_manager_agent
+  - audit_schema_id: memory_update_trace_schema
+    file: memory_update_trace_schema.yaml
+    status: canonical
+    scope: sdlc_stage:refraction_learning
+    producer: refraction_learning_agent   # Memory Core Ability is capability-layer only
+  # ----- candidate (non-SDLC pipelines) --------------------------------------
+  - audit_schema_id: activation_transition_trace_schema
+    file: activation_transition_trace_schema.yaml
+    status: candidate
+    scope: activation_pipeline
+    producer: activation_manager_agent
+  - audit_schema_id: skill_governance_trace_schema
+    file: skill_governance_trace_schema.yaml
+    status: candidate
+    scope: skill_governance_pipeline
+    producer: skill_librarian_agent
+
+# ----- governance reconciliation note (Governance != Audit) ------------------
+# Every trace schema here is bound (in the source registry) under the
+# `global_trace_required_policy` spelling. The FIRST-CLASS canonical
+# governance_profile_id is `trace_required` (scope: global) in
+# configs/nexus-ai/governance_profiles.yaml; `global_trace_required_policy` is
+# recorded as an alias on each file. Two files carry an additional binding:
+#   - code_change_trace_schema also reconciles `no_silent_mutation` (06 §3) — an
+#     alias of trace_required per governance_profiles.yaml.
+#   - memory_update_trace_schema additionally binds `memory_access_governance`.
+#   - activation_transition_trace_schema additionally binds
+#     `activation_pipeline_governance`.
+#   - skill_governance_trace_schema additionally binds
+#     `skill_governance_pipeline_governance`.
+# Governance ids are DEFINED in the separate governance_profiles.yaml; the
+# references here are cross-references only.

@@ -1,0 +1,385 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Runtime rules: rework routing table + iteration policy + anti-patterns.
+# Machine-readable blueprint/documentation only — NO runtime code, NO merge, NO deploy.
+#
+# Top structure is the Nexus AI Orchestration Model; the SDLC Pipeline is ONE pipeline under it,
+# not the top. This file holds the cross-stage RUNTIME RULES that the SDLC Pipeline (and its
+# Team Lead orchestrator) must obey — it does NOT redefine per-stage contracts (those live in
+# configs/nexus-ai/stages/sdlc/*.yaml).
+#
+# Source of truth (the unique contributions this file formalizes):
+#   - docs/ai-sdlc-factory/05-pipeline-model.md §5 (Rework routing table)  -> rework_routing_table
+#   - docs/ai-sdlc-factory/05-pipeline-model.md §6 (Iteration policy)      -> iteration_policy
+#   - docs/ai-sdlc-factory/05-pipeline-model.md §7 (Pipeline anti-patterns)-> anti_patterns
+#   Doc 05 §0 explicitly directs §5/§6/§7 to be carried into
+#   configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml (this file).
+#
+# Reconciled against (so routing targets resolve to REAL canonical stage_ids, not the stale
+# 23-stage draft that doc 05 §3/§4 still describes):
+#   - configs/nexus-ai/sdlc_pipeline.yaml (CANONICAL 31-stage set + ordering),
+#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §3 (canonical stage list),
+#   - configs/nexus-ai/stages/sdlc/*.yaml (per-stage canonical on_fail / rework_route values),
+#   - configs/nexus-ai/pipeline_contract_standard.yaml (severity_values; allowed_rework_routes
+#     and blocking_conditions are pipeline-contract fields this file feeds),
+#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §1/§2 (route overrides).
+#
+# LOCKED-DECISION compliance baked into this file:
+#   - Plugin is cancelled: "no plugin stage" is preserved as a FORBIDDEN anti-pattern; no plugin
+#     concept/field is introduced anywhere else.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are abilities only:
+#     none appears as an owner or a routing target here (routing targets are pipeline stage_ids /
+#     canonical terminals only).
+#   - Skill semantics LOCKED: anti_patterns keep verification-loop (bug/defect finding) from being
+#     used in place of test_execution, and keep it from degrading into a general readiness checklist.
+#   - No self-approval is enforced in the per-stage contracts (review-gate owner_agent != author);
+#     this file does not route around that guard and re-states it as a forbidden anti-pattern.
+#
+# RECONCILIATION NOTE (legacy doc 05 §5 -> canonical 31-stage pipeline):
+#   Doc 05 §5 was written for the legacy 23-stage draft and keys the table by FAILURE-TYPE. Every
+#   target stage_id it names (requirements, architecture, security_privacy_design, implementation,
+#   planning) and the terminal relevant_failed_stage still exist in the canonical pipeline, so the
+#   legacy table is carried VERBATIM in `rework_routing_table.by_failure_type.legacy_doc05_core`.
+#   The canonical pipeline added 8 newer gate/validation stages (supply_chain_sbom_license,
+#   ai_agent_safety_evaluation, privacy_data_lifecycle_validation, api_contract_compatibility_validation,
+#   domain_regulatory_compliance_validation_if_applicable, data_migration_validation_if_applicable,
+#   accessibility_ux_validation_if_applicable, cost_resource_governance, backup_restore_dr_validation_if_applicable)
+#   whose failure routes are NOT in legacy §5. To AVOID silently inventing, the authoritative,
+#   complete failure->target mapping is derived from each stage's own canonical `rework_route`
+#   (configs/nexus-ai/stages/sdlc/*.yaml) and recorded in `rework_routing_table.by_stage`.
+#   `by_failure_type` (legacy + canonical-extension) is provided as a convenience index over the
+#   same routes. Open questions below flag the one source conflict found.
+
+version: draft-0.1
+rules_id: sdlc_pipeline_runtime_rules
+pipeline_id: sdlc_pipeline
+applies_to_pipeline_version: draft-0.1
+purpose: >-
+  Formalize the SDLC Pipeline cross-stage runtime rules — where a failed stage reworks to, how
+  many iterations are allowed before the run is hard-blocked, and which pipeline designs are
+  forbidden — under no-human governance. Documentation/blueprint only; no runtime code.
+status: discussion
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+
+# Canonical routing terminals these rules may point to (besides any pipeline stage_id).
+# These mirror configs/nexus-ai/stages/sdlc/*.yaml on_fail/rework_route usage.
+routing_terminals:
+  - done                    # pipeline reached its terminal success node (after refraction_learning)
+  - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
+  - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
+
+# =====================================================================================
+# Required-gate → producer map  (R6: make the rollup gates machine-checkable)
+# =====================================================================================
+# PURPOSE: configs/nexus-ai/sdlc_pipeline.yaml `required_gates` lists rollup gate IDs the run
+#   must satisfy, but a rollup gate name (e.g. requirements_complete) is NOT itself a stage gate
+#   — it is SATISFIED BY a specific upstream stage's gate decision. Without an explicit map a
+#   checker cannot prove each required gate has a real producer (the gate name would be a dangling
+#   edge: present in required_gates, resolving to nothing). This block resolves that edge.
+#
+# SCOPE: the 8 always/conditional required SDLC gates whose names map directly to a single producing
+#   stage and its gate-bearing governance rule — the 6 original R6 gates plus the 2 always-on BLOCKER
+#   rollup gates reconciled from doc 06 §8 (risk_register_reviewed -> stage 9 premortem_fmea;
+#   performance_resilience_pass_or_accepted -> stage 24 performance_resilience). (sdlc_pipeline.yaml
+#   carries more rollup gates; the rest are already covered by
+#   docs/ai-sdlc-factory/TRACEABILITY_OVERVIEW.md §4 and/or are cross-cutting policies — e.g.
+#   no_blocking_policy_failure — that have no single producing stage. This block formalizes exactly
+#   these 8 gates so they are machine-checkable here.)
+#
+# AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/sdlc/*.yaml; the
+#   producing_rule is the stage-specific gate-bearing governance profile in that stage's
+#   `uses_governance_profiles`, each a first-class item in configs/nexus-ai/governance_profiles.yaml
+#   (so every rule id below resolves — no new dangling edge). Cross-checked against
+#   docs/ai-sdlc-factory/TRACEABILITY_OVERVIEW.md §4 (gate → producing stage aggregation).
+#
+# CHECKER CONTRACT (how to verify): for each entry, assert
+#   (a) `gate` ∈ sdlc_pipeline.yaml required_gates.always (or .conditional for *_if_applicable),
+#   (b) `producing_stage` ∈ the canonical 31-stage set,
+#   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
+#       stage's uses_governance_profiles,
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+# Any unmet assertion = a dangling required-gate edge.
+required_gate_producers:
+  scope: sdlc_required_gates_that_map_by_name   # 8 gates that map by name (6 R6 + the 2 always-on blocker rollup gates reconciled from doc 06 §8); not the full required_gates set
+  note: >-
+    Each rollup gate in sdlc_pipeline.yaml required_gates is SATISFIED BY the producing stage's
+    gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does
+    NOT redefine any stage gate and does NOT alter sdlc_pipeline.yaml (which stays schema-valid).
+  gates:
+    - gate: requirements_complete                       # required_gates.always
+      tier: always
+      producing_stage: requirements                     # stage #4
+      producing_rule: requirements_acceptance_gate       # governance_profiles.yaml; in requirements.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - requirements_present
+        - acceptance_criteria_present
+        - requirements_traceable
+
+    - gate: nfr_coverage_complete                       # required_gates.always
+      tier: always
+      producing_stage: requirements                     # stage #4 (NFR_CATALOG is produced here)
+      producing_rule: requirements_acceptance_gate
+      satisfied_by_stage_gates:
+        - nfr_catalog_present
+      note: >-
+        NFR_CATALOG is authored in requirements; architecture (stage #6) consumes it and its
+        architecture_addresses_nfrs gate re-checks coverage, but the requirements stage is the
+        authoritative producer of NFR coverage completeness.
+
+    - gate: architecture_complete                       # required_gates.always
+      tier: always
+      producing_stage: architecture                     # stage #6
+      producing_rule: architecture_design_governance     # governance_profiles.yaml; in architecture.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - architecture_addresses_nfrs
+        - system_boundaries_defined
+        - rejected_options_recorded
+
+    - gate: adr_coverage_complete                       # required_gates.always
+      tier: always
+      producing_stage: architecture                     # stage #6
+      producing_rule: adr_required_gate                  # governance_profiles.yaml; in architecture.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - adr_present_for_major_decisions
+
+    - gate: risk_register_reviewed                      # required_gates.always
+      tier: always
+      producing_stage: premortem_fmea                   # stage #9
+      producing_rule: fmea_required_gate                 # governance_profiles.yaml; in premortem_fmea.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - risk_register_reviewed
+      note: >-
+        Always-on BLOCKER gate (governance/stage/sdlc-stages.yaml premortem_fmea_stage_governance,
+        severity: blocker, required_when: always). It is its own stage-9 component gate; this entry
+        records the satisfied-by edge so the always-required rollup in sdlc_pipeline.yaml is
+        machine-checkable (closes the doc 06 §8 ↔ doc 08 §4 rollup gap).
+
+    - gate: performance_resilience_pass_or_accepted     # required_gates.always
+      tier: always
+      producing_stage: performance_resilience           # stage #24
+      producing_rule: performance_governance             # governance_profiles.yaml; in performance_resilience.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - performance_resilience_pass_or_accepted
+        - resilience_risks_accepted_or_mitigated
+      note: >-
+        Always-on BLOCKER gate (governance/stage/sdlc-stages.yaml performance_resilience_stage_governance,
+        severity: blocker, required_when: always). It rolls up stage-24 component gates
+        performance_resilience_pass_or_accepted + resilience_risks_accepted_or_mitigated; this entry
+        records the satisfied-by edge so the always-required rollup is machine-checkable
+        (closes the doc 06 §8 ↔ doc 08 §4 rollup gap).
+
+    - gate: verification_loop_bug_finding_pass          # required_gates.always
+      tier: always
+      producing_stage: verification_loop_bug_finding    # stage #15
+      producing_rule: verification_loop_bug_gate         # governance_profiles.yaml; in verification_loop_bug_finding.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - open_blocker_bugs_zero
+        - open_major_bugs_below_threshold
+        - found_defects_triaged
+        - blocker_defects_traced_to_changeset
+      note: >-
+        LOCKED skill semantics: this gate is produced by the verification-loop bug/defect-finding
+        stage (#15), NOT by test_execution (#14). Keep the two distinct.
+
+    - gate: cost_resource_governance_pass_if_applicable # required_gates.conditional
+      tier: conditional
+      producing_stage: cost_resource_governance         # stage #25 (CONDITIONAL)
+      producing_rule: cost_resource_governance           # governance_profiles.yaml; in cost_resource_governance.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - cost_estimate_within_budget
+        - resource_budget_pass
+        - quota_policy_pass
+      conditional_required_when: >-
+        ai_or_compute_heavy_feature == true or gpu_cpu_memory_budget_relevant == true or
+        external_provider_cost_relevant == true or retry_loop_or_parallel_execution_present == true
+      note: >-
+        Conditional gate. When the stage's applicability_decision is not-applicable it evaluates to
+        pass_if_applicable and routes to backup_restore_dr_validation_if_applicable (see stage #25).
+
+  invariants:
+    - Every `gate` MUST exist in configs/nexus-ai/sdlc_pipeline.yaml required_gates
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
+    - Every `producing_stage` MUST be a canonical stage_id in configs/nexus-ai/sdlc_pipeline.yaml.
+    - Every `producing_rule` MUST resolve to a governance profile id in
+      configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles.
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/sdlc/*.yaml)."
+    - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change sdlc_pipeline.yaml."
+
+# =====================================================================================
+# §5 — Rework routing table  (map: failure -> stage_id)
+# =====================================================================================
+rework_routing_table:
+
+  # -- Authoritative per-stage routes (complete; covers all 31 canonical stages) --------
+  # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
+  # Values copied from each stage's own canonical `rework_route` in
+  # configs/nexus-ai/stages/sdlc/*.yaml; stages 30/31 (release_candidate, refraction_learning)
+  # are taken from docs/ai-sdlc-factory/05-pipeline-model.md §4.22/§4.23 pending stage-file build.
+  by_stage:
+    intake: intake
+    domain_risk_profile: intake
+    skill_semantic_extraction: skill_semantic_extraction
+    requirements: intake
+    requirements_review: requirements
+    architecture: requirements
+    architecture_review: architecture
+    security_privacy_design: architecture
+    premortem_fmea: architecture
+    planning: planning
+    implementation: implementation
+    code_review: implementation
+    test_generation: implementation
+    test_execution: implementation
+    verification_loop_bug_finding: implementation
+    security_validation: implementation
+    supply_chain_sbom_license: implementation
+    ai_agent_safety_evaluation: implementation
+    privacy_data_lifecycle_validation: security_privacy_design
+    api_contract_compatibility_validation: architecture
+    # NOTE: source conflict — stage file 21 says security_privacy_design; corrections doc §1 says
+    # requirements. Using the stage-file value as primary; see open_questions.
+    domain_regulatory_compliance_validation_if_applicable: security_privacy_design
+    data_migration_validation_if_applicable: architecture
+    accessibility_ux_validation_if_applicable: relevant_failed_stage
+    performance_resilience: architecture
+    cost_resource_governance: planning
+    backup_restore_dr_validation_if_applicable: planning
+    operations_readiness: planning
+    evidence_graph_build: relevant_failed_stage
+    development_completion: relevant_failed_stage
+    release_candidate: development_completion
+    refraction_learning: refraction_learning
+
+  # -- Failure-type index (the doc 05 §5 contract: map failure -> stage_id) --------------
+  # The legacy block is preserved verbatim; the canonical_extension block adds the failure
+  # types introduced by the 8 newer gate/validation stages, routed per `by_stage` above.
+  by_failure_type:
+
+    legacy_doc05_core:        # === doc 05 §5, verbatim (23-stage draft; all targets still canonical) ===
+      requirement_gap: requirements
+      prompt_fidelity_failure: requirements
+      architecture_risk: architecture
+      unaddressed_nfr: architecture
+      security_design_gap: security_privacy_design
+      critical_fmea_risk: architecture
+      implementation_failure: implementation
+      code_review_failure: implementation
+      test_failure: implementation
+      bug_finding_failure: implementation
+      security_scan_failure: implementation
+      performance_failure: architecture
+      operations_readiness_failure: planning
+      evidence_gap: relevant_failed_stage
+      development_completion_failure: relevant_failed_stage
+
+    canonical_extension:      # === failure types added by the canonical 31-stage pipeline ===
+      supply_chain_failure: implementation                 # supply_chain_sbom_license
+      license_failure: implementation                      # supply_chain_sbom_license
+      sbom_missing: implementation                         # supply_chain_sbom_license
+      agentic_safety_failure: implementation               # ai_agent_safety_evaluation
+      privacy_lifecycle_failure: security_privacy_design   # privacy_data_lifecycle_validation
+      api_contract_compatibility_failure: architecture     # api_contract_compatibility_validation
+      regulatory_compliance_failure: security_privacy_design  # see open_questions (conflict w/ corrections §1)
+      data_migration_failure: architecture                 # data_migration_validation_if_applicable
+      accessibility_failure: relevant_failed_stage         # accessibility_ux_validation_if_applicable
+      cost_resource_governance_failure: planning           # cost_resource_governance
+      backup_restore_dr_failure: planning                  # backup_restore_dr_validation_if_applicable
+      evidence_graph_failure: relevant_failed_stage        # evidence_graph_build
+      release_candidate_failure: development_completion     # release_candidate (doc 05 §4.22)
+
+  routing_invariants:
+    - All routing targets MUST be a known canonical stage_id (configs/nexus-ai/sdlc_pipeline.yaml)
+      or a routing_terminal (done | relevant_failed_stage | block_and_report).
+    - A failed stage MUST route to its declared rework target; the Team Lead orchestrator MAY NOT
+      improvise a different target (pipeline is a deterministic stage graph, not agent chatter).
+    - relevant_failed_stage MUST resolve to the specific upstream stage whose gate/evidence failed
+      (used by aggregate stages — evidence_graph_build, development_completion, and accessibility).
+    - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
+      unre-evaluated gates.
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal
+      stage rework target.
+
+# =====================================================================================
+# §6 — Iteration policy
+# =====================================================================================
+# No-human system: infinite loops are forbidden (doc 05 §6: "No-human sistemde sonsuz loop yasaktır").
+iteration_policy:
+  default_max_iterations_per_stage: 3      # mirrors per-stage `max_iterations: 3` default in stage contracts
+  max_total_rework_cycles: 8               # ceiling on cumulative rework cycles across the whole run
+  on_iteration_limit_exceeded:
+    action: block_and_report               # canonical terminal: halt; do NOT auto-loop further
+    output: REWORK_LIMIT_EXCEEDED.md
+  # Clarifying semantics (do not contradict the locked values above):
+  scope_notes:
+    - default_max_iterations_per_stage applies PER stage_id; a stage's own `max_iterations` (if set)
+      overrides this default for that stage only.
+    - max_total_rework_cycles counts every rework hop across the run; reaching it triggers
+      on_iteration_limit_exceeded even if no single stage hit its per-stage cap.
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
+      report is emitted as run evidence (it records the offending stage, failure type, route taken,
+      and iteration counts).
+
+# =====================================================================================
+# §7 — Pipeline anti-patterns  (forbidden designs)
+# =====================================================================================
+# Verbatim from doc 05 §7 (translated), each with the locked-decision / rule it protects.
+anti_patterns:
+  - id: pipeline_as_agent_chat
+    forbidden: Designing the pipeline as free-form agent conversation instead of a deterministic stage graph.
+    enforced_by: routing_invariants (deterministic stage graph; Team Lead runs but does not mutate the pipeline)
+
+  - id: team_as_stage_owner
+    forbidden: Making a Team (e.g. sdlc_team) the owner of a stage.
+    enforced_by: stage contracts (owner_agent is always a pipeline Agent ROLE; owner_team=sdlc_team is a team, not an owner)
+
+  - id: plugin_stage
+    forbidden: Adding a plugin stage (or any plugin concept/field) to the pipeline.
+    enforced_by: LOCKED DECISION — Plugin is cancelled; no plugin concept exists anywhere in Nexus AI.
+
+  - id: deploy_before_development_completion
+    forbidden: Making Nexus / publication / deploy a stage BEFORE development_completion.
+    enforced_by: canonical stage graph (publication/deployment are OPTIONAL and only AFTER release_candidate; the core pipeline ends at refraction_learning)
+
+  - id: verification_loop_replaces_test_execution
+    forbidden: Using verification-loop in place of test_execution.
+    enforced_by: LOCKED skill semantics — verification-loop = bug/defect finding (stage 15); test_execution (stage 14) runs the test suite. They are distinct stages and skills.
+
+  - id: skill_binding_without_semantic_extraction
+    forbidden: Binding skills to stages without first running skill_semantic_extraction.
+    enforced_by: pipeline ordering (skill_semantic_extraction precedes all skill-using stages; no skill without semantics)
+
+  - id: release_candidate_without_policy_gate
+    forbidden: Producing a release_candidate without a policy gate.
+    enforced_by: release_candidate is gated by development_completion + release_candidate_governance + no_blocking_policy_failure (no self-approval; evidence required)
+
+# -- Additional forbidden designs implied by LOCKED DECISIONS (not new policy; guardrails) --
+# These are NOT from doc 05 §7; they restate locked invariants so the runtime-rules file is a
+# single place a reviewer can check that the cross-cutting locks are not routed around.
+locked_decision_guards:
+  - id: core_ability_as_owner_or_agent
+    forbidden: Listing a Core Ability (Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS) as owner_agent or as an Agent/team member.
+    enforced_by: LOCKED DECISION — Core Abilities are abilities only; owner_agent is always a pipeline Agent role.
+
+  - id: supervisor_as_team_lead
+    forbidden: Treating Supervisor (a Core Ability) as the sdlc_team_lead.
+    enforced_by: LOCKED DECISION — team_lead = sdlc_team_lead; Supervisor != sdlc_team_lead.
+
+  - id: self_approval_gate
+    forbidden: A review/gate stage whose owner_agent is the same as the author of the artifact it reviews.
+    enforced_by: no_self_approval_policy (review-gate owner_agent differs from author; falls back to sdlc_team_lead gate where no dedicated reviewer role fits).
+
+  - id: concept_boundary_collapse
+    forbidden: Collapsing the locked concept boundaries — Skill==Tool, Governance==Audit, or Evidence==Trace.
+    enforced_by: LOCKED DECISION — Skill != Tool, Governance != Audit, Evidence != Trace (kept distinct in every stage contract and audit-schema set).
+
+  - id: prism_as_non_divergence
+    forbidden: Using prism for anything other than brainstorming/divergent thinking.
+    enforced_by: LOCKED skill semantics — prism = divergent ideation only.
+
+# Canonical docs this runtime-rules file is bound to.
+canonical_docs:
+  - docs/ai-sdlc-factory/05-pipeline-model.md
+  - configs/nexus-ai/sdlc_pipeline.yaml
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md
+  - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md

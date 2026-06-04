@@ -1,0 +1,178 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #21 of 31: domain_regulatory_compliance_validation_if_applicable (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Authored per docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract +
+#   §13 Conditional gate rule) and reconciled against the Phase A canonical shared registry.
+# Conditional stage: includes applicability_decision (required_when) + conditional_required_gates.
+#
+# Reconciliation notes (legacy docs -> Phase A canonical registry):
+#   - Primary source: sdlc-stages/06-canonical-corrections-and-overrides.md §1 (the canonical "added stage"
+#     definition for this exact stage_id) reinforced by 06b §2 (Domain / Regulatory Compliance Validation)
+#     and 09/10 review findings BF-001. The legacy doc 05 pipeline-model predates this stage entirely, so its
+#     stale 23-stage assumption is NOT carried; this is stage 21 of 31 per configs/nexus-ai/sdlc_pipeline.yaml
+#     and 08-sdlc-pipeline-contract.md §3.
+#   - owner_agent kept as canonical `compliance_agent` (suggested + canonical agent role).
+#   - No self-approval: this is a review/validation gate. The artifacts it reviews — REQUIREMENTS_SPEC
+#     (authored by product_requirements_agent / requirements stage), SECURITY_REQUIREMENTS + PRIVACY_RISK_REGISTER
+#     (authored by security_privacy_agent, stage #8), DOMAIN_PROFILE_DECISION (authored by domain_risk_agent,
+#     stage #2) — are NONE of them authored by compliance_agent. The gate owner therefore differs from every
+#     artifact author, so no_self_approval_policy is satisfied WITHOUT falling back to sdlc_team_lead.
+#     Supervisor is a Core Ability and is never used as owner_agent / team_lead.
+#   - ROUTING reconciliation (the one substantive divergence): legacy corrections doc 06 §1 set
+#     on_fail/rework_route -> `requirements`. The Phase A task directs security_privacy_design (or a more
+#     correct known stage). Both are defensible: a compliance failure is EITHER a regulatory obligation never
+#     captured as a requirement (-> requirements) OR insufficient security/privacy CONTROLS to satisfy a
+#     mandate (-> security_privacy_design). Resolved to `security_privacy_design` to match (a) the Phase A
+#     primary suggestion and (b) the sibling privacy_data_lifecycle_validation stage, which also routes on_fail
+#     -> security_privacy_design. The requirements-gap failure mode is preserved via the
+#     `regulatory_requirement_traceable` gate + `unresolved_regulatory_requirement` blocking condition.
+#     Divergence from legacy doc 06 (requirements) flagged in open_questions for registry reconciliation.
+#   - Skills: legacy `gap-audit`, `llm-council`, `calibrate` — all canonical; retained as-is.
+#       gap-audit = detect regulatory obligations with no requirement/control to trace to (coverage gap);
+#       llm-council = multi-model adjudication of ambiguous regulatory applicability/interpretation;
+#       calibrate = consistent severity of compliance findings. verification-loop intentionally NOT used
+#       (this is a compliance-traceability gate, not a defect sweep — that is stage #15's locked responsibility).
+#   - Tools: legacy `compliance_matrix_builder`, `requirements_trace_checker`, `artifact_writer`,
+#       `evidence_writer` — all canonical; retained. Added canonical `policy_query` (query governance/regulatory
+#       policy obligations) and `evidence_reader` (read upstream design/privacy evidence to verify coverage).
+#       Side-effect writers (artifact_writer, evidence_writer) imply governance + trace.
+#   - Governance: `domain_compliance_governance` (canonical) + `regulatory_traceability_gate`
+#       (canonical-permitted stage-specific gate profile). Added the canonical base profiles
+#       sdlc_pipeline_governance, no_self_approval_policy (review/gate stage), evidence_required_policy.
+#   - Audit: `compliance_matrix_schema` + `regulatory_evidence_schema` (both canonical evidence schemas) kept
+#       distinct from the trace schema `stage_gate_trace_schema` (canonical). Evidence and trace schemas are
+#       NOT merged.
+#   - Model: legacy `compliance_reasoning_model` is NON-CANONICAL (absent from the locked model/provider list).
+#       Reconciled to canonical `sdlc_reasoning_profile` (general SDLC reasoning) + `security_analysis_model`
+#       (regulatory/security-control judgement). Legacy name flagged in open_questions for formalization.
+#   - Context: legacy `compliance_context_pack` is NON-CANONICAL (absent from the locked context/memory list).
+#       Reconciled to canonical `sdlc_run_context` + `requirements_context_pack` (regulatory-to-requirement
+#       trace) + `security_context_pack` (security/privacy controls). Legacy name flagged in open_questions.
+
+stage_id: domain_regulatory_compliance_validation_if_applicable
+name: Domain / Regulatory Compliance Validation (If Applicable)
+purpose: >-
+  Bu CONDITIONAL stage, ürünün hedef domain'ine bağlı yasal, regülatif, kurumsal ve sözleşmesel
+  (regulatory / domain-specific / contractual) uyum gerekliliklerini doğrular. Yalnızca uygulanabilir
+  olduğunda çalışır; uygulanabilirlik kararını (COMPLIANCE_APPLICABILITY_DECISION) açıkça üretir.
+  Uygulanabilir olduğunda, geçerli her regülatif/sözleşmesel obligasyonun bir gereksinime ve güvenlik/
+  gizlilik kontrolüne kadar izlenebilirliğini (regulatory traceability) bir COMPLIANCE_MATRIX üzerinden
+  kanıtlar, kapanmamış obligasyonları bloklayıcı bulgu olarak işaretler ve compliance gate sonucunu
+  (COMPLIANCE_GATE_RESULT) bağımsız bir review-gate olarak no-human governance ile karara bağlar.
+  Bu stage bug/defect sweep DEĞİLDİR (o, stage #15 verification_loop_bug_finding sorumluluğudur) ve
+  bir genel release-readiness checklist'i DEĞİLDİR; yalnız regülatif/domain uyum izlenebilirliğini denetler.
+
+applicability_decision:
+  decision_artifact: COMPLIANCE_APPLICABILITY_DECISION
+  required_when: >-
+    regulated_domain == true or contractual_compliance_required == true or
+    public_sector_or_enterprise_requirements_present == true
+  evaluated_from:
+    - DOMAIN_PROFILE_DECISION
+    - RISK_PROFILE
+    - REQUIREMENTS_SPEC
+  when_not_applicable:
+    decision: skipped
+    emit: COMPLIANCE_APPLICABILITY_DECISION   # records not_applicable + rationale; conditional gates waived
+    on_pass: data_migration_validation_if_applicable
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: compliance_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall domain/risk profile, requirements, security & privacy design context
+  - Web      # look up applicable regulatory / domain standards and obligations
+  - Coder    # read repo/spec artifacts to confirm controls trace to obligations
+
+uses_skills:
+  - gap-audit    # detect regulatory/contractual obligations with no requirement/control to trace to
+  - llm-council  # multi-model adjudication of ambiguous regulatory applicability / interpretation
+  - calibrate    # consistent severity calibration of compliance findings
+
+uses_tools:
+  - compliance_matrix_builder   # build the obligation -> requirement -> control COMPLIANCE_MATRIX
+  - requirements_trace_checker  # verify each applicable obligation traces to a requirement / control
+  - policy_query                # query governance / regulatory policy obligations for applicability
+  - evidence_reader             # read upstream security/privacy/requirements evidence to confirm coverage
+  - artifact_writer             # write COMPLIANCE_MATRIX / reports (side-effect: implies governance + trace)
+  - evidence_writer             # persist stage evidence (side-effect: implies governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy     # review/validation gate: owner_agent must differ from reviewed-artifact authors
+  - evidence_required_policy
+  - domain_compliance_governance
+  - regulatory_traceability_gate   # stage-specific gate profile
+
+uses_audit_schemas:
+  - compliance_matrix_schema     # evidence schema (distinct from trace)
+  - regulatory_evidence_schema   # evidence schema (distinct from trace)
+  - stage_gate_trace_schema      # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+  - security_analysis_model      # regulatory / security-control judgement
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - requirements_context_pack    # consumed: regulatory-obligation -> requirement traceability
+  - security_context_pack        # consumed: security/privacy controls evidence
+
+inputs:
+  - DOMAIN_PROFILE_DECISION
+  - RISK_PROFILE
+  - REQUIREMENTS_SPEC
+  - SECURITY_REQUIREMENTS
+  - PRIVACY_RISK_REGISTER
+
+outputs:
+  - COMPLIANCE_APPLICABILITY_DECISION
+  - COMPLIANCE_MATRIX_IF_APPLICABLE
+  - REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE
+  - COMPLIANCE_GATE_RESULT_IF_APPLICABLE
+
+evidence:
+  - COMPLIANCE_APPLICABILITY_DECISION
+  - COMPLIANCE_MATRIX_IF_APPLICABLE
+  - REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE
+  - COMPLIANCE_GATE_RESULT_IF_APPLICABLE
+
+trace:
+  - compliance_validation_stage_trace
+  - compliance_matrix_builder_tool_trace
+  - requirements_trace_checker_tool_trace
+  - stage_gate_decision_trace
+
+gates:
+  - compliance_applicability_decided
+  - compliance_pass_if_applicable
+  - regulatory_traceability_pass_if_applicable
+  - regulatory_requirement_traceable
+
+on_pass: data_migration_validation_if_applicable
+on_fail: security_privacy_design
+rework_route: security_privacy_design
+
+blocking_conditions:
+  - unresolved_regulatory_requirement
+  - missing_compliance_traceability
+  - applicability_decision_missing
+
+optional_conditions:
+  - regulated_domain
+  - contractual_compliance_required
+  - public_sector_or_enterprise_requirements_present
+
+conditional_required_gates:
+  - gate_id: compliance_pass_if_applicable
+    required_when: >-
+      regulated_domain == true or contractual_compliance_required == true or
+      public_sector_or_enterprise_requirements_present == true
+  - gate_id: regulatory_traceability_pass_if_applicable
+    required_when: >-
+      regulated_domain == true or contractual_compliance_required == true or
+      public_sector_or_enterprise_requirements_present == true
+
+max_iterations: 3

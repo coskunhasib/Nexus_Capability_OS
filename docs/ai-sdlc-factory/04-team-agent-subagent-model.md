@@ -579,7 +579,7 @@ outputs:
 
 ```yaml
 id: evidence_trace_subagent
-parent_agent: release_manager_agent
+parent_agent: evidence_graph_agent   # SDLC stage #28 owner; matches sub_agent_roles.yaml + stage 28 contract (artifact author != downstream gate decider). Was release_manager_agent (corrected).
 mission: Requirement → design → code → test → gate → release candidate zincirini kurar.
 skills:
   - evidence-graph-builder

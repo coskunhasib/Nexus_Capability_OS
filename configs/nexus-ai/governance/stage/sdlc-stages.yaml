@@ -1,0 +1,3258 @@
+# =============================================================================
+# Nexus AI — STAGE-SCOPE Governance Config: SDLC Stages
+# =============================================================================
+# Phase E / doc 19 (19-governance-audit-readiness-plan.md). Documentation /
+# blueprint ONLY — NO runtime code, NO merge, NO deploy.
+#
+# WHAT THIS FILE IS
+#   This is the *applicable* stage-scope governance LAYER for the SDLC pipeline:
+#   ONE stage-scope governance profile per SDLC stage (31 stages, read from
+#   configs/nexus-ai/stages/sdlc/*.yaml). The Phase C registry
+#   (configs/nexus-ai/governance_profiles.yaml) is the CATALOG of *what exists*
+#   (105 profiles by scope); THIS file makes the stage layer *evaluable from
+#   config*: each profile carries concrete rules (doc 19 §5) derived from that
+#   stage's gates + uses_governance_profiles, with on_fail / rework_route wired
+#   from the stage contract. Reading these 31 profiles answers, per stage:
+#   "which gates are blocking, what makes them pass/fail, where does a failure
+#   route, and what evidence/trace must back the decision?" — so the SDLC
+#   required gates can be evaluated from configs (doc 19 §15 exit criterion).
+#
+# RELATIONSHIP TO THE REGISTRY (no duplication of catalog truth)
+#   - The registry lists each stage's *_governance / *_gate profile ids as the
+#     catalog of what exists. Here, each of the 31 stage profiles REFERENCES
+#     those registry ids in `uses_governance_profiles` (re-show under usage,
+#     per the usage-mapping rule) and TURNS THEM INTO RULES. The registry id is
+#     the authority for existence; this file is the authority for applicability.
+#   - The two cross-cutting GLOBAL policies every stage binds are referenced by
+#     their FIRST-CLASS canonical ids `no_self_approval` and `evidence_required`
+#     (doc 19 reconciliation (a)); the per-stage spellings
+#     `no_self_approval_policy` / `evidence_required_policy` are recorded under
+#     `source_governance_tokens` on each profile as the literal stage-file token,
+#     and globally under `governance_token_aliases` below. Neither spelling is
+#     broken.
+#
+# LOCKED DECISIONS HONORED
+#   - Plugin CANCELLED: no plugin concept, field, or stage anywhere.
+#   - Governance != Audit: this file holds GOVERNANCE (policy/gates/risk rules)
+#     only. It REFERENCES audit schema ids (required_evidence / required_trace /
+#     per-rule evidence_required / trace_required) but defines NO schema here.
+#   - Evidence != Trace: required_evidence draws ONLY from evidence-family schema
+#     ids; required_trace draws ONLY from trace-family schema ids. They are never
+#     merged. (Evidence schemas vs trace schemas also live in SEPARATE dirs:
+#     configs/nexus-ai/audit/evidence_schemas/ vs .../audit/trace_schemas/.)
+#   - Core Abilities are NOT agents: owner/escalation values are snake_case Agent
+#     roles, the *_team_lead orchestrator, or the policy/evidence engine — NEVER
+#     a Core Ability (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS)
+#     and the Supervisor is never a *_team_lead.
+#   - Supervisor != team lead. prism = brainstorming/divergence;
+#     verification-loop = bug/defect finding (locked semantics, not re-defined
+#     here; stage 03 + stage 15 governance enforce them).
+#
+# CONTRACTS
+#   Governance profile contract (doc 19 §4):
+#     governance_profile_id, scope, purpose, applies_to, severity_default,
+#     rules, required_evidence, required_trace, owner, escalation
+#   Rule contract (doc 19 §5):
+#     rule_id, description, severity, required_when, pass_condition,
+#     fail_condition, on_fail, rework_route, evidence_required, trace_required
+#
+# DERIVATION METHOD (how each stage's rules were produced — auditable)
+#   For every stage S in configs/nexus-ai/stages/sdlc/*.yaml:
+#     1. severity_default := blocker (every SDLC stage gate is blocking unless a
+#        conditional_required_gates entry declares severity: major).
+#     2. One rule per ALWAYS-REQUIRED gate in S.gates that is not listed under
+#        S.conditional_required_gates:
+#          required_when: always
+#          pass_condition: <gate> == true
+#          fail_condition: derived from the matching S.blocking_conditions entry
+#          severity: blocker
+#     3. One rule per CONDITIONAL gate (gate appears in
+#        S.conditional_required_gates):
+#          required_when: copied verbatim from the stage's required_when
+#          severity: copied from the stage (major where declared, else blocker)
+#          pass/fail as above; when the applicability predicate is false the gate
+#          is not_applicable (vacuously satisfied) — captured in required_when.
+#     4. One no_self_approval rule IFF S.uses_governance_profiles lists
+#        no_self_approval_policy (producer_agent_id != approver_agent_id).
+#     5. One evidence_required rule (every stage binds evidence_required_policy):
+#          no gate may pass without an evidence record of the right schema.
+#     6. on_fail / rework_route on EVERY rule := S.on_fail / S.rework_route
+#        verbatim (the stage contract is the single source of routing truth;
+#        re-stated per rule so a rule is self-contained and evaluable).
+#     7. required_evidence := S.uses_audit_schemas entries whose registry `type`
+#        is an Evidence-family schema (evidence_schema / decision_record_schema /
+#        gate_result_schema). required_trace := S.uses_audit_schemas entries
+#        whose `type` is trace_schema. (Evidence != Trace, split by type.)
+#     8. owner := S.owner_agent ; escalation := S.team_lead (sdlc_team_lead) then
+#        the policy_and_evidence_engine for a no_policy_bypass breach (a Team Lead
+#        cannot override a blocking gate — global no_policy_bypass).
+#
+# SEVERITY vocabulary (configs/nexus-ai/pipeline_contract_standard.yaml
+#   severity_values; doc 19 §5): blocker | major | advisory | informational.
+# REWORK-ROUTE values are canonical SDLC stage_ids or routing terminals
+#   (done | relevant_failed_stage), validated by
+#   sdlc_pipeline_runtime_rules.yaml routing_invariants.
+# =============================================================================
+
+config_id: nexus_ai_governance_stage_sdlc
+config_name: Nexus AI — SDLC Stage-Scope Governance Profiles
+config_version: draft-0.1
+config_status: draft
+scope: stage
+pipeline: sdlc_pipeline
+layer: stage_governance
+no_plugin: true
+governance_audit_separation: enforced   # Governance != Audit; Evidence != Trace
+profile_count: 31
+
+# ----- provenance ------------------------------------------------------------
+canonical_sources:
+  - configs/nexus-ai/stages/sdlc/*.yaml                 # 31 stage contracts: gates, uses_governance_profiles, on_fail, rework_route, conditional_required_gates (PRIMARY)
+  - configs/nexus-ai/governance_profiles.yaml           # Phase C registry: the *_governance / *_gate / global profile ids referenced here
+  - configs/nexus-ai/audit_schemas.yaml                 # Phase C registry: evidence-family vs trace-family schema ids (Evidence != Trace split)
+  - configs/nexus-ai/sdlc_pipeline.yaml                 # SDLC pipeline-level uses_governance_profiles
+  - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml   # rework_route allowlist + routing invariants + locked guards
+  - configs/nexus-ai/pipeline_contract_standard.yaml    # severity_values; allowed_rework_routes
+  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md   # §6 stage governance (concept)
+  - docs/ai-sdlc-factory/06-governance-policy-evidence.md      # canonical no_self_approval / evidence_required / no_policy_bypass
+  - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md # §4 profile contract, §5 rule contract, §14 validation
+
+# ----- closed vocabularies (doc 19 §14 validation) ---------------------------
+scope_vocabulary: [global, pipeline, team, stage, core_ability, skill, tool]
+severity_vocabulary: [blocker, major, advisory, informational]
+rework_route_terminals: [done, relevant_failed_stage]
+
+# ----- governance-token alias reconciliation (doc 19 reconciliation (a)) -----
+# The stage files spell the two global policies with a `_policy` suffix. The
+# FIRST-CLASS ids are the bare names (registered canonical in the registry); the
+# suffixed spellings are aliases. Both are preserved.
+governance_token_aliases:
+  no_self_approval:
+    canonical_id: no_self_approval
+    aliases: [no_self_approval_policy]
+  evidence_required:
+    canonical_id: evidence_required
+    aliases: [evidence_required_policy]
+
+# ----- enforceable invariants for this layer (doc 19 §14) --------------------
+config_rules:
+  - Exactly one stage-scope governance profile per SDLC stage (31 total).
+  - Every profile.scope == stage and every applies_to entry is a known SDLC stage_id.
+  - Every rule has a severity drawn from severity_vocabulary.
+  - Every blocker rule has an on_fail behavior (on_fail + rework_route) — no
+    blocking rule is left without failure handling (doc 19 §14).
+  - required_evidence references ONLY evidence-family audit schema ids;
+    required_trace references ONLY trace-family audit schema ids (Evidence != Trace).
+  - on_fail / rework_route values equal the source stage's on_fail / rework_route
+    (configs/nexus-ai/stages/sdlc/*.yaml) and resolve to a canonical stage_id or
+    a rework_route_terminal.
+  - owner / escalation are snake_case Agent roles or sdlc_team_lead or the
+    policy_and_evidence_engine — never a Core Ability; Supervisor is never a team lead.
+  - No plugin concept is introduced.
+
+# =============================================================================
+# THE 31 STAGE-SCOPE GOVERNANCE PROFILES
+# Ordered by SDLC stage number. Each profile id is `<stage_id>_stage_governance`.
+# =============================================================================
+profiles:
+
+  # ---------------------------------------------------------------------------
+  # Stage 01 — intake  (always-on)
+  # source gates: product_goal_present, initial_scope_bounded, success_metrics_present
+  # on_fail: intake ; rework_route: intake
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: intake_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 01 (intake): the product goal must be
+      present, the initial scope bounded, and success metrics present — backed by
+      evidence — before intake hands off to domain_risk_profile. Intake authors the
+      brief; it does not decide domain/risk class and does not produce requirements.
+    applies_to:
+      - sdlc_stage:intake
+    severity_default: blocker
+    source_governance_tokens:        # verbatim uses_governance_profiles from the stage file
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - intake_scope_gate
+    uses_governance_profiles:        # registry ids re-shown under this usage (first-class spellings)
+      - sdlc_pipeline_governance
+      - evidence_required
+      - intake_scope_gate
+    required_evidence:               # evidence-family schemas only (Evidence != Trace)
+      - sdlc_pipeline_evidence_schema
+    required_trace:                  # trace-family schemas only
+      - stage_gate_trace_schema
+    owner: product_requirements_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine   # no_policy_bypass: Team Lead cannot override a blocking gate
+    rules:
+      - rule_id: intake_product_goal_present
+        description: A bounded product goal must be captured from USER_GOAL before handoff.
+        severity: blocker
+        required_when: always
+        pass_condition: product_goal_present == true
+        fail_condition: missing_product_goal
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: intake_initial_scope_bounded
+        description: In-scope vs out-of-scope must be explicitly bounded.
+        severity: blocker
+        required_when: always
+        pass_condition: initial_scope_bounded == true
+        fail_condition: unbounded_scope
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: intake_success_metrics_present
+        description: Success metrics must be present so downstream stages inherit measurable intent.
+        severity: blocker
+        required_when: always
+        pass_condition: success_metrics_present == true
+        fail_condition: missing_success_metrics
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: intake_evidence_required
+        description: No intake gate may pass without an SDLC evidence record (evidence_required, not trace).
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 02 — domain_risk_profile  (always-on)
+  # gates: domain_profile_selected, risk_profile_selected, conditional_gate_flags_initialized
+  # on_fail: intake ; rework_route: intake
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: domain_risk_profile_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 02 (domain_risk_profile): govern the
+      domain classification and risk-class decision and the initialization of the
+      conditional-gate flags, so every downstream conditional gate inherits a
+      governed risk class and applicability decision.
+    applies_to:
+      - sdlc_stage:domain_risk_profile
+    severity_default: blocker
+    source_governance_tokens:
+      - domain_risk_governance
+      - evidence_required_policy
+      - domain_risk_profile_gate
+    uses_governance_profiles:
+      - domain_risk_governance
+      - evidence_required
+      - domain_risk_profile_gate
+    required_evidence:
+      - domain_risk_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: domain_risk_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: domain_profile_selected
+        description: A domain profile decision must be recorded.
+        severity: blocker
+        required_when: always
+        pass_condition: domain_profile_selected == true
+        fail_condition: unknown_domain
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [domain_risk_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: risk_profile_selected
+        description: A risk class calibrating pipeline rigor must be selected.
+        severity: blocker
+        required_when: always
+        pass_condition: risk_profile_selected == true
+        fail_condition: unresolved_risk_class
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [domain_risk_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: conditional_gate_flags_initialized
+        description: All downstream conditional-gate applicability flags must be initialized.
+        severity: blocker
+        required_when: always
+        pass_condition: conditional_gate_flags_initialized == true
+        fail_condition: conditional_gate_flags_uninitialized
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [domain_risk_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: domain_risk_evidence_required
+        description: The domain/risk decision must be backed by a domain-risk evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: intake
+        rework_route: intake
+        evidence_required: [domain_risk_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 03 — skill_semantic_extraction  (always-on)
+  # binds no_self_approval_policy. Locks prism=divergence, verification-loop=bug-finding.
+  # on_fail: skill_semantic_extraction ; rework_route: skill_semantic_extraction
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: skill_semantic_extraction_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 03 (skill_semantic_extraction): no skill
+      may be bound into the pipeline before its semantics are extracted and verified;
+      misuse warnings must be present; and the two high-risk locked semantics are
+      enforced — prism = divergence/brainstorming, verification-loop = bug/defect
+      finding. The semantic extraction must be produced under no-self-approval.
+    applies_to:
+      - sdlc_stage:skill_semantic_extraction
+    severity_default: blocker
+    source_governance_tokens:
+      - skill_governance
+      - skill_semantic_extraction_gate
+      - evidence_required_policy
+      - no_self_approval_policy
+    uses_governance_profiles:
+      - skill_governance
+      - skill_semantic_extraction_gate
+      - evidence_required
+      - no_self_approval
+    required_evidence:
+      - skill_semantic_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: skill_librarian_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: all_selected_skills_have_semantics
+        description: Every selected skill must have an extracted semantic record before binding (no_unread_skill_binding).
+        severity: blocker
+        required_when: always
+        pass_condition: all_selected_skills_have_semantics == true
+        fail_condition: unknown_skill_semantics
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: misuse_warnings_present
+        description: Misuse warnings must be present for the extracted skills.
+        severity: blocker
+        required_when: always
+        pass_condition: misuse_warnings_present == true
+        fail_condition: missing_misuse_warning
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: prism_bound_as_divergence
+        description: prism must be classified as divergence/brainstorming — never as bug-finding or a readiness gate (locked semantics).
+        severity: blocker
+        required_when: always
+        pass_condition: prism_bound_as_divergence == true
+        fail_condition: prism_misclassified_as_bug_finding_or_readiness_gate
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: verification_loop_bound_as_bug_finding
+        description: verification-loop must be classified as bug/defect finding — never as a generic readiness checklist (locked semantics).
+        severity: blocker
+        required_when: always
+        pass_condition: verification_loop_bound_as_bug_finding == true
+        fail_condition: verification_loop_misclassified_as_readiness_checklist
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: skill_stage_binding_proposed
+        description: A skill-to-stage binding proposal must be produced.
+        severity: blocker
+        required_when: always
+        pass_condition: skill_stage_binding_proposed == true
+        fail_condition: skill_stage_binding_missing
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: skill_semantic_confidence_above_threshold
+        description: Semantic-extraction confidence must be at or above threshold.
+        severity: blocker
+        required_when: always
+        pass_condition: skill_semantic_confidence_above_threshold == true
+        fail_condition: skill_semantic_confidence_below_threshold
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: skill_semantic_no_self_approval
+        description: The semantic-extraction author must not be the sole approver of the binding proposal (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: skill_semantic_evidence_required
+        description: No skill-extraction gate may pass without a skill-semantic evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: skill_semantic_extraction
+        rework_route: skill_semantic_extraction
+        evidence_required: [skill_semantic_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 04 — requirements  (always-on)
+  # on_fail: requirements ; rework_route: intake
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: requirements_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 04 (requirements): functional
+      requirements, an NFR catalog, acceptance criteria, and requirements→source
+      traceability must be present and traceable to the product goal — backed by
+      evidence — before requirements hands off to the requirements_review gate.
+    applies_to:
+      - sdlc_stage:requirements
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - requirements_acceptance_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required
+      - requirements_acceptance_gate
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: product_requirements_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: requirements_present
+        description: Functional requirements must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: requirements_present == true
+        fail_condition: unresolved_requirement_ambiguity
+        on_fail: requirements
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: nfr_catalog_present
+        description: A non-functional-requirements catalog must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: nfr_catalog_present == true
+        fail_condition: nfr_catalog_missing
+        on_fail: requirements
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: acceptance_criteria_present
+        description: Testable acceptance criteria must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: acceptance_criteria_present == true
+        fail_condition: missing_acceptance_criteria
+        on_fail: requirements
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: requirements_traceable
+        description: Every requirement must be traceable to the product goal.
+        severity: blocker
+        required_when: always
+        pass_condition: requirements_traceable == true
+        fail_condition: requirement_not_traceable_to_product_goal
+        on_fail: requirements
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: requirements_evidence_required
+        description: No requirements gate may pass without an SDLC evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: requirements
+        rework_route: intake
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 05 — requirements_review  (always-on, REVIEW gate; binds no_self_approval)
+  # on_fail: requirements ; rework_route: requirements
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: requirements_review_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 05 (requirements_review): an independent
+      review-gate over the requirements outputs (prompt fidelity, requirement-gap,
+      acceptance-criteria, traceability), performed by a non-author owner
+      (sdlc_team_lead as the locked review-gate fallback) under no-self-approval.
+    applies_to:
+      - sdlc_stage:requirements_review
+    severity_default: blocker
+    source_governance_tokens:
+      - no_self_approval_policy
+      - evidence_required_policy
+      - requirements_review_governance
+      - prompt_fidelity_gate
+    uses_governance_profiles:
+      - no_self_approval
+      - evidence_required
+      - requirements_review_governance
+      - prompt_fidelity_gate
+    required_evidence:
+      - requirements_review_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: sdlc_team_lead              # locked review-gate fallback; differs from product_requirements_agent (author)
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: requirements_review_no_self_approval
+        description: The reviewer must differ from the REQUIREMENTS_SPEC author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [requirements_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: prompt_fidelity_pass
+        description: Requirements must faithfully reflect the captured user intent (prompt-fidelity).
+        severity: blocker
+        required_when: always
+        pass_condition: prompt_fidelity_pass == true
+        fail_condition: prompt_fidelity_failure
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [requirements_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_major_requirement_gap
+        description: No major requirement coverage gap may remain.
+        severity: blocker
+        required_when: always
+        pass_condition: no_major_requirement_gap == true
+        fail_condition: major_requirement_gap
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [requirements_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: acceptance_criteria_reviewed
+        description: Acceptance criteria must be reviewed and judged sufficient.
+        severity: blocker
+        required_when: always
+        pass_condition: acceptance_criteria_reviewed == true
+        fail_condition: acceptance_criteria_insufficient
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [requirements_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: requirements_traceable_reviewed
+        description: Requirements traceability must be reviewed and intact.
+        severity: blocker
+        required_when: always
+        pass_condition: requirements_traceable_reviewed == true
+        fail_condition: untraceable_requirement
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [requirements_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: requirements_review_evidence_required
+        description: The review verdict must be backed by a requirements-review evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [requirements_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 06 — architecture  (always-on)
+  # on_fail: requirements ; rework_route: requirements
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: architecture_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 06 (architecture): the architecture must
+      demonstrably address the NFRs, capture every major decision as an ADR, define
+      system boundaries, and record rejected options — backed by evidence — before
+      handing off to the architecture_review gate.
+    applies_to:
+      - sdlc_stage:architecture
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - architecture_design_governance
+      - adr_required_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required
+      - architecture_design_governance
+      - adr_required_gate
+    required_evidence:
+      - architecture_evidence_schema
+    required_trace:
+      - architecture_decision_trace_schema
+      - stage_gate_trace_schema
+    owner: architecture_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: architecture_addresses_nfrs
+        description: The architecture must demonstrably address the NFR catalog.
+        severity: blocker
+        required_when: always
+        pass_condition: architecture_addresses_nfrs == true
+        fail_condition: unaddressed_nfr
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [architecture_evidence_schema]
+        trace_required: [architecture_decision_trace_schema, stage_gate_trace_schema]
+      - rule_id: adr_present_for_major_decisions
+        description: Every major architecture decision must be captured as an ADR.
+        severity: blocker
+        required_when: always
+        pass_condition: adr_present_for_major_decisions == true
+        fail_condition: missing_critical_adr
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [architecture_evidence_schema]
+        trace_required: [architecture_decision_trace_schema, stage_gate_trace_schema]
+      - rule_id: system_boundaries_defined
+        description: System boundaries must be defined.
+        severity: blocker
+        required_when: always
+        pass_condition: system_boundaries_defined == true
+        fail_condition: undefined_system_boundary
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [architecture_evidence_schema]
+        trace_required: [architecture_decision_trace_schema, stage_gate_trace_schema]
+      - rule_id: rejected_options_recorded
+        description: Rejected architecture options must be recorded with rationale.
+        severity: blocker
+        required_when: always
+        pass_condition: rejected_options_recorded == true
+        fail_condition: rejected_options_not_recorded
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [architecture_evidence_schema]
+        trace_required: [architecture_decision_trace_schema, stage_gate_trace_schema]
+      - rule_id: architecture_evidence_required
+        description: No architecture gate may pass without an architecture evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: requirements
+        rework_route: requirements
+        evidence_required: [architecture_evidence_schema]
+        trace_required: [architecture_decision_trace_schema, stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 07 — architecture_review  (always-on, REVIEW gate; binds no_self_approval)
+  # on_fail: architecture ; rework_route: architecture
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: architecture_review_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 07 (architecture_review): an independent
+      review-gate that stress-tests architecture decisions, ADRs, NFR trade-offs and
+      system boundaries; performed by a non-author owner (sdlc_team_lead as the
+      locked review-gate fallback) under no-self-approval.
+    applies_to:
+      - sdlc_stage:architecture_review
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - architecture_review_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - architecture_review_gate
+    required_evidence:
+      - architecture_review_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: sdlc_team_lead              # locked review-gate fallback; differs from architecture_agent (author)
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: architecture_review_no_self_approval
+        description: The reviewer must differ from the ARCHITECTURE_DOC author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [architecture_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_unresolved_architecture_risk
+        description: No unresolved architecture risk may remain.
+        severity: blocker
+        required_when: always
+        pass_condition: no_unresolved_architecture_risk == true
+        fail_condition: unresolved_architecture_risk
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [architecture_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: rejected_options_documented
+        description: Rejected options must be documented in the review.
+        severity: blocker
+        required_when: always
+        pass_condition: rejected_options_documented == true
+        fail_condition: rejected_options_not_documented
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [architecture_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: nfr_tradeoffs_justified
+        description: NFR trade-offs in the chosen design must be justified.
+        severity: blocker
+        required_when: always
+        pass_condition: nfr_tradeoffs_justified == true
+        fail_condition: missing_tradeoff_rationale
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [architecture_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: architecture_review_pass
+        description: The architecture review verdict must pass (no unaddressed NFR in the architecture).
+        severity: blocker
+        required_when: always
+        pass_condition: architecture_review_pass == true
+        fail_condition: unaddressed_nfr_in_architecture
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [architecture_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: architecture_review_evidence_required
+        description: The review verdict must be backed by an architecture-review evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [architecture_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 08 — security_privacy_design  (always-on; binds no_self_approval)
+  # has conditional_required_gates (privacy_risks_classified, data_lifecycle_visible)
+  # on_fail: architecture ; rework_route: architecture
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: security_privacy_design_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 08 (security_privacy_design): a threat
+      model, classified privacy risks, an auth/authz strategy, a visible data
+      lifecycle, and NFR-traced security requirements must be produced under
+      no-self-approval before design completes. Privacy risk classification and
+      data-lifecycle visibility are conditionally required when personal/tenant data
+      is handled.
+    applies_to:
+      - sdlc_stage:security_privacy_design
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - privacy_lifecycle_governance
+      - security_privacy_governance
+      - threat_model_required_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - privacy_lifecycle_governance
+      - security_privacy_governance
+      - threat_model_required_gate
+    required_evidence:
+      - threat_model_evidence_schema
+      - privacy_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: security_privacy_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: threat_model_present
+        description: A threat model must be produced before design completion.
+        severity: blocker
+        required_when: always
+        pass_condition: threat_model_present == true
+        fail_condition: missing_threat_model
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [threat_model_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: privacy_risks_classified
+        description: Privacy risks must be classified when the product handles personal data (conditional gate).
+        severity: blocker
+        required_when: product_handles_personal_data == true
+        pass_condition: privacy_risks_classified == true
+        fail_condition: unclassified_privacy_risk
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [privacy_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: authz_authn_strategy_present
+        description: An authentication/authorization strategy must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: authz_authn_strategy_present == true
+        fail_condition: missing_auth_strategy
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [threat_model_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: data_lifecycle_visible
+        description: The data lifecycle must be visible when personal data is handled or the product is multi-tenant (conditional gate).
+        severity: blocker
+        required_when: product_handles_personal_data == true or product_is_multi_tenant == true
+        pass_condition: data_lifecycle_visible == true
+        fail_condition: undefined_data_lifecycle
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [privacy_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: security_requirements_trace_to_nfr
+        description: Security requirements must trace to the NFR catalog.
+        severity: blocker
+        required_when: always
+        pass_condition: security_requirements_trace_to_nfr == true
+        fail_condition: security_requirement_without_nfr_trace
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [threat_model_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: security_privacy_design_complete
+        description: The security/privacy design must be complete and decided under no-human governance.
+        severity: blocker
+        required_when: always
+        pass_condition: security_privacy_design_complete == true
+        fail_condition: security_privacy_design_incomplete
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [threat_model_evidence_schema, privacy_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: security_privacy_design_no_self_approval
+        description: The security/privacy design decision must be produced under no-self-approval (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [threat_model_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: security_privacy_design_evidence_required
+        description: No security/privacy design gate may pass without a threat-model/privacy evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [threat_model_evidence_schema, privacy_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 09 — premortem_fmea  (always-on; binds no_self_approval)
+  # on_fail: architecture ; rework_route: architecture
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: premortem_fmea_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 09 (premortem_fmea): a structured
+      premortem + FMEA risk register over failure modes, abuse cases and edge cases;
+      every critical risk must be either accepted with an owner or carry an owned
+      mitigation, traced to the architecture — produced under no-self-approval.
+    applies_to:
+      - sdlc_stage:premortem_fmea
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - risk_review_governance
+      - fmea_required_gate
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - risk_review_governance
+      - fmea_required_gate
+      - no_self_approval
+      - evidence_required
+    required_evidence:
+      - risk_register_schema
+      - premortem_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: risk_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: no_unaccepted_critical_risk
+        description: No critical risk may remain unaccepted.
+        severity: blocker
+        required_when: always
+        pass_condition: no_unaccepted_critical_risk == true
+        fail_condition: unaccepted_critical_risk
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [risk_register_schema, premortem_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: mitigation_owner_present
+        description: Every mitigation must have a named owner.
+        severity: blocker
+        required_when: always
+        pass_condition: mitigation_owner_present == true
+        fail_condition: missing_mitigation_owner
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [risk_register_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: risk_register_reviewed
+        description: The FMEA risk register must be reviewed.
+        severity: blocker
+        required_when: always
+        pass_condition: risk_register_reviewed == true
+        fail_condition: risk_register_not_reviewed
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [risk_register_schema, premortem_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: failure_modes_traced_to_architecture
+        description: Critical failure modes must be traced to the architecture with detection or mitigation.
+        severity: blocker
+        required_when: always
+        pass_condition: failure_modes_traced_to_architecture == true
+        fail_condition: critical_failure_mode_without_detection_or_mitigation
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [risk_register_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: premortem_fmea_no_self_approval
+        description: The risk register must be produced under no-self-approval (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [premortem_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: premortem_fmea_evidence_required
+        description: No premortem/FMEA gate may pass without a risk-register/premortem evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [risk_register_schema, premortem_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 10 — planning  (always-on)
+  # on_fail: planning ; rework_route: planning
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: planning_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 10 (planning): tasks must trace to
+      requirements, handoff packets must be complete, and the implementation scope
+      must be bounded — backed by evidence — before build begins.
+    applies_to:
+      - sdlc_stage:planning
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - planning_handoff_completeness_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required
+      - planning_handoff_completeness_gate
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: planning_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: tasks_trace_to_requirements
+        description: Every planned task must trace to a requirement.
+        severity: blocker
+        required_when: always
+        pass_condition: tasks_trace_to_requirements == true
+        fail_condition: untraceable_task
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: handoff_packets_complete
+        description: Implementation handoff packets must be complete.
+        severity: blocker
+        required_when: always
+        pass_condition: handoff_packets_complete == true
+        fail_condition: missing_handoff_packet
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: implementation_scope_bounded
+        description: The implementation scope must be bounded before build.
+        severity: blocker
+        required_when: always
+        pass_condition: implementation_scope_bounded == true
+        fail_condition: unbounded_implementation_scope
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: planning_evidence_required
+        description: No planning gate may pass without an SDLC evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 11 — implementation  (always-on)
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: implementation_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 11 (implementation): code changes must
+      be present, contained to the planned scope (no out-of-scope changes), and pass
+      a local build — backed by evidence — before code review. No silent mutation
+      (every change has an explicit tool + trace, per the global trace policy).
+    applies_to:
+      - sdlc_stage:implementation
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - implementation_governance
+      - no_out_of_scope_change_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required
+      - implementation_governance
+      - no_out_of_scope_change_gate
+    required_evidence:
+      - implementation_evidence_schema
+    required_trace:
+      - code_change_trace_schema
+      - stage_gate_trace_schema
+    owner: engineering_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: code_changes_present
+        description: A non-empty code changeset must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: code_changes_present == true
+        fail_condition: no_code_changes_present
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [implementation_evidence_schema]
+        trace_required: [code_change_trace_schema, stage_gate_trace_schema]
+      - rule_id: implementation_scope_clean
+        description: The changeset must stay within the planned scope.
+        severity: blocker
+        required_when: always
+        pass_condition: implementation_scope_clean == true
+        fail_condition: out_of_scope_change
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [implementation_evidence_schema]
+        trace_required: [code_change_trace_schema, stage_gate_trace_schema]
+      - rule_id: no_out_of_scope_changes
+        description: No changes outside the planned scope are permitted.
+        severity: blocker
+        required_when: always
+        pass_condition: no_out_of_scope_changes == true
+        fail_condition: out_of_scope_change
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [implementation_evidence_schema]
+        trace_required: [code_change_trace_schema, stage_gate_trace_schema]
+      - rule_id: local_build_pass
+        description: The local build must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: local_build_pass == true
+        fail_condition: local_build_failure
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [implementation_evidence_schema]
+        trace_required: [code_change_trace_schema, stage_gate_trace_schema]
+      - rule_id: implementation_evidence_required
+        description: No implementation gate may pass without an implementation evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [implementation_evidence_schema]
+        trace_required: [code_change_trace_schema, stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 12 — code_review  (always-on, REVIEW gate; binds no_self_approval)
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: code_review_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 12 (code_review): an independent code
+      review with a dedicated non-author reviewer (code_reviewer_agent != the
+      changeset author engineering_agent) under no-self-approval; no critical review
+      finding, no architecture violation, and changed behavior must carry required
+      tests.
+    applies_to:
+      - sdlc_stage:code_review
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - code_review_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - code_review_gate
+    required_evidence:
+      - code_review_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: code_reviewer_agent          # dedicated reviewer; differs from engineering_agent (author)
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: code_review_no_self_approval
+        description: The reviewer must differ from the changeset author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [code_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_critical_review_finding
+        description: No critical code-review finding may remain.
+        severity: blocker
+        required_when: always
+        pass_condition: no_critical_review_finding == true
+        fail_condition: critical_review_finding
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [code_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: architecture_violation_absent
+        description: The changeset must not violate the approved architecture.
+        severity: blocker
+        required_when: always
+        pass_condition: architecture_violation_absent == true
+        fail_condition: architecture_violation
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [code_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: changed_behavior_has_required_tests
+        description: Changed behavior must be covered by required tests.
+        severity: blocker
+        required_when: always
+        pass_condition: changed_behavior_has_required_tests == true
+        fail_condition: missing_required_tests_for_changed_behavior
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [code_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: code_review_pass
+        description: The code review verdict must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: code_review_pass == true
+        fail_condition: code_review_failure
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [code_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: code_review_evidence_required
+        description: The review verdict must be backed by a code-review evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [code_review_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 13 — test_generation  (always-on)
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: test_generation_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 13 (test_generation): critical paths and
+      changed behavior must have tests, the regression scope must be defined, and
+      tests must trace to requirements — backed by evidence — before execution.
+    applies_to:
+      - sdlc_stage:test_generation
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - test_coverage_completeness_gate
+      - regression_scope_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required
+      - test_coverage_completeness_gate
+      - regression_scope_gate
+    required_evidence:
+      - test_plan_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: qa_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: critical_paths_have_tests
+        description: All critical paths must have tests.
+        severity: blocker
+        required_when: always
+        pass_condition: critical_paths_have_tests == true
+        fail_condition: missing_critical_path_tests
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_plan_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: changed_behavior_has_tests
+        description: Changed behavior must have tests.
+        severity: blocker
+        required_when: always
+        pass_condition: changed_behavior_has_tests == true
+        fail_condition: changed_behavior_without_tests
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_plan_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: regression_scope_defined
+        description: The regression scope must be defined and covered.
+        severity: blocker
+        required_when: always
+        pass_condition: regression_scope_defined == true
+        fail_condition: undefined_regression_scope
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_plan_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: tests_trace_to_requirements
+        description: Generated tests must trace to requirements.
+        severity: blocker
+        required_when: always
+        pass_condition: tests_trace_to_requirements == true
+        fail_condition: untraceable_test_to_requirement
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_plan_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: test_generation_evidence_required
+        description: No test-generation gate may pass without a test-plan evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_plan_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 14 — test_execution  (always-on; binds no_self_approval as standing guard)
+  # NOTE: stage references coverage_policy_gate / flaky_test_quarantine_gate which are
+  #       NOT yet in the Phase C governance registry (see open_questions).
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: test_execution_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 14 (test_execution): the test suite must
+      pass, coverage policy must hold, and flaky tests must be handled — with results
+      recorded faithfully (no manipulation). The execution stage authors only its own
+      artifacts, so no_self_approval is bound as a standing guard.
+    applies_to:
+      - sdlc_stage:test_execution
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - evidence_required_policy
+      - no_self_approval_policy
+      - test_execution_governance
+      - coverage_policy_gate
+      - flaky_test_quarantine_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - evidence_required
+      - no_self_approval
+      - test_execution_governance
+      - coverage_policy_gate            # NOT in Phase C registry yet — flagged in open_questions
+      - flaky_test_quarantine_gate      # NOT in Phase C registry yet — flagged in open_questions
+    required_evidence:
+      - test_execution_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: qa_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: tests_pass
+        description: The executed test suite must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: tests_pass == true
+        fail_condition: test_failure
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_execution_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: coverage_policy_pass
+        description: Coverage thresholds defined by policy must be met.
+        severity: blocker
+        required_when: always
+        pass_condition: coverage_policy_pass == true
+        fail_condition: coverage_policy_failure
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_execution_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: flaky_tests_handled
+        description: Flaky tests must be quarantined/handled per policy.
+        severity: blocker
+        required_when: always
+        pass_condition: flaky_tests_handled == true
+        fail_condition: unhandled_flaky_tests
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_execution_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: test_execution_no_self_approval
+        description: Test results must not be manipulated by the author of the code under test (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_execution_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: test_execution_evidence_required
+        description: No test-execution gate may pass without a test-execution evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [test_execution_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 15 — verification_loop_bug_finding  (always-on; binds no_self_approval)
+  # LOCKED: verification-loop = bug/defect finding. blocker-bug-zero.
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: verification_loop_bug_finding_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 15 (verification_loop_bug_finding):
+      defect-finding (the locked verification-loop semantic — NOT a readiness
+      checklist) over the changeset and test results, by a reviewer distinct from the
+      author. Open blocker bugs must be zero, major bugs below threshold, found
+      defects triaged and blocker defects traced to the changeset.
+    applies_to:
+      - sdlc_stage:verification_loop_bug_finding
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - verification_loop_bug_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - verification_loop_bug_gate
+    required_evidence:
+      - bug_finding_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: qa_agent                     # sub_agent bug_hunter_subagent; differs from engineering_agent (author)
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: open_blocker_bugs_zero
+        description: Open blocker bug count must be zero (blocker-bug-zero).
+        severity: blocker
+        required_when: always
+        pass_condition: open_blocker_bugs_zero == true
+        fail_condition: open_blocker_bug_count_greater_than_zero
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [bug_finding_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: open_major_bugs_below_threshold
+        description: Open major bug count must be below threshold.
+        severity: blocker
+        required_when: always
+        pass_condition: open_major_bugs_below_threshold == true
+        fail_condition: open_major_bug_count_above_threshold
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [bug_finding_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: found_defects_triaged
+        description: All found defects must be triaged.
+        severity: blocker
+        required_when: always
+        pass_condition: found_defects_triaged == true
+        fail_condition: untriaged_blocker_defect
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [bug_finding_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: blocker_defects_traced_to_changeset
+        description: Blocker defects must be traced to the changeset.
+        severity: blocker
+        required_when: always
+        pass_condition: blocker_defects_traced_to_changeset == true
+        fail_condition: blocker_defect_not_traced_to_changeset
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [bug_finding_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: verification_loop_no_self_approval
+        description: The defect hunter must differ from the changeset author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [bug_finding_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: verification_loop_evidence_required
+        description: No bug-finding gate may pass without a bug-finding evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [bug_finding_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 16 — security_validation  (always-on; binds no_self_approval)
+  # critical-security-zero. no_secret_leak_gate (stage expr of global no_secret_exposure)
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: security_validation_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 16 (security_validation): security scan
+      coverage must be complete, no critical security finding may remain, high
+      findings require owned acceptance, and no secret may leak (the stage-scope
+      expression of the global no_secret_exposure policy). Performed under
+      no-self-approval.
+    applies_to:
+      - sdlc_stage:security_validation
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - security_validation_gate
+      - no_secret_leak_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - security_validation_gate
+      - no_secret_leak_gate
+    required_evidence:
+      - security_scan_evidence_schema
+    required_trace:
+      - security_finding_trace_schema
+      - stage_gate_trace_schema
+    owner: security_validation_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: security_scan_coverage_complete
+        description: Security scan coverage must be complete.
+        severity: blocker
+        required_when: always
+        pass_condition: security_scan_coverage_complete == true
+        fail_condition: security_scan_coverage_incomplete
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [security_finding_trace_schema, stage_gate_trace_schema]
+      - rule_id: no_critical_security_finding
+        description: No critical security finding may remain (critical-security-zero).
+        severity: blocker
+        required_when: always
+        pass_condition: no_critical_security_finding == true
+        fail_condition: critical_security_finding_present
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [security_finding_trace_schema, stage_gate_trace_schema]
+      - rule_id: no_high_security_finding_without_acceptance
+        description: High security findings require an owned, recorded acceptance.
+        severity: blocker
+        required_when: always
+        pass_condition: no_high_security_finding_without_acceptance == true
+        fail_condition: high_security_finding_without_owned_acceptance
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [security_finding_trace_schema, stage_gate_trace_schema]
+      - rule_id: no_secret_leak
+        description: No secret may leak (stage-scope expression of global no_secret_exposure).
+        severity: blocker
+        required_when: always
+        pass_condition: no_secret_leak == true
+        fail_condition: secret_leak_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [security_finding_trace_schema, stage_gate_trace_schema]
+      - rule_id: security_validation_pass
+        description: The security validation verdict must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: security_validation_pass == true
+        fail_condition: security_scan_failure
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [security_finding_trace_schema, stage_gate_trace_schema]
+      - rule_id: security_validation_no_self_approval
+        description: The validator must differ from the code author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: security_validation_evidence_required
+        description: No security-validation gate may pass without a security-scan evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [security_scan_evidence_schema]
+        trace_required: [security_finding_trace_schema, stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 17 — supply_chain_sbom_license  (always-on; binds no_self_approval)
+  # NOTE: license_compliance_gate / sbom_required_gate / supply_chain_sbom_license_gate
+  #       referenced by the stage; registry lists supply_chain_governance (see open_questions).
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: supply_chain_sbom_license_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 17 (supply_chain_sbom_license): an SBOM
+      must be present, licenses must pass policy, and supply-chain dependency risk
+      must pass — backed by evidence — under no-self-approval.
+    applies_to:
+      - sdlc_stage:supply_chain_sbom_license
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - supply_chain_governance
+      - license_compliance_gate
+      - sbom_required_gate
+      - supply_chain_sbom_license_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - supply_chain_governance
+      - license_compliance_gate         # stage token; map to supply_chain_governance family — flagged in open_questions
+      - sbom_required_gate              # stage token; flagged in open_questions
+      - supply_chain_sbom_license_gate  # stage token; flagged in open_questions
+    required_evidence:
+      - supply_chain_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: supply_chain_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: sbom_present
+        description: A software bill of materials (SBOM) must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: sbom_present == true
+        fail_condition: missing_sbom
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [supply_chain_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: license_pass
+        description: All dependency licenses must pass policy (no forbidden license).
+        severity: blocker
+        required_when: always
+        pass_condition: license_pass == true
+        fail_condition: forbidden_license
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [supply_chain_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: supply_chain_pass
+        description: Supply-chain dependency risk must pass (no critical dependency risk).
+        severity: blocker
+        required_when: always
+        pass_condition: supply_chain_pass == true
+        fail_condition: critical_dependency_risk
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [supply_chain_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: supply_chain_no_self_approval
+        description: The supply-chain validator must differ from the dependency author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [supply_chain_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: supply_chain_evidence_required
+        description: No supply-chain gate may pass without a supply-chain evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [supply_chain_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 18 — ai_agent_safety_evaluation  (always-on; binds no_self_approval)
+  # on_fail: implementation ; rework_route: implementation
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: ai_agent_safety_evaluation_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 18 (ai_agent_safety_evaluation): the
+      agentic-safety evaluation must pass — prompt-injection resistance, no unsafe or
+      over-privileged tool delegation, context safety, and evidence integrity (no
+      hallucinated evidence) — under no-self-approval.
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - agentic_safety_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - tool_misuse_governance
+      - context_safety_governance
+      - evidence_integrity_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - agentic_safety_governance
+      - no_self_approval
+      - evidence_required
+      - tool_misuse_governance
+      - context_safety_governance
+      - evidence_integrity_gate
+    required_evidence:
+      - agentic_eval_evidence_schema
+      - prompt_injection_test_schema
+      - evidence_integrity_report_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: agentic_safety_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: agentic_safety_eval_pass
+        description: The agentic-safety evaluation verdict must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: agentic_safety_eval_pass == true
+        fail_condition: agentic_safety_failure
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [agentic_eval_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: prompt_injection_resistance_pass
+        description: The system must resist prompt-injection attempts.
+        severity: blocker
+        required_when: always
+        pass_condition: prompt_injection_resistance_pass == true
+        fail_condition: prompt_injection_bypass
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [prompt_injection_test_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_unsafe_tool_delegation
+        description: No unsafe or over-privileged tool delegation may be possible.
+        severity: blocker
+        required_when: always
+        pass_condition: no_unsafe_tool_delegation == true
+        fail_condition: unsafe_tool_misuse
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [agentic_eval_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: context_safety_pass
+        description: Context safety must hold (no context-poisoning success).
+        severity: blocker
+        required_when: always
+        pass_condition: context_safety_pass == true
+        fail_condition: context_poisoning_success
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [agentic_eval_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: evidence_integrity_pass
+        description: Evidence integrity must hold (no hallucinated evidence).
+        severity: blocker
+        required_when: always
+        pass_condition: evidence_integrity_pass == true
+        fail_condition: hallucinated_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [evidence_integrity_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: ai_agent_safety_no_self_approval
+        description: The safety evaluator must differ from the code author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [agentic_eval_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: ai_agent_safety_evidence_required
+        description: No agentic-safety gate may pass without an agentic-safety evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: implementation
+        rework_route: implementation
+        evidence_required: [agentic_eval_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 19 — privacy_data_lifecycle_validation  (CONDITIONAL; binds no_self_approval)
+  # conditional_required_gates: privacy_lifecycle / data_retention / tenant_isolation
+  # on_fail: security_privacy_design ; rework_route: security_privacy_design
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: privacy_data_lifecycle_validation_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 19 (privacy_data_lifecycle_validation,
+      conditional): when personal/sensitive/tenant data is processed, privacy
+      lifecycle, data retention, and tenant isolation must pass — under
+      no-self-approval. Each gate is required only when its applicability predicate
+      holds; otherwise it is not_applicable (vacuously satisfied).
+    applies_to:
+      - sdlc_stage:privacy_data_lifecycle_validation
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - privacy_lifecycle_governance
+      - data_retention_gate
+      - tenant_isolation_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - privacy_lifecycle_governance
+      - data_retention_gate
+      - tenant_isolation_gate
+    required_evidence:
+      - privacy_evidence_schema
+      - data_lifecycle_report_schema
+      - tenant_isolation_report_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: privacy_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: privacy_lifecycle_pass_if_applicable
+        description: Privacy lifecycle must pass when personal/sensitive data is processed or audit logs contain user data (conditional gate).
+        severity: blocker
+        required_when: >-
+          personal_data_processed == true or sensitive_data_processed == true or
+          audit_log_contains_user_data == true
+        pass_condition: privacy_lifecycle_pass_if_applicable == true
+        fail_condition: unmitigated_personal_data_risk
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [privacy_evidence_schema, data_lifecycle_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: data_retention_pass_if_applicable
+        description: A retention policy must be present and enforced when personal/sensitive data is processed (conditional gate).
+        severity: blocker
+        required_when: personal_data_processed == true or sensitive_data_processed == true
+        pass_condition: data_retention_pass_if_applicable == true
+        fail_condition: missing_or_unenforced_retention_policy
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [data_lifecycle_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: tenant_isolation_pass_if_applicable
+        description: Tenant isolation must hold when tenant data is processed (conditional gate).
+        severity: blocker
+        required_when: tenant_data_processed == true
+        pass_condition: tenant_isolation_pass_if_applicable == true
+        fail_condition: tenant_isolation_gap
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [tenant_isolation_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: privacy_deletion_export_flow_present
+        description: A deletion/export flow must be present when personal data is processed.
+        severity: blocker
+        required_when: personal_data_processed == true
+        pass_condition: deletion_or_export_flow_present == true
+        fail_condition: missing_deletion_or_export_flow
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [privacy_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: privacy_data_lifecycle_no_self_approval
+        description: The privacy validator must differ from the design author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [privacy_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: privacy_data_lifecycle_evidence_required
+        description: No applicable privacy gate may pass without a privacy evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [privacy_evidence_schema, data_lifecycle_report_schema, tenant_isolation_report_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 20 — api_contract_compatibility_validation  (CONDITIONAL; binds no_self_approval)
+  # on_fail: architecture ; rework_route: architecture
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: api_contract_compatibility_validation_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 20 (api_contract_compatibility_validation,
+      conditional): when an API/public interface/contract changes, contract
+      compatibility must pass, no unapproved breaking change may ship, and contract
+      tests must pass — under no-self-approval (validator != API_CONTRACTS author).
+    applies_to:
+      - sdlc_stage:api_contract_compatibility_validation
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - api_contract_governance
+      - breaking_change_gate
+      - compatibility_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - api_contract_governance
+      - breaking_change_gate
+      - compatibility_gate
+    required_evidence:
+      - api_contract_evidence_schema
+      - compatibility_report_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: contract_validation_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: api_contract_compatibility_pass_if_applicable
+        description: Contract compatibility must pass when an API/public interface/event contract/SDK changes (conditional gate).
+        severity: blocker
+        required_when: >-
+          api_changed == true or public_interface_changed == true or
+          event_or_message_contract_changed == true or sdk_or_client_library_changed == true
+        pass_condition: api_contract_compatibility_pass_if_applicable == true
+        fail_condition: public_surface_without_contract
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [api_contract_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_unapproved_breaking_change
+        description: No unapproved breaking change may ship when a breaking change is detected (conditional gate).
+        severity: blocker
+        required_when: breaking_change_detected == true
+        pass_condition: no_unapproved_breaking_change == true
+        fail_condition: unapproved_breaking_change
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [compatibility_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: contract_tests_pass_if_applicable
+        description: Contract tests must pass when an API/public interface changes (conditional gate).
+        severity: blocker
+        required_when: api_changed == true or public_interface_changed == true
+        pass_condition: contract_tests_pass_if_applicable == true
+        fail_condition: contract_test_failure
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [api_contract_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: api_contract_no_self_approval
+        description: The contract validator must differ from the API_CONTRACTS author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [api_contract_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: api_contract_evidence_required
+        description: No applicable API-contract gate may pass without an API-contract evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [api_contract_evidence_schema, compatibility_report_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 21 — domain_regulatory_compliance_validation_if_applicable  (CONDITIONAL; no_self_approval)
+  # on_fail: security_privacy_design ; rework_route: security_privacy_design
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: domain_regulatory_compliance_validation_if_applicable_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 21 (domain/regulatory compliance
+      validation, conditional): the applicability decision must be recorded; when the
+      domain is regulated or compliance is contractually required, compliance and
+      regulatory traceability must pass — under no-self-approval.
+    applies_to:
+      - sdlc_stage:domain_regulatory_compliance_validation_if_applicable
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - domain_compliance_governance
+      - regulatory_traceability_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - domain_compliance_governance
+      - regulatory_traceability_gate
+    required_evidence:
+      - compliance_matrix_schema
+      - regulatory_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: compliance_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: compliance_applicability_decided
+        description: The compliance applicability decision must be recorded (always required for this conditional stage).
+        severity: blocker
+        required_when: always
+        pass_condition: compliance_applicability_decided == true
+        fail_condition: applicability_decision_missing
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [compliance_matrix_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: compliance_pass_if_applicable
+        description: Compliance must pass when the domain is regulated / compliance is contractually or enterprise required (conditional gate).
+        severity: blocker
+        required_when: >-
+          regulated_domain == true or contractual_compliance_required == true or
+          public_sector_or_enterprise_requirements_present == true
+        pass_condition: compliance_pass_if_applicable == true
+        fail_condition: unresolved_regulatory_requirement
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [compliance_matrix_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: regulatory_traceability_pass_if_applicable
+        description: Regulatory traceability must pass when compliance applies (conditional gate).
+        severity: blocker
+        required_when: >-
+          regulated_domain == true or contractual_compliance_required == true or
+          public_sector_or_enterprise_requirements_present == true
+        pass_condition: regulatory_traceability_pass_if_applicable == true
+        fail_condition: missing_compliance_traceability
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [regulatory_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: regulatory_requirement_traceable
+        description: Every applicable regulatory requirement must be traceable.
+        severity: blocker
+        required_when: >-
+          regulated_domain == true or contractual_compliance_required == true or
+          public_sector_or_enterprise_requirements_present == true
+        pass_condition: regulatory_requirement_traceable == true
+        fail_condition: unresolved_regulatory_requirement
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [regulatory_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: compliance_no_self_approval
+        description: The compliance validator must differ from the reviewed-artifact authors (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_review_detected
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [compliance_matrix_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: compliance_evidence_required
+        description: No applicable compliance gate may pass without a compliance evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: security_privacy_design
+        rework_route: security_privacy_design
+        evidence_required: [compliance_matrix_schema, regulatory_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 22 — data_migration_validation_if_applicable  (CONDITIONAL; no_self_approval)
+  # NOTE: stage declares per-gate severity; migration_covers_data_model_delta = major.
+  # on_fail: architecture ; rework_route: architecture
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: data_migration_validation_if_applicable_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 22 (data/migration validation,
+      conditional): when the data model or a migration changes, the migration must be
+      safe, a tested rollback path must exist, data integrity must hold, and the
+      migration must cover the declared schema delta — under no-self-approval
+      (validator != migration author). Most gates are blocker; delta-coverage is major
+      per the stage contract.
+    applies_to:
+      - sdlc_stage:data_migration_validation_if_applicable
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - data_migration_governance
+      - rollback_required_gate
+      - data_integrity_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - data_migration_governance
+      - rollback_required_gate
+      - data_integrity_gate
+    required_evidence:
+      - migration_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: data_migration_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: data_migration_pass_if_applicable
+        description: The migration must be safe (not lossy/irreversible/out-of-order/non-idempotent) when the data model or migration changes (conditional gate).
+        severity: blocker
+        required_when: data_model_changed == true or migration_changed == true
+        pass_condition: data_migration_pass_if_applicable == true
+        fail_condition: unsafe_migration
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: rollback_validation_pass_if_applicable
+        description: A tested rollback path must exist when a migration changes (conditional gate).
+        severity: blocker
+        required_when: migration_changed == true
+        pass_condition: rollback_validation_pass_if_applicable == true
+        fail_condition: rollback_missing
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: data_integrity_pass_if_applicable
+        description: Post-migration data integrity must hold when the data model or migration changes (conditional gate).
+        severity: blocker
+        required_when: data_model_changed == true or migration_changed == true
+        pass_condition: data_integrity_pass_if_applicable == true
+        fail_condition: data_integrity_failure
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: migration_covers_data_model_delta_if_applicable
+        description: The migration must cover the declared schema delta when both the data model and migration changed (conditional gate; major severity per stage contract).
+        severity: major
+        required_when: data_model_changed == true and migration_changed == true
+        pass_condition: migration_covers_data_model_delta_if_applicable == true
+        fail_condition: migration_does_not_cover_data_model_delta
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: data_migration_tenant_isolation_preserved
+        description: The migration must not break tenant / data-ownership isolation.
+        severity: blocker
+        required_when: data_model_changed == true or migration_changed == true
+        pass_condition: tenant_isolation_preserved == true
+        fail_condition: tenant_isolation_break
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: data_migration_no_self_approval
+        description: The migration validator must differ from the migration author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: data_migration_evidence_required
+        description: No applicable data-migration gate may pass without a migration evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [migration_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 23 — accessibility_ux_validation_if_applicable  (CONDITIONAL; no_self_approval)
+  # NOTE: rework_route is relevant_failed_stage (aggregate-style routing terminal).
+  # on_fail: architecture ; rework_route: relevant_failed_stage
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: accessibility_ux_validation_if_applicable_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 23 (accessibility/UX validation,
+      conditional): when the product has a UI or user-facing interaction changes,
+      accessibility, UX validation, and the UI release gate must pass — under
+      no-self-approval. Rework routes to the relevant failed stage.
+    applies_to:
+      - sdlc_stage:accessibility_ux_validation_if_applicable
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - accessibility_governance
+      - ux_validation_governance
+      - ui_release_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - accessibility_governance
+      - ux_validation_governance
+      - ui_release_gate
+    required_evidence:
+      - accessibility_evidence_schema
+      - ux_validation_report_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: ux_accessibility_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: accessibility_pass_if_applicable
+        description: Accessibility must pass (e.g. no critical WCAG failure) when the product has a UI or user-facing interaction changes (conditional gate).
+        severity: blocker
+        required_when: >-
+          product_has_ui == true or ui_changeset_present == true or
+          user_facing_interaction_changed == true
+        pass_condition: accessibility_pass_if_applicable == true
+        fail_condition: accessibility_blocker
+        on_fail: architecture
+        rework_route: relevant_failed_stage
+        evidence_required: [accessibility_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: ux_validation_pass_if_applicable
+        description: UX validation must pass (no critical UX flow failure) when the product has a UI or user-facing interaction changes (conditional gate).
+        severity: blocker
+        required_when: product_has_ui == true or user_facing_interaction_changed == true
+        pass_condition: ux_validation_pass_if_applicable == true
+        fail_condition: critical_ux_flow_failure
+        on_fail: architecture
+        rework_route: relevant_failed_stage
+        evidence_required: [ux_validation_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: ui_release_gate_pass_if_applicable
+        description: The UI release gate must pass (error/empty-state handling, contrast) when the product has a UI (conditional gate).
+        severity: blocker
+        required_when: product_has_ui == true or ui_changeset_present == true
+        pass_condition: ui_release_gate_pass_if_applicable == true
+        fail_condition: missing_error_or_empty_state_handling
+        on_fail: architecture
+        rework_route: relevant_failed_stage
+        evidence_required: [accessibility_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: accessibility_ux_no_self_approval
+        description: The accessibility/UX validator must differ from the UI author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: architecture
+        rework_route: relevant_failed_stage
+        evidence_required: [accessibility_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: accessibility_ux_evidence_required
+        description: No applicable accessibility/UX gate may pass without an accessibility evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: relevant_failed_stage
+        evidence_required: [accessibility_evidence_schema, ux_validation_report_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 24 — performance_resilience  (always-on; binds no_self_approval)
+  # on_fail: architecture ; rework_route: architecture
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: performance_resilience_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 24 (performance_resilience): performance
+      budgets must pass or be explicitly accepted, and resilience risks must be
+      accepted or mitigated — under no-self-approval.
+    applies_to:
+      - sdlc_stage:performance_resilience
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - performance_governance
+      - resilience_governance
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - performance_governance
+      - resilience_governance
+    required_evidence:
+      - performance_evidence_schema
+      - resilience_report_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: performance_resilience_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: performance_resilience_pass_or_accepted
+        description: Performance budgets must pass or be explicitly accepted.
+        severity: blocker
+        required_when: always
+        pass_condition: performance_resilience_pass_or_accepted == true
+        fail_condition: performance_budget_failure
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [performance_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: resilience_risks_accepted_or_mitigated
+        description: Resilience risks must be accepted or mitigated.
+        severity: blocker
+        required_when: always
+        pass_condition: resilience_risks_accepted_or_mitigated == true
+        fail_condition: unaccepted_resilience_risk
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [resilience_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: performance_resilience_no_self_approval
+        description: The performance/resilience validator must differ from the code author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [performance_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: performance_resilience_evidence_required
+        description: No performance/resilience gate may pass without a performance evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: architecture
+        rework_route: architecture
+        evidence_required: [performance_evidence_schema, resilience_report_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 25 — cost_resource_governance  (CONDITIONAL; binds no_self_approval)
+  # on_fail: planning ; rework_route: planning
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: cost_resource_governance_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 25 (cost/resource governance,
+      conditional): when a feature is compute/AI-heavy, provider-cost relevant, or
+      uses retry/parallel execution, cost estimates must stay within budget, the
+      resource budget must pass, and quota policy must pass — under no-self-approval.
+    applies_to:
+      - sdlc_stage:cost_resource_governance
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - cost_resource_governance
+      - resource_budget_gate
+      - quota_governance
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - cost_resource_governance
+      - resource_budget_gate
+      - quota_governance
+    required_evidence:
+      - cost_evidence_schema
+      - resource_budget_report_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: cost_resource_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: cost_estimate_within_budget
+        description: Cost estimate must stay within budget for compute/AI-heavy, provider-cost-relevant, or retry/parallel features (conditional gate).
+        severity: blocker
+        required_when: >-
+          ai_or_compute_heavy_feature == true or external_provider_cost_relevant == true or
+          retry_loop_or_parallel_execution_present == true
+        pass_condition: cost_estimate_within_budget == true
+        fail_condition: unbounded_cost_risk
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [cost_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: resource_budget_pass
+        description: The resource budget must pass when GPU/CPU/memory budget is relevant or the feature is compute/AI-heavy (conditional gate).
+        severity: blocker
+        required_when: gpu_cpu_memory_budget_relevant == true or ai_or_compute_heavy_feature == true
+        pass_condition: resource_budget_pass == true
+        fail_condition: resource_budget_failure
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [resource_budget_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: quota_policy_pass
+        description: Quota policy must pass when provider cost is relevant or retry/parallel execution is present (conditional gate).
+        severity: blocker
+        required_when: external_provider_cost_relevant == true or retry_loop_or_parallel_execution_present == true
+        pass_condition: quota_policy_pass == true
+        fail_condition: quota_policy_violation
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [resource_budget_report_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: cost_resource_no_self_approval
+        description: The cost/resource validator must differ from the implementing author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [cost_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: cost_resource_evidence_required
+        description: No applicable cost/resource gate may pass without a cost evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [cost_evidence_schema, resource_budget_report_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 26 — backup_restore_dr_validation_if_applicable  (CONDITIONAL; no_self_approval)
+  # on_fail: planning ; rework_route: planning
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: backup_restore_dr_validation_if_applicable_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 26 (backup/restore/DR validation,
+      conditional): when persistent/production data or a stateful service is present,
+      backup/restore/DR must pass, restore tests must pass, and rollback validation
+      must pass (RTO/RPO targets met, DR runbook present) — under no-self-approval.
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    conditional_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - backup_restore_governance
+      - disaster_recovery_gate
+      - rollback_required_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - backup_restore_governance
+      - disaster_recovery_gate
+      - rollback_required_gate
+    required_evidence:
+      - backup_restore_evidence_schema
+      - dr_validation_schema
+      - rollback_validation_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: operations_readiness_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: backup_restore_dr_pass_if_applicable
+        description: Backup/restore/DR must pass when persistent/production data or a stateful service is present (conditional gate).
+        severity: blocker
+        required_when: >-
+          persistent_data_present == true or production_data_present == true or
+          stateful_service == true
+        pass_condition: backup_restore_dr_pass_if_applicable == true
+        fail_condition: missing_dr_runbook
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [backup_restore_evidence_schema, dr_validation_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: restore_test_pass_if_applicable
+        description: A restore test must pass when persistent/production data is present (conditional gate).
+        severity: blocker
+        required_when: persistent_data_present == true or production_data_present == true
+        pass_condition: restore_test_pass_if_applicable == true
+        fail_condition: failed_restore_test
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [backup_restore_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: backup_rollback_validation_pass_if_applicable
+        description: Rollback validation must pass (RTO/RPO met) when the service is stateful or recovery objectives are defined (conditional gate).
+        severity: blocker
+        required_when: stateful_service == true or recovery_objectives_defined == true
+        pass_condition: rollback_validation_pass_if_applicable == true
+        fail_condition: missing_rollback_validation
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [rollback_validation_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: backup_restore_dr_no_self_approval
+        description: The backup/restore/DR validator must differ from the implementing author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [backup_restore_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: backup_restore_dr_evidence_required
+        description: No applicable backup/restore/DR gate may pass without a backup/restore evidence record.
+        severity: blocker
+        required_when: stage_applicable == true
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [backup_restore_evidence_schema, dr_validation_schema, rollback_validation_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 27 — operations_readiness  (always-on; binds no_self_approval, release_candidate_governance)
+  # on_fail: planning ; rework_route: planning
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: operations_readiness_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 27 (operations_readiness): a runbook,
+      rollback plan, observability plan, and incident-response plan must be present
+      before the development-completion boundary — under no-self-approval and the
+      release_candidate_governance umbrella that spans stages 27/29/30.
+    applies_to:
+      - sdlc_stage:operations_readiness
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - release_candidate_governance
+      - operations_readiness_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - release_candidate_governance
+      - operations_readiness_gate
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: operations_readiness_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: runbook_present
+        description: An operations runbook must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: runbook_present == true
+        fail_condition: missing_runbook
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: rollback_plan_present
+        description: A rollback plan must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: rollback_plan_present == true
+        fail_condition: missing_rollback_plan
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: observability_plan_present
+        description: An observability plan must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: observability_plan_present == true
+        fail_condition: missing_observability_plan
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: incident_response_plan_present
+        description: An incident-response plan must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: incident_response_plan_present == true
+        fail_condition: missing_incident_response_plan
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: operations_readiness_pass
+        description: The operations-readiness verdict must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: operations_readiness_pass == true
+        fail_condition: operations_readiness_failure
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: operations_readiness_no_self_approval
+        description: The operations-readiness owner must differ from the artifact authors (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: operations_readiness_evidence_required
+        description: No operations-readiness gate may pass without an SDLC evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: planning
+        rework_route: planning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 28 — evidence_graph_build  (always-on; binds no_self_approval)
+  # on_fail: relevant_failed_stage ; rework_route: relevant_failed_stage
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: evidence_graph_build_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 28 (evidence_graph_build): the evidence
+      graph and traceability matrix must be complete, with no orphan critical
+      artifacts and an internally consistent graph — under no-self-approval
+      (evidence_graph_agent != upstream artifact authors and != the downstream
+      release decider). Failures route back to the relevant failed stage.
+    applies_to:
+      - sdlc_stage:evidence_graph_build
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - evidence_graph_gate
+      - traceability_required_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - evidence_graph_gate
+      - traceability_required_gate
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: evidence_graph_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: evidence_graph_complete
+        description: The evidence graph must contain all required evidence (no missing required evidence).
+        severity: blocker
+        required_when: always
+        pass_condition: evidence_graph_complete == true
+        fail_condition: missing_required_evidence
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: traceability_matrix_complete
+        description: The traceability matrix must be complete (no broken traceability link).
+        severity: blocker
+        required_when: always
+        pass_condition: traceability_matrix_complete == true
+        fail_condition: broken_traceability_link
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_orphan_critical_artifacts
+        description: There must be no orphan critical artifacts.
+        severity: blocker
+        required_when: always
+        pass_condition: no_orphan_critical_artifacts == true
+        fail_condition: orphan_critical_artifact
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: evidence_graph_internally_consistent
+        description: The evidence graph must be internally consistent.
+        severity: blocker
+        required_when: always
+        pass_condition: evidence_graph_internally_consistent == true
+        fail_condition: inconsistent_evidence_graph
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: evidence_graph_no_self_approval
+        description: The evidence-graph builder must differ from upstream artifact authors and the downstream release decider (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: evidence_graph_evidence_required
+        description: No evidence-graph gate may pass without an SDLC evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 29 — development_completion  (AGGREGATE always-on; no_self_approval, release_candidate_governance)
+  # always-required gates + conditional-required (evaluated when upstream applicability true)
+  # on_fail: relevant_failed_stage ; rework_route: relevant_failed_stage
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: development_completion_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 29 (development_completion): the aggregate
+      completion gate. ALL always-required upstream gates must pass and EVERY
+      applicable conditional gate must pass, with a complete evidence graph and no
+      blocking policy failure, before a release candidate may be produced — under
+      no-self-approval and the release_candidate_governance umbrella. The
+      development-completion-requires-all-required-gates invariant.
+    applies_to:
+      - sdlc_stage:development_completion
+    aggregate_stage: true
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - release_candidate_governance
+      - development_completion_gate
+      - no_blocking_policy_failure_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - release_candidate_governance
+      - development_completion_gate
+      - no_blocking_policy_failure_gate
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: release_manager_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: all_required_gates_pass
+        description: Every always-required upstream gate (requirements, NFR, architecture, ADR, security/privacy design, risk register, scope, code review, tests, verification-loop, security validation, supply chain, license, SBOM, agentic safety, operations readiness, evidence graph) must pass.
+        severity: blocker
+        required_when: always
+        pass_condition: all_required_gates_passed == true
+        fail_condition: any_required_gate_failed
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: applicable_conditional_gates_pass
+        description: Every conditional gate whose upstream applicability decision is true (accessibility, data migration, privacy lifecycle, API contract, compliance, backup/restore/DR, cost/resource) must pass.
+        severity: blocker
+        required_when: any_conditional_gate_applicable == true
+        pass_condition: all_applicable_conditional_gates_passed == true
+        fail_condition: applicable_conditional_gate_failed
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: development_completion_evidence_graph_complete
+        description: The evidence graph must be complete with all required evidence present.
+        severity: blocker
+        required_when: always
+        pass_condition: evidence_graph_complete == true
+        fail_condition: missing_required_evidence
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: no_blocking_policy_failure
+        description: No unresolved blocking policy failure may remain (no_policy_bypass at the completion boundary).
+        severity: blocker
+        required_when: always
+        pass_condition: no_blocking_policy_failure == true
+        fail_condition: unresolved_blocker_finding
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: accepted_risk_has_owner
+        description: Every accepted risk must have a named owner.
+        severity: blocker
+        required_when: always
+        pass_condition: accepted_risk_has_owner == true
+        fail_condition: accepted_risk_without_owner
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: development_completion_no_self_approval
+        description: The completion decider must differ from the upstream artifact authors (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: development_completion_evidence_required
+        description: The completion decision must be backed by an SDLC evidence record (no completion without evidence).
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: relevant_failed_stage
+        rework_route: relevant_failed_stage
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 30 — release_candidate  (always-on; LOCKED release_candidate_governance; no_self_approval)
+  # development_completion re-attested by sdlc_team_lead. RC after dev-completion gate.
+  # on_fail: development_completion ; rework_route: development_completion
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: release_candidate_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 30 (release_candidate): a release
+      candidate may not be produced before development_completion passes
+      (re-attested by sdlc_team_lead under no-self-approval, differing from the
+      stage-29 release_manager_agent author); release evidence must be complete and
+      internally consistent with the evidence graph; and no blocking policy failure
+      may remain. The release-candidate-requires-development-completion invariant.
+    applies_to:
+      - sdlc_stage:release_candidate
+    severity_default: blocker
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - release_candidate_governance
+      - release_after_development_completion_gate
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - release_candidate_governance
+      - release_after_development_completion_gate
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: release_manager_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      development_completion_reattestation: sdlc_team_lead   # LOCKED no-self-approval re-attestation owner
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: development_completion_pass
+        description: development_completion must have passed, re-attested by sdlc_team_lead (no-self-approval); RC cannot proceed without it.
+        severity: blocker
+        required_when: always
+        pass_condition: development_completion_pass == true
+        fail_condition: development_completion_not_passed
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_evidence_complete
+        description: Every required (and applicable-conditional) release evidence item must be present.
+        severity: blocker
+        required_when: always
+        pass_condition: release_candidate_evidence_complete == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_evidence_internally_consistent
+        description: The sealed release package must agree with the evidence graph / traceability matrix.
+        severity: blocker
+        required_when: always
+        pass_condition: release_evidence_internally_consistent == true
+        fail_condition: release_evidence_inconsistent
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_no_blocking_policy_failure
+        description: No unresolved blocking policy failure may remain at the release candidate gate.
+        severity: blocker
+        required_when: always
+        pass_condition: no_blocking_policy_failure == true
+        fail_condition: blocking_policy_failure_present
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_compliance_pass_if_applicable
+        description: Compliance must pass when the domain is regulated or compliance is contractually required (conditional re-check at RC).
+        severity: blocker
+        required_when: regulated_domain == true or contractual_compliance_required == true
+        pass_condition: compliance_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_privacy_lifecycle_pass_if_applicable
+        description: Privacy lifecycle must pass when personal data is processed (conditional re-check at RC).
+        severity: blocker
+        required_when: personal_data_processed == true
+        pass_condition: privacy_lifecycle_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_api_contract_pass_if_applicable
+        description: API contract compatibility must pass when an API/public interface changed (conditional re-check at RC).
+        severity: blocker
+        required_when: api_changed == true or public_interface_changed == true
+        pass_condition: api_contract_compatibility_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_data_migration_pass_if_applicable
+        description: Data migration must pass when the data model or migration changed (conditional re-check at RC).
+        severity: blocker
+        required_when: data_model_changed == true or migration_changed == true
+        pass_condition: data_migration_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_backup_restore_dr_pass_if_applicable
+        description: Backup/restore/DR must pass when persistent data or a stateful service is present (conditional re-check at RC).
+        severity: blocker
+        required_when: persistent_data == true or stateful_service == true
+        pass_condition: backup_restore_dr_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_accessibility_pass_if_applicable
+        description: Accessibility must pass when the product has a UI (conditional re-check at RC; major severity per stage contract).
+        severity: major
+        required_when: product_has_ui == true
+        pass_condition: accessibility_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_cost_resource_pass_if_applicable
+        description: Cost/resource governance must pass when a resource/cost budget is defined (conditional re-check at RC; major severity per stage contract).
+        severity: major
+        required_when: resource_or_cost_budget_defined == true
+        pass_condition: cost_resource_governance_pass_if_applicable == true
+        fail_condition: incomplete_release_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_no_self_approval
+        description: development_completion_pass must be re-attested by an owner differing from the stage-29 author (producer != approver).
+        severity: blocker
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: release_candidate_evidence_required
+        description: The release-candidate decision must be backed by an SDLC evidence record.
+        severity: blocker
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: development_completion
+        rework_route: development_completion
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+  # ---------------------------------------------------------------------------
+  # Stage 31 — refraction_learning  (always-on; binds no_self_approval; non-blocking self-completeness)
+  # on_fail: refraction_learning ; rework_route: refraction_learning ; on_pass: done
+  # NOTE: blocking_conditions is empty in the stage; the single gate is treated as
+  #       a non-blocking self-completeness gate (advisory) per the stage header.
+  # ---------------------------------------------------------------------------
+  - governance_profile_id: refraction_learning_stage_governance
+    scope: stage
+    purpose: >-
+      Stage-scope governance for SDLC stage 31 (refraction_learning): a learning
+      record must be produced over the run's evidence, and project-memory updates are
+      proposals — not direct mutation (memory_update_governance). memory_curator_agent
+      authors learning over OTHER stages' evidence, so the self-completeness gate is
+      non-blocking (advisory); no-self-approval is bound as a standing guard.
+    applies_to:
+      - sdlc_stage:refraction_learning
+    severity_default: advisory     # stage 31 has empty blocking_conditions; its sole gate is a non-blocking self-completeness gate
+    source_governance_tokens:
+      - sdlc_pipeline_governance
+      - no_self_approval_policy
+      - evidence_required_policy
+      - learning_record_gate
+      - memory_update_governance
+    uses_governance_profiles:
+      - sdlc_pipeline_governance
+      - no_self_approval
+      - evidence_required
+      - learning_record_gate
+      - memory_update_governance
+    required_evidence:
+      - sdlc_pipeline_evidence_schema
+    required_trace:
+      - stage_gate_trace_schema
+    owner: memory_curator_agent
+    escalation:
+      gate_failure: sdlc_team_lead
+      policy_bypass_attempt: policy_and_evidence_engine
+    rules:
+      - rule_id: learning_record_present
+        description: A learning record must be produced over the run's evidence (non-blocking self-completeness gate — stage 31 has no blocking_conditions).
+        severity: advisory
+        required_when: always
+        pass_condition: learning_record_present == true
+        fail_condition: learning_record_absent
+        on_fail: refraction_learning
+        rework_route: refraction_learning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: memory_update_is_proposal_not_mutation
+        description: Project-memory updates must be proposals, never direct mutation (memory_update_governance; aligns with global no_silent_mutation).
+        severity: blocker
+        required_when: always
+        pass_condition: memory_update_is_proposal == true
+        fail_condition: direct_memory_mutation_attempted
+        on_fail: refraction_learning
+        rework_route: refraction_learning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: refraction_learning_no_self_approval
+        description: Learning authored over other stages' evidence must not be self-approved where it adjudicates another stage (producer != approver).
+        severity: advisory
+        required_when: always
+        pass_condition: producer_agent_id != approver_agent_id
+        fail_condition: self_approval_detected
+        on_fail: refraction_learning
+        rework_route: refraction_learning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: refraction_learning_evidence_required
+        description: The learning record must be backed by an SDLC evidence record.
+        severity: advisory
+        required_when: always
+        pass_condition: gate_decision_has_evidence_record == true
+        fail_condition: gate_decision_without_evidence
+        on_fail: refraction_learning
+        rework_route: refraction_learning
+        evidence_required: [sdlc_pipeline_evidence_schema]
+        trace_required: [stage_gate_trace_schema]
+
+# =============================================================================
+# COVERAGE SUMMARY (doc 19 §15 exit criterion: SDLC required gates evaluable from config)
+# =============================================================================
+coverage:
+  total_sdlc_stages: 31
+  profiles_emitted: 31
+  one_profile_per_stage: true
+  always_on_stages: 23
+  conditional_stages: 6        # 19, 20, 21, 22, 23, 25, 26  -> see note: 7 carry conditional_required_gates
+  conditional_required_gate_stages:
+    - security_privacy_design                                  # 08 (privacy_risks_classified, data_lifecycle_visible)
+    - privacy_data_lifecycle_validation                        # 19
+    - api_contract_compatibility_validation                    # 20
+    - domain_regulatory_compliance_validation_if_applicable    # 21
+    - data_migration_validation_if_applicable                  # 22
+    - accessibility_ux_validation_if_applicable                # 23
+    - cost_resource_governance                                 # 25
+    - backup_restore_dr_validation_if_applicable               # 26
+    - development_completion                                   # 29 (aggregate of upstream conditional gates)
+    - release_candidate                                        # 30 (conditional re-checks at RC)
+  aggregate_stages:
+    - development_completion   # 29
+    - release_candidate        # 30
+  review_gate_stages_binding_no_self_approval:
+    - skill_semantic_extraction       # 03
+    - requirements_review             # 05
+    - architecture_review             # 07
+    - security_privacy_design         # 08
+    - premortem_fmea                  # 09
+    - code_review                     # 12
+    - test_execution                  # 14 (standing guard)
+    - verification_loop_bug_finding   # 15
+    - security_validation             # 16
+    - supply_chain_sbom_license       # 17
+    - ai_agent_safety_evaluation      # 18
+    - privacy_data_lifecycle_validation                        # 19
+    - api_contract_compatibility_validation                    # 20
+    - domain_regulatory_compliance_validation_if_applicable    # 21
+    - data_migration_validation_if_applicable                  # 22
+    - accessibility_ux_validation_if_applicable                # 23
+    - performance_resilience          # 24
+    - cost_resource_governance        # 25
+    - backup_restore_dr_validation_if_applicable               # 26
+    - operations_readiness            # 27
+    - evidence_graph_build            # 28
+    - development_completion          # 29
+    - release_candidate               # 30
+    - refraction_learning             # 31 (standing guard, advisory)
+
+# =============================================================================
+# OPEN QUESTIONS (carried forward for the governance-audit-readiness review)
+# =============================================================================
+open_questions:
+  - >-
+    Stage 14 (test_execution) lists governance tokens `coverage_policy_gate` and
+    `flaky_test_quarantine_gate`, and stage 17 lists `license_compliance_gate`,
+    `sbom_required_gate`, `supply_chain_sbom_license_gate` — these stage-file tokens
+    are NOT yet ratified as ids in the Phase C governance_profiles.yaml registry
+    (which lists the umbrella supply_chain_governance / test_execution_governance).
+    They are referenced here verbatim under uses_governance_profiles for fidelity to
+    the stage contract and flagged for registration as candidate stage_gate_profile
+    ids in the governance registry during the readiness review.
+  - >-
+    Several stage gate-profile tokens referenced here (e.g. security_validation_gate,
+    no_secret_leak_gate, api_contract_governance, breaking_change_gate,
+    compatibility_gate, domain_compliance_governance, regulatory_traceability_gate,
+    data_integrity_gate, accessibility_governance, ux_validation_governance,
+    ui_release_gate, performance_governance, resilience_governance, resource_budget_gate,
+    quota_governance, backup_restore_governance, disaster_recovery_gate,
+    operations_readiness_gate, evidence_graph_gate, traceability_required_gate,
+    development_completion_gate, no_blocking_policy_failure_gate,
+    release_after_development_completion_gate, learning_record_gate,
+    memory_update_governance, agentic_safety_governance, tool_misuse_governance,
+    context_safety_governance, evidence_integrity_gate) appear in stage
+    uses_governance_profiles but were truncated in the partial registry read. Confirm
+    each has a matching registry entry under scope: stage during the readiness review;
+    where the registry uses a *_governance umbrella vs the stage's *_gate spelling,
+    record the alias rather than renaming either.
+  - >-
+    Stage 31 (refraction_learning) has an EMPTY blocking_conditions list and on_pass:
+    done, yet binds no_self_approval_policy + evidence_required_policy. The
+    learning_record_present and self-approval/evidence rules are therefore modeled as
+    severity: advisory (non-blocking self-completeness), while
+    memory_update_is_proposal_not_mutation is kept blocker (it expresses the global
+    no_silent_mutation invariant). Confirm this advisory-vs-blocker split for the
+    learning stage during the readiness review.
+  - >-
+    The required_evidence / required_trace lists are populated from each stage's
+    uses_audit_schemas split by the audit registry `type` field (Evidence-family vs
+    trace_schema). The audit_schemas.yaml registry read was partial; confirm that
+    every schema id referenced here resolves to the expected type so the Evidence !=
+    Trace split holds for all 31 stages (e.g. architecture_decision_trace_schema and
+    code_change_trace_schema are trace-family; security_finding_trace_schema is
+    trace-family).
+  - >-
+    owner/escalation values use the stage's owner_agent and sdlc_team_lead. For the
+    review-gate stages whose owner_agent is itself sdlc_team_lead (05, 07), the
+    no_self_approval rule's producer/approver check must resolve against the upstream
+    ARTIFACT author (product_requirements_agent / architecture_agent), not the
+    stage owner; this is asserted in the rule descriptions and should be confirmed
+    against the Phase D agent catalog during the readiness review.

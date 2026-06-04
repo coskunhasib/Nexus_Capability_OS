@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-ai/configs/nexus-ai/schemas/artifact_registry.schema.json",
+  "title": "Nexus AI Artifact Registry",
+  "description": "JSON Schema (draft 2020-12) for configs/nexus-ai/artifact_registry.yaml. Validates the canonical artifact-name registry for the Nexus AI Orchestration Model SDLC pipeline (Phase A blueprint/documentation only). LOCKED: the 'plugin' concept is cancelled and is forbidden anywhere in this document. Core Abilities (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS) are NOT agents and may never appear as owner_agent. A reusable $defs/stage_contract definition encodes the stage contract rules (no plugin field, owner_agent is a pipeline Agent role string that is never a Core Ability, all 7 usage-mapping arrays required).",
+  "type": "object",
+  "additionalProperties": false,
+  "propertyNames": {
+    "not": { "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]" }
+  },
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Registry document version, e.g. 'draft-0.1'."
+    },
+    "registry_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "snake_case registry identifier, e.g. 'nexus_ai_artifact_registry'."
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable purpose of the registry."
+    },
+    "naming_rules": {
+      "type": "object",
+      "description": "Conventions governing artifact names in this registry.",
+      "additionalProperties": false,
+      "properties": {
+        "case": {
+          "type": "string",
+          "const": "UPPER_SNAKE_CASE",
+          "description": "Artifact names are UPPER_SNAKE_CASE."
+        },
+        "conditional_suffix": {
+          "type": "string",
+          "const": "_IF_APPLICABLE"
+        },
+        "gate_result_suffix": {
+          "type": "string",
+          "const": "_GATE_RESULT"
+        },
+        "applicability_suffix": {
+          "type": "string",
+          "const": "_APPLICABILITY_DECISION"
+        },
+        "report_suffix": {
+          "type": "string",
+          "const": "_REPORT"
+        }
+      },
+      "required": ["case", "conditional_suffix", "gate_result_suffix", "applicability_suffix", "report_suffix"]
+    },
+    "artifact_groups": {
+      "type": "object",
+      "description": "Named groups, each mapping a group key to an array of UPPER_SNAKE_CASE artifact names. Group keys are snake_case; artifact names must be unique within a group.",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": { "$ref": "#/$defs/artifact_name" }
+      }
+    },
+    "release_evidence_required": {
+      "type": "object",
+      "description": "Artifacts that MUST be present for release, split into always-required (core) and conditional (if-applicable) sets.",
+      "additionalProperties": false,
+      "properties": {
+        "core": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/artifact_name" }
+        },
+        "conditional": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/artifact_name" }
+        }
+      },
+      "required": ["core", "conditional"]
+    },
+    "evidence_item_schema": {
+      "type": "object",
+      "description": "Shape of a single evidence item. Evidence (decision proof) is kept distinct from trace (process history); the trace linkage is carried via trace_refs.",
+      "additionalProperties": false,
+      "properties": {
+        "required_fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "description": "snake_case names of the fields every evidence item must carry (e.g. evidence_id, artifact_id, related_pipeline, related_run, related_stage, related_gate, producer, status, summary, trace_refs)."
+        }
+      },
+      "required": ["required_fields"]
+    }
+  },
+  "required": [
+    "version",
+    "registry_id",
+    "purpose",
+    "naming_rules",
+    "artifact_groups",
+    "release_evidence_required",
+    "evidence_item_schema"
+  ],
+  "$defs": {
+    "artifact_name": {
+      "type": "string",
+      "description": "Canonical artifact name in UPPER_SNAKE_CASE. May carry the _IF_APPLICABLE conditional suffix. Must not contain the word 'plugin'.",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "not": { "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]" }
+    },
+    "core_ability": {
+      "description": "The 8 LOCKED Core Abilities. They are NOT agents and NOT team members; they may never be used as owner_agent or listed as an Agent. Used here so owner_agent can explicitly exclude them.",
+      "type": "string",
+      "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+    },
+    "snake_case_token": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Generic snake_case identifier for skills, tools, governance profiles, audit schemas, model/provider profiles and context/memory profiles."
+    },
+    "owner_agent": {
+      "description": "A pipeline Agent ROLE in snake_case (e.g. requirements_agent, code_reviewer_agent). LOCKED: owner_agent is always a single string role; it is NEVER a Core Ability (Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS) and is never an array.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "not": {
+        "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+      }
+    },
+    "usage_mapping_array": {
+      "description": "A usage-mapping array (one of the 7 categories). Always present, even if empty.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "stage_contract": {
+      "type": "object",
+      "description": "A single SDLC pipeline stage contract. Encodes the LOCKED rules: no 'plugin' property anywhere; owner_team is always sdlc_team; team_lead is always sdlc_team_lead (the Supervisor Core Ability is NOT the team_lead); owner_agent is a string Agent role that is never a Core Ability; and all 7 usage-mapping arrays are required (uses_core_abilities, uses_skills, uses_tools, uses_governance_profiles, uses_audit_schemas, uses_model_provider_profiles, uses_context_memory_profiles) even when empty. Conditional stages additionally carry applicability_decision (with a required_when expression).",
+      "unevaluatedProperties": false,
+      "propertyNames": {
+        "not": { "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]" }
+      },
+      "properties": {
+        "stage_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "applicability_decision": {
+          "type": "object",
+          "description": "Present only on CONDITIONAL stages. Declares when the stage applies via a required_when expression and which decision artifact it emits.",
+          "properties": {
+            "decision_artifact": { "$ref": "#/$defs/artifact_name" },
+            "required_when": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Boolean expression describing when the conditional stage is applicable."
+            },
+            "evaluated_from": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/artifact_name" }
+            },
+            "when_not_applicable": {
+              "type": "object",
+              "properties": {
+                "decision": { "type": "string" },
+                "emit": { "$ref": "#/$defs/artifact_name" },
+                "on_pass": { "type": "string" }
+              }
+            }
+          },
+          "required": ["required_when"]
+        },
+        "owner_team": {
+          "type": "string",
+          "const": "sdlc_team",
+          "description": "LOCKED: owner_team is always sdlc_team."
+        },
+        "team_lead": {
+          "type": "string",
+          "const": "sdlc_team_lead",
+          "description": "LOCKED: team_lead is always sdlc_team_lead; Supervisor (a Core Ability) is never the team_lead."
+        },
+        "owner_agent": { "$ref": "#/$defs/owner_agent" },
+        "sub_agents": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/snake_case_token" },
+              {
+                "not": {
+                  "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+                }
+              }
+            ]
+          },
+          "description": "Pipeline sub-agent roles (snake_case). Core Abilities are never sub-agents."
+        },
+        "uses_core_abilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/core_ability" },
+          "description": "The Core Abilities this stage leverages. Core Abilities appear ONLY here as capabilities — never as owner_agent or sub_agents."
+        },
+        "uses_skills": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_tools": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_governance_profiles": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_audit_schemas": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_model_provider_profiles": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_context_memory_profiles": { "$ref": "#/$defs/usage_mapping_array" },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact_name" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact_name" }
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Evidence items (decision proof). Kept distinct from trace.",
+          "items": { "type": "string" }
+        },
+        "trace": {
+          "type": "array",
+          "description": "Trace items (process history). Kept distinct from evidence.",
+          "items": { "type": "string" }
+        },
+        "gates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/snake_case_token" }
+        },
+        "on_pass": { "$ref": "#/$defs/routing_target" },
+        "on_fail": { "$ref": "#/$defs/routing_target" },
+        "rework_route": { "$ref": "#/$defs/routing_target" },
+        "blocking_conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/snake_case_token" }
+        },
+        "optional_conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/snake_case_token" }
+        },
+        "conditional_required_gates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "gate_id": { "$ref": "#/$defs/snake_case_token" },
+              "required_when": { "type": "string", "minLength": 1 }
+            },
+            "required": ["gate_id", "required_when"]
+          }
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        }
+      },
+      "required": [
+        "stage_id",
+        "name",
+        "purpose",
+        "owner_team",
+        "team_lead",
+        "owner_agent",
+        "sub_agents",
+        "uses_core_abilities",
+        "uses_skills",
+        "uses_tools",
+        "uses_governance_profiles",
+        "uses_audit_schemas",
+        "uses_model_provider_profiles",
+        "uses_context_memory_profiles",
+        "inputs",
+        "outputs",
+        "evidence",
+        "trace",
+        "gates",
+        "on_pass",
+        "on_fail",
+        "rework_route",
+        "blocking_conditions"
+      ]
+    },
+    "routing_target": {
+      "description": "A routing destination: either a known stage_id (snake_case) or one of the canonical terminals done | relevant_failed_stage | block_and_report.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    }
+  }
+}

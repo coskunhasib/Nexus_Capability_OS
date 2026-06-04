@@ -1,0 +1,280 @@
+# =============================================================================
+# Nexus AI — Pipeline-Scope Governance Profile: Research Pipeline
+# =============================================================================
+# Phase E / doc 19. Documentation / blueprint ONLY — NO runtime code, NO merge,
+# NO deploy.
+#
+# Applicable pipeline-scope governance LAYER for the Research Pipeline. Implements
+# (makes evaluable from config) the registry umbrella
+# governance_profiles.yaml -> pipeline.research_source_governance. The registry
+# catalogs WHAT exists; this file says, per doc 19 §4/§5, which rules a research
+# run must satisfy.
+#
+# DERIVED FROM (doc 19 §4):
+#   - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md (MARKDOWN is
+#     authoritative; §1 uses_governance_profiles + §2 per-stage key gates + §3
+#     governance placeholders):
+#       uses_governance_profiles:
+#         research_source_governance, citation_required_gate,
+#         no_self_approval_policy, evidence_required_policy
+#   - SDLC §7 minimums applied AS RELEVANT to research (doc 19 §4): the research
+#     analogue of "development_completion_requires_all_required_gates" is the
+#     research_completion gate (research_evidence_graph_complete +
+#     citation_required_gate_pass + cross_validation_by_separate_role +
+#     no_blocking_policy_failure). Build/security/supply-chain/agentic SDLC
+#     minimums do NOT apply to a research pipeline and are intentionally absent.
+#
+# LOCKED DECISIONS: Plugin cancelled (no plugin rule). Governance != Audit
+#   (evidence/trace records named here are owned by the SEPARATE audit registry).
+#   Evidence != Trace (distinct fields/schema families). Core Abilities are NOT
+#   agents; research_team_lead != Supervisor. prism = brainstorming/divergence
+#   (used in scope_and_questions, NEVER as validation); verification-loop is
+#   intentionally NOT bound (research cross-checks with llm-council + calibrate +
+#   gap-audit).
+#
+# NAMING RECONCILIATION (doc 19 (a)): no_self_approval / evidence_required are
+#   first-class ids; *_policy spellings recorded as aliases.
+# =============================================================================
+
+governance_profile_id: research_source_governance
+scope: pipeline
+purpose: >-
+  Pipeline-wide governance for the Research Pipeline, made evaluable from config:
+  every used source has a reliability score with rationale; low-reliability
+  sources are flagged and not silently used in synthesis; every load-bearing
+  claim is mapped to evidence and cited; cross-validation is performed by a role
+  distinct from the producer (no self-approval of one's own source); and
+  uncertainty is explicit. Umbrella re-shown under each research stage.
+
+applies_to:
+  pipeline: research_pipeline
+  stages:
+    - research_intake
+    - scope_and_questions
+    - source_discovery
+    - source_reliability_assessment
+    - claim_extraction
+    - claim_evidence_mapping
+    - cross_validation
+    - uncertainty_reporting
+    - synthesis
+    - research_completion
+
+severity_default: blocker
+
+binds_governance_profiles:
+  - research_source_governance      # registry umbrella (self)
+  - citation_required_gate
+  - no_self_approval                # alias: no_self_approval_policy
+  - evidence_required               # alias: evidence_required_policy
+
+rules:
+
+  # ---- source reliability scoring mandatory (research_source_governance core) --
+  - rule_id: research_source_reliability_required
+    description: >-
+      Every source used downstream must carry a reliability score with recorded
+      rationale before it may inform claim extraction or synthesis. Source
+      reliability scoring is mandatory; calibrate keeps scores rationale-backed
+      (research-pipeline.md §2.4).
+    severity: blocker
+    required_when: stage == source_reliability_assessment
+    pass_condition: >-
+      every_candidate_source_scored == true AND reliability_rationale_present == true
+    fail_condition: >-
+      unscored_source_used_in_synthesis == true OR reliability_rationale_present == false
+    on_fail: route_to_source_discovery
+    rework_route: source_discovery
+    evidence_required:
+      - SOURCE_RELIABILITY_REPORT
+      - SOURCE_INVENTORY
+    trace_required:
+      - stage_gate_trace_schema
+      - source_reliability_checker_tool_trace
+
+  # ---- low-reliability sources flagged ----------------------------------------
+  - rule_id: research_low_reliability_sources_flagged
+    description: >-
+      Sources below the reliability threshold must be explicitly flagged so any
+      downstream use is visible and bounded (research-pipeline.md §2.4
+      low_reliability_sources_flagged gate).
+    severity: major
+    required_when: stage == source_reliability_assessment
+    pass_condition: low_reliability_sources_flagged == true
+    fail_condition: low_reliability_source_used_unflagged == true
+    on_fail: route_to_source_reliability_assessment
+    rework_route: source_reliability_assessment
+    evidence_required:
+      - SOURCE_RELIABILITY_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- every load-bearing claim mapped to evidence ----------------------------
+  - rule_id: research_claim_evidence_mapping_required
+    description: >-
+      Every load-bearing claim must be mapped to its supporting and contradicting
+      evidence, with contradictions recorded and unsupported claims flagged
+      (research-pipeline.md §2.6).
+    severity: blocker
+    required_when: stage == claim_evidence_mapping
+    pass_condition: >-
+      every_load_bearing_claim_has_mapped_evidence == true AND
+      contradictions_recorded == true
+    fail_condition: load_bearing_claim_without_evidence_count > 0
+    on_fail: route_to_claim_evidence_mapping
+    rework_route: claim_evidence_mapping
+    evidence_required:
+      - CLAIM_REGISTER
+      - CLAIM_EVIDENCE_MAP
+    trace_required:
+      - stage_gate_trace_schema
+      - claim_mapper_tool_trace
+
+  # ---- cross-validation by a separate role (no_self_approval) ------------------
+  - rule_id: research_cross_validation_separate_role
+    description: >-
+      Source reliability scores and claim->evidence mappings must be independently
+      re-checked by cross_validation_agent, a role distinct from
+      source_reliability_agent / claim_extraction_agent / claim_evidence_agent. A
+      researcher must not be the sole validator of their own source. Binds the
+      canonical no_self_approval (alias: no_self_approval_policy);
+      validator_role_distinct_from_producer gate (research-pipeline.md §2.7).
+    severity: blocker
+    required_when: stage == cross_validation
+    pass_condition: >-
+      validator_role_distinct_from_producer == true AND
+      no_unresolved_critical_source_conflict == true
+    fail_condition: >-
+      producer_role_is_sole_validator_of_own_source == true OR
+      critical_source_reliability_conflict_unresolved == true
+    on_fail: route_to_claim_evidence_mapping
+    rework_route: claim_evidence_mapping
+    evidence_required:
+      - CROSS_VALIDATION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - cross_validation_role_handoff_trace
+
+  # ---- uncertainty explicit ---------------------------------------------------
+  - rule_id: research_uncertainty_explicit
+    description: >-
+      Residual uncertainty per claim and per research question must be quantified
+      and documented with rationale-backed confidence levels and explicit
+      contested points (03 §4 "uncertainty must be explicit";
+      research-pipeline.md §2.8).
+    severity: blocker
+    required_when: stage == uncertainty_reporting
+    pass_condition: >-
+      uncertainty_report_present == true AND confidence_levels_rationale_backed == true
+    fail_condition: uncertainty_report_present == false OR uncertainty_underreported == true
+    on_fail: route_to_uncertainty_reporting
+    rework_route: uncertainty_reporting
+    evidence_required:
+      - UNCERTAINTY_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- citation required (citation_required_gate) -----------------------------
+  - rule_id: research_citation_required
+    description: >-
+      The final synthesis may contain no uncited load-bearing claim. The
+      citation_required_gate blocks any uncited load-bearing statement
+      (research-pipeline.md §2.9 / §3).
+    severity: blocker
+    required_when: stage == synthesis
+    pass_condition: >-
+      no_uncited_load_bearing_claim == true AND
+      synthesis_consistent_with_uncertainty_report == true
+    fail_condition: uncited_claim_in_final_synthesis == true
+    on_fail: route_to_synthesis
+    rework_route: synthesis
+    evidence_required:
+      - RESEARCH_SYNTHESIS
+      - CITATION_INDEX
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- research completion requires all required research gates (SDLC §7 analogue)
+  - rule_id: research_completion_requires_all_required_gates
+    description: >-
+      Research completion may pass only when the research evidence graph is
+      complete, cross-validation was completed by a separate role, the
+      citation_required_gate passed, and no blocking policy failure remains.
+      Research analogue of development_completion_requires_all_required_gates
+      (research-pipeline.md §2.10).
+    severity: blocker
+    required_when: stage == research_completion
+    pass_condition: >-
+      research_evidence_graph_complete == true AND
+      cross_validation_completed_by_separate_role == true AND
+      citation_required_gate_pass == true AND
+      no_blocking_policy_failure == true
+    fail_condition: >-
+      research_evidence_graph_complete == false OR
+      cross_validation_completed_by_separate_role == false OR
+      citation_required_gate_pass == false OR
+      no_blocking_policy_failure == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - RESEARCH_EVIDENCE_GRAPH
+      - RESEARCH_COMPLETION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - gate_decision_trace
+
+  # ---- cross-cutting: evidence_required (first-class; alias evidence_required_policy)
+  - rule_id: research_evidence_required
+    description: >-
+      Every gate decision in the Research Pipeline must be backed by a
+      machine-readable evidence record. Binds the canonical evidence_required
+      (alias: evidence_required_policy). Evidence != Trace.
+    severity: blocker
+    required_when: any_gate_decision == true
+    pass_condition: gate_decision_has_evidence_record == true
+    fail_condition: gate_decision_has_evidence_record == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - RESEARCH_COMPLETION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+required_evidence:
+  evidence_schemas:
+    - source_evidence_schema
+    - claim_evidence_schema
+  evidence_artifacts:
+    - SOURCE_RELIABILITY_REPORT
+    - CLAIM_EVIDENCE_MAP
+    - CROSS_VALIDATION_REPORT
+    - UNCERTAINTY_REPORT
+    - CITATION_INDEX
+    - RESEARCH_EVIDENCE_GRAPH
+    - RESEARCH_COMPLETION_REPORT
+
+required_trace:
+  trace_schemas:
+    - stage_gate_trace_schema
+  trace_records:
+    - source_reliability_checker_tool_trace
+    - claim_mapper_tool_trace
+    - cross_validation_role_handoff_trace
+    - gate_decision_trace
+
+owner: research_and_knowledge
+escalation:
+  on_blocker: research_team_lead
+  on_unresolved_blocking_policy_failure: block_and_report
+  cannot_override_gate: true        # research_team_lead != Supervisor; no gate bypass
+
+provenance:
+  registry_profile: governance_profiles.yaml#pipeline.research_source_governance
+  derived_from:
+    - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md   # markdown authoritative
+    - configs/nexus-ai/pipeline_catalog.yaml                        # research_pipeline entry
+    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md    # §4, §5
+    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md      # §4 research pipeline governance
+no_plugin: true
+governance_not_audit: true
+evidence_not_trace: true

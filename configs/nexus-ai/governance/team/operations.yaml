@@ -1,0 +1,249 @@
+# =============================================================================
+# Nexus AI — Team-Scope Governance (APPLICABLE LAYER): operations_team
+# =============================================================================
+# Phase E / doc 19. DEDICATED team-scope governance profile CREATED here — the
+# Phase C registry had team-scope profiles ONLY for sdlc_team and research_team;
+# operations_team lacked one (doc 19 reconciliation input c). This profile
+# expresses the operations_team's role-separation rules per §4/§5 so the
+# operations pipeline's required gates can be evaluated from config.
+#
+# Documentation / blueprint ONLY. NO runtime code. NO merge. NO deploy.
+#
+# LOCKED DECISIONS honored: plugin cancelled (no plugin field); Governance !=
+# Audit; Evidence != Trace (required_evidence vs required_trace never merged);
+# Core Abilities are not agents (Supervisor != operations_team_lead); a Team is a
+# passive boundary, the team_lead orchestrates and never owns a stage / executes
+# a rollback-or-fix / bypasses a gate. verification-loop (bug/defect finding) is
+# used only conditionally inside rollback_or_fix for forward-fix defect
+# confirmation — never as a general readiness checklist.
+#
+# NAMING RECONCILIATION: no_self_approval / evidence_required are first-class ids;
+# *_policy spellings are aliases. Authoritative team name: operations_team.
+#
+# AUTHORITATIVE SOURCES (read from disk)
+#   - configs/nexus-ai/governance_profiles.yaml  # operations_pipeline_governance; incident_severity_required_gate; mitigation_plan_required_gate; rollback_runbook_evidence_gate; postmortem_required_gate; global no_self_approval / no_policy_bypass / evidence_required / trace_required
+#   - configs/nexus-ai/team_templates.yaml       # operations_team roster (6 agents) + team_lead + forbidden_actions (self_approved_resolution, missing_severity_classification_before_mitigation, rollback_or_fix_without_runbook_or_rollback_evidence, team_lead_executes_rollback_or_fix)
+#   - configs/nexus-ai/team_lead_roles.yaml      # operations_team_lead forbidden_actions / blocking_limits
+#   - configs/nexus-ai/audit_schemas.yaml        # incident_evidence_schema; severity_classification_evidence_schema; mitigation_plan_evidence_schema; rollback_fix_evidence_schema; postmortem_evidence_schema; operational_learning_evidence_schema; stage_gate_trace_schema
+#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §4  # operations rules (severity classification mandatory; postmortem mandatory; rollback/runbook evidence mandatory)
+# =============================================================================
+
+version: draft-0.1
+config_kind: team_scope_governance_profile
+status: candidate                      # NEW dedicated team-scope profile (reconciliation input c)
+no_plugin: true
+registry_ref: null
+composes_pipeline_profile: operations_pipeline_governance
+
+governance_id_aliases:
+  no_self_approval: [no_self_approval_policy]
+  evidence_required: [evidence_required_policy]
+
+# =============================================================================
+# GOVERNANCE PROFILE (doc 19 §4)
+# =============================================================================
+governance_profile_id: operations_team_governance
+scope: team
+purpose: >-
+  Intra-team role-separation governance for the operations_team: an actor cannot
+  self-approve its own mitigation or postmortem (resolver != approver); severity
+  must be classified before any mitigation begins; a rollback-or-fix may not be
+  recorded as resolved without runbook or rollback evidence; a qualifying-severity
+  incident may not be closed without a postmortem; the agent that executes the
+  rollback-or-fix (incident_response_agent) is distinct from the postmortem owner
+  (postmortem_agent); and the operations_team_lead orchestrates but does not
+  itself execute a rollback-or-fix, is not the Supervisor Core Ability, and may
+  never bypass a gate. Makes the incident -> mitigation -> rollback/fix ->
+  postmortem separation evaluable from config.
+applies_to:
+  team: operations_team
+  team_lead: operations_team_lead
+  pipeline: operations_pipeline
+  agents:
+    - incident_intake_agent           # incident_intake
+    - severity_classification_agent   # severity_classification (mandatory before mitigation)
+    - mitigation_planning_agent       # mitigation_plan
+    - incident_response_agent         # rollback_or_fix (executes resolution)
+    - postmortem_agent                # postmortem (distinct from resolution executor)
+    - operational_learning_agent      # learning_update
+  stages:
+    - severity_classification
+    - mitigation_plan
+    - rollback_or_fix
+    - postmortem
+    - learning_update
+severity_default: blocker
+owner: operations_team_lead            # orchestrator/escalation owner; NOT a stage owner, NOT Supervisor, NEVER executes rollback/fix
+escalation:
+  on_blocker: halt_pipeline_and_record_gate_failure
+  notify: operations_team_lead
+  forbidden_resolution:
+    - team_lead_override_of_failed_gate
+    - supervisor_core_ability_acts_as_team_lead
+    - team_lead_executes_rollback_or_fix
+    - self_approved_mitigation_or_postmortem
+
+required_evidence:                     # EVIDENCE family — audit/evidence_schemas/
+  - incident_evidence_schema
+  - severity_classification_evidence_schema
+  - mitigation_plan_evidence_schema
+  - rollback_fix_evidence_schema
+  - postmortem_evidence_schema
+required_trace:                        # TRACE family — audit/trace_schemas/
+  - stage_gate_trace_schema
+
+composes_governance_profiles:
+  - no_self_approval
+  - no_policy_bypass
+  - evidence_required
+  - trace_required
+  - operations_pipeline_governance     # pipeline-scope umbrella re-shown in team context
+  - incident_severity_required_gate
+  - mitigation_plan_required_gate
+  - rollback_runbook_evidence_gate
+  - postmortem_required_gate
+
+# =============================================================================
+# RULES (doc 19 §5)
+# =============================================================================
+rules:
+
+  - rule_id: operations_no_self_approved_resolution
+    description: >-
+      An actor cannot be the sole approver of its own mitigation plan or
+      postmortem: approver_agent_id != produced_artifact.producer_agent_id for the
+      mitigation_plan and postmortem gates (global no_self_approval re-shown).
+      Direct expression of operations forbidden_action self_approved_resolution.
+    severity: blocker
+    required_when: stage in [mitigation_plan, postmortem]
+    pass_condition: gate.approver_agent_id != produced_artifact.producer_agent_id
+    fail_condition: gate.approver_agent_id == produced_artifact.producer_agent_id
+    on_fail: block_gate_and_reassign_to_independent_approver
+    rework_route: mitigation_plan
+    evidence_required:
+      - mitigation_plan_evidence_schema
+      - postmortem_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: operations_severity_required_before_mitigation
+    description: >-
+      Incident severity must be classified (severity_classification, owned by
+      severity_classification_agent) before any mitigation begins
+      (incident_severity_required_gate). Direct expression of operations
+      forbidden_action missing_severity_classification_before_mitigation.
+    severity: blocker
+    required_when: stage == mitigation_plan
+    pass_condition: severity_classification_recorded == true
+    fail_condition: severity_classification_recorded == false
+    on_fail: block_mitigation_plan
+    rework_route: severity_classification
+    evidence_required:
+      - severity_classification_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: operations_rollback_or_fix_requires_runbook_or_rollback_evidence
+    description: >-
+      A rollback-or-fix (incident_response_agent) may not be recorded as resolved
+      without runbook or rollback evidence (rollback_runbook_evidence_gate). When a
+      forward-fix is chosen, the defect confirmation uses verification-loop (bug/
+      defect finding) — never as a general checklist. Direct expression of
+      operations forbidden_action rollback_or_fix_without_runbook_or_rollback_evidence.
+    severity: blocker
+    required_when: stage == rollback_or_fix
+    pass_condition: >-
+      (runbook_evidence_present == true OR rollback_evidence_present == true) AND
+      (forward_fix_chosen IMPLIES forward_fix_defects_confirmed_zero_via_verification_loop == true)
+    fail_condition: >-
+      (runbook_evidence_present == false AND rollback_evidence_present == false) OR
+      (forward_fix_chosen AND forward_fix_unconfirmed_defects_present == true)
+    on_fail: block_rollback_or_fix_gate
+    rework_route: mitigation_plan
+    evidence_required:
+      - rollback_fix_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: operations_postmortem_required_and_distinct_owner
+    description: >-
+      A qualifying-severity incident may not be closed without a postmortem
+      (postmortem_required_gate), and the postmortem owner (postmortem_agent) is
+      distinct from the rollback-or-fix executor (incident_response_agent) so the
+      resolver does not grade its own resolution.
+    severity: blocker
+    required_when: stage == postmortem AND incident_severity in [major, critical]
+    pass_condition: >-
+      postmortem_present == true AND
+      postmortem.owner_agent == postmortem_agent AND
+      postmortem.owner_agent != rollback_or_fix.owner_agent
+    fail_condition: >-
+      postmortem_present == false OR
+      postmortem.owner_agent == rollback_or_fix.owner_agent
+    on_fail: block_incident_closure
+    rework_route: rollback_or_fix
+    evidence_required:
+      - postmortem_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: operations_no_failed_gate_bypass
+    description: >-
+      No actor in the operations_team — including the operations_team_lead — may
+      override, skip, or pass a blocking governance gate (global no_policy_bypass
+      re-shown in team context).
+    severity: blocker
+    required_when: any_blocking_gate_is_evaluated
+    pass_condition: blocking_gate_satisfied_before_progression == true
+    fail_condition: blocking_gate_overridden_without_satisfaction == true
+    on_fail: halt_pipeline_and_record_policy_bypass_attempt
+    rework_route: return_to_blocking_gate_owner_stage
+    evidence_required:
+      - incident_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: operations_team_lead_role_separation
+    description: >-
+      The operations_team_lead orchestrates only: it never owns a stage, never
+      executes a rollback-or-fix itself (that is incident_response_agent's), never
+      self-approves a mitigation/postmortem, is never the Supervisor Core Ability,
+      and never bypasses a gate (supervisor_as_team_lead and team_as_stage_owner
+      anti-patterns).
+    severity: blocker
+    required_when: operations_team_lead_acts_on_a_gate_or_stage
+    pass_condition: >-
+      operations_team_lead != supervisor_core_ability AND
+      operations_team_lead_owns_no_stage == true AND
+      operations_team_lead_did_not_execute_rollback_or_fix == true AND
+      operations_team_lead_did_not_self_approve_resolution == true AND
+      operations_team_lead_did_not_bypass_any_gate == true
+    fail_condition: >-
+      operations_team_lead_is_supervisor_core_ability == true OR
+      operations_team_lead_owns_a_stage == true OR
+      operations_team_lead_executed_rollback_or_fix == true OR
+      operations_team_lead_self_approved_resolution == true OR
+      operations_team_lead_bypassed_a_gate == true
+    on_fail: reject_team_lead_action_and_reassign
+    rework_route: reassign_to_compliant_owner_or_independent_approver
+    evidence_required:
+      - incident_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+# =============================================================================
+# VALIDATION SELF-CHECK (doc 19 §14)
+# =============================================================================
+validation_self_check:
+  scope_is_known: true
+  every_rule_has_severity: true
+  every_blocker_rule_has_on_fail: true
+  evidence_and_trace_kept_distinct: true
+  no_plugin_governance_introduced: true
+  core_ability_is_not_an_agent: true                # Supervisor != operations_team_lead
+notes: >-
+  NEW dedicated team-scope governance for operations_team (reconciliation input c).
+  Layered over the pipeline-scope operations_pipeline_governance and the gate
+  profiles incident_severity_required_gate / mitigation_plan_required_gate /
+  rollback_runbook_evidence_gate / postmortem_required_gate. verification-loop is
+  bug/defect finding only (forward-fix confirmation), never a readiness checklist.

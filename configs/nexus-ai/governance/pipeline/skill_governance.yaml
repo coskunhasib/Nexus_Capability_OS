@@ -1,0 +1,296 @@
+# =============================================================================
+# Nexus AI — Pipeline-Scope Governance Profile: Skill Governance Pipeline
+# =============================================================================
+# Phase E / doc 19. Documentation / blueprint ONLY — NO runtime code, NO merge,
+# NO deploy.
+#
+# Applicable pipeline-scope governance LAYER for the Skill Governance Pipeline.
+# Implements (makes evaluable from config) the registry umbrella
+# governance_profiles.yaml -> pipeline.skill_governance_pipeline_governance.
+#
+# NOTE: this is the DEDICATED Skill Governance PIPELINE umbrella. It is DISTINCT
+# from the SDLC stage-03 `skill_governance` stage-scope profile (which governs in
+# -SDLC skill semantic extraction). Do not conflate the two.
+#
+# DERIVED FROM (doc 19 §4):
+#   - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md (MARKDOWN
+#     authoritative; §1 uses_governance_profiles + §2 per-stage key gates + §3.2
+#     governance placeholders):
+#       uses_governance_profiles:
+#         skill_governance_pipeline_governance, skill_semantic_required_gate,
+#         script_reference_audit_gate, misuse_warning_required_gate,
+#         skill_binding_proposal_gate, skill_activation_decision_gate,
+#         locked_semantics_enforcement_policy, no_self_approval_policy,
+#         evidence_required_policy
+#   - SDLC §7 minimums applied AS RELEVANT (doc 19 §4): this is a skill-lifecycle
+#     governance pipeline, not a build pipeline; SDLC build/security/supply-chain
+#     minimums do not apply. The "required gates" minimum is realized as the
+#     ordered lifecycle invariants (semantics -> script audit -> misuse warnings
+#     -> binding proposal -> activation decision) + no self-approval at decision.
+#
+# NAMING RECONCILIATION:
+#   - skill_governance_pipeline_governance is the canonical-source (markdown) id;
+#     the catalog YAML's divergent `skill_governance_profile` is recorded as an
+#     ALIAS. The catalog YAML gate names `skill_safety_gate` / `skill_binding_gate`
+#     are recorded as aliases of the markdown gate profiles
+#     `script_reference_audit_gate` / `skill_binding_proposal_gate`.
+#   - no_self_approval / evidence_required are first-class ids; *_policy spellings
+#     recorded as aliases.
+#
+# LOCKED DECISIONS: Plugin cancelled. Governance != Audit. Evidence != Trace.
+#   Core Abilities are NOT agents; skill_governance_team_lead != Supervisor.
+#   LOCKED skill semantics ENFORCED here (not altered): prism = brainstorming/
+#   divergence; verification-loop = bug/defect finding. Anti-pattern blocked:
+#   binding without semantics.
+# =============================================================================
+
+governance_profile_id: skill_governance_pipeline_governance
+scope: pipeline
+purpose: >-
+  Pipeline-wide governance for the dedicated Skill Governance Pipeline, made
+  evaluable from config: no binding/activation without mandatory semantic
+  extraction; script/reference safety audit required; misuse warnings required
+  (at least one not_for warning per locked-semantics skill); locked skill
+  semantics enforced (prism = brainstorming, verification-loop = bug-finding);
+  and the activation decision is evidence-backed and not self-approved (proposer
+  != decider). Umbrella re-shown under each skill-governance stage.
+
+applies_to:
+  pipeline: skill_governance_pipeline
+  stages:
+    - skill_intake
+    - skill_semantic_extraction
+    - script_reference_audit
+    - misuse_warning_generation
+    - skill_binding_proposal
+    - skill_activation_decision
+    - skill_deprecation_update
+
+severity_default: blocker
+
+binds_governance_profiles:
+  - skill_governance_pipeline_governance  # registry umbrella (self); alias: skill_governance_profile
+  - skill_semantic_required_gate
+  - script_reference_audit_gate           # alias: skill_safety_gate
+  - misuse_warning_required_gate
+  - skill_binding_proposal_gate           # alias: skill_binding_gate
+  - skill_activation_decision_gate
+  - locked_semantics_enforcement_policy
+  - no_self_approval                      # alias: no_self_approval_policy
+  - evidence_required                     # alias: evidence_required_policy
+
+aliases:
+  - skill_governance_profile              # divergent catalog-YAML umbrella name reconciled to this id
+
+rules:
+
+  # ---- semantic extraction mandatory before binding (skill_semantic_required_gate)
+  - rule_id: skillgov_semantic_extraction_required
+    description: >-
+      Skill semantic extraction is mandatory and must precede any binding.
+      semantic_category, primary_purpose, not_for, used_by_agents, used_in_stages
+      and confidence >= threshold must be produced. Enforces
+      skill_semantic_required_gate (skill-governance-pipeline.md §2.2 / §3.2).
+    severity: blocker
+    required_when: stage == skill_semantic_extraction
+    pass_condition: >-
+      skill_semantic_extract_present == true AND semantic_confidence_above_threshold == true
+    fail_condition: skill_semantics_unknown == true
+    on_fail: route_to_skill_intake
+    rework_route: skill_intake
+    evidence_required:
+      - SKILL_SEMANTIC_EXTRACT
+    trace_required:
+      - skill_governance_trace_schema
+      - skill_semantic_extraction_trace
+
+  # ---- locked semantics enforced (locked_semantics_enforcement_policy) ----------
+  - rule_id: skillgov_locked_semantics_enforced
+    description: >-
+      The locked semantics of prism (brainstorming/divergence) and
+      verification-loop (bug/defect finding) may not be altered by this pipeline —
+      only recorded and verified. Any extraction that changes prism/verification
+      -loop semantics fails. Binds locked_semantics_enforcement_policy
+      (skill-governance-pipeline.md §2.2 / §2.6 / §3.2).
+    severity: blocker
+    required_when: stage in [skill_semantic_extraction, skill_activation_decision]
+    pass_condition: locked_semantics_preserved == true
+    fail_condition: locked_semantics_violation == true
+    on_fail: route_to_skill_semantic_extraction
+    rework_route: skill_semantic_extraction
+    evidence_required:
+      - SKILL_SEMANTIC_EXTRACT
+    trace_required:
+      - skill_governance_trace_schema
+
+  # ---- script/reference safety audit (script_reference_audit_gate) -------------
+  - rule_id: skillgov_script_reference_audit_required
+    description: >-
+      scripts/** and references/** must pass a static safety/side-effect audit;
+      unsafe scripts must be mitigated before progression; reference files are
+      indexed. verification-loop used here ONLY for script defect sweep (LOCKED
+      semantics). Enforces script_reference_audit_gate (alias skill_safety_gate);
+      skill-governance-pipeline.md §2.3 / §3.2.
+    severity: blocker
+    required_when: stage == script_reference_audit
+    pass_condition: >-
+      unsafe_skill_script_unmitigated == false AND reference_index_complete == true
+    fail_condition: unsafe_skill_script_unmitigated == true
+    on_fail: route_to_skill_semantic_extraction
+    rework_route: skill_semantic_extraction
+    evidence_required:
+      - SCRIPT_REFERENCE_AUDIT_REPORT
+      - SKILL_REFERENCE_INDEX
+    trace_required:
+      - skill_governance_trace_schema
+      - script_static_analysis_trace
+
+  # ---- misuse warnings required (misuse_warning_required_gate) ------------------
+  - rule_id: skillgov_misuse_warnings_required
+    description: >-
+      Explicit misuse warnings are a precondition for binding and activation;
+      every locked-semantics skill requires at least one not_for warning. Enforces
+      misuse_warning_required_gate (skill-governance-pipeline.md §2.4 / §3.2).
+    severity: blocker
+    required_when: stage == misuse_warning_generation
+    pass_condition: >-
+      misuse_warnings_present == true AND
+      not_for_warning_present_for_locked_semantics_skill == true
+    fail_condition: missing_misuse_warnings == true
+    on_fail: route_to_script_reference_audit
+    rework_route: script_reference_audit
+    evidence_required:
+      - SKILL_MISUSE_WARNINGS
+    trace_required:
+      - skill_governance_trace_schema
+      - misuse_warning_generation_trace
+
+  # ---- no binding without semantics (skill_binding_proposal_gate) --------------
+  - rule_id: skillgov_no_binding_without_semantics
+    description: >-
+      A skill-stage binding may not be PROPOSED without completed semantics +
+      script audit + misuse warnings (anti-pattern: binding without semantics).
+      This stage produces a PROPOSAL, not a decision. Enforces
+      skill_binding_proposal_gate (alias skill_binding_gate);
+      skill-governance-pipeline.md §2.5 / §3.2.
+    severity: blocker
+    required_when: stage == skill_binding_proposal
+    pass_condition: >-
+      upstream_semantic_audit_misuse_evidence_present == true AND
+      skill_binding_proposal_present == true
+    fail_condition: binding_proposed_without_semantics == true
+    on_fail: route_to_skill_semantic_extraction
+    rework_route: skill_semantic_extraction
+    evidence_required:
+      - SKILL_BINDING_PROPOSAL
+    trace_required:
+      - skill_governance_trace_schema
+      - skill_binding_proposal_trace
+
+  # ---- activation decision evidence-backed + no self-approval (skill_activation_decision_gate)
+  - rule_id: skillgov_activation_decision_no_self_approval
+    description: >-
+      The skill activation decision (activate / hold / deprecate) must be
+      evidence-backed and may not be self-approved — the proposer
+      (skill_librarian_agent) and the decider (skill_runtime_safety_agent) are
+      distinct. Enforces skill_activation_decision_gate + no_self_approval (alias:
+      no_self_approval_policy); skill-governance-pipeline.md §2.6 / §3.2.
+    severity: blocker
+    required_when: stage == skill_activation_decision
+    pass_condition: >-
+      skill_activation_decision_present == true AND
+      activation_decision_evidence_present == true AND
+      self_approval_of_activation_decision == false
+    fail_condition: >-
+      skill_activation_decision_absent == true OR self_approval_of_activation_decision == true
+    on_fail: route_to_skill_binding_proposal
+    rework_route: skill_binding_proposal
+    evidence_required:
+      - SKILL_ACTIVATION_DECISION
+    trace_required:
+      - skill_governance_trace_schema
+      - skill_activation_decision_trace
+
+  # ---- deprecation/update re-triggers semantics on version/hash change ----------
+  - rule_id: skillgov_deprecation_update_revalidation
+    description: >-
+      On version/hash change or a deprecation_or_update risk profile, semantic
+      re-validation (skill_semantic_required_gate) is re-triggered and registry
+      consistency is preserved. Conditional stage
+      (skill-governance-pipeline.md §2.7).
+    severity: major
+    required_when: >-
+      stage == skill_deprecation_update AND
+      (deprecation_or_update == true OR version_or_hash_changed == true)
+    pass_condition: >-
+      semantic_revalidation_completed_if_required == true AND registry_consistent == true
+    fail_condition: version_or_hash_changed == true AND semantic_revalidation_completed == false
+    on_fail: route_to_skill_semantic_extraction
+    rework_route: skill_semantic_extraction
+    evidence_required:
+      - SKILL_SEMANTIC_EXTRACT
+    trace_required:
+      - skill_governance_trace_schema
+
+  # ---- cross-cutting: evidence_required (first-class; alias evidence_required_policy)
+  - rule_id: skillgov_evidence_required
+    description: >-
+      Every gate decision in the Skill Governance Pipeline must be backed by a
+      machine-readable evidence record. Binds canonical evidence_required (alias:
+      evidence_required_policy). Evidence != Trace.
+    severity: blocker
+    required_when: any_gate_decision == true
+    pass_condition: gate_decision_has_evidence_record == true
+    fail_condition: gate_decision_has_evidence_record == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - SKILL_ACTIVATION_DECISION
+    trace_required:
+      - skill_governance_trace_schema
+
+required_evidence:
+  evidence_schemas:
+    - skill_governance_evidence_schema
+    - skill_semantic_extract_schema
+    - script_audit_evidence_schema
+    - skill_misuse_warning_schema
+    - skill_binding_decision_schema
+  evidence_artifacts:
+    - SKILL_INVENTORY_ENTRY
+    - SKILL_SEMANTIC_EXTRACT
+    - SCRIPT_REFERENCE_AUDIT_REPORT
+    - SKILL_REFERENCE_INDEX
+    - SKILL_MISUSE_WARNINGS
+    - SKILL_BINDING_PROPOSAL
+    - SKILL_ACTIVATION_DECISION
+
+required_trace:
+  trace_schemas:
+    - skill_governance_trace_schema
+  trace_records:
+    - skill_package_read_trace
+    - skill_semantic_extraction_trace
+    - script_static_analysis_trace
+    - misuse_warning_generation_trace
+    - skill_binding_proposal_trace
+    - skill_activation_decision_trace
+    - gate_evaluation_trace
+
+owner: skill_governance
+escalation:
+  on_blocker: skill_governance_team_lead
+  on_locked_semantics_violation: block_and_report
+  on_self_approval_of_activation_decision: block_and_report
+  cannot_override_gate: true        # skill_governance_team_lead != Supervisor; no gate bypass
+
+provenance:
+  registry_profile: governance_profiles.yaml#pipeline.skill_governance_pipeline_governance
+  derived_from:
+    - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md  # markdown authoritative
+    - configs/nexus-ai/pipeline_catalog.yaml                               # skill_governance_pipeline entry (skill_governance_profile alias)
+    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md           # §4, §5, §9 locked semantics
+    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md             # §8 skill governance
+no_plugin: true
+governance_not_audit: true
+evidence_not_trace: true

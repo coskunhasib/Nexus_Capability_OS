@@ -1,0 +1,149 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — Skill Governance Pipeline
+# =============================================================================
+# Phase E / doc 19 §12 output. Documentation/blueprint ONLY — NO runtime code,
+# NO merge, NO deploy.
+#
+# Materializes the `type: evidence_schema` items with owner_domain
+# `skill_governance` from configs/nexus-ai/audit_schemas.yaml into the applicable
+# per-scope audit-schema config layer (doc 19 §13).
+#
+# LOCKED DECISIONS honored:
+#   - Plugin CANCELLED (no plugin concept anywhere).
+#   - Audit != Governance (this is an AUDIT file). Note the pipeline is *named*
+#     skill_governance, but this file is still AUDIT (evidence), not governance.
+#   - Evidence != Trace: EVIDENCE ONLY here; trace schemas live in the SEPARATE
+#     dir configs/nexus-ai/audit/trace_schemas/ and are never merged in.
+#   - Core Abilities are NOT agents: never producer/consumer.
+#   - Skill != Tool. prism = brainstorming/divergence; verification-loop =
+#     bug/defect finding. skill_misuse_warning_schema is where the locked
+#     skill semantics are recorded as misuse warnings (e.g. prism is NOT for bug
+#     finding; verification-loop is NOT a readiness checklist).
+#
+# SCOPE NOTE — what is and is NOT in this file:
+#   The skill_governance pipeline's catalog also defines `skill_binding_decision_schema`,
+#   which is Evidence-FAMILY but has `type: decision_record_schema` (NOT
+#   `type: evidence_schema`). Per the doc 19 §12 type vocabulary and this task's
+#   scope ("implement every type: evidence_schema item"), it is NOT emitted into
+#   this evidence-schema file — it is a distinct type and belongs to a
+#   decision-record materialization. See index OPEN QUESTIONS. (It is a decision
+#   PROOF and must never end up under configs/nexus-ai/audit/trace_schemas/.)
+#
+# AUDIT SCHEMA CONTRACT (doc 19 §12): audit_schema_id, type, applies_to,
+# required_fields, producer, consumer, retention, redaction_rules.
+# Values transcribed verbatim from the catalog. registry_id/name kept as labels.
+#
+# STATUS: candidate (NEW, non-SDLC pipeline). Preserved per item.
+# =============================================================================
+
+version: draft-0.1
+layer_id: nexus_ai_audit_evidence_schemas_skill_governance
+family: audit
+audit_kind: evidence
+scope: pipeline
+applies_to_pipeline: skill_governance_pipeline
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+purpose: >-
+  Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
+  skill-governance pipeline (intake, semantic extraction, script audit, misuse
+  warnings). decision_record_schema and trace items are excluded by design.
+
+evidence_schemas:
+
+  - audit_schema_id: skill_governance_evidence_schema
+    registry_id: skill_governance_evidence_schema
+    name: Skill Governance Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:skill_intake
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - source_artifacts
+      - status
+      - created_at
+    producer: skill_librarian_agent
+    consumer: skill_runtime_safety_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: skill_semantic_extract_schema
+    registry_id: skill_semantic_extract_schema
+    name: Skill Semantic Extract Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:skill_semantic_extraction
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - semantic_category
+      - primary_purpose
+      - allowed_usage
+      - forbidden_usage
+      - status
+      - created_at
+    producer: skill_semantic_extractor_subagent
+    consumer: skill_runtime_safety_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: script_audit_evidence_schema
+    registry_id: script_audit_evidence_schema
+    name: Script Audit Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:script_reference_audit
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - script_findings
+      - source_artifacts
+      - status
+      - created_at
+    producer: skill_runtime_safety_agent
+    consumer: skill_librarian_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_script_snippets
+
+  - audit_schema_id: skill_misuse_warning_schema
+    registry_id: skill_misuse_warning_schema
+    name: Skill Misuse Warning Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:misuse_warning_generation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - misuse_warnings
+      - status
+      - created_at
+    producer: skill_runtime_safety_agent
+    consumer: skill_librarian_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure

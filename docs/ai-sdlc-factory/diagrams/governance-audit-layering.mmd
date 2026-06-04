@@ -1,0 +1,54 @@
+%% Nexus AI Orchestration Model — Governance and Audit Layering
+%% Source of truth: docs/ai-sdlc-factory/03-governance-and-audit-layering.md
+%% Locked: no plugin concept; SDLC is one pipeline under Nexus AI (not the top);
+%% Governance != Audit; Evidence != Trace; Core Abilities are NOT agents/teams.
+%% Governance has 7 layers (Global..Tool). Audit splits into Evidence and Trace.
+
+flowchart TD
+  classDef root fill:#1f2a44,stroke:#0d1526,color:#ffffff,stroke-width:2px;
+  classDef family fill:#26334f,stroke:#11203d,color:#ffffff,stroke-width:1.5px;
+  classDef govLayer fill:#e8f0fe,stroke:#3b6ea5,color:#1a3050;
+  classDef auditNode fill:#eef7ee,stroke:#3f8f4f,color:#1e3d24;
+  classDef registry fill:#fff4e0,stroke:#c98a2e,color:#5a3d12;
+  classDef note fill:#f5f5f5,stroke:#999999,color:#333333,stroke-dasharray:4 3;
+
+  ROOT["Nexus AI Orchestration Model"]:::root
+
+  ROOT --> GOV["Governance family<br/>(Policy / Gates / Permissions / Risk Rules)"]:::family
+  ROOT --> AUD["Audit family"]:::family
+
+  %% ----- Governance: 7 layers, Global is broadest, Tool is narrowest -----
+  subgraph GOVLAYERS["Governance layers — broadest to narrowest"]
+    direction TB
+    G1["1. Global Governance<br/>all of Nexus AI<br/>e.g. no plugin, no secret leak, trace required, high-risk default deny"]:::govLayer
+    G2["2. Pipeline Governance<br/>per pipeline<br/>e.g. sdlc_pipeline_governance, release_candidate_governance"]:::govLayer
+    G3["3. Team Governance<br/>per team roles<br/>e.g. sdlc_team: no self-approval (no_self_approval_policy)"]:::govLayer
+    G4["4. Stage Governance<br/>per single stage<br/>e.g. verification_loop_bug_gate"]:::govLayer
+    G5["5. Core Ability Governance<br/>per Core Ability (NOT an agent)<br/>Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS"]:::govLayer
+    G6["6. Skill Governance<br/>per skill<br/>e.g. prism = brainstorm only; verification-loop = defect finding only"]:::govLayer
+    G7["7. Tool Governance<br/>per tool call (side-effect tools imply governance + trace)<br/>e.g. sandbox / timeout / trace required"]:::govLayer
+    G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
+  end
+  GOV --> GOVLAYERS
+
+  %% ----- Audit: split into Evidence and Trace (kept distinct) -----
+  subgraph AUDSPLIT["Audit split — Evidence is NOT Trace"]
+    direction TB
+    EV["Evidence<br/>decision proof (what was decided)<br/>e.g. REQUIREMENTS_SPEC, TEST_REPORT, BUG_FINDING_REPORT, RELEASE_EVIDENCE<br/>schemas: sdlc_pipeline_evidence_schema, release_evidence_schema, bug_finding_evidence_schema"]:::auditNode
+    TR["Trace<br/>action history (what happened)<br/>e.g. agent / sub-agent / skill / tool / core ability / model / context / policy / pipeline-transition trace<br/>schemas: stage_gate_trace_schema"]:::auditNode
+    EV -. "distinct record types — never merged" .- TR
+  end
+  AUD --> AUDSPLIT
+
+  %% ----- Registry duality: each family lives in registry AND is re-shown in usage -----
+  REG["Shared Registry<br/>what exists in the system<br/>Governance Profiles + Audit Schemas"]:::registry
+  USE["Usage Mapping<br/>re-shown under pipeline / team / stage / agent / sub-agent / core ability / tool<br/>(re-show is usage, not ownership)"]:::registry
+
+  GOVLAYERS -. "Governance Profiles listed once" .-> REG
+  AUDSPLIT  -. "Audit Schemas listed once" .-> REG
+  REG ==> USE
+  USE -. "each profile / schema re-appears where used" .-> GOVLAYERS
+  USE -. "each profile / schema re-appears where used" .-> AUDSPLIT
+
+  N1["Note: owner_agent is always a pipeline Agent role; a Core Ability is never an owner_agent or team member."]:::note
+  G5 -.-> N1

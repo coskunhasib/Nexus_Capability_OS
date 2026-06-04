@@ -1,0 +1,1503 @@
+# Nexus AI — Context / Memory Profiles Registry
+# Shared Registry Formalization (Phase C / doc 17 §10).
+# Output of: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
+#
+# WHAT THIS FILE IS
+#   This is the canonical Shared Registry for the "Context / Memory Profiles" category.
+#   It answers "what context/memory profiles exist in the system?" (ownership/existence).
+#   The "who uses what?" relationship (usage mapping) is enforced from this data via the
+#   `used_by` field on every item (doc 05 §12, doc 17 §13). The same profiles are ALSO
+#   listed under each pipeline/stage/agent's `uses_context_memory_profiles` — that
+#   repetition is usage, not re-ownership (doc 05 §1, §5).
+#
+# CONCEPT BOUNDARIES (locked — see docs 00a, 01-core-definitions, 02-concept-boundaries):
+#   - Memory is a CORE ABILITY (lives in core_abilities.yaml), NOT a context pack and NOT an
+#     agent. Context/Memory PROFILES here are run/agent WORKING CONTEXT: the bounded, governed
+#     view of state (run history, retrieved memory, prior artifacts) that a pipeline run or an
+#     agent is allowed to see. A context pack is consumed/produced by stages; the Memory Core
+#     Ability is the capability that retrieves/persists durable knowledge. They are distinct:
+#         scope: run        -> whole-pipeline-run working context (the "*_run_context" items)
+#         scope: stage_pack -> a stage/agent-facing bundle of inputs (the "*_context_pack" items)
+#     A context pack is NEVER an agent, a team member, a skill, or a tool.
+#   - Plugin is cancelled forever: no plugin context pack, ever.
+#   - Skill != Tool, Governance != Audit, Evidence != Trace. Each item points at the
+#     governance_profiles and audit_schemas that bound it; it does not embed them.
+#
+# STATUS VOCABULARY (doc 17):
+#   canonical  = locked / established (the SDLC base packs + run context).
+#   candidate  = referenced by a draft pipeline but not yet ratified (the 5 new pipelines'
+#                packs, all introduced at draft-0.1).
+#   deprecated = retired; none yet.
+#   RULE: every item has a status AND at least one used_by entry, OR status: candidate.
+#         (Every candidate below ALSO carries used_by for traceability.)
+#
+# NAMING RECONCILIATION (doc 17 "aliases" rule):
+#   Many SDLC stage contracts named legacy *_context_pack variants that were reconciled to a
+#   canonical base pack (each stage file records the reconciliation inline). Those legacy names
+#   are NOT separate items — they are recorded under the `aliases` field of the canonical pack
+#   they reconciled into, so the mapping is enforceable and no legacy name is left in prose only.
+#   Likewise, where a draft pipeline's catalog YAML used a different name than its (authoritative)
+#   markdown catalog doc (pipeline-catalog-review.md F-1), the markdown name is canonical here and
+#   the YAML-only variant is recorded under `aliases`.
+#
+# FIELD CONTRACT — every item carries (doc 17 §3 base contract + §10 category fields):
+#   id, name, type, status, purpose, owner_domain, allowed_usage, forbidden_usage,
+#   governance_profiles, audit_schemas, notes,                       # §3 base
+#   scope, source_priority, retention, validity_window,             # §10 category
+#   retrieval_rules, redaction_rules,                                # §10 category
+#   used_by,                                                         # usage-mapping enforcement (§13)
+#   aliases                                                          # reconciliation (present when non-empty)
+
+version: draft-0.1
+registry_id: nexus_ai_context_memory_profiles
+category: context_memory_profile
+plugin_registry: false   # locked: no plugin registry, ever
+locked_decisions_doc: .memory/0002-locked-decisions.md
+contract_doc: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
+usage_mapping_doc: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md
+
+# ---------------------------------------------------------------------------------------------
+# Shared meta. Type vocabulary used by `type:` on each item.
+# ---------------------------------------------------------------------------------------------
+type_vocabulary:
+  - run_context     # whole-pipeline-run working context (scope: run)
+  - context_pack    # stage/agent-facing bundle of inputs (scope: stage_pack)
+
+status_vocabulary: [canonical, candidate, deprecated]
+scope_vocabulary: [run, stage_pack]
+
+# Distinction restated as enforceable metadata (Memory Core Ability vs context profiles):
+memory_vs_context_rule:
+  memory_core_ability_owner: core_abilities.yaml   # the `Memory` Core Ability lives there
+  context_profiles_are: run_and_agent_working_context
+  context_profiles_are_not: [agent, team_member, skill, tool, core_ability]
+  note: >-
+    A context pack is the governed view of state a run/agent may see. It is hydrated partly FROM
+    the Memory Core Ability (durable retrieval) and partly from the current run's produced
+    artifacts/evidence. Memory the ability persists/retrieves; context packs the profiles scope
+    and expose. Never collapse the two.
+
+profiles:
+
+  # ===========================================================================================
+  # SECTION A — SDLC canonical run context (status: canonical)
+  # ===========================================================================================
+  - id: sdlc_run_context
+    name: SDLC Run Context
+    type: run_context
+    status: canonical
+    scope: run
+    purpose: >-
+      Always-on, whole-run working context for an SDLC pipeline run: run id, domain/risk profile,
+      active conditional-gate flags, the evidence-graph spine, and which stages/gates have been
+      evaluated so far. Every SDLC stage may read it; it is the run-level backbone that lets late
+      stages (development_completion, release_candidate, refraction) confirm the whole run.
+    owner_domain: sdlc
+    allowed_usage:
+      - read_as_run_level_backbone_by_any_sdlc_stage
+      - confirm_which_stages_and_gates_were_evaluated_this_run
+      - carry_domain_risk_profile_and_conditional_gate_flags
+    forbidden_usage:
+      - used_as_a_substitute_for_the_memory_core_ability
+      - shared_across_different_runs
+      - auto_satisfy_a_gate_from_prior_run_memory
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_evidence_graph        # 1: this run's accumulated evidence/gate results
+      - current_run_stage_outputs         # 2: artifacts produced by earlier stages this run
+      - domain_risk_profile               # 3: RISK_PROFILE / DOMAIN_PROFILE_DECISION (stage 02)
+      - durable_memory_prior_runs         # 4: Memory Core Ability — prior-run lessons (advisory)
+    retention: run_scoped   # discarded at run close; durable parts persist only via Memory ability
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - readable_by_all_sdlc_stages
+      - run_scoped_isolation: true        # one run cannot read another run's sdlc_run_context
+      - prior_run_memory_is_advisory_only # must not auto-satisfy a gate
+    redaction_rules:
+      - no_raw_secrets                     # global_no_secret_read; never expose raw credentials
+      - redact_pii_per_domain_risk_profile
+    governance_profiles:
+      - sdlc_pipeline_governance
+      - context_access_governance
+      - no_silent_mutation_policy
+    audit_schemas:
+      - context_usage_trace_schema        # trace: which stage read/wrote which context slice
+      - stage_gate_trace_schema
+    used_by:
+      - sdlc_pipeline
+      - stage:intake
+      - stage:domain_risk_profile
+      - stage:requirements
+      - stage:planning
+      - stage:code_review
+      - stage:test_execution
+      - stage:verification_loop_bug_finding   # via verification_context_pack lineage; run context base
+      - stage:security_validation
+      - stage:supply_chain_sbom_license
+      - stage:ai_agent_safety_evaluation
+      - stage:privacy_data_lifecycle_validation
+      - stage:api_contract_compatibility_validation
+      - stage:domain_regulatory_compliance_validation_if_applicable
+      - stage:data_migration_validation_if_applicable
+      - stage:accessibility_ux_validation_if_applicable
+      - stage:performance_resilience
+      - stage:cost_resource_governance
+      - stage:backup_restore_dr_validation_if_applicable
+      - stage:operations_readiness
+      - stage:evidence_graph_build
+      - stage:development_completion
+      - stage:release_candidate
+      - stage:refraction_learning
+    aliases: []
+    notes: >-
+      The single most-referenced context item (base run context for ~all 31 SDLC stages).
+      It is run context (scope: run), NOT the Memory Core Ability. Stages 12/14/16/17/18/19/20/21/
+      22/23/24/25 added it explicitly during legacy-context reconciliation (see those stage headers).
+
+  # ===========================================================================================
+  # SECTION B — SDLC canonical stage context packs (status: canonical)
+  # These eight are the locked base packs. Legacy stage-specific *_context_pack names were
+  # reconciled INTO them and are recorded under `aliases` (doc 17 reconciliation rule).
+  # ===========================================================================================
+
+  - id: requirements_context_pack
+    name: Requirements Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Front-of-pipeline product/requirements working context: product brief, initial scope,
+      success metrics, REQUIREMENTS_SPEC, NFR_CATALOG, ACCEPTANCE_CRITERIA and the requirements
+      trace start. Consumed by requirements authoring/review and by any stage that must trace
+      back to a requirement (planning, compliance, accessibility/UX flows).
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_requirements_authoring_and_review
+      - provide_requirement_traceability_anchors_to_downstream_stages
+    forbidden_usage:
+      - used_to_approve_its_own_authoring_stage
+      - treated_as_architecture_or_implementation_context
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_requirements_artifacts   # REQUIREMENTS_SPEC / NFR_CATALOG / ACCEPTANCE_CRITERIA
+      - product_and_scope_artifacts           # PRODUCT_BRIEF / INITIAL_SCOPE / SUCCESS_METRICS
+      - sdlc_run_context
+      - durable_memory_prior_requirements      # advisory
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_requirements_domain
+      - traceability_links_must_resolve_to_requirement_ids
+    redaction_rules:
+      - no_raw_secrets
+      - redact_customer_pii_in_examples
+    governance_profiles:
+      - requirements_governance
+      - context_access_governance
+    audit_schemas:
+      - requirements_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - sdlc_pipeline
+      - stage:intake
+      - stage:requirements
+      - stage:requirements_review
+      - stage:planning
+      - stage:domain_regulatory_compliance_validation_if_applicable   # regulatory->requirement trace
+      - stage:accessibility_ux_validation_if_applicable                # product brief / acceptance criteria for UX flows
+    aliases:
+      - compliance_context_pack   # legacy (stage 21) reconciled here (regulatory->requirement trace portion)
+    notes: >-
+      Canonical product/requirements pack. The legacy compliance_context_pack (stage 21) was
+      split: its regulatory->requirement-trace portion maps here, its security-controls portion
+      maps to security_context_pack.
+
+  - id: architecture_context_pack
+    name: Architecture Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Architecture/ADR working context: ARCHITECTURE_DOC, SYSTEM_CONTEXT_DIAGRAM, ADR_INDEX,
+      NFR/capacity/failure-mode design context and interface/contract design. Consumed by
+      architecture authoring/review, premortem/FMEA, API-contract validation, and
+      performance/resilience (NFR + capacity + failure-mode design context).
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_architecture_authoring_review_and_design_dependent_stages
+      - supply_adr_and_nfr_design_context
+    forbidden_usage:
+      - used_as_implementation_changeset_context
+      - used_to_self_approve_the_architecture_stage
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_architecture_artifacts    # ARCHITECTURE_DOC / ADR_INDEX / SYSTEM_CONTEXT_DIAGRAM
+      - requirements_context_pack              # NFRs / acceptance criteria drive design
+      - sdlc_run_context
+      - durable_memory_prior_architecture       # advisory (reference architectures)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_architecture_domain
+      - adrs_must_link_to_decisions
+    redaction_rules:
+      - no_raw_secrets
+      - redact_internal_endpoint_credentials
+    governance_profiles:
+      - architecture_governance
+      - context_access_governance
+    audit_schemas:
+      - architecture_evidence_schema
+      - decision_trace_schema
+      - context_usage_trace_schema
+    used_by:
+      - sdlc_pipeline
+      - stage:architecture
+      - stage:architecture_review
+      - stage:premortem_fmea
+      - stage:planning
+      - stage:api_contract_compatibility_validation   # contract/interface design + ADRs
+      - stage:performance_resilience                   # NFRs / capacity / failure-mode design
+    aliases:
+      - api_contract_context_pack   # legacy (stage 20) reconciled here (+ implementation_context_pack)
+      - performance_context_pack    # legacy (stage 24) reconciled here (+ implementation_context_pack)
+    notes: >-
+      Canonical architecture pack. Legacy api_contract_context_pack and performance_context_pack
+      reconciled across this pack (design/ADR/NFR portion) plus implementation_context_pack
+      (changeset portion); see stage 20 / stage 24 headers.
+
+  - id: implementation_context_pack
+    name: Implementation Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      The changeset/implementation working context: CODE_CHANGESET_SUMMARY, IMPLEMENTATION_NOTES,
+      LOCAL_BUILD_RESULT, TOOL_PERMISSION_MAP, CONTEXT_POLICY and any conditional change reports
+      (data-model/migration/API/UI/resource-usage). Seeded by planning, produced by implementation,
+      and consumed by code review, test generation/execution, bug finding, agentic-safety,
+      contract/migration/accessibility/performance validation.
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_implementation_review_test_and_validation_stages
+      - expose_changeset_tool_permission_map_and_context_policy
+    forbidden_usage:
+      - used_as_the_release_decision_context
+      - used_to_grant_tool_access_beyond_the_tool_permission_map
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_implementation_artifacts   # CODE_CHANGESET_SUMMARY / IMPLEMENTATION_NOTES / build result
+      - architecture_context_pack               # design intent the changeset implements
+      - requirements_context_pack               # requirements the changeset satisfies
+      - sdlc_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_changeset_under_work
+      - tool_permission_map_and_context_policy_are_authoritative_for_tool_access
+    redaction_rules:
+      - no_raw_secrets
+      - strip_secrets_from_diffs_and_logs
+    governance_profiles:
+      - implementation_governance
+      - context_access_governance
+      - no_silent_mutation_policy
+    audit_schemas:
+      - implementation_evidence_schema
+      - tool_call_trace_schema
+      - context_usage_trace_schema
+    used_by:
+      - sdlc_pipeline
+      - stage:planning                                    # produced/seeded for implementation
+      - stage:implementation
+      - stage:code_review
+      - stage:test_generation
+      - stage:test_execution
+      - stage:verification_loop_bug_finding               # changeset under defect sweep (via verification pack lineage)
+      - stage:ai_agent_safety_evaluation
+      - stage:api_contract_compatibility_validation
+      - stage:data_migration_validation_if_applicable
+      - stage:accessibility_ux_validation_if_applicable
+      - stage:performance_resilience
+    aliases:
+      - planning_context_pack             # legacy (stage 10) -> requirements + architecture + implementation (planning seeds this pack)
+      - code_review_context_pack          # legacy (stage 12) -> implementation + verification + run
+      - test_generation_context_pack      # legacy (stage 13) -> implementation + verification
+      - test_execution_context_pack       # legacy (stage 14) -> verification + implementation + run
+      - data_migration_context_pack       # legacy (stage 22) -> implementation + verification + run
+      - api_contract_context_pack         # legacy (stage 20) -> architecture + implementation
+      - performance_context_pack          # legacy (stage 24) -> architecture + implementation
+      - ux_accessibility_context_pack     # legacy (stage 23) -> implementation(UI changeset) + requirements + run
+      - agentic_safety_context_pack       # legacy (stage 18) -> security + verification + implementation + run
+    notes: >-
+      Canonical changeset pack. Many legacy stage packs reconciled partly here (the
+      changeset/tool-permission portion); the same legacy names also appear as aliases on
+      verification_context_pack / security_context_pack / architecture_context_pack where their
+      other portions landed. See stage headers 12/13/14/18/20/22/23/24 for the exact splits.
+
+  - id: verification_context_pack
+    name: Verification Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Test/verification/bug-finding working context: TEST_PLAN, GENERATED_TESTS_SUMMARY,
+      TEST_EXECUTION_REPORT, COVERAGE_REPORT, BUG_FINDING_REPORT and the defect/verification
+      lineage shared from test generation through execution, the verification-loop bug-finding
+      sweep, agentic-safety defect sweep, and data-migration defect finding.
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_test_generation_execution_and_bug_finding_lineage
+      - carry_the_defect_verification_lineage_between_stages
+    forbidden_usage:
+      - used_as_a_readiness_or_coverage_checklist
+      - used_to_replace_test_execution_evidence
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_test_and_bug_artifacts     # test plan / execution / coverage / bug-finding reports
+      - implementation_context_pack            # the changeset under test
+      - sdlc_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_test_and_defect_lineage
+      - bug_findings_link_to_changeset_and_test_results
+    redaction_rules:
+      - no_raw_secrets
+      - redact_secrets_from_test_fixtures_and_failure_logs
+    governance_profiles:
+      - verification_governance
+      - context_access_governance
+    audit_schemas:
+      - bug_finding_evidence_schema
+      - test_result_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - stage:test_generation                  # produced/seeded for test_execution + bug-finding
+      - stage:test_execution
+      - stage:verification_loop_bug_finding
+      - stage:ai_agent_safety_evaluation        # bug/defect-finding context
+      - stage:data_migration_validation_if_applicable
+    aliases:
+      - test_generation_context_pack      # legacy (stage 13) reconciled here (+ implementation)
+      - test_execution_context_pack       # legacy (stage 14) reconciled here (+ implementation + run)
+      - data_migration_context_pack       # legacy (stage 22) reconciled here (+ implementation + run)
+      - agentic_safety_context_pack       # legacy (stage 18) reconciled here (+ security + implementation + run)
+    notes: >-
+      Canonical verification pack. Carries the defect/verification lineage. verification-loop is a
+      bug/defect-finding skill ONLY (locked); this pack is its working context, not a readiness
+      checklist.
+
+  - id: security_context_pack
+    name: Security Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Security/privacy working context: THREAT_MODEL, SECURITY_REQUIREMENTS, DATA_INVENTORY,
+      PRIVACY_RISK_REGISTER, normalized scanner findings, SBOM/license/dependency context. Consumed
+      by security/privacy design, security validation, supply-chain SBOM/license, agentic-safety,
+      privacy/data-lifecycle, and the security-controls portion of regulatory compliance.
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_security_privacy_design_validation_and_supply_chain_stages
+      - supply_threat_model_and_normalized_findings_context
+    forbidden_usage:
+      - expose_raw_secrets_or_unmasked_credentials
+      - used_as_general_purpose_context_outside_security_privacy
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_security_artifacts        # THREAT_MODEL / SECURITY_REQUIREMENTS / scan reports
+      - data_inventory_and_privacy_register   # DATA_INVENTORY / PRIVACY_RISK_REGISTER
+      - architecture_context_pack              # trust boundaries / interfaces
+      - sdlc_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_security_and_privacy_domain
+      - scanner_findings_must_be_normalized_before_use
+    redaction_rules:
+      - no_raw_secrets                         # blocker: agents cannot read raw secrets
+      - redact_pii_and_data_subject_identifiers
+      - mask_credential_material_in_threat_model
+    governance_profiles:
+      - security_privacy_governance
+      - context_access_governance
+      - no_secret_read_policy
+    audit_schemas:
+      - security_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - stage:security_privacy_design
+      - stage:security_validation
+      - stage:supply_chain_sbom_license
+      - stage:ai_agent_safety_evaluation        # threat model / abuse context
+      - stage:privacy_data_lifecycle_validation
+      - stage:domain_regulatory_compliance_validation_if_applicable   # security/privacy controls
+    aliases:
+      - security_validation_context_pack   # legacy (stage 16) reconciled here (+ run)
+      - privacy_context_pack               # legacy (stage 19) reconciled here (+ run)
+      - supply_chain_context_pack          # legacy (stage 17) reconciled here (+ run)
+      - compliance_context_pack            # legacy (stage 21) reconciled here (security-controls portion; + requirements)
+      - agentic_safety_context_pack        # legacy (stage 18) reconciled here (threat/abuse portion; + verification/implementation/run)
+    notes: >-
+      Canonical security/privacy pack. Strictest redaction profile (no raw secrets is a blocker
+      policy, doc 06 §3). Legacy security/privacy/supply-chain/compliance/agentic-safety packs
+      reconciled here for their security portions; see stage headers 16/17/18/19/21.
+
+  - id: operations_context_pack
+    name: Operations Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Operations-readiness working context within SDLC: RUNBOOK, ROLLBACK_PLAN, OBSERVABILITY_PLAN,
+      INCIDENT_RESPONSE_PLAN drafts, backup/restore/DR readiness, and cost/resource governance
+      context. Consumed by operations-readiness, backup/restore/DR validation, and cost/resource
+      governance (an operations-domain concern).
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_operations_readiness_backup_dr_and_cost_resource_stages
+      - reused_by_the_live_operations_pipeline_as_ops_working_context
+    forbidden_usage:
+      - used_as_the_release_decision_context
+      - expose_infra_credentials
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_operations_artifacts      # RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN / INCIDENT_RESPONSE_PLAN
+      - architecture_context_pack              # capacity / failure-mode design
+      - sdlc_run_context
+      - durable_memory_operational_baselines    # advisory (prior cost/perf baselines)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_operations_readiness_domain
+      - runbook_and_rollback_references_must_resolve
+    redaction_rules:
+      - no_raw_secrets
+      - redact_infra_credentials_and_endpoints
+    governance_profiles:
+      - operations_readiness_governance
+      - context_access_governance
+    audit_schemas:
+      - operations_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - stage:operations_readiness
+      - stage:backup_restore_dr_validation_if_applicable
+      - stage:cost_resource_governance
+    aliases:
+      - cost_resource_context_pack    # legacy (stage 25) reconciled here (+ run)
+      - backup_restore_context_pack   # legacy (stage 26) reconciled here (+ run)
+    notes: >-
+      Canonical SDLC operations-readiness pack (pre-release). DISTINCT from operations_run_context
+      and operations_context_pack-as-used-by the live Operations Pipeline section — note the
+      Operations Pipeline (Section D) reuses this same canonical id for its live-ops working
+      context; see that pipeline's catalog doc.
+
+  - id: release_context_pack
+    name: Release Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Release-decision working context: the assembled EVIDENCE_GRAPH, TRACEABILITY_MATRIX,
+      DEVELOPMENT_COMPLETION_REPORT, RELEASE_CANDIDATE_REPORT and RELEASE_EVIDENCE. Consumed by
+      evidence-graph build, development completion, release candidate, and refraction/learning
+      (the just-produced release evidence to reflect over).
+    owner_domain: sdlc
+    allowed_usage:
+      - read_by_evidence_graph_completion_release_and_refraction_stages
+      - carry_the_assembled_evidence_graph_for_the_release_decision
+    forbidden_usage:
+      - used_to_pass_a_release_gate_without_linked_evidence
+      - used_to_self_approve_the_release_candidate_stage
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_evidence_graph             # the requirement->...->release DAG
+      - current_run_completion_artifacts       # DEVELOPMENT_COMPLETION_REPORT / RELEASE_CANDIDATE_REPORT
+      - sdlc_run_context
+      - durable_memory_prior_release_lessons     # advisory
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_release_decision
+      - every_release_gate_must_have_linked_evidence
+    redaction_rules:
+      - no_raw_secrets
+      - redact_pii_from_evidence_summaries
+    governance_profiles:
+      - release_governance
+      - context_access_governance
+      - evidence_required_policy
+    audit_schemas:
+      - release_evidence_schema
+      - decision_trace_schema
+      - context_usage_trace_schema
+    used_by:
+      - sdlc_pipeline
+      - stage:evidence_graph_build
+      - stage:development_completion
+      - stage:release_candidate
+      - stage:refraction_learning
+    aliases:
+      - development_completion_context_pack   # legacy (stage 29) reconciled here (+ run)
+      - evidence_graph_context_pack           # legacy (stage 28) reconciled here (+ run); dropped as standalone
+      - learning_context_pack                 # legacy SDLC (stage 31) reconciled here (+ run) for refraction
+    notes: >-
+      Canonical release-decision pack. NOTE the alias `learning_context_pack` here is the SDLC
+      stage-31 legacy reconciliation only. The Operations Pipeline introduces a DISTINCT candidate
+      item also named `learning_context_pack` (Section D) for live-ops learning; they share a
+      legacy name but differ in scope/owner_domain. Phase E should confirm whether to keep the
+      operations learning pack under a disambiguated id (e.g. operations_learning_context_pack).
+
+  - id: domain_risk_context_pack
+    name: Domain Risk Context Pack
+    type: context_pack
+    status: canonical
+    scope: stage_pack
+    purpose: >-
+      Domain/risk-profile working context for the early SDLC: product domain, data sensitivity,
+      security/regulatory/availability/performance/autonomy risk signals, the selected risk class
+      that calibrates pipeline rigor, and the initialized conditional-gate flags that drive
+      downstream applicability decisions. Consumed by the domain_risk_profile stage.
+    owner_domain: sdlc
+    allowed_usage:
+      - read_during_domain_and_risk_profiling
+      - seed_the_risk_class_and_conditional_gate_flags_for_the_run
+    forbidden_usage:
+      - used_as_general_purpose_context_outside_domain_risk_profiling
+      - override_a_blocking_gate_via_risk_class
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - product_and_scope_artifacts            # PRODUCT_BRIEF / INITIAL_SCOPE / SUCCESS_METRICS
+      - current_run_domain_risk_artifacts      # DOMAIN_PROFILE_DECISION / RISK_PROFILE
+      - sdlc_run_context
+      - durable_memory_prior_domain_profiles     # advisory (similar prior products)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_domain_and_risk_profiling
+      - risk_class_calibrates_rigor_but_does_not_waive_blocking_gates
+    redaction_rules:
+      - no_raw_secrets
+      - redact_customer_or_regulated_data_examples
+    governance_profiles:
+      - domain_risk_governance
+      - context_access_governance
+    audit_schemas:
+      - domain_risk_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - stage:domain_risk_profile
+    aliases: []
+    notes: >-
+      Canonical SDLC pack used by stage 02 (domain_risk_profile). Not named in doc 17 §10's pack
+      list but canonical-referenced on disk and used as a first-class pack (not reconciled away),
+      so it is registered here to satisfy the "no category described only in prose" exit criterion.
+      Flagged in open_questions for confirmation into the locked SDLC base-pack set.
+
+  # ===========================================================================================
+  # SECTION C — Skill-semantic bridge pack
+  # Referenced by SDLC stage 03 AND the Skill Governance Pipeline. Stage 03 itself flags it as a
+  # "canonical-prose name; NON-CANONICAL vs locked list", so it is registered as a candidate that
+  # the Skill Governance Pipeline ratifies.
+  # ===========================================================================================
+  - id: skill_semantic_context_pack
+    name: Skill Semantic Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Working context for skill semantic extraction: the candidate skill package inventory
+      (SKILL.md, scripts/**, references/**, metadata), its canonical_source/version/hash, the
+      locked-semantics rules (prism = divergence, verification-loop = bug/defect finding), and the
+      draft semantic extract. Consumed by SDLC stage 03 (skill_semantic_extraction) and by the
+      Skill Governance Pipeline's semantic-extraction stage.
+    owner_domain: skill_governance
+    allowed_usage:
+      - read_during_skill_semantic_extraction_for_one_candidate_package
+      - carry_the_locked_semantics_rules_and_draft_extract
+    forbidden_usage:
+      - read_for_binding_before_semantics_are_complete
+      - used_to_change_locked_prism_or_verification_loop_semantics
+      - execute_scripts_found_in_the_candidate_package
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - candidate_skill_package                # SKILL.md + scripts/** + references/** + metadata
+      - locked_skill_semantics_rules           # prism/verification-loop locked semantics
+      - skill_governance_run_context
+      - durable_memory_prior_skill_extracts      # advisory (prior versions of the same skill)
+    retention: run_scoped
+    validity_window: until_skill_version_or_hash_changes   # re-extract on version/hash change
+    retrieval_rules:
+      - scoped_to_one_candidate_skill_package
+      - locked_semantics_rules_are_authoritative_and_immutable
+      - binding_context_must_not_be_read_before_semantics_complete   # anti-pattern: binding without semantics
+    redaction_rules:
+      - no_raw_secrets
+      - flag_secrets_or_unsafe_calls_found_in_scripts_do_not_execute
+    governance_profiles:
+      - skill_semantic_required_gate
+      - locked_semantics_enforcement_policy
+      - context_access_governance
+    audit_schemas:
+      - skill_semantic_extract_schema
+      - context_usage_trace_schema
+    used_by:
+      - stage:skill_semantic_extraction       # SDLC stage 03
+      - skill_governance_pipeline
+      - stage:skill_semantic_extraction@skill_governance_pipeline
+    aliases: []
+    notes: >-
+      Bridge pack shared by SDLC stage 03 and the Skill Governance Pipeline. Registered candidate
+      because SDLC stage 03 flags the name as NON-CANONICAL vs the locked context list; the Skill
+      Governance Pipeline (draft) is the ratifying owner. Distinct from skill_registry_context_pack
+      (which is the broader registry view, not a single package's semantics).
+
+  # ===========================================================================================
+  # SECTION D — NEW per-pipeline context profiles (status: candidate)
+  # Source of truth: the 5 pipeline-catalog markdown docs (authoritative per review F-1) +
+  # pipeline-catalog-review.md §4.5. Where the catalog YAML used a divergent name, it is recorded
+  # under `aliases` and the markdown name is canonical here.
+  # ===========================================================================================
+
+  # ---- Research Pipeline -----------------------------------------------------------------------
+  - id: research_run_context
+    name: Research Run Context
+    type: run_context
+    status: candidate
+    scope: run
+    purpose: >-
+      Whole-run working context for a Research Pipeline run: research goal, bounded research
+      questions (load-bearing flagged), risk profile, the research evidence graph spine, and which
+      stages/gates have been evaluated. Lets synthesis/completion confirm every question is
+      addressed and every load-bearing claim has mapped evidence.
+    owner_domain: research_and_knowledge
+    allowed_usage:
+      - read_as_run_level_backbone_by_any_research_stage
+      - confirm_every_question_addressed_and_every_load_bearing_claim_mapped
+    forbidden_usage:
+      - used_to_let_a_producer_be_the_sole_validator_of_its_own_source
+      - shared_across_different_research_runs
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_research_evidence_graph    # claim->evidence + source-reliability records
+      - current_run_stage_outputs              # RESEARCH_BRIEF / QUESTION_SET / SOURCE_INVENTORY ...
+      - durable_memory_prior_research            # advisory (prior research on the topic)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - readable_by_all_research_stages
+      - run_scoped_isolation: true
+      - load_bearing_claims_must_resolve_to_mapped_evidence
+    redaction_rules:
+      - no_raw_secrets
+      - preserve_source_provenance              # URL/publisher/date/access-timestamp must survive
+      - redact_pii_from_quoted_source_material
+    governance_profiles:
+      - research_source_governance
+      - context_access_governance
+      - no_self_approval_policy
+    audit_schemas:
+      - source_evidence_schema
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - research_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, research-pipeline.md §1). Cross-validation independence (producer != sole
+      validator) is enforced via governance, not by collapsing roles in this context.
+
+  - id: source_corpus_context_pack
+    name: Source Corpus Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      The scored source corpus working context: every candidate source with provenance (URL,
+      publisher, date, access timestamp) and its reliability score + rationale. Consumed by source
+      discovery, source-reliability assessment, claim extraction, and cross-validation.
+    owner_domain: research_and_knowledge
+    allowed_usage:
+      - read_by_source_discovery_reliability_claim_extraction_and_cross_validation
+      - carry_per_source_provenance_and_reliability_score
+    forbidden_usage:
+      - admit_an_unscored_source_into_synthesis
+      - drop_source_provenance
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_source_inventory           # SOURCE_INVENTORY + SOURCE_RELIABILITY_REPORT
+      - web_fetched_source_content             # via Web Core Ability (web_search/web_fetch)
+      - research_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_scored_source_corpus
+      - unscored_source_must_not_enter_synthesis     # blocking_condition mirror
+      - source_provenance_required_for_every_entry
+    redaction_rules:
+      - no_raw_secrets
+      - preserve_source_provenance
+      - redact_pii_from_fetched_content
+    governance_profiles:
+      - research_source_governance
+      - context_access_governance
+    audit_schemas:
+      - source_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - research_pipeline
+      - stage:source_discovery@research_pipeline
+      - stage:source_reliability_assessment@research_pipeline
+      - stage:claim_extraction@research_pipeline
+      - stage:cross_validation@research_pipeline
+    aliases: []
+    notes: New (draft-0.1, research-pipeline.md §2.3-§2.7).
+
+  - id: claim_evidence_context_pack
+    name: Claim Evidence Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Claim->evidence mapping working context: each atomic claim with supporting/contradicting
+      evidence, support strength, conflicts, single-source flags, and per-claim uncertainty.
+      Consumed by claim extraction, claim->evidence mapping, cross-validation, uncertainty
+      reporting, and synthesis.
+    owner_domain: research_and_knowledge
+    allowed_usage:
+      - read_by_claim_mapping_cross_validation_uncertainty_and_synthesis
+      - carry_support_strength_conflicts_and_single_source_flags
+    forbidden_usage:
+      - support_an_uncited_load_bearing_claim_in_final_synthesis
+      - hide_contradictions_or_single_source_claims
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_claim_evidence_map         # CLAIM_REGISTER + CLAIM_EVIDENCE_MAP
+      - source_corpus_context_pack             # the scored sources the claims rest on
+      - research_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_claim_evidence_mapping
+      - every_load_bearing_claim_must_have_mapped_evidence
+      - contradictions_and_single_source_claims_must_be_visible
+    redaction_rules:
+      - no_raw_secrets
+      - redact_pii_from_claim_excerpts
+    governance_profiles:
+      - citation_required_gate
+      - context_access_governance
+      - evidence_required_policy
+    audit_schemas:
+      - claim_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - research_pipeline
+      - stage:claim_extraction@research_pipeline
+      - stage:claim_evidence_mapping@research_pipeline
+      - stage:cross_validation@research_pipeline
+      - stage:uncertainty_reporting@research_pipeline
+      - stage:synthesis@research_pipeline
+    aliases: []
+    notes: New (draft-0.1, research-pipeline.md §2.6-§2.9). Feeds the citation_required_gate.
+
+  # ---- Activation Pipeline ---------------------------------------------------------------------
+  - id: activation_run_context
+    name: Activation Run Context
+    type: run_context
+    status: candidate
+    scope: run
+    purpose: >-
+      Whole-run working context for an Activation Pipeline run: the target release-candidate
+      reference and its SDLC release evidence, requested staged scope (preview/pilot/public),
+      target cohorts, rollback owner, and which activation gates have been satisfied. Lets the
+      owner decision and completion confirm the staged path was honored.
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - read_as_run_level_backbone_by_any_activation_stage
+      - carry_the_target_release_candidate_reference_and_staged_scope
+    forbidden_usage:
+      - used_to_skip_the_preview_pilot_public_ordering
+      - used_to_self_approve_an_activation_decision
+      - regenerate_the_sdlc_pipeline
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - sdlc_release_candidate_evidence        # upstream: RELEASE_EVIDENCE from SDLC (referenced, not regenerated)
+      - current_run_activation_artifacts       # ACTIVATION_REQUEST / PREVIEW_RESULT / PILOT_RESULT ...
+      - durable_memory_prior_activations         # advisory (calibration from past activations)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - readable_by_all_activation_stages
+      - run_scoped_isolation: true
+      - staged_scope_order_preview_then_pilot_then_public_is_enforced
+    redaction_rules:
+      - no_raw_secrets
+      - redact_cohort_member_pii                # cohort identities minimized
+      - mask_feature_flag_tokens
+    governance_profiles:
+      - activation_pipeline_governance
+      - context_access_governance
+      - no_self_approval_policy
+    audit_schemas:
+      - activation_evidence_schema
+      - activation_transition_trace_schema
+      - stage_gate_trace_schema
+    used_by:
+      - activation_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, activation-pipeline.md §1). Consumes the SDLC release candidate as upstream;
+      SDLC is referenced, not regenerated. The public_activation_decision is a human/owner gate
+      (review F-4) recorded as evidence within this run context.
+
+  - id: preview_context_pack
+    name: Preview Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Superadmin/internal preview working context: the restricted activation flag state, preview
+      telemetry wiring, and behavior smoke-check signals used to confirm the target behaves before
+      any external exposure. Consumed by the superadmin_preview stage.
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - read_during_superadmin_preview_to_confirm_behavior_before_external_exposure
+    forbidden_usage:
+      - expose_preview_state_to_pilot_or_public_audiences
+      - begin_a_pilot_without_a_passing_preview
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_preview_signals            # PREVIEW_RESULT + preview telemetry
+      - activation_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_superadmin_internal_audience    # preview is internal-only
+      - no_pilot_or_public_exposure_from_preview_context
+    redaction_rules:
+      - no_raw_secrets
+      - mask_feature_flag_tokens
+    governance_profiles:
+      - preview_required_gate
+      - activation_pipeline_governance
+      - context_access_governance
+    audit_schemas:
+      - activation_evidence_schema
+      - activation_transition_trace_schema
+    used_by:
+      - activation_pipeline
+      - stage:superadmin_preview@activation_pipeline
+    aliases: []
+    notes: New (draft-0.1, activation-pipeline.md §2.2). Enforces preview-before-pilot.
+
+  - id: pilot_evidence_context_pack
+    name: Pilot Evidence Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Pilot working context: the bounded pilot cohort definition, real-usage telemetry, error
+      rates, incidents, and user signal collected under controlled exposure, evaluated against
+      activation acceptance thresholds. Consumed by pilot_activation and pilot_evidence_review.
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - read_by_pilot_activation_and_independent_pilot_evidence_review
+      - evaluate_pilot_telemetry_against_acceptance_thresholds
+    forbidden_usage:
+      - used_for_public_activation_without_sufficient_pilot_evidence
+      - let_the_pilot_owner_be_the_sole_reviewer_of_its_own_pilot
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_pilot_telemetry            # PILOT_RESULT + telemetry_reader output
+      - activation_run_context
+      - durable_memory_pilot_baselines           # advisory (acceptance thresholds from past pilots)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_pilot_cohort
+      - reviewer_role_distinct_from_pilot_owner    # no self-approval (pilot_evidence_review)
+      - public_activation_blocked_without_sufficient_pilot_evidence
+    redaction_rules:
+      - no_raw_secrets
+      - redact_cohort_member_pii
+      - aggregate_user_signal_before_exposure
+    governance_profiles:
+      - pilot_evidence_gate
+      - activation_pipeline_governance
+      - no_self_approval_policy
+      - context_access_governance
+    audit_schemas:
+      - activation_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - activation_pipeline
+      - stage:pilot_activation@activation_pipeline
+      - stage:pilot_evidence_review@activation_pipeline
+    aliases: []
+    notes: New (draft-0.1, activation-pipeline.md §2.3-§2.4). Feeds the pilot_evidence_gate.
+
+  - id: activation_decision_context_pack
+    name: Activation Decision Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Owner/public-activation decision working context: assembled pilot evidence, the validated
+      rollback plan, residual risk, and the recorded owner decision. Consumed by
+      public_activation_decision and rollback_readiness.
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - read_during_public_activation_decision_and_rollback_readiness
+      - carry_pilot_evidence_validated_rollback_plan_and_owner_decision
+    forbidden_usage:
+      - used_to_self_approve_the_activation_decision_by_a_stage_owning_agent
+      - authorize_public_scope_without_an_owner_decision_or_validated_rollback
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - pilot_evidence_context_pack            # the evidence the decision rests on
+      - current_run_rollback_readiness         # ROLLBACK_PLAN + ROLLBACK_READINESS_REPORT
+      - activation_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_activation_decision
+      - owner_decision_required_before_public_scope
+      - decision_must_not_be_self_approved_by_a_stage_owning_agent
+    redaction_rules:
+      - no_raw_secrets
+      - redact_pii_from_decision_evidence
+    governance_profiles:
+      - owner_activation_decision_gate
+      - rollback_required_gate
+      - no_self_approval_policy
+      - context_access_governance
+    audit_schemas:
+      - activation_decision_evidence_schema
+      - rollback_readiness_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - activation_pipeline
+      - stage:public_activation_decision@activation_pipeline
+      - stage:rollback_readiness@activation_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, activation-pipeline.md §2.5-§2.6). The public activation decision is a
+      human/owner gate (review F-4); the authorizing actor is the human owner, recorded as evidence.
+
+  # ---- Operations Pipeline ---------------------------------------------------------------------
+  - id: operations_run_context
+    name: Operations Run Context
+    type: run_context
+    status: candidate
+    scope: run
+    purpose: >-
+      Whole-run working context for an Operations Pipeline run (live incident lifecycle): the
+      active incident record, severity, affected released capability, the SDLC operations
+      artifacts consumed (RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN / INCIDENT_RESPONSE_PLAN),
+      and which operations gates have been satisfied.
+    owner_domain: operations_reliability
+    allowed_usage:
+      - read_as_incident_level_backbone_by_any_operations_stage
+      - carry_the_consumed_sdlc_operations_artifacts_for_one_incident
+    forbidden_usage:
+      - begin_mitigation_without_a_recorded_severity
+      - regenerate_the_sdlc_pipeline
+      - shared_across_unrelated_incidents
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_incident_record                # INCIDENT_RECORD + live monitoring signals
+      - sdlc_operations_artifacts              # upstream RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN (referenced)
+      - durable_memory_prior_incidents           # advisory (similar past incidents)
+    retention: incident_scoped   # bounded to the incident's lifecycle (intake -> learning_update)
+    validity_window: single_incident_lifecycle
+    retrieval_rules:
+      - readable_by_all_operations_stages
+      - incident_scoped_isolation: true
+      - severity_classification_required_before_mitigation
+    redaction_rules:
+      - no_raw_secrets
+      - redact_customer_pii_from_incident_signals
+      - mask_infra_credentials_in_runbook_refs
+    governance_profiles:
+      - operations_pipeline_governance
+      - context_access_governance
+      - no_self_approval_policy
+    audit_schemas:
+      - incident_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - operations_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, operations-pipeline.md §1). Consumes SDLC operations-readiness artifacts;
+      does not regenerate SDLC. retention is incident_scoped rather than run-of-a-build.
+
+  - id: incident_context_pack
+    name: Incident Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Incident working context: the normalized INCIDENT_RECORD (deduped/correlated signals,
+      timeline anchor, affected capability, observations), severity classification with blast
+      radius, and the mitigation/rollback-or-fix execution context. Consumed by incident intake,
+      severity classification, mitigation planning, and rollback_or_fix.
+    owner_domain: operations_reliability
+    allowed_usage:
+      - read_by_intake_severity_mitigation_and_rollback_or_fix
+      - carry_the_normalized_incident_record_and_severity
+    forbidden_usage:
+      - mix_multiple_incidents_into_one_pack
+      - drive_mitigation_before_severity_is_recorded
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_incident_signals               # alert / monitoring breach / page / report
+      - operations_run_context
+      - sdlc_operations_artifacts              # RUNBOOK / ROLLBACK_PLAN referenced during mitigation
+    retention: incident_scoped
+    validity_window: single_incident_lifecycle
+    retrieval_rules:
+      - scoped_to_one_incident
+      - duplicate_signals_collapsed_into_one_incident
+      - mitigation_requires_recorded_severity
+    redaction_rules:
+      - no_raw_secrets
+      - redact_customer_pii_from_incident_signals
+      - mask_infra_credentials
+    governance_profiles:
+      - incident_severity_required_gate
+      - mitigation_plan_required_gate
+      - rollback_runbook_evidence_gate
+      - operations_pipeline_governance
+      - context_access_governance
+    audit_schemas:
+      - incident_evidence_schema
+      - severity_classification_evidence_schema
+      - mitigation_plan_evidence_schema
+      - rollback_fix_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - operations_pipeline
+      - stage:incident_intake@operations_pipeline
+      - stage:severity_classification@operations_pipeline
+      - stage:mitigation_plan@operations_pipeline
+      - stage:rollback_or_fix@operations_pipeline
+    aliases: []
+    notes: New (draft-0.1, operations-pipeline.md §2.1-§2.4).
+
+  - id: postmortem_context_pack
+    name: Postmortem Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Blameless postmortem working context: reconstructed timeline, root cause(s) and contributing
+      failure modes, the rollback/fix outcome, and corrective/preventive actions. Consumed by the
+      postmortem stage; mandatory for major_incident and critical_outage_or_safety_event.
+    owner_domain: operations_reliability
+    allowed_usage:
+      - read_during_the_blameless_postmortem_stage
+      - carry_timeline_root_cause_and_corrective_actions
+    forbidden_usage:
+      - attribute_individual_person_blame
+      - be_self_approved_by_the_incident_responder
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - incident_context_pack                  # the full incident lineage to reconstruct
+      - current_run_rollback_or_fix_report     # ROLLBACK_OR_FIX_REPORT
+      - operations_run_context
+    retention: durable_with_review   # postmortems are retained as durable operational knowledge
+    validity_window: review_on_recurrence_or_related_incident
+    retrieval_rules:
+      - scoped_to_one_incident_postmortem
+      - root_cause_and_corrective_actions_required
+      - postmortem_not_self_approved
+    redaction_rules:
+      - no_raw_secrets
+      - blameless_redact_individual_identities      # blameless: no person-blame attribution
+      - redact_customer_pii
+    governance_profiles:
+      - postmortem_required_gate
+      - no_self_approval_policy
+      - operations_pipeline_governance
+      - context_access_governance
+    audit_schemas:
+      - postmortem_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - operations_pipeline
+      - stage:postmortem@operations_pipeline
+    aliases: []
+    notes: New (draft-0.1, operations-pipeline.md §2.5). Blameless redaction is a defining rule here.
+
+  - id: learning_context_pack
+    name: Operational Learning Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Operational-learning working context: the postmortem-derived lessons, proposed
+      runbook/rollback/observability improvements, and the future-improvement backlog handed back
+      toward the SDLC Pipeline (referenced, not regenerated). Consumed by the learning_update stage.
+    owner_domain: operations_reliability
+    allowed_usage:
+      - read_during_operational_learning_update
+      - hand_a_future_improvement_backlog_back_to_the_sdlc_as_reference
+    forbidden_usage:
+      - regenerate_the_sdlc_pipeline
+      - persist_learning_inline_instead_of_via_the_memory_core_ability
+      - attribute_individual_person_blame
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - postmortem_context_pack                # the postmortem to distill
+      - operations_run_context
+      - durable_memory_operational_learnings     # the Memory Core Ability target for persistence
+    retention: durable_with_review
+    validity_window: review_on_related_incident_or_sdlc_change
+    retrieval_rules:
+      - scoped_to_operational_learning
+      - improvement_backlog_handed_off_to_sdlc_as_reference   # does not regenerate SDLC
+      - learning_persisted_via_memory_core_ability_not_inline
+    redaction_rules:
+      - no_raw_secrets
+      - blameless_redact_individual_identities
+    governance_profiles:
+      - operations_pipeline_governance
+      - evidence_required_policy
+      - context_access_governance
+    audit_schemas:
+      - operational_learning_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - operations_pipeline
+      - stage:learning_update@operations_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, operations-pipeline.md §2.6). NAME COLLISION: SDLC stage 31 had a legacy
+      `learning_context_pack` reconciled into release_context_pack (see that item's aliases). This
+      candidate is the DISTINCT live-operations learning pack (owner_domain: operations_reliability).
+      Recorded in open_questions: Phase E should decide whether to disambiguate this id (e.g.
+      operations_learning_context_pack) to remove the shared legacy name. Persistence happens via
+      the Memory Core Ability (memory_write), keeping Memory-as-ability vs context-pack distinct.
+
+  # ---- Skill Governance Pipeline ---------------------------------------------------------------
+  - id: skill_governance_run_context
+    name: Skill Governance Run Context
+    type: run_context
+    status: candidate
+    scope: run
+    purpose: >-
+      Whole-run working context for a Skill Governance Pipeline run: the run goal, the candidate
+      skill source reference (canonical_source or package path/hash), the locked-semantics rules,
+      and which governance gates (semantic / script-audit / misuse / binding / activation) have
+      passed. Lets the activation decision confirm semantics-before-binding was honored.
+    owner_domain: skill_governance
+    allowed_usage:
+      - read_as_run_level_backbone_by_any_skill_governance_stage
+      - confirm_semantics_before_binding_was_honored
+    forbidden_usage:
+      - allow_binding_before_semantics_are_complete
+      - change_locked_prism_or_verification_loop_semantics
+      - let_a_proposer_self_approve_its_own_activation_decision
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - candidate_skill_source_reference       # canonical_source or package path + hash
+      - current_run_skill_governance_artifacts # SKILL_SEMANTIC_EXTRACT / audit reports / misuse warnings
+      - skill_registry_context_pack            # the existing shared registry view
+      - locked_skill_semantics_rules
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - readable_by_all_skill_governance_stages
+      - run_scoped_isolation: true
+      - binding_blocked_until_semantics_complete    # anti-pattern guard
+      - locked_semantics_immutable
+    redaction_rules:
+      - no_raw_secrets
+      - flag_unsafe_script_calls_do_not_execute
+    governance_profiles:
+      - skill_governance_pipeline_governance
+      - locked_semantics_enforcement_policy
+      - no_self_approval_policy
+      - context_access_governance
+    audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_governance_trace_schema
+      - stage_gate_trace_schema
+    used_by:
+      - skill_governance_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, skill-governance-pipeline.md §1). Enforces "no binding without semantics"
+      at the run level. This pipeline records/validates other skills' semantics; it cannot change
+      the locked prism/verification-loop semantics.
+
+  - id: skill_registry_context_pack
+    name: Skill Registry Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      The shared-skills-registry working view: existing skill inventory entries, their semantic
+      categories, current bindings, misuse warnings, and activation status — used to place a
+      candidate skill consistently and to manage deprecation/version updates. Consumed by skill
+      intake, binding proposal, activation decision, and deprecation/update.
+    owner_domain: skill_governance
+    allowed_usage:
+      - read_by_intake_binding_proposal_activation_and_deprecation_update
+      - reflect_the_canonical_status_of_each_registered_skill
+    forbidden_usage:
+      - used_to_propose_a_binding_without_upstream_semantic_evidence
+      - treated_as_a_single_packages_semantic_extract
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - shared_skills_registry                 # configs/nexus-ai/skills_registry.yaml (Phase C sibling)
+      - current_run_skill_inventory_entry      # SKILL_INVENTORY_ENTRY for the candidate
+      - skill_governance_run_context
+    retention: registry_lifetime   # tracks the durable registry, not a single run
+    validity_window: until_registry_change
+    retrieval_rules:
+      - scoped_to_skills_registry_view
+      - reflects_canonical_status_of_each_skill
+    redaction_rules:
+      - no_raw_secrets
+    governance_profiles:
+      - skill_governance_pipeline_governance
+      - skill_binding_proposal_gate
+      - skill_activation_decision_gate
+      - context_access_governance
+    audit_schemas:
+      - skill_binding_decision_schema
+      - skill_governance_trace_schema
+    used_by:
+      - skill_governance_pipeline
+      - stage:skill_intake@skill_governance_pipeline
+      - stage:skill_binding_proposal@skill_governance_pipeline
+      - stage:skill_activation_decision@skill_governance_pipeline
+      - stage:skill_deprecation_update@skill_governance_pipeline
+    aliases:
+      - skill_inventory_context_pack   # catalog YAML variant (pipeline_catalog.yaml); markdown name is canonical (review F-1)
+    notes: >-
+      New (draft-0.1, skill-governance-pipeline.md §1, name authoritative). The pipeline_catalog.yaml
+      used `skill_inventory_context_pack`; per review F-1 the markdown name `skill_registry_context_pack`
+      is canonical and the YAML name is recorded as an alias.
+
+  # ---- Knowledge / Memory Pipeline -------------------------------------------------------------
+  - id: knowledge_run_context
+    name: Knowledge Run Context
+    type: run_context
+    status: candidate
+    scope: run
+    purpose: >-
+      Whole-run working context for a Knowledge / Memory Pipeline run: the candidate memory item,
+      its origin reference and target knowledge scope, source classification, validity window, and
+      which lifecycle gates (intake / classification / redaction / validity / retrieval) have been
+      satisfied. Governs WHAT the Memory Core Ability is allowed to remember — it does not make
+      Memory an agent.
+    owner_domain: knowledge_management
+    allowed_usage:
+      - read_as_run_level_backbone_by_any_knowledge_memory_stage
+      - govern_what_the_memory_core_ability_may_remember_and_for_how_long
+    forbidden_usage:
+      - promote_the_memory_core_ability_into_an_agent
+      - update_a_retrieval_profile_for_a_memory_with_no_validity_window
+      - store_unredacted_sensitive_content
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - candidate_memory_item                  # the item under curation + origin reference
+      - current_run_knowledge_artifacts        # MEMORY_INTAKE_RECORD / SOURCE_CLASSIFICATION_REPORT ...
+      - durable_memory_existing_knowledge        # the Memory Core Ability's current state
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - readable_by_all_knowledge_stages
+      - run_scoped_isolation: true
+      - retrieval_profile_update_requires_validity_window   # blocking_condition mirror
+    redaction_rules:
+      - no_raw_secrets
+      - redact_sensitive_content_before_summarization_or_storage   # redaction_required_gate
+    governance_profiles:
+      - memory_source_governance
+      - validity_window_required_gate
+      - redaction_required_gate
+      - context_access_governance
+    audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    used_by:
+      - knowledge_memory_pipeline
+    aliases:
+      - knowledge_memory_run_context   # catalog YAML variant (pipeline_catalog.yaml); markdown name is canonical (review F-1)
+    notes: >-
+      New (draft-0.1, knowledge-memory-pipeline.md §1, name authoritative). Memory stays a Core
+      Ability; this run context curates the knowledge lifecycle (ingest->classify->summarize->
+      validity->retrieval->expiry). The pipeline_catalog.yaml used `knowledge_memory_run_context`;
+      markdown `knowledge_run_context` is canonical, YAML name recorded as alias (review F-1).
+
+  - id: memory_candidate_context_pack
+    name: Memory Candidate Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Candidate-memory working context: the normalized candidate record, its source classification
+      (origin type, trust tier, sensitivity, redaction need), the grounded summary, and the
+      assigned validity window with rationale. Consumed by memory intake, source classification,
+      summary generation, validity-window assignment, and expiration review.
+    owner_domain: knowledge_management
+    allowed_usage:
+      - read_by_intake_classification_summary_validity_and_expiration_review
+      - carry_the_candidate_record_classification_summary_and_window
+    forbidden_usage:
+      - store_or_summarize_unredacted_sensitive_content
+      - retain_a_memory_item_with_no_validity_window
+      - omit_the_provenance_record
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - candidate_memory_item                  # MEMORY_INTAKE_RECORD + origin reference
+      - knowledge_run_context
+      - durable_memory_existing_entries          # advisory (dedupe / supersession)
+    retention: run_scoped
+    validity_window: per_item_assigned_validity_window   # the pack carries each item's own window
+    retrieval_rules:
+      - scoped_to_one_candidate_memory_item
+      - summary_must_be_grounded_in_classified_source
+      - no_window_is_not_an_allowed_state            # every retained item needs a validity window
+    redaction_rules:
+      - no_raw_secrets
+      - redact_sensitive_content_before_summarization_or_storage
+      - provenance_record_required                   # MEMORY_PROVENANCE_RECORD must exist
+    governance_profiles:
+      - memory_source_governance
+      - validity_window_required_gate
+      - redaction_required_gate
+      - context_access_governance
+    audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    used_by:
+      - knowledge_memory_pipeline
+      - stage:memory_intake@knowledge_memory_pipeline
+      - stage:source_classification@knowledge_memory_pipeline
+      - stage:summary_generation@knowledge_memory_pipeline
+      - stage:validity_window_assignment@knowledge_memory_pipeline
+      - stage:memory_expiration_review@knowledge_memory_pipeline
+    aliases:
+      - memory_corpus_context_pack   # catalog YAML variant (pipeline_catalog.yaml); markdown name is canonical (review F-1)
+    notes: >-
+      New (draft-0.1, knowledge-memory-pipeline.md §1, name authoritative). pipeline_catalog.yaml
+      used `memory_corpus_context_pack`; markdown `memory_candidate_context_pack` is canonical and
+      the YAML name is recorded as an alias (review F-1).
+
+  - id: retrieval_profile_context_pack
+    name: Retrieval Profile Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      Retrieval-profile working context: the affected retrieval profile / context pack to be
+      updated so curated memory becomes retrievable under the right scope, with exposure bounded by
+      sensitivity and validity window. Consumed by retrieval_profile_update and expiration review
+      (to retire expired memory from active retrieval).
+    owner_domain: knowledge_management
+    allowed_usage:
+      - read_during_retrieval_profile_update_and_expiration_review
+      - expose_curated_memory_under_scope_bounded_by_sensitivity_and_validity
+    forbidden_usage:
+      - expose_a_memory_beyond_its_classified_sensitivity
+      - update_for_a_memory_with_no_validity_window
+      - retain_expired_memory_in_active_retrieval
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - target_retrieval_profile               # the profile/context-pack being updated
+      - memory_candidate_context_pack          # the curated item + its validity window + sensitivity
+      - knowledge_run_context
+    retention: registry_lifetime   # the retrieval profile is durable, updated across runs
+    validity_window: bounded_by_each_member_memory_validity_window
+    retrieval_rules:
+      - update_bound_to_validity_window             # no update for a memory with no window
+      - sensitivity_exposure_must_not_exceed_classification
+      - expired_memory_retired_from_active_retrieval
+    redaction_rules:
+      - no_raw_secrets
+      - sensitive_memory_not_placed_in_broadly_readable_profile
+    governance_profiles:
+      - memory_source_governance
+      - validity_window_required_gate
+      - context_access_governance
+    audit_schemas:
+      - memory_provenance_schema
+      - context_usage_trace_schema
+      - stage_gate_trace_schema
+    used_by:
+      - knowledge_memory_pipeline
+      - stage:retrieval_profile_update@knowledge_memory_pipeline
+      - stage:memory_expiration_review@knowledge_memory_pipeline
+    aliases: []
+    notes: >-
+      New (draft-0.1, knowledge-memory-pipeline.md §2.5-§2.6). This is the curated, retrievable
+      view that the Memory Core Ability exposes under scope; it is governed working context, not the
+      ability itself.
+
+# ---------------------------------------------------------------------------------------------
+# Registry-level validation hints (doc 17 §11 / §13). For Phase C review tooling.
+# ---------------------------------------------------------------------------------------------
+validation:
+  every_item_has_status: true
+  every_item_has_used_by_or_is_candidate: true
+  no_plugin_context_pack: true
+  memory_core_ability_not_listed_here: true   # Memory lives in core_abilities.yaml, not as a pack
+  context_pack_is_not_agent_team_skill_or_tool: true
+  canonical_count: 9     # sdlc_run_context + 8 SDLC base packs (requirements, architecture, implementation, verification, security, operations, release, domain_risk)
+  candidate_count: 17    # skill_semantic bridge + 16 new per-pipeline profiles (research 3, activation 4, operations 4, skill-governance 2, knowledge 3)
+  total_items: 26
+  sibling_registries_expected:
+    - configs/nexus-ai/core_abilities.yaml
+    - configs/nexus-ai/skills_registry.yaml
+    - configs/nexus-ai/tools_registry.yaml
+    - configs/nexus-ai/governance_profiles.yaml
+    - configs/nexus-ai/audit_schemas.yaml
+    - configs/nexus-ai/model_provider_profiles.yaml
+
+# ---------------------------------------------------------------------------------------------
+# Open questions carried forward to Phase E (governance/audit) and Phase C review.
+# ---------------------------------------------------------------------------------------------
+open_questions:
+  - >-
+    NAME COLLISION on `learning_context_pack`: it is BOTH an SDLC stage-31 legacy alias reconciled
+    into release_context_pack AND a distinct candidate live-operations learning pack
+    (owner_domain: operations_reliability). Decide in Phase E whether to rename the operations item
+    to `operations_learning_context_pack` to eliminate the shared legacy name.
+  - >-
+    `skill_semantic_context_pack` is registered candidate because SDLC stage 03 flags its name as
+    NON-CANONICAL vs the locked context list, yet it is also referenced by the (draft) Skill
+    Governance Pipeline. Confirm in Phase C/E that the Skill Governance Pipeline is its ratifying
+    owner and whether SDLC stage 03 should adopt the same id verbatim (it already does).
+  - >-
+    `operations_context_pack` (canonical, SDLC operations-readiness, pre-release) is ALSO listed in
+    the live Operations Pipeline's uses_context_memory_profiles. Confirm the intended reuse: one
+    shared canonical pack used in two lifecycles (SDLC readiness + live ops) vs. splitting into
+    operations_readiness_context_pack (SDLC) and an ops-runtime pack. Current registry keeps it as
+    one canonical id used_by both, per the SDLC stage 25/26/27 references.
+  - >-
+    Governance profile names referenced here (e.g. context_access_governance, no_secret_read_policy,
+    no_self_approval_policy, evidence_required_policy, no_silent_mutation_policy) and audit schema
+    names (e.g. context_usage_trace_schema, *_evidence_schema, *_trace_schema) are the bounding
+    profiles/schemas for these packs; they must be reconciled against governance_profiles.yaml /
+    audit_schemas.yaml in Phase C/E. Per doc 17 NAMING RECONCILIATION, the *_policy variants
+    (no_self_approval_policy, evidence_required_policy) are bindings of the canonical bare policies
+    (no_self_approval, evidence_required) — register the canonical id with the _policy variant under
+    aliases in governance_profiles.yaml.
+  - >-
+    `domain_risk_context_pack` (registered canonical, used by SDLC stage 02) was not in doc 17 §10's
+    named canonical pack list but is canonical-referenced from disk and used as a first-class pack;
+    it is registered here. Confirm in Phase C whether it should be formally added to the locked SDLC
+    base-pack set in doc 17 §10.
+  - >-
+    The `used_by` qualifier syntax `stage:<id>@<pipeline>` (and bare `stage:<id>` for SDLC) is a
+    registry convention introduced here to make usage mapping enforceable across pipelines. Confirm
+    the convention in the Phase C shared-registry review and align sibling registries to it.

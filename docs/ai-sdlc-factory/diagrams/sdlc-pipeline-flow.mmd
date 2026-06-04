@@ -1,0 +1,148 @@
+%% Nexus AI Orchestration Model — SDLC Pipeline (one pipeline, not the top).
+%% 31-stage SDLC pipeline flow: linear on_pass backbone + main rework routes.
+%% owner_team: sdlc_team | team_lead: sdlc_team_lead (Supervisor is NOT sdlc_team_lead).
+%% Conditional (_if_applicable) stages are marked distinctly (see legend + class cond).
+%% Solid edges = on_pass. Dashed edges = main rework / on_fail routes.
+%% Source of truth: docs/ai-sdlc-factory/sdlc-stages/*.md with 06 canonical overrides.
+flowchart TD
+
+  start([SDLC run start]):::terminal
+
+  %% ---- 01 Foundation and Requirements ----
+  intake["1. intake<br/><i>product_requirements_agent</i>"]:::stage
+  domain_risk_profile["2. domain_risk_profile<br/><i>domain_risk_agent</i>"]:::stage
+  skill_semantic_extraction["3. skill_semantic_extraction<br/><i>skill_librarian_agent</i>"]:::stage
+  requirements["4. requirements<br/><i>product_requirements_agent</i>"]:::stage
+  requirements_review["5. requirements_review<br/><i>sdlc_team_lead</i>"]:::review
+
+  %% ---- 02 Design, Risk and Planning ----
+  architecture["6. architecture<br/><i>architecture_agent</i>"]:::stage
+  architecture_review["7. architecture_review<br/><i>sdlc_team_lead</i>"]:::review
+  security_privacy_design["8. security_privacy_design<br/><i>security_privacy_agent</i>"]:::stage
+  premortem_fmea["9. premortem_fmea<br/><i>risk_agent</i>"]:::stage
+  planning["10. planning<br/><i>planning_agent</i>"]:::stage
+
+  %% ---- 03 Build, Review and Test ----
+  implementation["11. implementation<br/><i>engineering_agent</i>"]:::stage
+  code_review["12. code_review<br/><i>code_reviewer_agent</i>"]:::review
+  test_generation["13. test_generation<br/><i>qa_agent</i>"]:::stage
+  test_execution["14. test_execution<br/><i>qa_agent</i>"]:::stage
+  verification_loop_bug_finding["15. verification_loop_bug_finding<br/><i>qa_agent — verification-loop</i>"]:::review
+
+  %% ---- 04 Validation and Product Gates ----
+  security_validation["16. security_validation<br/><i>security_validation_agent</i>"]:::review
+  supply_chain_sbom_license["17. supply_chain_sbom_license<br/><i>supply_chain_agent</i>"]:::review
+  ai_agent_safety_evaluation["18. ai_agent_safety_evaluation<br/><i>agentic_safety_agent</i>"]:::review
+  privacy_data_lifecycle_validation["19. privacy_data_lifecycle_validation (_if_applicable)<br/><i>privacy_agent</i>"]:::cond
+  api_contract_compatibility_validation["20. api_contract_compatibility_validation (_if_applicable)<br/><i>contract_validation_agent</i>"]:::cond
+  domain_regulatory_compliance_validation_if_applicable["21. domain_regulatory_compliance_validation_if_applicable<br/><i>compliance_agent</i>"]:::cond
+  data_migration_validation_if_applicable["22. data_migration_validation_if_applicable<br/><i>data_migration_agent</i>"]:::cond
+  accessibility_ux_validation_if_applicable["23. accessibility_ux_validation_if_applicable<br/><i>ux_accessibility_agent</i>"]:::cond
+  performance_resilience["24. performance_resilience<br/><i>performance_resilience_agent</i>"]:::review
+  cost_resource_governance["25. cost_resource_governance (_if_applicable)<br/><i>cost_resource_agent</i>"]:::cond
+  backup_restore_dr_validation_if_applicable["26. backup_restore_dr_validation_if_applicable<br/><i>operations_readiness_agent</i>"]:::cond
+
+  %% ---- 05 Completion, Release and Learning ----
+  operations_readiness["27. operations_readiness<br/><i>operations_readiness_agent</i>"]:::stage
+  evidence_graph_build["28. evidence_graph_build<br/><i>evidence_graph_agent</i>"]:::review
+  development_completion["29. development_completion<br/><i>release_manager_agent</i>"]:::review
+  release_candidate["30. release_candidate<br/><i>release_manager_agent</i>"]:::review
+  refraction_learning["31. refraction_learning<br/><i>memory_curator_agent</i>"]:::stage
+
+  %% ---- Terminals ----
+  done([done]):::terminal
+  relevant_failed_stage(["relevant_failed_stage<br/>(re-enter failing stage)"]):::failterm
+  block_and_report(["block_and_report"]):::failterm
+
+  %% ================= on_pass backbone (solid) =================
+  start --> intake
+  intake -->|on_pass| domain_risk_profile
+  domain_risk_profile -->|on_pass| skill_semantic_extraction
+  skill_semantic_extraction -->|on_pass| requirements
+  requirements -->|on_pass| requirements_review
+  requirements_review -->|on_pass| architecture
+  architecture -->|on_pass| architecture_review
+  architecture_review -->|on_pass| security_privacy_design
+  security_privacy_design -->|on_pass| premortem_fmea
+  premortem_fmea -->|on_pass| planning
+  planning -->|on_pass| implementation
+  implementation -->|on_pass| code_review
+  code_review -->|on_pass| test_generation
+  test_generation -->|on_pass| test_execution
+  test_execution -->|on_pass| verification_loop_bug_finding
+  verification_loop_bug_finding -->|on_pass| security_validation
+  security_validation -->|on_pass| supply_chain_sbom_license
+  supply_chain_sbom_license -->|on_pass| ai_agent_safety_evaluation
+  ai_agent_safety_evaluation -->|on_pass| privacy_data_lifecycle_validation
+  privacy_data_lifecycle_validation -->|on_pass| api_contract_compatibility_validation
+  api_contract_compatibility_validation -->|on_pass| domain_regulatory_compliance_validation_if_applicable
+  domain_regulatory_compliance_validation_if_applicable -->|on_pass| data_migration_validation_if_applicable
+  data_migration_validation_if_applicable -->|on_pass| accessibility_ux_validation_if_applicable
+  accessibility_ux_validation_if_applicable -->|on_pass| performance_resilience
+  performance_resilience -->|on_pass| cost_resource_governance
+  cost_resource_governance -->|on_pass| backup_restore_dr_validation_if_applicable
+  backup_restore_dr_validation_if_applicable -->|on_pass| operations_readiness
+  operations_readiness -->|on_pass| evidence_graph_build
+  evidence_graph_build -->|on_pass| development_completion
+  development_completion -->|on_pass| release_candidate
+  release_candidate -->|on_pass| refraction_learning
+  refraction_learning -->|on_pass| done
+
+  %% ================= main rework / on_fail routes (dashed) =================
+  %% Requirements / design convergence hubs
+  domain_risk_profile -.->|rework| intake
+  requirements_review -.->|rework| requirements
+  architecture -.->|rework| requirements
+  architecture_review -.->|rework| architecture
+  security_privacy_design -.->|rework| architecture
+  premortem_fmea -.->|rework| architecture
+  api_contract_compatibility_validation -.->|rework| architecture
+  domain_regulatory_compliance_validation_if_applicable -.->|rework| requirements
+  privacy_data_lifecycle_validation -.->|rework| security_privacy_design
+  performance_resilience -.->|rework| architecture
+  cost_resource_governance -.->|rework| architecture
+
+  %% Build / validation cluster -> implementation (dominant rework hub)
+  code_review -.->|rework| implementation
+  test_generation -.->|rework| implementation
+  test_execution -.->|rework| implementation
+  verification_loop_bug_finding -.->|rework| implementation
+  security_validation -.->|rework| implementation
+  supply_chain_sbom_license -.->|rework| implementation
+  ai_agent_safety_evaluation -.->|rework| implementation
+  data_migration_validation_if_applicable -.->|rework| implementation
+  accessibility_ux_validation_if_applicable -.->|rework| implementation
+
+  %% Operations readiness cluster -> planning
+  backup_restore_dr_validation_if_applicable -.->|rework| planning
+  operations_readiness -.->|rework| planning
+
+  %% Terminal gate failures
+  evidence_graph_build -.->|on_fail| relevant_failed_stage
+  development_completion -.->|on_fail| relevant_failed_stage
+  release_candidate -.->|on_fail| development_completion
+  relevant_failed_stage -.->|unrecoverable| block_and_report
+
+  %% ================= legend =================
+  subgraph legend["Legend"]
+    direction LR
+    l_stage["Stage (author)"]:::stage
+    l_review["Review / gate stage<br/>(owner != artifact author; no self-approval)"]:::review
+    l_cond["Conditional (_if_applicable)<br/>runs only when required_when holds"]:::cond
+    l_term([terminal]):::terminal
+    l_failterm([fail terminal]):::failterm
+    l_a[" "]:::invis
+    l_b[" "]:::invis
+    l_c[" "]:::invis
+    l_d[" "]:::invis
+    l_a -->|on_pass solid| l_b
+    l_c -.->|rework / on_fail dashed| l_d
+  end
+
+  %% ================= styles =================
+  classDef stage fill:#e8f0fe,stroke:#1a73e8,stroke-width:1px,color:#0b2a5b;
+  classDef review fill:#fff4e5,stroke:#e8710a,stroke-width:1px,color:#5a2d00;
+  classDef cond fill:#f3e8fd,stroke:#8430ce,stroke-width:2px,stroke-dasharray:5 3,color:#3d1066;
+  classDef terminal fill:#e6f4ea,stroke:#188038,stroke-width:2px,color:#0b3d1a;
+  classDef failterm fill:#fce8e6,stroke:#d93025,stroke-width:2px,color:#5c0f0a;
+  classDef invis fill:none,stroke:none,color:#000;

@@ -1,0 +1,1007 @@
+# =============================================================================
+# Nexus AI — Skills Registry
+# Phase C / doc 17 §5 — Shared Registry Formalization
+# Output of: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
+# =============================================================================
+#
+# WHAT THIS FILE IS
+#   The canonical "what skills exist in the system" registry. It answers the
+#   Shared-Registry question (doc 05 §3 "Sistemde ne var?"). Usage relationships
+#   ("kim neyi kullanıyor?") are mirrored here via each item's `used_by` list so
+#   the usage-mapping rule is enforceable from registry data alone (doc 17 §13).
+#
+# LOCKED DECISIONS HONORED
+#   - Plugin cancelled: there is NO plugin registry and no skill is a plugin.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT skills and NEVER appear here. Skill != Tool. A skill is a reasoning
+#     method/package referenced by name; tools live in tools_registry.yaml.
+#   - Skill appears by NAME ONLY. Package internals (SKILL.md, scripts/**,
+#     references/**, assets/**) stay out of this registry; they live in the skill
+#     inventory / semantic-extraction audit docs (doc 03; doc 05 §7).
+#   - Governance != Audit; Evidence != Trace (kept distinct in governance_profiles
+#     vs audit_schemas below).
+#   - LOCKED SKILL SEMANTICS (doc 03 §1/§5; sdlc_pipeline_runtime_rules.yaml):
+#       * prism            = brainstorming / divergence ONLY (NOT bug finding).
+#       * verification-loop = bug/defect finding ONLY (NOT a general readiness
+#                             checklist; NOT a replacement for test_execution).
+#
+# ITEM CONTRACT (doc 17 §3) — every item carries:
+#   id, name, type, status, purpose, owner_domain, allowed_usage,
+#   forbidden_usage, governance_profiles, audit_schemas, notes
+# PLUS category-specific fields (doc 17 §5): semantic_category, primary_purpose
+#   (allowed_usage / forbidden_usage are shared between §3 and the category set).
+# PLUS used_by (pipelines/stages/agents that reference it) and aliases.
+#
+# STATUS VOCABULARY
+#   canonical  — locked/established (the canonical 12).
+#   candidate  — referenced in a contract/pipeline but not yet ratified into the
+#                canonical skills list (the 6 undeclared skills, each self-flagged
+#                in-file; see claude-code-skill-agent-review.md §8).
+#   deprecated — retired (none yet).
+#
+# SEMANTIC-CATEGORY VOCABULARY (doc 03 §4): divergence, multi_perspective_review,
+#   premortem_risk, verification_defect_discovery, failure_mode_analysis,
+#   architecture_decision, completeness_audit, intent_fidelity,
+#   editing_refinement, skill_governance, confidence_calibration, belief_update,
+#   learning_refraction, argument_analysis, counterargument_strengthening,
+#   problem_decomposition.
+#
+# NAMING RECONCILIATION
+#   Where a contract referenced a *_policy variant of a canonical governance id
+#   (no_self_approval_policy -> no_self_approval; evidence_required_policy ->
+#   evidence_required), the canonical id is used in governance_profiles and the
+#   variant is recorded under `aliases`. No SKILL itself has a *_policy variant;
+#   per-skill `aliases` is therefore empty unless a remap applies.
+# =============================================================================
+
+version: draft-0.1
+registry_id: nexus_ai_skills_registry
+category: skill
+purpose: >-
+  Canonical inventory of Nexus AI Skills (reasoning methods / skill packages)
+  referenced by pipelines, stages, agents and sub-agents — with locked semantic
+  boundaries and registry-enforceable usage mapping.
+
+# ---------------------------------------------------------------------------
+# Provenance — sources scanned to build this registry (doc 17 §5 task scope).
+# ---------------------------------------------------------------------------
+sources_scanned:
+  - configs/nexus-ai/stages/sdlc/*.yaml                 # 31 SDLC stage contracts (richest source; inline NON-CANONICAL annotations)
+  - configs/nexus-ai/sdlc_pipeline.yaml                 # pipeline-level uses_skills (canonical 12)
+  - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml   # locked anti-patterns for prism / verification-loop / skill binding
+  - configs/nexus-ai/pipeline_catalog.yaml              # catalog summaries (markdown is authoritative per review F-1)
+  - docs/ai-sdlc-factory/pipeline-catalog/*.md          # 5 non-SDLC pipelines (research, activation, operations, skill-governance, knowledge-memory)
+  - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md       # §4 consolidated newly-introduced names
+  - docs/ai-sdlc-factory/reviews/claude-code-skill-agent-review.md # §8 the 6 undeclared skills
+  - docs/ai-sdlc-factory/03-skill-semantic-extraction.md          # canonical semantic_category / primary_purpose / not_for model
+  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md      # §8 skill-level governance profiles
+  - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md  # the dual registry+usage rule
+  - docs/ai-sdlc-factory/06-governance-policy-evidence.md         # no_unread_skill_binding rule
+  - docs/ai-sdlc-factory/11-artifact-registry-standard.md         # evidence/trace separation
+
+# ---------------------------------------------------------------------------
+# Registry-wide invariants (enforce the locked rules from registry data).
+# ---------------------------------------------------------------------------
+invariants:
+  - No item here is a Core Ability (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS).
+  - No item here is a Tool, an Agent, a Sub-agent, or a Plugin.
+  - Every item has a status and at least one used_by entry, OR status == candidate.
+  - prism.semantic_category == divergence and 'bug_finding' is in prism.forbidden_usage.
+  - verification-loop.semantic_category == verification_defect_discovery and both
+    'general_readiness_checklist' and 'replacing_test_execution' are in its forbidden_usage.
+  - A skill may only be bound to a stage after skill_semantic_extraction (doc 06 no_unread_skill_binding).
+
+# Skill-class governance/audit defaults that apply to every skill regardless of
+# its individual entry (each item also lists its own governance_profiles/audit_schemas).
+skill_class_defaults:
+  governance_profiles:
+    - skill_governance                                   # doc 17 §7 type: skill-level governance
+    - skill_must_have_semantic_extraction_before_binding # doc 06 §: no_unread_skill_binding rule
+    - locked_semantics_enforcement_policy                # skill-governance pipeline: a pipeline may record but not alter skill semantics
+  audit_schemas:
+    - skill_activation_trace_schema                      # doc 03 §12: "skill activation trace" (trace, NOT evidence)
+
+# =============================================================================
+# SKILLS
+# =============================================================================
+skills:
+
+  # -------------------------------------------------------------------------
+  # CANONICAL 12 (status: canonical) — the locked shared skills list.
+  # =========================================================================
+
+  - id: prism
+    name: Prism
+    type: skill
+    status: canonical
+    semantic_category: divergence
+    primary_purpose: brainstorming / ideation / divergent thinking
+    purpose: >-
+      Multi-lens divergent ideation: expand the option space (goal framing,
+      requirement elicitation, candidate architectures, failure-mode/abuse-case
+      ideation, sequencing/handoff-partition options). Produces options, never
+      decisions.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - divergent_exploration
+      - option_space_expansion
+      - brainstorming
+      - requirement_elicitation
+      - candidate_architecture_generation
+      - failure_mode_and_abuse_case_ideation   # paired with sentinel + fmea at stage 09
+      - subskill_of_llm_council_or_sentinel
+    forbidden_usage:
+      - bug_finding                  # LOCKED: prism is NOT a defect-finding skill
+      - final_release_approval       # prism is not a release gate
+      - general_readiness_gate       # prism does not gate readiness
+      - decision_making              # prism widens the option space; it does not decide
+    governance_profiles:
+      - brainstorming_skill_governance             # doc 03 §8: prism brainstorming-only governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - skill_governance_pipeline
+      stages:
+        - sdlc:01-intake                 # divergent goal/problem framing & scope boundaries
+        - sdlc:04-requirements           # divergent requirement elicitation
+        - sdlc:06-architecture           # divergent candidate architecture options
+        - sdlc:09-premortem-fmea         # divergent failure-mode / abuse-case / edge-case ideation
+        - sdlc:10-planning               # diverge over sequencing / handoff-partitioning options
+        - research:scope_and_questions   # divergence over scope/questions
+        - skill_governance:skill_semantic_extraction  # widen category/handoff option space (does not decide)
+        - skill_governance:skill_binding_proposal     # multiply candidate binding options (divergence)
+      agents:
+        - requirements_agent
+        - architecture_agent
+        - llm_council_agent
+        - security_risk_agent
+    aliases: []
+    notes: >-
+      Enforced by sdlc_pipeline_runtime_rules anti-pattern `prism_as_non_divergence`.
+      Correctly ABSENT from every review/validation/execution/readiness stage.
+      In skill_governance it only expands options and never adjudicates.
+
+  - id: verification-loop
+    name: Verification-loop
+    type: skill
+    status: canonical
+    semantic_category: verification_defect_discovery
+    primary_purpose: bug / defect finding and verification sweep
+    purpose: >-
+      Rigorous multi-lens defect sweep (invariant / mutation / regression
+      red-teaming) over a changeset and its test results to surface real defects
+      beyond what the executed suite caught, triaged by severity. Produces a
+      defect report + a blocking gate result; emits residual risk, never a
+      bug-free guarantee.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - bug_finding
+      - defect_finding
+      - verification_sweep
+      - adversarial_defect_discovery     # e.g. prompt-injection / tool-misuse / poisoning defect sweep (stage 18)
+      - migration_defect_finding         # lossy/irreversible/ordering/idempotency defects (stage 22)
+      - script_defect_sweep              # skill-governance script_reference_audit
+      - post_fix_regression_review
+    forbidden_usage:
+      - general_readiness_checklist      # LOCKED: NOT a readiness checklist
+      - replacing_test_execution         # LOCKED: NOT a substitute for stage 14 test_execution
+      - ideation                         # not a brainstorming skill
+      - architecture_brainstorming
+      - bug_free_guarantee               # it produces residual risk, not a guarantee
+    governance_profiles:
+      - defect_finding_skill_governance            # doc 03 §8: verification-loop defect-finding governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+      - bug_finding_evidence_schema                # evidence (defects found) — distinct from trace
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - operations_pipeline            # conditional forward-fix confirmation
+        - skill_governance_pipeline      # script defect sweep
+      stages:
+        - sdlc:15-verification-loop-bug-finding          # the dedicated defect sweep
+        - sdlc:18-ai-agent-safety-evaluation             # adversarial defect sweep
+        - sdlc:22-data-migration-validation-if-applicable # migration defect finding
+        - operations:forward_fix_confirmation            # confirm a fix removed the defect
+        - skill_governance:script_reference_audit        # defect/bug-finding semantics over scripts/**
+      agents:
+        - qa_agent
+        - bug_hunter_subagent
+        - code_reviewer_agent
+    aliases: []
+    notes: >-
+      Enforced by sdlc_pipeline_runtime_rules anti-patterns
+      `verification_loop_replaces_test_execution` and (boundary) `concept_boundary_collapse`.
+      DELIBERATELY EXCLUDED from 12 code_review, 13 test_generation, 14 test_execution,
+      16 security_validation, 20, 21, 23, 24, 26, 27, 28, 29, 30 (most carry an explicit
+      exclusion comment). Stage 29 explicitly refuses to reuse it as a general readiness checklist.
+
+  - id: sentinel
+    name: Sentinel
+    type: skill
+    status: canonical
+    semantic_category: premortem_risk
+    primary_purpose: decision stress test / premortem / adversarial foresight
+    purpose: >-
+      Pre-commitment stress test: surface hidden assumptions, premortem failure
+      paths and early-warning signals for designs, risk surfaces and readiness/
+      validation gates. May call prism during premortem/mirror/counterfactual phases.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - premortem
+      - risk_surfacing
+      - hidden_assumption_surfacing
+      - adversarial_foresight
+      - pre_commitment_review
+      - misuse_scenario_premortem        # skill-governance misuse_warning_generation
+    forbidden_usage:
+      - implementation
+      - final_approval_by_itself         # sentinel informs a gate; it is not the sole approver
+      - bug_finding                      # defect discovery is verification-loop's job
+    governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+      stages:
+        - sdlc:06-architecture
+        - sdlc:07-architecture-review
+        - sdlc:08-security-privacy-design
+        - sdlc:09-premortem-fmea
+        - sdlc:18-ai-agent-safety-evaluation
+        - sdlc:19-privacy-data-lifecycle-validation
+        - sdlc:23-accessibility-ux-validation-if-applicable
+        - sdlc:26-backup-restore-dr-validation-if-applicable
+        - sdlc:27-operations-readiness
+        - skill_governance:misuse_warning_generation     # premortem of misuse scenarios
+      agents:
+        - architecture_agent
+        - security_privacy_agent
+        - operations_readiness_agent
+    aliases: []
+    notes: >-
+      9 SDLC stages — all design/risk/pre-commitment surfaces (review §3, CLEAN).
+      Activation binds it as premortem/foresight; prism and verification-loop are
+      intentionally NOT bound in activation.
+
+  - id: llm-council
+    name: LLM Council
+    type: skill
+    status: canonical
+    semantic_category: multi_perspective_review
+    primary_purpose: multi-perspective decision review and verdict synthesis
+    purpose: >-
+      Multi-model deliberation/adjudication for genuinely hard or contested
+      judgement contexts: architecture option scoring, architecture review,
+      agentic-safety severity, ambiguous regulatory interpretation. May call prism
+      before decision review.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - multi_perspective_review
+      - verdict_synthesis
+      - contested_judgement_adjudication
+      - option_scoring
+      - severity_adjudication
+      - binding_proposal_review          # skill-governance skill_binding_proposal
+    forbidden_usage:
+      - direct_code_execution
+      - policy_bypass
+      - replacing_a_single_owner_decision_record   # it informs the decision; the gate still records an owner
+    governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+      - decision_trace_schema            # multi-perspective decision history (trace)
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - skill_governance_pipeline
+      stages:
+        - sdlc:06-architecture
+        - sdlc:07-architecture-review
+        - sdlc:18-ai-agent-safety-evaluation
+        - sdlc:21-domain-regulatory-compliance-validation-if-applicable
+        - research:cross_validation
+        - skill_governance:skill_binding_proposal        # multi-perspective review of the proposed binding
+      agents:
+        - llm_council_agent
+        - architecture_agent
+        - compliance_agent
+    aliases: []
+    notes: 4 SDLC stages — all genuinely hard/contested judgement contexts (review §3, CLEAN).
+
+  - id: fmea
+    name: FMEA
+    type: skill
+    status: canonical
+    semantic_category: failure_mode_analysis
+    primary_purpose: structured failure-mode and effects analysis
+    purpose: >-
+      Structured failure-mode-and-effects analysis over failure-relevant surfaces
+      (security, risk register, data-leak/tenant isolation, data migration,
+      performance/resilience, data-loss/DR), producing a ranked failure-mode register.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - failure_mode_analysis
+      - effects_and_severity_ranking
+      - risk_register_construction
+      - script_failure_mode_analysis     # skill-governance script_reference_audit
+    forbidden_usage:
+      - brainstorming_only               # fmea is structured analysis, not free ideation (that is prism)
+      - defect_discovery_in_code         # finding live code defects is verification-loop
+    governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+      stages:
+        - sdlc:08-security-privacy-design
+        - sdlc:09-premortem-fmea
+        - sdlc:19-privacy-data-lifecycle-validation
+        - sdlc:22-data-migration-validation-if-applicable
+        - sdlc:24-performance-resilience
+        - sdlc:26-backup-restore-dr-validation-if-applicable
+        - skill_governance:script_reference_audit        # script failure modes
+      agents:
+        - security_privacy_agent
+        - data_migration_agent
+        - performance_resilience_agent
+    aliases: []
+    notes: 6 SDLC stages — all failure-mode-relevant surfaces (review §3, CLEAN).
+
+  - id: adr-builder
+    name: ADR Builder
+    type: skill
+    status: canonical
+    semantic_category: architecture_decision
+    primary_purpose: author architecture decision records (ADRs)
+    purpose: >-
+      Capture architecture/contract decisions as structured ADRs (context,
+      decision, consequences, alternatives) for the ADR index and for
+      API-contract decision rationale.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - architecture_decision_recording
+      - adr_authoring
+      - api_contract_decision_recording
+    forbidden_usage:
+      - making_the_decision_unilaterally  # it records a decision; it does not replace review/council
+      - bug_finding
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+      - decision_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:06-architecture
+        - sdlc:20-api-contract-compatibility-validation
+      agents:
+        - architecture_agent
+    aliases: []
+    notes: 2 SDLC stages; produces ADR_INDEX-class evidence.
+
+  - id: gap-audit
+    name: Gap Audit
+    type: skill
+    status: canonical
+    semantic_category: completeness_audit
+    primary_purpose: coverage / completeness gap detection
+    purpose: >-
+      Detect missing required/applicable elements (scope, requirements, test
+      coverage, evidence, gates) before a handoff or gate decision. The broad
+      coverage helper; it does NOT stand in for defect finding.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - completeness_audit
+      - coverage_gap_detection
+      - missing_evidence_detection
+      - missing_gate_detection
+    forbidden_usage:
+      - defect_finding                   # coverage gaps != code defects (that is verification-loop)
+      - decision_making
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      stages:
+        # 29 of 31 SDLC stages (all except 15 verification_loop_bug_finding and 31 refraction_learning):
+        - sdlc:01-intake
+        - sdlc:02-domain-risk-profile
+        - sdlc:03-skill-semantic-extraction
+        - sdlc:04-requirements
+        - sdlc:05-requirements-review
+        - sdlc:06-architecture
+        - sdlc:07-architecture-review
+        - sdlc:08-security-privacy-design
+        - sdlc:09-premortem-fmea
+        - sdlc:10-planning
+        - sdlc:11-implementation
+        - sdlc:12-code-review
+        - sdlc:13-test-generation
+        - sdlc:14-test-execution
+        - sdlc:16-security-validation
+        - sdlc:17-supply-chain-sbom-license
+        - sdlc:18-ai-agent-safety-evaluation
+        - sdlc:19-privacy-data-lifecycle-validation
+        - sdlc:20-api-contract-compatibility-validation
+        - sdlc:21-domain-regulatory-compliance-validation-if-applicable
+        - sdlc:22-data-migration-validation-if-applicable
+        - sdlc:23-accessibility-ux-validation-if-applicable
+        - sdlc:24-performance-resilience
+        - sdlc:25-cost-resource-governance
+        - sdlc:26-backup-restore-dr-validation-if-applicable
+        - sdlc:27-operations-readiness
+        - sdlc:28-evidence-graph-build
+        - sdlc:29-development-completion
+        - sdlc:30-release-candidate
+        - research:intake
+        - research:claim_extraction
+        - research:synthesis
+        - operations:incident_intake
+        - skill_governance:skill_semantic_extraction
+        - knowledge_memory:memory_intake
+      agents:
+        - sdlc_team_lead
+        - "(broad: most sdlc_team agent roles)"
+    aliases: []
+    notes: >-
+      29 SDLC stages — the most broadly used skill. Used as a coverage helper only;
+      review §3 confirms it never stands in for verification-loop. (Pipeline-doc
+      stage names are illustrative; SDLC stage ids are authoritative.)
+
+  - id: prompt-fidelity
+    name: Prompt Fidelity
+    type: skill
+    status: canonical
+    semantic_category: intent_fidelity
+    primary_purpose: ensure outputs faithfully reflect stated intent
+    purpose: >-
+      Check that captured/produced artifacts faithfully reflect the user's stated
+      intent (brief vs intent, requirements vs intent, code-change vs intent,
+      UX copy vs intent, release notes vs intent).
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - intent_fidelity_check
+      - brief_to_intent_alignment
+      - requirement_to_intent_alignment
+      - changeset_to_intent_alignment
+    forbidden_usage:
+      - bug_finding
+      - decision_making
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - activation_pipeline
+      stages:
+        - sdlc:01-intake
+        - sdlc:04-requirements
+        - sdlc:05-requirements-review
+        - sdlc:12-code-review
+        - sdlc:23-accessibility-ux-validation-if-applicable
+        - sdlc:30-release-candidate
+      agents:
+        - product_requirements_agent
+        - code_reviewer_agent
+    aliases: []
+    notes: 6 SDLC stages.
+
+  - id: calibrate
+    name: Calibrate
+    type: skill
+    status: canonical
+    semantic_category: confidence_calibration
+    primary_purpose: severity / confidence calibration
+    purpose: >-
+      Calibrate severity and confidence on findings, accepted-risk decisions and
+      classifications so gate decisions carry honest confidence levels. The
+      standard companion skill across review/validation stages.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - confidence_calibration
+      - severity_calibration
+      - accepted_risk_confidence
+    forbidden_usage:
+      - bug_finding
+      - decision_making_by_itself
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      stages:
+        - sdlc:02-domain-risk-profile
+        - sdlc:05-requirements-review
+        - sdlc:07-architecture-review
+        - sdlc:12-code-review
+        - sdlc:16-security-validation
+        - sdlc:17-supply-chain-sbom-license
+        - sdlc:18-ai-agent-safety-evaluation
+        - sdlc:20-api-contract-compatibility-validation
+        - sdlc:21-domain-regulatory-compliance-validation-if-applicable
+        - sdlc:24-performance-resilience
+        - sdlc:25-cost-resource-governance
+        - sdlc:29-development-completion
+        - sdlc:30-release-candidate
+        - sdlc:31-refraction-learning
+        - skill_governance:skill_semantic_extraction     # confidence on the extraction
+      agents:
+        - "(broad companion: many sdlc_team agent roles)"
+    aliases: []
+    notes: 14 SDLC stages — appropriate companion calibration usage (review §3, CLEAN).
+
+  - id: refraction
+    name: Refraction
+    type: skill
+    status: canonical
+    semantic_category: learning_refraction
+    primary_purpose: post-hoc learning / reflection over a completed run
+    purpose: >-
+      Structured learning/reflection pass over a completed run or incident:
+      extract lessons, patterns and improvements to feed back into the system.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - learning_reflection
+      - lesson_extraction
+      - retrospective_analysis
+    forbidden_usage:
+      - bug_finding
+      - in_run_gating                    # refraction is post-hoc, not a live gate
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - knowledge_memory_pipeline
+      stages:
+        - sdlc:31-refraction-learning
+        - operations:operational_learning                # lifecycle/learning reflection
+        - knowledge_memory:memory_lifecycle              # lifecycle/learning reflection
+      agents:
+        - refraction_agent
+    aliases: []
+    notes: SDLC learning stage; also the canonical learning skill in operations and knowledge/memory.
+
+  - id: fermi-decompose
+    name: Fermi Decompose
+    type: skill
+    status: canonical
+    semantic_category: problem_decomposition
+    primary_purpose: estimation / problem decomposition into tractable parts
+    purpose: >-
+      Decompose an estimation or sizing problem into tractable parts (risk
+      sizing, planning estimation, cost/resource estimation) using Fermi-style
+      structured approximation.
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - problem_decomposition
+      - estimation
+      - sizing
+      - cost_resource_estimation
+    forbidden_usage:
+      - bug_finding
+      - precise_measurement_substitute   # it approximates; it does not replace measured data
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:02-domain-risk-profile
+        - sdlc:10-planning
+        - sdlc:25-cost-resource-governance
+      agents:
+        - domain_risk_agent
+        - planning_agent
+    aliases: []
+    notes: 3 SDLC stages (risk sizing, planning, cost/resource).
+
+  - id: bayesian-update
+    name: Bayesian Update
+    type: skill
+    status: canonical
+    semantic_category: belief_update
+    primary_purpose: update priors / beliefs from new evidence
+    purpose: >-
+      Update prior beliefs/estimates from new evidence (post-run learning,
+      cross-validation in research, validity-window updates in memory, incident
+      pattern updates in operations).
+    owner_domain: reasoning_methods
+    allowed_usage:
+      - belief_update
+      - prior_revision
+      - evidence_weighted_estimation
+    forbidden_usage:
+      - bug_finding
+      - decision_making_by_itself
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - operations_pipeline
+        - knowledge_memory_pipeline
+      stages:
+        - sdlc:31-refraction-learning
+        - research:uncertainty_reporting                 # update priors on claim confidence
+        - operations:operational_learning                # update priors on incident patterns
+        - knowledge_memory:memory_validity                # update validity / freshness priors
+      agents:
+        - refraction_agent
+    aliases: []
+    notes: SDLC learning stage; also used in research, operations and knowledge/memory.
+
+  # -------------------------------------------------------------------------
+  # CANDIDATE SKILLS (status: candidate) — referenced in contracts/pipelines but
+  # NOT in the canonical 12. All six are legacy-doc-05 "allowed-with-flag" names
+  # (none invented), each already self-flagged in-file for registry formalization
+  # (claude-code-skill-agent-review.md §8). Registered here as candidates with the
+  # required category fields; each notes whether a canonical remap is viable.
+  # =========================================================================
+
+  - id: skill-architect
+    name: Skill Architect
+    type: skill
+    status: candidate
+    semantic_category: skill_governance
+    primary_purpose: skill semantic/architecture extraction (read a skill package and classify it)
+    purpose: >-
+      Read a skill package (SKILL.md, scripts/**, references/**, assets/**) and
+      extract its semantic identity — primary_purpose, semantic_category,
+      trigger_phrases, not_for, inputs/outputs, handoffs and misuse_warnings —
+      so it can be safely bound. Drives the skill_semantic_extraction stage.
+    owner_domain: skill_governance
+    allowed_usage:
+      - skill_semantic_extraction
+      - skill_package_classification
+      - misuse_warning_drafting
+    forbidden_usage:
+      - binding_a_skill_without_extraction   # it performs extraction; binding is a later, separate decision
+      - altering_locked_skill_semantics      # may record but never change prism/verification-loop semantics
+      - bug_finding
+    governance_profiles:
+      - skill_governance
+      - skill_semantic_required_gate
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+      - skill_semantic_extract_schema        # candidate evidence schema (skill-governance pipeline)
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - skill_governance_pipeline
+      stages:
+        - sdlc:03-skill-semantic-extraction
+        - skill_governance:skill_semantic_extraction
+      agents:
+        - skill_librarian_agent
+        - skill_semantic_extractor_subagent
+    aliases: []
+    remap_candidate: none
+    notes: >-
+      NON-CANONICAL (stage 03 self-flag; review §8). Distinct from the canonical
+      reasoning skills — this is the meta-skill that produces the semantic record
+      the registry rule (doc 03 §7, doc 06 no_unread_skill_binding) depends on.
+      Recommend RATIFY as canonical under semantic_category skill_governance rather
+      than remap (no canonical equivalent exists). Resolve stage-03 open_question.
+
+  - id: handoff-designer
+    name: Handoff Designer
+    type: skill
+    status: candidate
+    semantic_category: problem_decomposition
+    primary_purpose: design executor handoff packets / work partitioning
+    purpose: >-
+      Design clean executor HANDOFF_PACKETS — partition planned work into
+      well-scoped, low-coupling handoffs with explicit inputs/outputs and
+      acceptance criteria for downstream executors.
+    owner_domain: planning
+    allowed_usage:
+      - handoff_partitioning
+      - work_package_boundary_design
+      - executor_handoff_authoring
+    forbidden_usage:
+      - bug_finding
+      - making_the_plan_decision_by_itself
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:10-planning
+      agents:
+        - planning_agent
+    aliases: []
+    remap_candidate: fermi-decompose
+    notes: >-
+      NON-CANONICAL (stage 10 self-flag; review §8). Produces HANDOFF_PACKETS.
+      Could potentially be folded into fermi-decompose (problem_decomposition) +
+      prism (option divergence), but its output is a concrete handoff artifact, so
+      recommend RATIFY as a distinct candidate. Resolve stage-10 open_question.
+
+  - id: context-pack-builder
+    name: Context Pack Builder
+    type: skill
+    status: candidate
+    semantic_category: completeness_audit
+    primary_purpose: assemble a scoped context/memory pack for a stage or executor
+    purpose: >-
+      Assemble the scoped context pack an executor/implementation stage needs —
+      select, order and bound the relevant artifacts/evidence into an
+      EXECUTOR_WORKPACKAGE / implementation context pack before authoring begins.
+    owner_domain: planning
+    allowed_usage:
+      - context_pack_assembly
+      - relevant_artifact_selection
+      - executor_context_preparation
+    forbidden_usage:
+      - bug_finding
+      - retrieval_policy_bypass            # must honor context/memory retrieval & redaction rules
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:10-planning
+        - sdlc:11-implementation
+      agents:
+        - planning_agent
+        - engineering_agent
+    aliases: []
+    remap_candidate: none
+    notes: >-
+      NON-CANONICAL (stages 10 & 11 self-flag; review §8). Bridges into the
+      Context/Memory Profiles registry (context_memory_profiles.yaml). No canonical
+      reasoning-skill equivalent; recommend RATIFY as candidate. Resolve open_questions.
+
+  - id: scanner-result-normalizer
+    name: Scanner Result Normalizer
+    type: skill
+    status: candidate
+    semantic_category: completeness_audit
+    primary_purpose: normalize / dedupe raw security-scanner output
+    purpose: >-
+      Normalize and deduplicate raw SAST / SCA / secret / IaC scanner output into
+      a single canonical SECURITY_FINDINGS_NORMALIZED set (consistent severity,
+      identity and dedupe) for downstream triage.
+    owner_domain: security
+    allowed_usage:
+      - scanner_output_normalization
+      - finding_deduplication
+      - severity_harmonization
+    forbidden_usage:
+      - bug_finding                        # it normalizes existing findings; the defect sweep is verification-loop
+      - severity_decision_by_itself        # calibrate / the gate decide accepted risk
+    governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:16-security-validation
+      agents:
+        - security_validation_agent
+        - security_scan_interpreter_subagent
+    aliases: []
+    remap_candidate: none
+    notes: >-
+      NON-CANONICAL (stage 16 self-flag; review §8). Data-shaping helper that feeds
+      the security-validation triage; not a reasoning-skill equivalent of the
+      canonical 12. Recommend RATIFY as candidate. Resolve stage-16 open_question.
+
+  - id: evidence-graph-builder
+    name: Evidence Graph Builder
+    type: skill
+    status: candidate
+    semantic_category: completeness_audit
+    primary_purpose: build the requirement -> ... -> release evidence DAG
+    purpose: >-
+      Assemble the end-to-end evidence DAG linking requirements -> design ->
+      build -> test -> validation -> operations-readiness -> release-candidate
+      evidence, and audit it for integrity/completeness. Evidence/trace assembly,
+      NOT a defect sweep.
+    owner_domain: evidence_and_audit
+    allowed_usage:
+      - evidence_graph_assembly
+      - traceability_linking
+      - evidence_integrity_audit
+    forbidden_usage:
+      - bug_finding                        # explicitly NOT a defect sweep (stage 28 note)
+      - evidence_fabrication
+    governance_profiles:
+      - skill_governance
+      - evidence_required                  # canonical id; see aliases for the _policy variant
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+      - sdlc_pipeline_evidence_schema      # operates over the evidence schema set
+      - stage_gate_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:28-evidence-graph-build
+      agents:
+        - evidence_graph_agent
+        - evidence_trace_subagent
+    aliases:
+      - evidence_required_policy           # variant of canonical governance id evidence_required (doc 17 naming reconciliation)
+    remap_candidate: none
+    notes: >-
+      NON-CANONICAL (stage 28 self-flag; review §8). Bridges into audit_schemas.yaml.
+      No canonical reasoning-skill equivalent; recommend RATIFY as candidate.
+      Resolve stage-28 open_question.
+
+  - id: release-readiness-judge
+    name: Release Readiness Judge
+    type: skill
+    status: candidate
+    semantic_category: completeness_audit
+    primary_purpose: final go/no-go release readiness adjudication over assembled evidence
+    purpose: >-
+      Final go/no-go readiness adjudication: confirm ALL required and applicable
+      conditional gates have passed and the minimum evidence set is present, then
+      record a development-completion / release-candidate readiness verdict. A
+      deterministic readiness gate over assembled evidence — NOT a defect sweep.
+    owner_domain: release_management
+    allowed_usage:
+      - release_readiness_adjudication
+      - gate_completeness_confirmation
+      - go_no_go_judgement
+    forbidden_usage:
+      - bug_finding                        # NOT a defect sweep; stages 29/30 bind gap-audit + calibrate, not verification-loop
+      - reusing_verification_loop_as_a_readiness_checklist  # the exact locked anti-pattern these stages avoid
+      - self_approval                      # 30 routes re-attestation to sdlc_team_lead
+    governance_profiles:
+      - skill_governance
+      - no_self_approval                   # canonical id; see aliases for the _policy variant
+      - skill_must_have_semantic_extraction_before_binding
+    audit_schemas:
+      - skill_activation_trace_schema
+      - release_evidence_schema            # release minimum evidence set
+      - stage_gate_trace_schema
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - sdlc:29-development-completion
+        - sdlc:30-release-candidate
+      agents:
+        - release_manager_agent
+    aliases:
+      - no_self_approval_policy            # variant of canonical governance id no_self_approval (doc 17 naming reconciliation)
+    remap_candidate: none
+    notes: >-
+      NON-CANONICAL (stages 29 & 30 self-flag; review §8). Deliberately distinct
+      from verification-loop: stages 29/30 refuse to reuse verification-loop as a
+      readiness checklist (the locked anti-pattern) and instead bind this judge +
+      gap-audit + calibrate. No canonical equivalent; recommend RATIFY as candidate.
+      Resolve stage-29/30 open_questions.
+
+# =============================================================================
+# RECONCILIATION INDEX — *_policy governance variants referenced by skills above,
+# mapped to their canonical ids (doc 17 NAMING RECONCILIATION). The canonical id is
+# used in each item's governance_profiles; the variant is recorded under aliases.
+# =============================================================================
+governance_alias_reconciliation:
+  - canonical: no_self_approval
+    variant: no_self_approval_policy
+    used_by_skills: [release-readiness-judge]
+  - canonical: evidence_required
+    variant: evidence_required_policy
+    used_by_skills: [evidence-graph-builder]
+
+# =============================================================================
+# COVERAGE SUMMARY (for the doc 17 §11/§13 validation that usage mapping is
+# enforceable from registry data). NOTE: pipeline-doc stage tokens are illustrative
+# labels; the 31 SDLC stage ids are the authoritative usage anchors.
+# =============================================================================
+coverage_summary:
+  total_skills: 18
+  canonical: 12
+  candidate: 6
+  deprecated: 0
+  canonical_skill_ids:
+    [prism, verification-loop, sentinel, llm-council, fmea, adr-builder,
+     gap-audit, prompt-fidelity, calibrate, refraction, fermi-decompose, bayesian-update]
+  candidate_skill_ids:
+    [skill-architect, handoff-designer, context-pack-builder,
+     scanner-result-normalizer, evidence-graph-builder, release-readiness-judge]
+  every_item_has_status: true
+  every_item_has_used_by_or_is_candidate: true
+  core_ability_leak_check: PASS   # no Core Ability appears as a skill
+  plugin_check: PASS              # no plugin registry; no skill is a plugin
+  locked_prism_semantics: enforced
+  locked_verification_loop_semantics: enforced
+  sdlc_usage_counts:              # cross-checked against configs/nexus-ai/stages/sdlc/*.yaml
+    gap-audit: 29
+    calibrate: 14
+    sentinel: 9
+    fmea: 6
+    prompt-fidelity: 6
+    prism: 5
+    llm-council: 4
+    fermi-decompose: 3
+    verification-loop: 3
+    adr-builder: 2
+    context-pack-builder: 2
+    release-readiness-judge: 2
+    refraction: 1
+    bayesian-update: 1
+    skill-architect: 1
+    handoff-designer: 1
+    scanner-result-normalizer: 1
+    evidence-graph-builder: 1

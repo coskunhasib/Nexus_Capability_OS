@@ -1,0 +1,93 @@
+# SDLC Pipeline — Stage #7 contract
+# Machine-readable stage contract. Documentation/blueprint only: no runtime code, no merge, no deploy.
+# Authored per docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
+# and reconciled against the Phase A canonical shared registry.
+# Always-on stage (not conditional): no applicability_decision block.
+
+stage_id: architecture_review
+name: Architecture Review
+purpose: >-
+  Mimari kararları, ADR'leri ve sistem sınırlarını trade-off, güvenlik, performans, bakım,
+  NFR uyumu ve domain uygunluğu açısından bağımsız bir review-gate olarak stres test etmek;
+  çözülmemiş mimari riskleri ve gerekçesiz seçimleri release öncesi yakalamak.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+# No self-approval: ARCHITECTURE_DOC author = architecture_agent (stage #6). This review-gate
+# owner MUST differ from that author. The Phase A canonical Agent-roles list has no dedicated
+# architecture reviewer role, so per the locked no_self_approval_policy the review-gate falls
+# back to sdlc_team_lead. Supervisor is a Core Ability and is never used as owner_agent.
+owner_agent: sdlc_team_lead
+sub_agents: []
+
+uses_core_abilities:
+  - Supervisor
+  - Memory
+  - Web
+
+uses_skills:
+  - llm-council
+  - sentinel
+  - calibrate
+  - gap-audit
+
+uses_tools:
+  - evidence_reader
+  - policy_query
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - architecture_review_gate
+
+uses_audit_schemas:
+  - architecture_review_evidence_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - architecture_reasoning_model
+
+uses_context_memory_profiles:
+  - architecture_context_pack
+
+inputs:
+  - ARCHITECTURE_DOC
+  - SYSTEM_CONTEXT_DIAGRAM
+  - ADR_INDEX
+  - NFR_CATALOG
+  - REQUIREMENTS_SPEC
+
+outputs:
+  - ARCHITECTURE_REVIEW_REPORT
+  - ARCHITECTURE_REVIEW_GATE_RESULT
+
+evidence:
+  - ARCHITECTURE_REVIEW_REPORT
+  - ARCHITECTURE_REVIEW_GATE_RESULT
+
+trace:
+  - architecture_review_trace
+  - stage_gate_decision_trace
+
+gates:
+  - no_unresolved_architecture_risk
+  - rejected_options_documented
+  - nfr_tradeoffs_justified
+  - architecture_review_pass
+
+on_pass: security_privacy_design
+on_fail: architecture
+rework_route: architecture
+
+blocking_conditions:
+  - unresolved_architecture_risk
+  - missing_tradeoff_rationale
+  - unaddressed_nfr_in_architecture
+  - self_review_detected
+
+optional_conditions: []
+conditional_required_gates: []
+max_iterations: 3

@@ -1,0 +1,103 @@
+# SDLC Pipeline — Stage Contract
+# Stage #2 of 31: domain_risk_profile
+# Generated for the Nexus AI Orchestration Model (SDLC is one pipeline, not the top).
+# Canonical sources reconciled:
+#   - docs/ai-sdlc-factory/sdlc-stages/01-foundation-and-requirements.md (current per-stage prose)
+#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale owner team_lead_orchestrator corrected)
+#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md, 08-sdlc-pipeline-contract.md
+#   - configs/nexus-ai/sdlc_pipeline.yaml, configs/nexus-ai/artifact_registry.yaml
+#
+# Notes:
+#   - Always-on stage (no applicability_decision block).
+#   - owner_agent = domain_risk_agent (a pipeline Agent ROLE). Legacy doc 05 named
+#     team_lead_orchestrator here; that is stale and violates "team is never a stage owner"
+#     and "Supervisor != sdlc_team_lead", so it is corrected to domain_risk_agent.
+#   - This stage authors its own artifacts (no upstream artifact under review here),
+#     so no self-approval conflict arises.
+#   - artifact_writer / evidence_writer are side-effect tools -> governance + trace required.
+
+stage_id: domain_risk_profile
+name: Domain and Risk Profile
+purpose: >-
+  Establish the product's domain, data sensitivity, security, regulatory, availability,
+  performance and autonomy risk profile, select the risk class that calibrates pipeline
+  rigor, and initialize the conditional gate flags that drive downstream applicability
+  decisions (compliance, privacy lifecycle, API contract, data migration, accessibility/UX,
+  cost/resource, backup/restore/DR).
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: domain_risk_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+
+uses_skills:
+  - fermi-decompose
+  - calibrate
+  - gap-audit
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - domain_risk_governance
+  - evidence_required_policy
+  - domain_risk_profile_gate
+
+uses_audit_schemas:
+  - domain_risk_evidence_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - domain_risk_context_pack
+
+inputs:
+  - PRODUCT_BRIEF
+  - INITIAL_SCOPE
+  - SUCCESS_METRICS
+
+outputs:
+  - DOMAIN_PROFILE_DECISION
+  - RISK_PROFILE
+  - CONDITIONAL_GATE_FLAGS
+
+evidence:
+  - DOMAIN_PROFILE_DECISION
+  - RISK_PROFILE
+  - CONDITIONAL_GATE_FLAGS
+
+trace:
+  - domain_risk_agent_trace
+  - fermi_decompose_skill_activation_trace
+  - calibrate_skill_activation_trace
+  - artifact_writer_tool_trace
+
+gates:
+  - domain_profile_selected
+  - risk_profile_selected
+  - conditional_gate_flags_initialized
+
+on_pass: skill_semantic_extraction
+on_fail: intake
+rework_route: intake
+
+blocking_conditions:
+  - unknown_domain
+  - unresolved_risk_class
+  - conditional_gate_flags_uninitialized
+
+optional_conditions:
+  - prior_run_memory_available
+  - reusable_domain_profile_from_memory
+
+conditional_required_gates: []
+
+max_iterations: 3

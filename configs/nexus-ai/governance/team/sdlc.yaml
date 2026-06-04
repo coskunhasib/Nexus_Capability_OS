@@ -1,0 +1,296 @@
+# =============================================================================
+# Nexus AI — Team-Scope Governance (APPLICABLE LAYER): sdlc_team
+# =============================================================================
+# Phase E / doc 19 (19-governance-audit-readiness-plan.md). This file is the
+# GRANULAR, APPLICABLE expression — per §4 governance_profile contract and §5
+# rule contract — of the team-scope governance that the Phase C registry
+# (configs/nexus-ai/governance_profiles.yaml, scope: team, id:
+# sdlc_team_governance) only CATALOGS. The registry says WHAT exists; this file
+# makes the team's role-separation rules EVALUABLE so SDLC required gates can be
+# checked from config (doc 19 §15 exit criterion).
+#
+# Documentation / blueprint ONLY. NO runtime code. NO merge. NO deploy.
+#
+# -----------------------------------------------------------------------------
+# LOCKED DECISIONS honored (doc 00 decision log; .memory/0002-locked-decisions.md)
+#   - Plugin CANCELLED, never reintroduced — no plugin field anywhere.
+#   - Governance != Audit. This is a governance profile; it REQUIRES evidence and
+#     trace by id but the schemas live in the SEPARATE audit registry/dirs
+#     (configs/nexus-ai/audit/evidence_schemas/ vs .../trace_schemas/).
+#   - Evidence != Trace — required_evidence and required_trace are kept distinct
+#     and are NEVER merged.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents and NOT team members. Supervisor != sdlc_team_lead.
+#   - A Team is a passive ownership/policy boundary; Agents own/execute stages,
+#     the team_lead orchestrates but never owns a stage and never bypasses a gate.
+#
+# -----------------------------------------------------------------------------
+# CONTRACT (doc 19 §4 governance_profile + §5 rule). governance_profile_id,
+# scope, purpose, applies_to, severity_default, rules[], required_evidence,
+# required_trace, owner, escalation. Each rule: rule_id, description, severity,
+# required_when, pass_condition, fail_condition, on_fail, rework_route,
+# evidence_required, trace_required.
+#
+# -----------------------------------------------------------------------------
+# NAMING RECONCILIATION (doc 19 reconciliation inputs)
+#   (a) no_self_approval and evidence_required are FIRST-CLASS governance ids;
+#       the *_policy spellings used by stage/pipeline files are their ALIASES.
+#       This file references the first-class ids and records aliases once below.
+#   (b) Authoritative team name is sdlc_team (team_templates.yaml).
+#   (d) Core Abilities: registry id is lowercase (supervisor); the capitalized
+#       Name (Supervisor) is a label. This file uses the registry id in rules and
+#       the Name only as a human label — breaking neither.
+#
+# AUTHORITATIVE SOURCES (read from disk)
+#   - configs/nexus-ai/governance_profiles.yaml         # team-scope sdlc_team_governance (catalog) + global no_self_approval / no_policy_bypass / evidence_required / trace_required
+#   - configs/nexus-ai/team_templates.yaml              # sdlc_team roster (24 agents) + team_lead + forbidden_actions
+#   - configs/nexus-ai/team_lead_roles.yaml             # sdlc_team_lead forbidden_actions / blocking_limits / review-gate fallback
+#   - configs/nexus-ai/stages/sdlc/12-code-review.yaml  # code_review gate + on_fail/rework (representative review gate)
+#   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml # anti_patterns: self_approval_gate, release_candidate_without_policy_gate, supervisor_as_team_lead
+#   - configs/nexus-ai/audit_schemas.yaml               # evidence/trace schema ids referenced below (Evidence != Trace)
+#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §5  # SDLC team rules (developer/QA/release-agent separation)
+# =============================================================================
+
+version: draft-0.1
+config_kind: team_scope_governance_profile
+status: candidate                      # ratifies the registry CANDIDATE sdlc_team_governance into an applicable layer
+no_plugin: true
+registry_ref: sdlc_team_governance     # the Phase C catalog entry this file implements (governance_profiles.yaml, scope: team)
+
+# ---- contract aliases recorded once (naming reconciliation a) ----------------
+governance_id_aliases:
+  no_self_approval: [no_self_approval_policy]     # first-class id; _policy spelling is the alias
+  evidence_required: [evidence_required_policy]
+
+# =============================================================================
+# GOVERNANCE PROFILE (doc 19 §4)
+# =============================================================================
+governance_profile_id: sdlc_team_governance
+scope: team                            # one of: global|pipeline|team|stage|core_ability|skill|tool
+purpose: >-
+  Intra-team role-separation governance for the sdlc_team (03 §5): a developer
+  (engineering_agent) cannot approve their own code; QA (qa_agent) cannot
+  manipulate or self-clear its own test/bug results; the release manager
+  (release_manager_agent) cannot pass a failed or unevaluated mandatory gate to
+  release_candidate; and the sdlc_team_lead orchestrates and acts as the
+  no-self-approval review fallback but is NOT the Supervisor Core Ability and may
+  never bypass a blocking gate. Makes the SDLC pipeline's required-gate ownership
+  (author != approver) evaluable from config.
+applies_to:
+  team: sdlc_team
+  team_lead: sdlc_team_lead
+  pipeline: sdlc_pipeline
+  # The agents whose role separation this profile governs (subset of the 24-agent
+  # sdlc_team roster that participate in author->approver gate pairs):
+  agents:
+    - engineering_agent              # author of CODE_CHANGESET_SUMMARY / migration files / API contracts
+    - code_reviewer_agent            # independent reviewer of code_review (#12)
+    - qa_agent                       # owns test_generation (#13), test_execution (#14), verification_loop_bug_finding (#15)
+    - contract_validation_agent      # independent reviewer of api_contract (#20)
+    - data_migration_agent           # independent reviewer of data_migration (#22)
+    - security_validation_agent      # owns security_validation (#16)
+    - release_manager_agent          # owns development_completion (#29), release_candidate (#30)
+  stages:                            # SDLC stages where these team rules are enforced
+    - code_review                    # #12
+    - test_execution                 # #14
+    - verification_loop_bug_finding  # #15
+    - security_validation            # #16
+    - api_contract_compatibility_validation       # #20
+    - data_migration_validation_if_applicable     # #22
+    - development_completion         # #29
+    - release_candidate              # #30
+severity_default: blocker
+owner: sdlc_team_lead                 # orchestrator/escalation owner; NOT a stage owner, NOT Supervisor
+escalation:
+  on_blocker: halt_pipeline_and_record_gate_failure   # no-human system: no override path (no_policy_bypass)
+  notify: sdlc_team_lead
+  forbidden_resolution:
+    - team_lead_override_of_failed_gate                # no_policy_bypass (global)
+    - supervisor_core_ability_acts_as_team_lead        # supervisor_as_team_lead anti-pattern
+    - prompt_or_llm_council_substitutes_for_a_gate     # 06 §1
+
+# ---- profile-level required audit schemas (Evidence != Trace) ----------------
+# Re-shown per rule below; declared here at profile scope for completeness.
+required_evidence:                    # EVIDENCE family (decision proofs) — audit/evidence_schemas/
+  - code_review_evidence_schema
+  - test_execution_evidence_schema
+  - bug_finding_evidence_schema
+  - security_scan_evidence_schema
+  - sdlc_pipeline_evidence_schema     # development_completion / release_candidate decision evidence
+required_trace:                       # TRACE family (process history) — audit/trace_schemas/
+  - stage_gate_trace_schema
+  - gate_decision_trace_schema
+  - release_decision_trace_schema
+
+# ---- composed cross-cutting profiles re-shown in this team context -----------
+composes_governance_profiles:
+  - no_self_approval                  # global; first-class (alias: no_self_approval_policy)
+  - no_policy_bypass                  # global
+  - evidence_required                 # global; first-class (alias: evidence_required_policy)
+  - trace_required                    # global
+
+# =============================================================================
+# RULES (doc 19 §5)
+# =============================================================================
+rules:
+
+  - rule_id: sdlc_team_no_self_approval_author_ne_approver
+    description: >-
+      No sdlc_team agent may be the sole approver/validator of an artifact it
+      authored: for every review/validation/decision gate, the gate owner
+      (approver_agent_id) must differ from the reviewed artifact's author
+      (producer_agent_id). Concretely engineering_agent's code is reviewed by
+      code_reviewer_agent; its API contracts by contract_validation_agent; its
+      migrations by data_migration_agent.
+    severity: blocker
+    required_when: a_review_validation_or_decision_gate_is_evaluated
+    pass_condition: gate.approver_agent_id != reviewed_artifact.producer_agent_id
+    fail_condition: gate.approver_agent_id == reviewed_artifact.producer_agent_id
+    on_fail: block_gate_and_reassign_to_independent_reviewer
+    rework_route: reassign_review_to_non_author_agent_or_sdlc_team_lead
+    evidence_required:
+      - code_review_evidence_schema
+      - api_contract_evidence_schema
+      - migration_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: sdlc_developer_cannot_approve_own_code
+    description: >-
+      The developer role (engineering_agent), author of CODE_CHANGESET_SUMMARY,
+      cannot own or pass the code_review gate (#12); the code_review gate owner is
+      code_reviewer_agent and the reviewer cannot mutate the reviewed changeset
+      (reviewer != mutator). Direct expression of 03 §5 "developer kendi kodunu
+      approve edemez".
+    severity: blocker
+    required_when: stage == code_review
+    pass_condition: >-
+      code_review.owner_agent == code_reviewer_agent AND
+      code_review.owner_agent != engineering_agent AND
+      reviewer_did_not_mutate_reviewed_changeset == true
+    fail_condition: >-
+      code_review.owner_agent == engineering_agent OR
+      reviewer_mutated_reviewed_changeset == true
+    on_fail: block_code_review_gate            # self_approval_gate anti-pattern
+    rework_route: implementation               # stage 12 on_fail/rework_route (12-code-review.yaml)
+    evidence_required:
+      - code_review_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: sdlc_qa_cannot_manipulate_results
+    description: >-
+      QA (qa_agent) cannot manipulate, fabricate, or self-clear test-execution
+      (#14) or verification-loop bug-finding (#15) results: results must be backed
+      by tool-produced evidence, and qa_agent (which authors the changeset's tests
+      but not the changeset) hunts defects in engineering_agent's changeset
+      (reviewer != author). Test execution is NOT a substitute for bug-finding
+      (verification-loop = bug/defect finding; test_execution != bug finding).
+      Direct expression of 03 §5 "QA test sonucunu manipüle edemez".
+    severity: blocker
+    required_when: stage in [test_execution, verification_loop_bug_finding]
+    pass_condition: >-
+      results_backed_by_tool_evidence == true AND
+      bug_finding.producer_agent_id != changeset.producer_agent_id AND
+      blocker_bug_count == 0
+    fail_condition: >-
+      results_self_asserted_without_tool_evidence == true OR
+      blocker_bug_count > 0 OR
+      test_execution_used_in_place_of_bug_finding == true
+    on_fail: block_gate_and_record_open_defects
+    rework_route: implementation
+    evidence_required:
+      - test_execution_evidence_schema
+      - bug_finding_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: sdlc_release_manager_cannot_pass_failed_gate
+    description: >-
+      The release manager (release_manager_agent), owner of
+      development_completion (#29) and release_candidate (#30), cannot pass a
+      failed or unevaluated mandatory/applicable gate, and cannot produce a
+      release_candidate before development_completion passes with complete release
+      evidence and no blocking policy failure. Direct expression of 03 §5
+      "Release Agent failed gate'i pass yapamaz" + runtime anti-pattern
+      release_candidate_without_policy_gate.
+    severity: blocker
+    required_when: stage in [development_completion, release_candidate]
+    pass_condition: >-
+      all_mandatory_and_applicable_gates_passed == true AND
+      development_completion_passed_before_release_candidate == true AND
+      release_evidence_complete == true AND
+      no_blocking_policy_failure == true
+    fail_condition: >-
+      any_mandatory_or_applicable_gate_failed_or_unevaluated == true OR
+      release_candidate_before_development_completion == true OR
+      blocking_policy_failure_present == true
+    on_fail: block_release_candidate_and_halt
+    rework_route: route_to_failing_gate_owner_stage
+    evidence_required:
+      - sdlc_pipeline_evidence_schema
+    trace_required:
+      - release_decision_trace_schema
+      - gate_decision_trace_schema
+
+  - rule_id: sdlc_no_failed_gate_bypass
+    description: >-
+      No actor in the sdlc_team — including the sdlc_team_lead — may override,
+      skip, or "pass" a blocking governance gate. Prompt does not replace policy;
+      team_lead does not replace policy; LLM council does not replace policy
+      (global no_policy_bypass re-shown in team context).
+    severity: blocker
+    required_when: any_blocking_gate_is_evaluated
+    pass_condition: blocking_gate_satisfied_before_progression == true
+    fail_condition: blocking_gate_overridden_without_satisfaction == true
+    on_fail: halt_pipeline_and_record_policy_bypass_attempt
+    rework_route: return_to_blocking_gate_owner_stage
+    evidence_required:
+      - sdlc_pipeline_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: sdlc_team_lead_role_separation
+    description: >-
+      The sdlc_team_lead orchestrates and acts as the independent no-self-approval
+      reviewer for requirements_review (#5) and architecture_review (#7) only
+      because no dedicated reviewer Agent role exists; it never authors the
+      artifact it then reviews, never owns any other stage, is never the
+      Supervisor Core Ability, and never bypasses a gate (supervisor_as_team_lead
+      and team_as_stage_owner anti-patterns).
+    severity: blocker
+    required_when: sdlc_team_lead_acts_on_a_gate_or_stage
+    pass_condition: >-
+      sdlc_team_lead != supervisor_core_ability AND
+      (sdlc_team_lead_owns_only review_gate_stages [requirements_review, architecture_review]) AND
+      sdlc_team_lead.reviewed_artifact.author != sdlc_team_lead AND
+      sdlc_team_lead_did_not_bypass_any_gate == true
+    fail_condition: >-
+      sdlc_team_lead_is_supervisor_core_ability == true OR
+      sdlc_team_lead_owns_a_non_review_stage == true OR
+      sdlc_team_lead_authored_the_artifact_it_reviews == true OR
+      sdlc_team_lead_bypassed_a_gate == true
+    on_fail: reject_team_lead_action_and_reassign
+    rework_route: reassign_to_compliant_owner_or_independent_reviewer
+    evidence_required:
+      - requirements_review_evidence_schema
+      - architecture_review_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+# =============================================================================
+# VALIDATION SELF-CHECK (doc 19 §14) — assertions true of THIS file
+# =============================================================================
+validation_self_check:
+  scope_is_known: true                              # team ∈ {global,pipeline,team,stage,core_ability,skill,tool}
+  every_rule_has_severity: true
+  every_blocker_rule_has_on_fail: true
+  evidence_and_trace_kept_distinct: true            # required_evidence vs required_trace never merged
+  no_plugin_governance_introduced: true
+  core_ability_is_not_an_agent: true                # Supervisor != sdlc_team_lead
+notes: >-
+  Implements the registry CANDIDATE sdlc_team_governance (governance_profiles.yaml
+  scope: team) as an applicable team-scope layer. Rules trace to 03 §5 (developer/
+  QA/release-agent separation), the global no_self_approval / no_policy_bypass /
+  evidence_required / trace_required, and the runtime anti-patterns
+  self_approval_gate / release_candidate_without_policy_gate / supervisor_as_team_lead.

@@ -1,0 +1,85 @@
+# =============================================================================
+# Nexus AI — Trace Schema (Audit / Trace family) — TRACE ONLY
+# =============================================================================
+# Phase E / doc 19 §12 materialization of ONE `type: trace_schema` item from the
+# Phase C registry (configs/nexus-ai/audit_schemas.yaml). Documentation/blueprint
+# only — NO runtime code, NO merge, NO deploy.
+#
+# LOCKED DECISIONS honored here:
+#   - Audit != Governance. Governance profiles live in
+#     configs/nexus-ai/governance_profiles.yaml (a SEPARATE file).
+#   - Evidence != Trace (K-008 / doc 03 §10–§12; doc 19 §11). This is a TRACE
+#     schema = operation/process history. It proves the PRODUCTION PATH of
+#     evidence but is NEVER itself evidence and is NEVER merged with any
+#     evidence_schema. Evidence schemas live in the SEPARATE sibling directory
+#     configs/nexus-ai/audit/evidence_schemas/ — this directory holds traces only.
+#   - Plugin cancelled: no plugin* key appears anywhere.
+#   - Core Abilities are NOT agents; they never appear as producer or consumer.
+# =============================================================================
+
+version: draft-0.1
+schema_family: trace            # Trace family ONLY (never evidence)
+source_registry: configs/nexus-ai/audit_schemas.yaml
+materializes: security_finding_trace_schema
+
+# ----- doc 19 §12 audit schema contract (authoritative) ----------------------
+audit_schema_id: security_finding_trace_schema
+type: trace_schema
+applies_to:
+  - sdlc_stage:security_validation
+  - security_finding_provenance
+required_fields:
+  - trace_id
+  - type
+  - actor
+  - action
+  - related_stage
+  - finding_id
+  - input_refs
+  - output_refs
+  - status
+  - timestamp
+producer: security_validation_agent   # snake_case Agent role; never a Core Ability
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+  - no_raw_secret_exposure
+  - redact_exploit_detail_secrets
+
+# ----- registry context (doc 17 §3 contract — preserved for traceability) ----
+registry_context:
+  name: Security Finding Trace Schema
+  status: canonical
+  owner_domain: sdlc
+  purpose: >-
+    Trace record for per-finding lineage — the operation history of how each
+    security finding was detected/normalized.
+  allowed_usage:
+    - Record per-security-finding detection/normalization lineage.
+  forbidden_usage:
+    - Used as the security decision proof itself (that is
+      security_scan_evidence_schema — an evidence_schema, kept distinct).
+    - Merged with any evidence_schema record (Evidence != Trace).
+  notes: >-
+    Stage 16 trace schema. Per-finding process history; distinct from the
+    evidence it traces.
+
+# ----- governance binding (Governance != Audit; ids live in the SEPARATE file) -
+governance_profiles:
+  - trace_required                # canonical id (governance_profiles.yaml)
+governance_profile_aliases:
+  trace_required:
+    - global_trace_required_policy  # spelling used in audit_schemas.yaml
+
+# ----- co-emitted audit schemas (SELF-CATEGORY cross-reference, doc 17 §8) -----
+companion_evidence_schemas:
+  - security_scan_evidence_schema  # the evidence whose production path this traces
+
+# ----- usage mapping (doc 17 §13) ---------------------------------------------
+used_by:
+  pipelines:
+    - sdlc_pipeline
+  stages:
+    - security_validation
+  agents:
+    - security_validation_agent

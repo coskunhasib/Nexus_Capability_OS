@@ -1,0 +1,78 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — Knowledge / Memory Pipeline
+# =============================================================================
+# Phase E / doc 19 §12 output. Documentation/blueprint ONLY — NO runtime code,
+# NO merge, NO deploy.
+#
+# Materializes the `type: evidence_schema` item(s) with owner_domain
+# `knowledge_management` from configs/nexus-ai/audit_schemas.yaml into the
+# applicable per-scope audit-schema config layer (doc 19 §13).
+#
+# Authoritative team name: knowledge_team (NOT knowledge_memory_team). The
+# *pipeline* id remains knowledge_memory_pipeline (per pipeline_catalog.yaml);
+# the owning team is knowledge_team.
+#
+# LOCKED DECISIONS honored:
+#   - Plugin CANCELLED (no plugin concept anywhere).
+#   - Audit != Governance (this is an AUDIT file).
+#   - Evidence != Trace: EVIDENCE ONLY here; trace schemas live in the SEPARATE
+#     dir configs/nexus-ai/audit/trace_schemas/ and are never merged in.
+#   - Core Abilities are NOT agents: Memory is a Core Ability (capability layer)
+#     and is therefore NEVER the producer/consumer here — producer/consumer are
+#     snake_case Agent roles.
+#
+# AUDIT SCHEMA CONTRACT (doc 19 §12): audit_schema_id, type, applies_to,
+# required_fields, producer, consumer, retention, redaction_rules.
+# Values transcribed verbatim from the catalog. registry_id/name kept as labels.
+#
+# STATUS: candidate (NEW, non-SDLC pipeline). Preserved per item.
+# =============================================================================
+
+version: draft-0.1
+layer_id: nexus_ai_audit_evidence_schemas_knowledge_memory
+family: audit
+audit_kind: evidence
+scope: pipeline
+applies_to_pipeline: knowledge_memory_pipeline
+owning_team: knowledge_team
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+purpose: >-
+  Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
+  knowledge/memory pipeline (per-memory-item provenance, validity window, and
+  retrieval/redaction outcome). Trace items are excluded by design.
+
+evidence_schemas:
+
+  - audit_schema_id: memory_provenance_schema
+    registry_id: memory_provenance_schema
+    name: Memory Provenance Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - knowledge_memory_pipeline
+      - knowledge_memory_stage:memory_intake
+      - knowledge_memory_stage:source_classification
+      - knowledge_memory_stage:summary_generation
+      - knowledge_memory_stage:validity_window_assignment
+      - knowledge_memory_stage:retrieval_profile_update
+      - knowledge_memory_stage:memory_expiration_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - memory_item_id
+      - source_provenance
+      - validity_window
+      - retrieval_profile_ref
+      - redaction_applied
+      - status
+      - created_at
+    producer: knowledge_intake_agent
+    consumer: retrieval_profile_agent
+    retention: bounded_by_validity_window
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+      - redact_pii_before_memory_write

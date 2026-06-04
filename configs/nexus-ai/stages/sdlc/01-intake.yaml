@@ -1,0 +1,87 @@
+# SDLC Pipeline — Stage Contract 01: intake
+# Machine-readable stage contract (Phase A, blueprint/documentation only).
+# Conforms to: configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields)
+#              docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 stage contract)
+# Top structure: Nexus AI Orchestration Model. SDLC is ONE pipeline under it.
+# Pipeline: sdlc_pipeline. This is stage #1 of the canonical 31-stage SDLC pipeline.
+# Stage class: always-on (not conditional) — no applicability_decision block.
+
+stage_id: intake
+name: Intake
+purpose: >-
+  Capture and bound the product goal at the front of the SDLC pipeline:
+  clarify the user problem, the product objective, the initial scope (in-scope
+  vs out-of-scope), and the success metrics, so every downstream stage inherits
+  a faithful, explicitly bounded statement of intent. Intake authors the product
+  brief; it does NOT decide domain/risk class (that is domain_risk_profile) and
+  does NOT produce requirements (that is the requirements stage).
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: product_requirements_agent
+sub_agents: []
+
+# --- Shared Registry + Usage Mapping (all 7 categories, even if empty) ---
+uses_core_abilities:
+  - Memory   # recall prior runs / project memory for goal context
+  - Web      # look up referenced product/domain context when the goal cites external material
+uses_skills:
+  - prism            # divergent exploration of the goal/problem framing and scope boundaries (brainstorming, NOT bug finding)
+  - prompt-fidelity  # ensure the captured brief faithfully reflects the user's stated intent
+  - gap-audit        # surface missing goal/scope/success-metric elements before handing off
+uses_tools:
+  - artifact_writer  # side-effect: writes PRODUCT_BRIEF / INITIAL_SCOPE / SUCCESS_METRICS -> governance + trace required
+  - evidence_writer  # side-effect: records intake evidence items -> governance + trace required
+uses_governance_profiles:
+  - sdlc_pipeline_governance   # pipeline-wide governance
+  - evidence_required_policy   # every gate decision must be backed by evidence
+  - intake_scope_gate          # stage-specific gate profile: goal present + scope bounded + metrics present
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema  # evidence schema (decision evidence) — distinct from trace
+  - stage_gate_trace_schema        # trace schema (process history) — distinct from evidence
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+uses_context_memory_profiles:
+  - sdlc_run_context           # always-on run-level context for the whole SDLC run
+  - requirements_context_pack  # front-of-pipeline product/requirements context pack
+
+# --- Data flow ---
+inputs:
+  - USER_GOAL
+outputs:
+  - PRODUCT_BRIEF
+  - INITIAL_SCOPE
+  - SUCCESS_METRICS
+  - INTAKE_GATE_RESULT
+
+# --- Audit: evidence (decision proof) vs trace (process history) kept SEPARATE ---
+evidence:
+  - PRODUCT_BRIEF
+  - INITIAL_SCOPE
+  - SUCCESS_METRICS
+  - INTAKE_GATE_RESULT
+trace:
+  - agent_invocation_trace
+  - skill_activation_trace
+  - tool_call_trace
+  - gate_decision_trace
+
+# --- Gates (concrete snake_case gate ids) ---
+gates:
+  - product_goal_present
+  - initial_scope_bounded
+  - success_metrics_present
+
+# --- Routing ---
+on_pass: domain_risk_profile
+on_fail: intake
+rework_route: intake
+
+# --- Conditions ---
+blocking_conditions:
+  - missing_product_goal
+  - unbounded_scope
+  - missing_success_metrics
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

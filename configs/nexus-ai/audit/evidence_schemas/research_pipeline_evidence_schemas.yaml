@@ -1,0 +1,97 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — Research Pipeline
+# =============================================================================
+# Phase E / doc 19 §12 output. Documentation/blueprint ONLY — NO runtime code,
+# NO merge, NO deploy.
+#
+# Materializes the `type: evidence_schema` items with owner_domain
+# `research_and_knowledge` from configs/nexus-ai/audit_schemas.yaml into the
+# applicable per-scope audit-schema config layer (doc 19 §13:
+# configs/nexus-ai/audit/evidence_schemas/*.yaml).
+#
+# LOCKED DECISIONS honored:
+#   - Plugin CANCELLED (no plugin concept anywhere).
+#   - Audit != Governance (this is an AUDIT file).
+#   - Evidence != Trace: EVIDENCE ONLY here; trace schemas live in the SEPARATE
+#     dir configs/nexus-ai/audit/trace_schemas/ and are never merged in.
+#   - Core Abilities are NOT agents: never producer/consumer.
+#   - prism = brainstorming/divergence; verification-loop = bug/defect finding
+#     (locked semantics; unaffected by these evidence schemas but recorded for
+#     cross-file consistency).
+#
+# AUDIT SCHEMA CONTRACT (doc 19 §12): audit_schema_id, type, applies_to,
+# required_fields, producer, consumer, retention, redaction_rules.
+# Values transcribed verbatim from the catalog. registry_id/name kept as labels.
+#
+# STATUS: every item here is `candidate` in the catalog (NEW, non-SDLC pipeline;
+# referenced but not yet ratified). The catalog status is preserved per item.
+# =============================================================================
+
+version: draft-0.1
+layer_id: nexus_ai_audit_evidence_schemas_research
+family: audit
+audit_kind: evidence
+scope: pipeline
+applies_to_pipeline: research_pipeline
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+purpose: >-
+  Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
+  research pipeline (source-reliability and claim→evidence decision proofs).
+  Trace (process history) is excluded by design.
+
+evidence_schemas:
+
+  - audit_schema_id: source_evidence_schema
+    registry_id: source_evidence_schema
+    name: Source Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - research_pipeline
+      - research_stage:source_reliability_assessment
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_id
+      - provenance
+      - reliability_score
+      - reliability_rationale
+      - related_claims
+      - status
+      - created_at
+    producer: source_reliability_agent
+    consumer: cross_validation_agent
+    retention: retain_with_research_report
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_paywalled_source_content
+
+  - audit_schema_id: claim_evidence_schema
+    registry_id: claim_evidence_schema
+    name: Claim Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - research_pipeline
+      - research_stage:claim_evidence_mapping
+      - research_stage:cross_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - claim_id
+      - supporting_evidence
+      - contradicting_evidence
+      - support_strength
+      - confidence
+      - status
+      - created_at
+    producer: claim_evidence_agent
+    consumer: research_synthesis_agent
+    retention: retain_with_research_report
+    redaction_rules:
+      - no_raw_secret_exposure

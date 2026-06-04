@@ -1,0 +1,132 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #12 of 31: code_review (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Authored per docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
+# and reconciled against the Phase A canonical shared registry.
+# Always-on stage (not conditional): no applicability_decision block.
+#
+# Reconciliation notes (legacy docs 05 §4.13 / sdlc-stages/03 §2 -> Phase A canonical registry):
+#   - owner_agent kept as canonical `code_reviewer_agent`.
+#   - No self-approval: the artifact under review is CODE_CHANGESET_SUMMARY authored by
+#     `engineering_agent` (implementation, stage #11). The dedicated reviewer role
+#     `code_reviewer_agent` is DISTINCT from `engineering_agent`, so the review-gate owner
+#     differs from the author and the no_self_approval_policy is satisfied WITHOUT falling back
+#     to sdlc_team_lead. Supervisor is a Core Ability and is never used as owner_agent.
+#   - Skills: legacy listed `verification-loop`, `gap-audit`, `prompt-fidelity`. Per the LOCKED
+#     skill semantics, `verification-loop` = bug/defect finding and is OWNED by the dedicated
+#     stage #15 (verification_loop_bug_finding). Code review is a review/conformance gate, not the
+#     bug sweep, so verification-loop is intentionally NOT used here to avoid duplicating stage #15
+#     and to respect single-responsibility. Reconciled to canonical `gap-audit` (review-coverage /
+#     missing-test gap detection), `prompt-fidelity` (changeset fidelity to REQUIREMENTS_SPEC /
+#     ARCHITECTURE_DOC) and `calibrate` (severity calibration of review findings).
+#   - Tools: legacy `repo_diff_reader` + `artifact_writer` retained; added canonical `repo_reader`
+#     (read surrounding code for context), `requirements_trace_checker` (support the
+#     changed_behavior_has_required_tests gate) and `policy_query` (architecture/policy conformance
+#     check), plus `evidence_writer`. Side-effect writers imply governance + trace.
+#   - Governance: legacy `code_review_governance` (non-canonical) reconciled to canonical base
+#     profiles + the canonical-permitted stage-specific gate profile `code_review_gate`.
+#     no_self_approval_policy carried explicitly because this is a review/gate stage.
+#   - Audit: legacy `code_review_evidence_schema` follows the registry's stage-appropriate
+#     evidence-schema pattern and is retained as the evidence schema; trace kept distinct via
+#     canonical `stage_gate_trace_schema`. Evidence and trace schemas are NOT merged.
+#   - Model: legacy `code_review_model` (non-canonical) reconciled to canonical
+#     `coder_engineering_model` (code-domain reasoning) + `sdlc_reasoning_profile`.
+#   - Context: legacy `code_review_context_pack` (non-canonical) reconciled to canonical
+#     `implementation_context_pack` + `verification_context_pack` + `sdlc_run_context`.
+
+stage_id: code_review
+name: Code Review
+purpose: >-
+  Implementation aşamasının ürettiği kod değişiklik setini (CODE_CHANGESET_SUMMARY) bağımsız bir
+  review-gate olarak; doğruluk, mimari/ADR uyumu, gereksinim sadakati, güvenlik hijyeni, bakım
+  edilebilirlik ve değişen davranış için gerekli test varlığı açısından incelemek. Kritik review
+  bulgularını, mimari ihlalleri ve eksik test gerektiren değişiklikleri test_generation öncesinde
+  yakalayıp implementation'a geri yönlendirmek. Bu stage bug/defect sweep DEĞİLDİR — derinlemesine
+  defect taraması dedicated verification_loop_bug_finding (stage #15) sorumluluğundadır.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: code_reviewer_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Coder      # read and reason over the code changeset / diff
+  - Memory     # recall requirements, architecture, ADRs and prior review findings
+  - OS         # inspect repository state / file tree for changeset context
+
+uses_skills:
+  - gap-audit        # detect review-coverage gaps and changes lacking required tests
+  - prompt-fidelity  # verify the changeset faithfully implements REQUIREMENTS_SPEC / ARCHITECTURE_DOC
+  - calibrate        # calibrate severity (critical/major/minor) of review findings consistently
+
+uses_tools:
+  - repo_diff_reader            # read the changeset diff under review
+  - repo_reader                 # read surrounding/unchanged code for review context
+  - requirements_trace_checker  # support changed_behavior_has_required_tests / requirement conformance
+  - policy_query                # check architecture/coding-policy conformance for the architecture gate
+  - artifact_writer             # write CODE_REVIEW_REPORT (side-effect: implies governance + trace)
+  - evidence_writer             # write stage evidence (side-effect: implies governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy   # review-gate: owner_agent must differ from changeset author
+  - evidence_required_policy
+  - code_review_gate          # stage-specific gate profile
+
+uses_audit_schemas:
+  - code_review_evidence_schema   # evidence schema (distinct from trace)
+  - stage_gate_trace_schema       # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - coder_engineering_model
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - implementation_context_pack   # consumed: changeset / implementation context
+  - verification_context_pack     # consumed: review and verification context
+
+inputs:
+  - CODE_CHANGESET_SUMMARY
+  - IMPLEMENTATION_NOTES
+  - REQUIREMENTS_SPEC
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - SECURITY_REQUIREMENTS
+
+outputs:
+  - CODE_REVIEW_REPORT
+  - CODE_REVIEW_FINDINGS
+  - CODE_REVIEW_GATE_RESULT
+
+evidence:
+  - CODE_REVIEW_REPORT
+  - CODE_REVIEW_FINDINGS
+  - CODE_REVIEW_GATE_RESULT
+
+trace:
+  - code_review_trace
+  - repo_diff_reader_tool_trace
+  - stage_gate_decision_trace
+
+gates:
+  - no_critical_review_finding
+  - architecture_violation_absent
+  - changed_behavior_has_required_tests
+  - code_review_pass
+
+on_pass: test_generation
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - critical_review_finding
+  - architecture_violation
+  - missing_required_tests_for_changed_behavior
+  - self_review_detected
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

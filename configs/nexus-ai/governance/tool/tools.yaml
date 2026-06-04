@@ -1,0 +1,812 @@
+# Nexus AI — Governance Config Layer: TOOL SCOPE
+#
+# Phase E / doc 19 (19-governance-audit-readiness-plan.md §10 "Tool Governance minimum",
+#   §4 governance-profile contract, §5 rule contract, §13 outputs, §14 validation).
+#   This is the GRANULAR, APPLICABLE config layer for the `tool` scope: it takes the
+#   tool-scope governance that already EXISTS as a catalog in the Phase C registry
+#   (configs/nexus-ai/governance_profiles.yaml -> scope: tool: sandbox_execution_governance)
+#   and the tool definitions in configs/nexus-ai/tools_registry.yaml, and turns them into
+#   per-scope evaluable governance profiles so SDLC required gates can be evaluated from
+#   configs (§15 exit criterion).
+#
+# DOCUMENTATION / BLUEPRINT ONLY. NO runtime code, NO merge, NO deploy. Profiles and rules
+#   are contracts (pass_condition / fail_condition are logical predicates for later
+#   formalization), not executable policy engines.
+#
+# WHAT THIS FILE IS vs WHAT THE REGISTRY IS
+#   - configs/nexus-ai/governance_profiles.yaml (Phase C) = the CATALOG ("what tool-scope
+#     governance exists"): registers the profile ids and their usage mapping. Tool scope
+#     there holds the single 03 §9 example `sandbox_execution_governance` plus the global
+#     profiles tools bind (tool_call_governance is referenced from tools_registry.yaml).
+#   - THIS FILE (Phase E) = the APPLICABLE LAYER: full §4 governance-profile bodies with §5
+#     rules, bound to the CONCRETE tools in tools_registry.yaml by side-effect class and risk,
+#     so a tool call can be evaluated (sandbox? timeout? allowed caller? trace? risk?).
+#   These do not duplicate ownership: the registry owns existence; this file owns the
+#   evaluable tool-scope contract. (05-shared-registry-and-usage-mapping.md §3/§5.)
+#
+# LOCKED DECISIONS (carried verbatim; .memory/0002-locked-decisions.md + task):
+#   - Plugin is CANCELLED and never reintroduced. No plugin tool, no plugin governance.
+#   - Governance != Audit. This file is GOVERNANCE (Policy | Gates | Permissions | Risk Rules,
+#     03 §1). It REFERENCES audit schemas by id (required_evidence / required_trace) but does
+#     NOT define them. Audit schema bodies live in configs/nexus-ai/audit/ (separate dirs):
+#       evidence schemas -> configs/nexus-ai/audit/evidence_schemas/
+#       trace schemas    -> configs/nexus-ai/audit/trace_schemas/
+#     Evidence != Trace and Decision-Evidence != Tool-Trace are NEVER merged (03 §10–§12).
+#   - Skill != Tool. None of the canonical skills are tools; skill usage governance lives in
+#     configs/nexus-ai/governance/skill/. A Core Ability is NOT an agent and is NEVER an
+#     allowed_caller — callers are Agent roles / team leads (D-014). A Tool MAY be a Core
+#     Ability sub-operation (provided_by_core_ability), but the Core Ability never calls itself.
+#   - Core Abilities are referenced by capitalized Name as a label and by lowercase id in the
+#     registry; this file uses the registry tool id (e.g. shell_exec) and keeps the providing
+#     Core Ability Name only as a label in notes (breaks neither).
+#
+# SIDE-EFFECT RULE (task + doc 19 §10 + tools_registry.yaml side_effect_rule + 03 §9):
+#   Any side-effecting tool MUST define: sandbox requirement, timeout, allowed callers, trace
+#   requirement, risk level. The MUST-set posture for side-effecting tools is:
+#     requires_sandbox: true
+#     governance: tool_call_governance + sandbox_execution_governance (+ high_risk_action_default_deny if high)
+#     required_trace: tool_call_trace_schema (the trace requirement)
+#   Side-effect-free read/analysis tools set requires_sandbox: false, side_effects: none, but
+#   STILL carry tool_call_governance + the tool_call_trace_schema trace requirement (every tool
+#   call is traced — global trace_required, 03 §3).
+#
+# RECONCILIATION INPUTS (applied here, consistent with the Phase C registry):
+#   (a) no_secret_exposure is the FIRST-CLASS global id; global_no_secret_policy (the spelling
+#       tools_registry.yaml uses) is recorded as an alias. evidence_required is first-class;
+#       evidence_required_policy is its alias. no_self_approval first-class; no_self_approval_policy
+#       alias. (governance_profiles.yaml aliases blocks.)
+#   (d) tool ids are the registry ids; providing Core Ability Names kept as labels in notes.
+
+config_id: nexus_ai_governance_tool_scope
+config_layer: governance
+scope: tool
+config_version: draft-0.1
+config_status: draft
+owner_doc: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md
+no_plugin: true
+
+# Provenance — sources read from disk to derive every profile/rule below.
+derived_from:
+  - configs/nexus-ai/tools_registry.yaml                 # 81 tool definitions: side_effects/risk_level/requires_sandbox/allowed_callers (authoritative)
+  - configs/nexus-ai/governance_profiles.yaml            # Phase C registry: tool-scope sandbox_execution_governance + global profiles tools bind
+  - configs/nexus-ai/audit_schemas.yaml                  # trace/evidence schema ids referenced by required_trace/required_evidence
+  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md   # §9 Tool Governance; §2 scope layers; §10–§12 Evidence/Trace split
+  - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md # §4 profile contract, §5 rule contract, §10 tool minimum, §13/§14/§15
+
+# Controlled vocabularies (doc 19 §4/§5; aligned to governance_profiles.yaml).
+scope_value: tool                                        # every profile here references the known `tool` scope (§14)
+severity_vocabulary: [blocker, major, advisory, informational]   # §5 rule severities
+on_fail_vocabulary: [block, route_to_rework, warn, record_only]
+status_vocabulary: [canonical, candidate, deprecated]
+
+# -------------------------------------------------------------------------------------
+# Governance profiles referenced from the Phase C registry (configs/nexus-ai/governance_profiles.yaml).
+# Listed here only so the references are discoverable; their BODIES live in the registry (existence)
+# and in the other Phase E governance configs (global.yaml etc.). Governance != Audit kept distinct.
+# -------------------------------------------------------------------------------------
+referenced_governance_profiles:
+  - tool_call_governance              # tool-scope: permission scoping for ANY tool call (03 §9). Bound by every tool in tools_registry.yaml.
+  - sandbox_execution_governance      # tool-scope: sandbox + timeout + trace for side-effecting/execution tools (03 §9; registry scope:tool example)
+  - high_risk_action_default_deny     # global: high-risk action default deny (03 §3) — applied to risk_level: high tools
+  - no_secret_exposure                # global: no secret leakage / no raw credential exposure (03 §3). alias: global_no_secret_policy
+  - system_access_governance          # core-ability (OS): system/filesystem/process bounds — inherited by OS-primitive tools
+  - evidence_required                 # global: gate decisions require evidence (03 §3). alias: evidence_required_policy
+  - no_self_approval                  # global: proposer != approver (06 §2). alias: no_self_approval_policy
+  - raw_credential_redaction          # global: raw credential redaction (03 §3)
+
+# -------------------------------------------------------------------------------------
+# Audit schemas referenced by required_trace / required_evidence (Audit family; NOT defined here).
+# Trace bodies -> configs/nexus-ai/audit/trace_schemas/ ; Evidence bodies -> .../evidence_schemas/.
+# -------------------------------------------------------------------------------------
+referenced_audit_schemas:
+  trace:
+    - tool_call_trace_schema          # CONTRACT trace name for tool-call provenance used throughout tools_registry.yaml.
+                                      #   NOTE: not yet present in configs/nexus-ai/audit_schemas.yaml (Phase C registry) — see open_questions OQ-TOOLGOV-1.
+                                      #   To be authored in configs/nexus-ai/audit/trace_schemas/ (Phase E sibling task). Until then
+                                      #   stage_gate_trace_schema is the existing cross-pipeline trace fallback.
+    - stage_gate_trace_schema         # EXISTING canonical cross-pipeline trace (audit_schemas.yaml) — fallback for tool-call trace.
+  evidence:
+    - evidence_item_schema            # generic evidence-record shape produced by side-effecting tools that emit gate evidence
+                                      #   (artifact_registry.yaml / schemas/evidence_item.schema.json). Decision-Evidence != Tool-Trace.
+
+# =====================================================================================
+# SIDE-EFFECT CLASS DERIVATION (from tools_registry.yaml `side_effects` values).
+# Every tool is placed in exactly one class. The class drives sandbox/trace/evidence posture.
+# Counts below are over all 81 registry tools (canonical + candidate).
+# =====================================================================================
+side_effect_classes:
+  read_only:                          # side_effects: none -> requires_sandbox: false (read/analysis/query)
+    sandbox_required: false
+    trace_required: true              # every tool call is traced (global trace_required)
+    evidence_required: false          # read-only tools inform a decision; they do not themselves emit gate evidence
+  external_network:                   # external_network_read -> sandboxed egress (no secrets outbound)
+    sandbox_required: true
+    trace_required: true
+    evidence_required: false          # fetched content gains evidentiary weight only after reliability scoring downstream
+  artifact_write:                     # writes_artifact_store -> persists a deliverable artifact
+    sandbox_required: true
+    trace_required: true
+    evidence_required: true
+  evidence_write:                     # writes_evidence_store -> persists decision evidence
+    sandbox_required: true
+    trace_required: true
+    evidence_required: true
+  memory_write:                       # writes_memory_store -> mutates durable memory
+    sandbox_required: true
+    trace_required: true
+    evidence_required: true
+  file_write:                         # writes_file_in_sandbox / writes_test_files / writes_repository / writes_defect_store
+    sandbox_required: true
+    trace_required: true
+    evidence_required: true
+  code_execution:                     # executes_*_in_sandbox (code/tests/scanners/evals/benchmarks/migrations/probes/restore/runbook/rollback)
+    sandbox_required: true
+    trace_required: true
+    evidence_required: true
+  state_mutation:                     # mutates_activation_state / mutates live state (controllers)
+    sandbox_required: true
+    trace_required: true
+    evidence_required: true
+
+# =====================================================================================
+# TOOL-SCOPE GOVERNANCE PROFILES (doc 19 §4 contract). One profile per governance concern,
+# bound to the concrete tools it applies to. severity_default is the profile floor; each rule
+# (§5) carries its own severity, required_when, pass/fail, on_fail, rework_route, evidence/trace.
+#
+# §4 contract fields per profile:
+#   governance_profile_id, scope, purpose, applies_to, severity_default, rules,
+#   required_evidence, required_trace, owner, escalation
+# =====================================================================================
+governance_profiles:
+
+  # -----------------------------------------------------------------------------------
+  # 1) UNIVERSAL: every tool call is permission-scoped and traced.
+  # This is the tool-scope expression of tool_call_governance (registry) + global trace_required.
+  # applies_to: ALL tools in tools_registry.yaml (the registry binds tool_call_governance on every item).
+  # -----------------------------------------------------------------------------------
+  - governance_profile_id: tool_call_permission_governance
+    scope: tool
+    status: canonical
+    purpose: >-
+      Permission-scope and trace EVERY tool call regardless of side effects (03 §9): a tool may
+      only be invoked by an allowed caller declared in tools_registry.yaml, within the tool's
+      allowed_usage, and every invocation emits a tool-call trace. This is the applicable
+      expression of the registry-bound tool_call_governance plus the global trace_required posture.
+    binds_registry_profiles: [tool_call_governance]
+    applies_to:
+      selector: all_tools
+      description: All 81 tools in configs/nexus-ai/tools_registry.yaml (canonical + candidate).
+    severity_default: blocker
+    rules:
+      - rule_id: tool_caller_must_be_allowed
+        description: >-
+          The invoking Agent role / team lead must appear in the tool's allowed_callers list in
+          tools_registry.yaml. A Core Ability is never an allowed_caller (D-014).
+        severity: blocker
+        required_when: any_tool_invocation
+        pass_condition: caller_id IN tools_registry.tools[tool_id].allowed_callers
+        fail_condition: caller_id NOT IN tools_registry.tools[tool_id].allowed_callers
+        on_fail: block
+        rework_route: deny_and_return_to_caller_stage
+        evidence_required: false
+        trace_required: true            # tool_call_trace_schema records caller + decision
+      - rule_id: tool_use_within_declared_usage
+        description: The call must fall within the tool's allowed_usage and not its forbidden_usage.
+        severity: blocker
+        required_when: any_tool_invocation
+        pass_condition: invocation_intent WITHIN allowed_usage AND NOT WITHIN forbidden_usage
+        fail_condition: invocation_intent WITHIN forbidden_usage
+        on_fail: block
+        rework_route: deny_and_return_to_caller_stage
+        evidence_required: false
+        trace_required: true
+      - rule_id: tool_call_trace_emitted
+        description: Every tool invocation emits a tool-call trace (provenance of the call). Trace != Evidence.
+        severity: blocker
+        required_when: any_tool_invocation
+        pass_condition: tool_call_trace_record EXISTS for invocation
+        fail_condition: tool_call_trace_record MISSING for invocation
+        on_fail: block
+        rework_route: re_emit_trace_or_deny
+        evidence_required: false
+        trace_required: true
+    required_evidence: []               # universal profile does not itself require gate evidence (read-only callers exist)
+    required_trace:
+      - tool_call_trace_schema
+    owner: nexus_tools_governance
+    escalation: nexus_platform_governance_council
+    notes: >-
+      The floor every tool inherits. Side-effecting tools ADD profile (2). tool_call_governance is
+      bound on all 81 registry items; this profile makes the caller/usage/trace checks evaluable.
+
+  # -----------------------------------------------------------------------------------
+  # 2) SIDE-EFFECTING TOOLS: sandbox + timeout + allowed callers + trace + risk (doc 19 §10 MUST).
+  # This is the applicable expression of sandbox_execution_governance (registry scope:tool).
+  # applies_to: every tool whose side_effects != none AND requires_sandbox: true.
+  # -----------------------------------------------------------------------------------
+  - governance_profile_id: side_effecting_tool_governance
+    scope: tool
+    status: canonical
+    purpose: >-
+      Mandate the doc 19 §10 controls for any tool with side effects: sandbox required, timeout
+      required, allowed callers enforced, trace required, risk level declared. Applies the
+      registry sandbox_execution_governance posture to every side-effecting tool so a side-effecting
+      call cannot run outside a sandbox, without a timeout, or without a trace.
+    binds_registry_profiles: [tool_call_governance, sandbox_execution_governance]
+    applies_to:
+      selector: side_effects_not_none
+      side_effect_classes: [external_network, artifact_write, evidence_write, memory_write, file_write, code_execution, state_mutation]
+      tools:
+        # Derived from tools_registry.yaml where requires_sandbox: true. (Side-effecting set.)
+        - artifact_writer            # writes_artifact_store (medium)
+        - evidence_writer            # writes_evidence_store (medium)
+        - repo_writer                # writes_repository (high)
+        - test_runner                # executes_code_in_sandbox (high)
+        - test_writer                # writes_test_files (medium)
+        - defect_tracker             # writes_defect_store (medium)
+        - diagram_generator          # writes_artifact_store (low)
+        - scanner_runner             # executes_scanners_in_sandbox (high)
+        - dependency_scanner         # executes_scanners_in_sandbox (high)
+        - sbom_generator             # writes_artifact_store (medium)
+        - license_checker            # writes_artifact_store (medium)
+        - prompt_injection_tester    # executes_adversarial_probes_in_sandbox (high)
+        - tool_misuse_tester         # executes_adversarial_probes_in_sandbox (high)
+        - context_poisoning_tester   # executes_adversarial_probes_in_sandbox (high)
+        - evidence_consistency_checker  # writes_artifact_store (medium)
+        - eval_runner                # executes_evals_in_sandbox (high)
+        - contract_test_runner       # executes_tests_in_sandbox (high)
+        - migration_checker          # executes_migration_in_sandbox (high)
+        - compliance_matrix_builder  # writes_artifact_store (medium)
+        - accessibility_auditor      # writes_artifact_store (medium)
+        - benchmark_runner           # executes_benchmarks_in_sandbox (high)
+        - restore_test_runner        # executes_restore_in_sandbox (high)
+        - web_search                 # external_network_read (medium)
+        - web_fetch                  # external_network_read (medium)
+        - web_scrape                 # external_network_read (medium)
+        - file_write                 # writes_file_in_sandbox (high)
+        - shell_exec                 # executes_shell_in_sandbox (high)
+        - process_run                # executes_process_in_sandbox (high)
+        - memory_write               # writes_memory_store (high)
+        - runbook_executor           # executes_runbook_in_sandbox (high)
+        - rollback_executor          # executes_rollback_in_sandbox (high)
+        - source_reliability_checker # writes_evidence_store (medium)
+        - claim_mapper               # writes_evidence_store (medium)
+        - activation_flag_controller # mutates_activation_state (high)
+        - cohort_selector            # writes_artifact_store (medium)
+        - incident_intake_tool       # writes_artifact_store (medium)
+        - severity_classifier_tool   # writes_artifact_store (medium)
+        - mitigation_plan_builder    # writes_artifact_store (medium)
+        - postmortem_builder         # writes_artifact_store (medium)
+        - skill_semantic_extractor   # writes_artifact_store (medium)
+        - reference_index_builder    # writes_artifact_store (low)
+        - skill_binding_proposer     # writes_artifact_store (medium)
+        - memory_ingestor            # writes_memory_store (medium)
+        - source_classifier          # writes_artifact_store (medium)
+        - summary_writer             # writes_artifact_store (medium)
+        - validity_window_calculator # writes_artifact_store (medium)
+        - retrieval_profile_writer   # writes_memory_store (high)
+        - redaction_tool             # writes_artifact_store (high)
+        - provenance_recorder        # writes_evidence_store (medium)
+    severity_default: blocker
+    rules:
+      - rule_id: side_effect_requires_sandbox
+        description: >-
+          A side-effecting tool MUST execute inside a sandbox; running outside the sandbox is a
+          high-risk-default-deny violation. (doc 19 §10 sandbox requirement; tools_registry requires_sandbox: true.)
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].side_effects != none
+        pass_condition: execution_context.sandbox == true
+        fail_condition: execution_context.sandbox == false
+        on_fail: block
+        rework_route: deny_and_require_sandboxed_reinvocation
+        evidence_required: false
+        trace_required: true
+      - rule_id: side_effect_requires_timeout
+        description: >-
+          A side-effecting tool MUST run under an explicit timeout bound (no unbounded execution).
+          (doc 19 §10 timeout requirement; 03 §9 timeout required.)
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].side_effects != none
+        pass_condition: execution_context.timeout IS_SET AND execution_context.timeout <= tool_timeout_ceiling
+        fail_condition: execution_context.timeout IS_UNSET
+        on_fail: block
+        rework_route: deny_and_require_bounded_reinvocation
+        evidence_required: false
+        trace_required: true
+      - rule_id: side_effect_requires_allowed_caller
+        description: >-
+          Enforce allowed_callers for side-effecting tools (least privilege). Restates the universal
+          rule at blocker severity for the side-effecting set (doc 19 §10 allowed callers).
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].side_effects != none
+        pass_condition: caller_id IN tools_registry.tools[tool_id].allowed_callers
+        fail_condition: caller_id NOT IN tools_registry.tools[tool_id].allowed_callers
+        on_fail: block
+        rework_route: deny_and_return_to_caller_stage
+        evidence_required: false
+        trace_required: true
+      - rule_id: side_effect_requires_trace
+        description: >-
+          A side-effecting call MUST emit a tool-call trace recording inputs ref, sandbox, timeout,
+          outcome, and side-effect target (doc 19 §10 trace requirement). Trace != Evidence.
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].side_effects != none
+        pass_condition: tool_call_trace_record EXISTS AND records(sandbox, timeout, side_effect_target)
+        fail_condition: tool_call_trace_record MISSING OR incomplete
+        on_fail: block
+        rework_route: re_emit_trace_or_deny
+        evidence_required: false
+        trace_required: true
+      - rule_id: side_effect_risk_level_declared
+        description: >-
+          The tool MUST declare a risk_level (low|medium|high) in tools_registry.yaml; high-risk
+          side-effecting tools additionally inherit profile (3) high_risk_tool_governance.
+          (doc 19 §10 risk level.)
+        severity: major
+        required_when: tools_registry.tools[tool_id].side_effects != none
+        pass_condition: tools_registry.tools[tool_id].risk_level IN [low, medium, high]
+        fail_condition: tools_registry.tools[tool_id].risk_level IS_UNSET
+        on_fail: route_to_rework
+        rework_route: registry_authoring_fix
+        evidence_required: false
+        trace_required: true
+    required_evidence:
+      - evidence_item_schema            # side-effecting tools that emit a gate-relevant result attach evidence (Decision-Evidence != Tool-Trace)
+    required_trace:
+      - tool_call_trace_schema
+    owner: nexus_tools_governance
+    escalation: nexus_platform_governance_council
+    notes: >-
+      The doc 19 §10 MUST-set for side-effecting tools. tool_timeout_ceiling is the per-class ceiling
+      in timeout_policy below. Read-only tools (profile 1 only) are intentionally excluded here.
+
+  # -----------------------------------------------------------------------------------
+  # 3) HIGH-RISK TOOLS: default-deny + stronger trace/evidence (03 §3 high_risk_action_default_deny).
+  # applies_to: every tool with risk_level: high in tools_registry.yaml.
+  # -----------------------------------------------------------------------------------
+  - governance_profile_id: high_risk_tool_governance
+    scope: tool
+    status: canonical
+    purpose: >-
+      Apply the global high-risk-action default-deny posture (03 §3) at the tool scope: a high-risk
+      tool call is denied unless explicitly permitted (allowed caller + in-scope + sandbox + timeout
+      + trace), and it must attach evidence when its output feeds a gate. Covers every risk_level:
+      high tool (executors, code/scanner/eval/benchmark/migration/restore runners, repo/file writers,
+      durable-memory writers, the activation controller).
+    binds_registry_profiles: [high_risk_action_default_deny, sandbox_execution_governance, tool_call_governance]
+    applies_to:
+      selector: risk_level_high
+      tools:
+        - repo_writer
+        - test_runner
+        - scanner_runner
+        - dependency_scanner
+        - prompt_injection_tester
+        - tool_misuse_tester
+        - context_poisoning_tester
+        - eval_runner
+        - contract_test_runner
+        - migration_checker
+        - benchmark_runner
+        - restore_test_runner
+        - file_write
+        - shell_exec
+        - process_run
+        - memory_write
+        - runbook_executor
+        - rollback_executor
+        - activation_flag_controller
+        - retrieval_profile_writer
+        - redaction_tool
+    severity_default: blocker
+    rules:
+      - rule_id: high_risk_default_deny
+        description: >-
+          High-risk tool calls are DENIED by default and permitted only when caller is allowed, the
+          call is in declared scope, and sandbox+timeout+trace are satisfied (03 §3).
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].risk_level == high
+        pass_condition: caller_allowed AND in_declared_scope AND sandbox==true AND timeout_set AND trace_emitted
+        fail_condition: NOT (caller_allowed AND in_declared_scope AND sandbox==true AND timeout_set AND trace_emitted)
+        on_fail: block
+        rework_route: deny_and_return_to_caller_stage
+        evidence_required: false
+        trace_required: true
+      - rule_id: high_risk_no_production_target
+        description: >-
+          A high-risk tool MUST NOT act on production/non-sandboxed targets (no deploy, no prod data,
+          no live load test). Restates each tool's forbidden_usage at the profile level.
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].risk_level == high
+        pass_condition: side_effect_target.environment == sandbox
+        fail_condition: side_effect_target.environment IN [production, live, non_sandboxed]
+        on_fail: block
+        rework_route: deny_and_alert_owner
+        evidence_required: false
+        trace_required: true
+      - rule_id: high_risk_output_requires_evidence
+        description: >-
+          When a high-risk tool's output feeds a gate decision, it MUST attach an evidence record
+          (evidence_required). Decision-Evidence is distinct from the call's Tool-Trace.
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].risk_level == high AND output_feeds_gate
+        pass_condition: evidence_item_record EXISTS AND linked_to_gate
+        fail_condition: output_feeds_gate AND evidence_item_record MISSING
+        on_fail: route_to_rework
+        rework_route: produce_evidence_then_re_evaluate_gate
+        evidence_required: true
+        trace_required: true
+    required_evidence:
+      - evidence_item_schema
+    required_trace:
+      - tool_call_trace_schema
+    owner: nexus_tools_governance
+    escalation: nexus_platform_governance_council
+    notes: >-
+      Inherits profiles (1)+(2) and adds default-deny + no-production-target + evidence-on-gate.
+      binds_registry_profiles uses the first-class id high_risk_action_default_deny.
+
+  # -----------------------------------------------------------------------------------
+  # 4) NO-SECRET / REDACTION: tools that could leak secrets or PII outbound or into stores.
+  # applies_to: tools that carry global_no_secret_policy (alias of no_secret_exposure) or
+  # raw_credential_redaction in tools_registry.yaml — egress tools, OS write/exec primitives,
+  # repo/evidence/memory/artifact writers, and the dedicated redaction_tool.
+  # -----------------------------------------------------------------------------------
+  - governance_profile_id: tool_no_secret_exposure_governance
+    scope: tool
+    status: canonical
+    purpose: >-
+      Prevent secret/credential/PII leakage through tool calls (03 §3 no_secret_exposure +
+      raw_credential_redaction): no secrets in outbound network requests, no secrets committed to
+      the repo/artifact/evidence/memory stores, and sensitive content redacted before storage or
+      retrieval exposure. The tool-scope expression of the global no-secret + redaction policies.
+    binds_registry_profiles: [no_secret_exposure, raw_credential_redaction]
+    applies_to:
+      selector: carries_no_secret_or_redaction_profile
+      tools:
+        # egress (must not send secrets outbound):
+        - web_search
+        - web_fetch
+        - web_scrape
+        # persistent writers (must not commit secrets):
+        - artifact_writer
+        - evidence_writer
+        - repo_writer
+        - file_write
+        - memory_write
+        - retrieval_profile_writer
+        # OS execution primitives (must not read/emit raw secrets):
+        - shell_exec
+        - process_run
+        # dedicated redaction control point:
+        - redaction_tool
+    severity_default: blocker
+    rules:
+      - rule_id: no_secret_in_outbound_request
+        description: Outbound network tool calls (egress) MUST NOT transmit secrets/credentials/PII.
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].side_effects == external_network_read
+        pass_condition: outbound_payload CONTAINS_NO secret_or_credential_or_pii
+        fail_condition: outbound_payload CONTAINS secret_or_credential_or_pii
+        on_fail: block
+        rework_route: redact_then_reinvoke_or_deny
+        evidence_required: false
+        trace_required: true
+      - rule_id: no_secret_persisted
+        description: Persistent writers MUST NOT write raw secrets/credentials into any store (repo/artifact/evidence/memory/file).
+        severity: blocker
+        required_when: side_effect_class IN [file_write, artifact_write, evidence_write, memory_write]
+        pass_condition: write_payload CONTAINS_NO raw_secret_or_credential
+        fail_condition: write_payload CONTAINS raw_secret_or_credential
+        on_fail: block
+        rework_route: redact_then_rewrite_or_deny
+        evidence_required: false
+        trace_required: true
+      - rule_id: sensitive_content_redacted_before_store_or_retrieval
+        description: >-
+          Sensitive content MUST be redacted before summarization, storage, or retrieval exposure.
+          redaction_tool is the control point; unredacted sensitive content is a blocker
+          (mirrors redaction_tool forbidden_usage / unredacted_sensitive_content_detected).
+        severity: blocker
+        required_when: data_classification == sensitive AND action IN [summarize, store, expose_for_retrieval]
+        pass_condition: redaction_applied == true
+        fail_condition: redaction_applied == false
+        on_fail: block
+        rework_route: route_to_redaction_tool
+        evidence_required: false
+        trace_required: true
+    required_evidence: []
+    required_trace:
+      - tool_call_trace_schema
+    owner: nexus_tools_governance
+    escalation: nexus_security_privacy_governance
+    notes: >-
+      no_secret_exposure is the first-class global id; global_no_secret_policy (tools_registry.yaml
+      spelling) is its registry alias. Complements (does not replace) the global no_secret_exposure
+      profile in configs/nexus-ai/governance/global.yaml.
+
+  # -----------------------------------------------------------------------------------
+  # 5) OS SYSTEM-ACCESS PRIMITIVES: the OS Core Ability exposed tools inherit system_access_governance.
+  # applies_to: the OS filesystem/shell/process write+exec primitives (file_write/shell_exec/process_run)
+  # which tools_registry.yaml binds with system_access_governance. file_read is read-only (profile 1).
+  # -----------------------------------------------------------------------------------
+  - governance_profile_id: os_system_access_tool_governance
+    scope: tool
+    status: canonical
+    purpose: >-
+      Apply the OS Core Ability system-access bounds (03 §7 system_access_governance) to the OS
+      filesystem/shell/process WRITE+EXEC primitives: no silent mutation, no destructive action
+      without an explicit policy gate + evidence, sandbox + timeout + trace mandatory. The OS
+      ability is NOT an agent; these are its exposed_tools (D-014) and the callers are Agent roles.
+    binds_registry_profiles: [system_access_governance, sandbox_execution_governance, high_risk_action_default_deny]
+    applies_to:
+      selector: os_write_exec_primitives
+      provided_by_core_ability: OS         # label only; OS is a Core Ability, never an allowed_caller
+      tools:
+        - file_write                       # writes_file_in_sandbox (high)
+        - shell_exec                       # executes_shell_in_sandbox (high)
+        - process_run                      # executes_process_in_sandbox (high)
+    severity_default: blocker
+    rules:
+      - rule_id: no_silent_mutation
+        description: An OS write/exec primitive MUST emit a trace; silent environment/repo mutation is forbidden (OS no_silent_mutation).
+        severity: blocker
+        required_when: tool_id IN [file_write, shell_exec, process_run]
+        pass_condition: tool_call_trace_record EXISTS for mutation
+        fail_condition: mutation_occurred AND tool_call_trace_record MISSING
+        on_fail: block
+        rework_route: re_emit_trace_or_deny
+        evidence_required: false
+        trace_required: true
+      - rule_id: no_destructive_action_without_gate
+        description: >-
+          Destructive OS actions require an explicit policy gate + evidence before execution
+          (OS no_destructive_action_without_gate). No production deploy via OS primitives.
+        severity: blocker
+        required_when: action_class == destructive
+        pass_condition: policy_gate_passed == true AND evidence_item_record EXISTS
+        fail_condition: action_class == destructive AND (policy_gate_passed == false OR evidence_item_record MISSING)
+        on_fail: block
+        rework_route: require_gate_and_evidence_then_re_evaluate
+        evidence_required: true
+        trace_required: true
+    required_evidence:
+      - evidence_item_schema
+    required_trace:
+      - tool_call_trace_schema
+    owner: nexus_tools_governance
+    escalation: nexus_platform_governance_council
+    notes: >-
+      Mirrors the OS ability bindings on file_write/shell_exec/process_run in tools_registry.yaml.
+      Higher-level runners (test_runner/scanner_runner/eval_runner/benchmark_runner/restore_test_runner/
+      migration_checker/contract_test_runner) execute ON TOP of these primitives and inherit profiles (2)+(3).
+
+  # -----------------------------------------------------------------------------------
+  # 6) READ-ONLY TOOLS: traced but not sandboxed, not evidence-producing.
+  # applies_to: every tool with side_effects: none (requires_sandbox: false).
+  # They still bind tool_call_governance (profile 1) and emit a trace; they do NOT need a sandbox.
+  # -----------------------------------------------------------------------------------
+  - governance_profile_id: read_only_tool_governance
+    scope: tool
+    status: canonical
+    purpose: >-
+      Govern side-effect-free read/analysis/query tools: permission-scoped and traced (profile 1)
+      but NOT sandboxed and NOT themselves producing gate evidence. A read-only tool informs a
+      decision; the decision's evidence is written by a separate evidence-writing tool. Asserts that
+      these tools MUST NOT mutate state (any mutation reclassifies the tool as side-effecting).
+    binds_registry_profiles: [tool_call_governance]
+    applies_to:
+      selector: side_effects_none
+      tools:
+        - evidence_reader
+        - repo_reader
+        - repo_diff_reader
+        - coverage_parser
+        - policy_query
+        - requirements_trace_checker
+        - agent_permission_auditor
+        - resource_budget_checker
+        - cost_estimator
+        - quota_policy_checker
+        - backup_plan_checker
+        - dr_runbook_checker
+        - package_reputation_checker
+        - data_inventory_checker
+        - retention_policy_checker
+        - deletion_flow_checker
+        - tenant_isolation_checker
+        - ux_flow_checker
+        - contrast_checker
+        - rollback_validator
+        - observability_plan_checker
+        - incident_runbook_checker
+        - file_read
+        - memory_search
+        - memory_summarize
+        - context_recall
+        - skill_package_reader
+        - telemetry_reader
+        - monitoring_query_tool
+        - alert_correlator
+        - script_static_analyzer
+        - expiration_scanner
+    severity_default: major
+    rules:
+      - rule_id: read_only_no_mutation
+        description: >-
+          A read-only tool MUST NOT mutate any store/state. Any write reclassifies it as
+          side-effecting (then profiles 2/3 apply). Guards against silent scope creep in the registry.
+        severity: blocker
+        required_when: tools_registry.tools[tool_id].side_effects == none
+        pass_condition: invocation_effect == read_only
+        fail_condition: invocation_effect != read_only
+        on_fail: block
+        rework_route: reclassify_tool_and_apply_side_effecting_governance
+        evidence_required: false
+        trace_required: true
+      - rule_id: read_only_no_sandbox_required
+        description: >-
+          Read-only tools do not require a sandbox (requires_sandbox: false). This rule records the
+          POSITIVE assertion so a read-only call is not falsely blocked for lacking a sandbox.
+        severity: informational
+        required_when: tools_registry.tools[tool_id].side_effects == none
+        pass_condition: sandbox_requirement == false
+        fail_condition: sandbox_requirement == true   # would indicate a misclassification
+        on_fail: record_only
+        rework_route: none
+        evidence_required: false
+        trace_required: true
+      - rule_id: read_only_trace_emitted
+        description: Even read-only calls emit a tool-call trace (global trace_required).
+        severity: major
+        required_when: tools_registry.tools[tool_id].side_effects == none
+        pass_condition: tool_call_trace_record EXISTS
+        fail_condition: tool_call_trace_record MISSING
+        on_fail: warn
+        rework_route: re_emit_trace
+        evidence_required: false
+        trace_required: true
+    required_evidence: []
+    required_trace:
+      - tool_call_trace_schema
+    owner: nexus_tools_governance
+    escalation: nexus_platform_governance_council
+    notes: >-
+      script_static_analyzer is included here (side_effects: none, requires_sandbox: false — STATIC
+      analysis, no execution) but is flagged in per_tool_overrides: it ingests UNTRUSTED skill scripts,
+      so a read-time isolation caveat is recorded. expiration_scanner is read-only (the mutation is
+      retrieval_profile_writer's job).
+
+# =====================================================================================
+# TIMEOUT POLICY (doc 19 §10 "timeout" requirement). Per side-effect class ceilings that
+# rule side_effect_requires_timeout / high_risk rules reference as tool_timeout_ceiling.
+# Logical bounds for later formalization (blueprint only; not runtime values).
+# =====================================================================================
+timeout_policy:
+  applies_to: side_effecting_tools          # read-only tools are not execution-bounded here
+  ceilings_by_side_effect_class:
+    external_network:   { default: short,        ceiling: medium }   # network egress: keep short
+    artifact_write:     { default: short,        ceiling: medium }
+    evidence_write:     { default: short,        ceiling: medium }
+    memory_write:       { default: short,        ceiling: medium }
+    file_write:         { default: short,        ceiling: medium }
+    code_execution:     { default: medium,       ceiling: long }     # runners/executors may legitimately run longer
+    state_mutation:     { default: short,        ceiling: short }    # activation toggles must be fast + bounded
+  notes: >-
+    Symbolic tiers (short < medium < long) intentionally not pinned to seconds in this blueprint.
+    Every side-effecting call MUST set a timeout <= the ceiling for its class (rule side_effect_requires_timeout).
+
+# =====================================================================================
+# PER-TOOL OVERRIDES / SPECIAL CASES. Where a tool needs a binding beyond its class defaults,
+# or is a notable boundary case, it is recorded here. These do NOT contradict the registry;
+# they make a registry nuance evaluable.
+# =====================================================================================
+per_tool_overrides:
+
+  - tool_id: repo_writer
+    applies_profiles: [tool_call_permission_governance, side_effecting_tool_governance, high_risk_tool_governance, tool_no_secret_exposure_governance]
+    override:
+      single_caller: engineering_agent          # registry allowed_callers == [engineering_agent]
+      authoring_only: true                       # authors a changeset; NO merge, NO deploy
+      no_self_approval_downstream: true          # approval is the separate code_review stage (no_self_approval), not this tool
+    notes: >-
+      no_self_approval is a STAGE/pipeline gate (code_review owner_agent: code_reviewer_agent), not a
+      tool rule — repo_writer only authors. Recorded so the boundary (authoring != approving) is explicit.
+
+  - tool_id: activation_flag_controller
+    applies_profiles: [tool_call_permission_governance, side_effecting_tool_governance, high_risk_tool_governance]
+    override:
+      mutates_live_state: mutates_activation_state
+      requires_upstream_decision_gate: true      # preview/pilot/public scope changes gated by activation-pipeline decision gates
+    notes: >-
+      Only side-effect class state_mutation in the registry. The activation pipeline's
+      owner_activation_decision_gate / preview/pilot evidence gates govern WHEN a scope change is
+      permitted; this tool-scope profile governs HOW the call must run (sandbox+timeout+trace+deny-default).
+
+  - tool_id: script_static_analyzer
+    applies_profiles: [tool_call_permission_governance, read_only_tool_governance]
+    override:
+      analyzes_untrusted_input: skill_scripts    # ingests untrusted skill package scripts
+      execution: none                            # STATIC only — no execution, hence requires_sandbox: false in registry
+      read_time_isolation_recommended: true      # caveat: untrusted-input parsing should still be memory/parse-isolated
+    notes: >-
+      Boundary case: read-only by side_effects but consumes untrusted content. Registry correctly sets
+      requires_sandbox: false (no execution). Flagged for Phase E review (OQ-TOOLGOV-2) on whether a
+      parse-isolation requirement should be added without reclassifying it as side-effecting.
+
+  - tool_id: redaction_tool
+    applies_profiles: [tool_call_permission_governance, side_effecting_tool_governance, high_risk_tool_governance, tool_no_secret_exposure_governance]
+    override:
+      is_secret_control_point: true              # the designated redaction control point (rule sensitive_content_redacted_before_store_or_retrieval routes here)
+    notes: High-risk writer AND the no-secret control point; binds both side-effecting and no-secret governance.
+
+  - tool_id: retrieval_profile_writer
+    applies_profiles: [tool_call_permission_governance, side_effecting_tool_governance, high_risk_tool_governance, tool_no_secret_exposure_governance]
+    override:
+      mutates_durable_memory: writes_memory_store
+    notes: High-risk durable-memory writer; same posture as memory_write/memory_ingestor but high risk.
+
+  - tool_id: provenance_recorder
+    applies_profiles: [tool_call_permission_governance, side_effecting_tool_governance]
+    override:
+      writes_evidence: writes_evidence_store     # provenance seed is evidence (Evidence family), not trace
+    notes: >-
+      Writes evidence (provenance seed) — Decision-Evidence != Tool-Trace. Many callers; least-privilege
+      enforced via the registry allowed_callers list (knowledge/memory agents).
+
+# =====================================================================================
+# COVERAGE LEDGER — every registry tool is covered by >=1 profile (doc 19 §14/§15 evaluable).
+# Read-only (profile 6) vs side-effecting (profiles 2/3/4/5) partition is exhaustive over 81 tools.
+# =====================================================================================
+coverage:
+  total_tools_in_registry: 81
+  universal_profile_applies_to_all: tool_call_permission_governance     # profile 1 covers all 81
+  read_only_tools_count: 32            # profile 6 (side_effects: none)
+  side_effecting_tools_count: 49       # profiles 2 (+3 high / +4 no-secret / +5 OS where applicable)
+  high_risk_tools_count: 21            # profile 3 (risk_level: high)
+  partition_check: read_only_count + side_effecting_count == total_tools_in_registry   # 32 + 49 == 81
+  every_tool_has_at_least_one_profile: true
+  every_side_effecting_tool_defines_sandbox_timeout_callers_trace_risk: true            # doc 19 §10 MUST
+
+# =====================================================================================
+# VALIDATION SELF-CHECK (doc 19 §14). Asserted against THIS file's contents.
+# =====================================================================================
+validation:
+  every_profile_references_known_scope: true        # all scope: tool (a known scope in scope_vocabulary)
+  every_rule_has_severity: true                      # all §5 rules carry severity
+  every_blocker_rule_has_on_fail: true               # all blocker rules have on_fail (block | route_to_rework)
+  evidence_trace_distinction_preserved: true         # required_evidence (evidence_*) vs required_trace (tool_call_trace_schema) never merged
+  no_plugin_governance_introduced: true              # no plugin concept anywhere
+  side_effecting_tools_define_doc19_s10_controls: true   # sandbox + timeout + allowed callers + trace + risk
+  governance_not_audit: true                         # this file = governance; audit schema bodies live in configs/nexus-ai/audit/
+
+# =====================================================================================
+# OPEN QUESTIONS — carried to the Phase E governance/audit readiness review (doc 19 §13 review doc).
+# =====================================================================================
+open_questions:
+  - id: OQ-TOOLGOV-1
+    question: >-
+      tool_call_trace_schema is the trace name bound by EVERY tool in tools_registry.yaml and is the
+      required_trace throughout this file, but it is NOT YET defined in the Phase C audit registry
+      (configs/nexus-ai/audit_schemas.yaml) — the existing cross-pipeline trace is stage_gate_trace_schema.
+      The Phase E trace-schema sibling task (configs/nexus-ai/audit/trace_schemas/) must author
+      tool_call_trace_schema (a trace_schema with applies_to: tool calls; producer: invoking agent;
+      consumer: audit/governance), keeping it in the trace_schemas dir (Evidence != Trace). Until then
+      stage_gate_trace_schema is the fallback recorded in referenced_audit_schemas.
+  - id: OQ-TOOLGOV-2
+    question: >-
+      script_static_analyzer ingests UNTRUSTED skill-package scripts but is side_effects: none /
+      requires_sandbox: false (static, no execution). Phase E should decide whether to add a
+      parse/memory-isolation requirement for untrusted-input read tools WITHOUT reclassifying them as
+      side-effecting (i.e., a third posture between read-only and sandboxed-execution).
+  - id: OQ-TOOLGOV-3
+    question: >-
+      timeout_policy uses symbolic tiers (short/medium/long) rather than concrete bounds, per the
+      blueprint-only constraint. Phase E (or the runtime refactor plan, doc 20/21) must pin concrete
+      per-class timeout ceilings before any executor uses these as enforceable limits.
+  - id: OQ-TOOLGOV-4
+    question: >-
+      diagram_generator and reference_index_builder are risk_level: low but side-effecting
+      (writes_artifact_store). They correctly require sandbox+trace under profile (2) but are excluded
+      from high_risk_tool_governance (profile 3). Confirm in Phase E that low-risk artifact writers
+      need only profile (2), not default-deny — consistent with the registry risk_level: low.

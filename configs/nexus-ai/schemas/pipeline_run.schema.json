@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-ai/configs/nexus-ai/schemas/pipeline_run.schema.json",
+  "title": "Nexus AI Pipeline Run Contract",
+  "description": "Machine-readable JSON Schema (draft 2020-12) for a Nexus AI Pipeline Run, derived from docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 3 (Pipeline Run Contract) and configs/nexus-ai/pipeline_contract_standard.yaml (pipeline_run_required_fields). Locked decisions enforced: no 'plugin' concept anywhere; owner_agent is always a snake_case pipeline Agent ROLE and is never a Core Ability; embedded stage_contract objects must declare all 7 usage-mapping arrays. Documentation/blueprint only -- not runtime code.",
+  "type": "object",
+  "$comment": "Core Abilities (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS) are NOT agents and NEVER valid owner_agent values. owner_team=sdlc_team, team_lead=sdlc_team_lead for the SDLC pipeline. Skill != Tool; Governance != Audit; Evidence != Trace.",
+
+  "$defs": {
+    "snakeCaseId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1
+    },
+
+    "coreAbility": {
+      "description": "Closed set of Core Abilities. Core Abilities are an independent capability layer -- never agents, never team members, never owner_agent.",
+      "type": "string",
+      "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+    },
+
+    "forbiddenPlugin": {
+      "$comment": "LOCKED: Plugin is cancelled. No 'plugin' property (any casing) may appear at any object level. Mirrors the sibling schemas' [Pp][Ll][Uu][Gg][Ii][Nn] guard.",
+      "not": { "required": ["plugin"] },
+      "propertyNames": { "not": { "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]" } }
+    },
+
+    "ownerAgentRole": {
+      "description": "owner_agent is always a pipeline Agent ROLE in snake_case (e.g. requirements_agent). It must NEVER be a Core Ability (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS) in any casing.",
+      "allOf": [
+        { "$ref": "#/$defs/snakeCaseId" },
+        {
+          "not": {
+            "enum": [
+              "Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS",
+              "supervisor", "coder", "vision", "audio", "creative", "memory", "web", "os"
+            ]
+          }
+        }
+      ]
+    },
+
+    "coreAbilityArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/coreAbility" },
+      "uniqueItems": true
+    },
+
+    "snakeCaseArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/snakeCaseId" },
+      "uniqueItems": true
+    },
+
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "terminalOrStage": {
+      "$comment": "Routing target: a known stage_id (snake_case) or a canonical terminal.",
+      "type": "string",
+      "anyOf": [
+        { "$ref": "#/$defs/snakeCaseId" },
+        { "enum": ["done", "relevant_failed_stage", "block_and_report"] }
+      ]
+    },
+
+    "stageContract": {
+      "description": "Embedded Pipeline Stage Contract. Mirrors the STAGE CONTRACT TEMPLATE key order. All 7 usage-mapping arrays are REQUIRED (may be empty []). owner_agent is a role, never a Core Ability. Plugin properties are forbidden.",
+      "$comment": "Kept self-contained so this file validates standalone. It is the run-embedded counterpart of the canonical standalone schema configs/nexus-ai/schemas/stage_contract.schema.json (07 section 4); a bundler may replace this with a $ref to that $id. Constraints here are intentionally a subset/superset-compatible mirror of that schema.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }],
+      "properties": {
+        "stage_id": { "$ref": "#/$defs/snakeCaseId" },
+        "name": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "applicability_decision": {
+          "description": "Present only on CONDITIONAL stages; appears right after purpose. Must carry a required_when expression.",
+          "type": "object",
+          "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }],
+          "properties": {
+            "decision": { "type": "string" },
+            "required_when": { "type": "string", "minLength": 1 },
+            "produced_by": { "$ref": "#/$defs/ownerAgentRole" },
+            "on_not_applicable": { "type": "object" }
+          },
+          "required": ["required_when"]
+        },
+        "owner_team": { "$ref": "#/$defs/snakeCaseId" },
+        "team_lead": { "$ref": "#/$defs/snakeCaseId" },
+        "owner_agent": { "$ref": "#/$defs/ownerAgentRole" },
+        "sub_agents": { "$ref": "#/$defs/snakeCaseArray" },
+        "uses_core_abilities": { "$ref": "#/$defs/coreAbilityArray" },
+        "uses_skills": { "$ref": "#/$defs/stringArray" },
+        "uses_tools": { "$ref": "#/$defs/snakeCaseArray" },
+        "uses_governance_profiles": { "$ref": "#/$defs/snakeCaseArray" },
+        "uses_audit_schemas": { "$ref": "#/$defs/snakeCaseArray" },
+        "uses_model_provider_profiles": { "$ref": "#/$defs/snakeCaseArray" },
+        "uses_context_memory_profiles": { "$ref": "#/$defs/snakeCaseArray" },
+        "inputs": { "$ref": "#/$defs/stringArray" },
+        "outputs": { "$ref": "#/$defs/stringArray" },
+        "evidence": { "$ref": "#/$defs/stringArray" },
+        "trace": { "$ref": "#/$defs/stringArray" },
+        "gates": { "$ref": "#/$defs/stringArray" },
+        "on_pass": { "$ref": "#/$defs/terminalOrStage" },
+        "on_fail": { "$ref": "#/$defs/terminalOrStage" },
+        "rework_route": { "$ref": "#/$defs/terminalOrStage" },
+        "blocking_conditions": { "$ref": "#/$defs/stringArray" },
+        "optional_conditions": { "$ref": "#/$defs/stringArray" },
+        "conditional_required_gates": { "type": "array" },
+        "max_iterations": { "type": "integer", "minimum": 1, "default": 3 }
+      },
+      "required": [
+        "stage_id",
+        "name",
+        "purpose",
+        "owner_team",
+        "team_lead",
+        "owner_agent",
+        "sub_agents",
+        "uses_core_abilities",
+        "uses_skills",
+        "uses_tools",
+        "uses_governance_profiles",
+        "uses_audit_schemas",
+        "uses_model_provider_profiles",
+        "uses_context_memory_profiles",
+        "inputs",
+        "outputs",
+        "evidence",
+        "trace",
+        "gates",
+        "on_pass",
+        "on_fail",
+        "rework_route",
+        "blocking_conditions"
+      ]
+    }
+  },
+
+  "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }],
+
+  "properties": {
+    "run_id": {
+      "description": "Unique identifier for this pipeline run.",
+      "type": "string",
+      "minLength": 1
+    },
+    "pipeline_id": {
+      "description": "Identifier of the pipeline definition this run executes (snake_case, e.g. sdlc_pipeline).",
+      "$ref": "#/$defs/snakeCaseId"
+    },
+    "pipeline_version": {
+      "description": "Version of the pipeline definition this run executes.",
+      "type": "string",
+      "minLength": 1
+    },
+    "run_goal": {
+      "description": "The concrete goal/intent of this run.",
+      "type": "string"
+    },
+    "run_status": {
+      "description": "Lifecycle status of the run.",
+      "type": "string",
+      "enum": ["pending", "in_progress", "blocked", "completed", "failed", "cancelled"]
+    },
+    "selected_pipeline": {
+      "description": "The pipeline selected for this run (snake_case pipeline id).",
+      "$ref": "#/$defs/snakeCaseId"
+    },
+    "assigned_team": {
+      "description": "Team assigned to this run. For the SDLC pipeline this is sdlc_team.",
+      "$ref": "#/$defs/snakeCaseId"
+    },
+    "team_lead": {
+      "description": "Team lead role driving the run. For the SDLC pipeline this is sdlc_team_lead (Supervisor is a Core Ability and is NOT the team lead).",
+      "allOf": [
+        { "$ref": "#/$defs/snakeCaseId" },
+        {
+          "not": {
+            "enum": [
+              "Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS",
+              "supervisor", "coder", "vision", "audio", "creative", "memory", "web", "os"
+            ]
+          }
+        }
+      ]
+    },
+    "active_stage": {
+      "description": "stage_id of the currently active stage, or a canonical terminal.",
+      "$ref": "#/$defs/terminalOrStage"
+    },
+    "completed_stages": {
+      "description": "Ordered list of completed stage_ids.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "blocked_stages": {
+      "description": "List of stage_ids currently blocked.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "run_context": {
+      "description": "Run-scoped context / memory state (e.g. references to context-memory profiles such as sdlc_run_context).",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }]
+    },
+    "governance_state": {
+      "description": "Current governance state for the run (active governance profiles, gate posture, policy outcomes). Governance is kept distinct from Audit.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }]
+    },
+    "evidence": {
+      "description": "Evidence items produced by the run (decision evidence). Evidence is DISTINCT from trace.",
+      "type": "array",
+      "items": { "type": "object", "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }] }
+    },
+    "trace": {
+      "description": "Trace items recorded by the run (operation/activation history). Trace is DISTINCT from evidence.",
+      "type": "array",
+      "items": { "type": "object", "allOf": [{ "$ref": "#/$defs/forbiddenPlugin" }] }
+    },
+    "used_core_abilities": {
+      "description": "Core Abilities actually used during the run. Closed set; never includes agents.",
+      "$ref": "#/$defs/coreAbilityArray"
+    },
+    "used_skills": {
+      "description": "Skills actually used during the run (e.g. prism, verification-loop). Skill != Tool.",
+      "$ref": "#/$defs/stringArray"
+    },
+    "used_tools": {
+      "description": "Tools actually invoked during the run (snake_case tool ids). Tool != Skill.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "used_governance_profiles": {
+      "description": "Governance profiles applied during the run.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "used_audit_schemas": {
+      "description": "Audit schemas (evidence/trace) used during the run.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "used_model_provider_profiles": {
+      "description": "Model / provider profiles used during the run.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "used_context_memory_profiles": {
+      "description": "Context / memory profiles used during the run.",
+      "$ref": "#/$defs/snakeCaseArray"
+    },
+    "open_questions": {
+      "description": "Open questions raised during the run (e.g. registry formalization items).",
+      "$ref": "#/$defs/stringArray"
+    },
+    "blocking_findings": {
+      "description": "Findings that block run progression.",
+      "$ref": "#/$defs/stringArray"
+    },
+    "next_action": {
+      "description": "The next action for the run: a target stage_id or a canonical terminal (done, relevant_failed_stage, block_and_report).",
+      "$ref": "#/$defs/terminalOrStage"
+    },
+    "stage_contracts": {
+      "description": "Optional embedded stage contracts referenced by this run. Each must declare all 7 usage-mapping arrays and use a role (never a Core Ability) for owner_agent.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/stageContract" }
+    }
+  },
+
+  "required": [
+    "run_id",
+    "pipeline_id",
+    "pipeline_version",
+    "run_goal",
+    "run_status",
+    "selected_pipeline",
+    "assigned_team",
+    "team_lead",
+    "active_stage",
+    "completed_stages",
+    "blocked_stages",
+    "run_context",
+    "governance_state",
+    "evidence",
+    "trace",
+    "used_core_abilities",
+    "used_skills",
+    "used_tools",
+    "used_governance_profiles",
+    "used_audit_schemas",
+    "used_model_provider_profiles",
+    "used_context_memory_profiles",
+    "open_questions",
+    "blocking_findings",
+    "next_action"
+  ]
+}

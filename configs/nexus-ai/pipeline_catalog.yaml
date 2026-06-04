@@ -1,0 +1,205 @@
+# Nexus AI Orchestration Model — Pipeline Catalog (SUMMARY-ONLY)
+#
+# Machine-readable SUMMARY index of ALL Nexus AI pipelines.
+# Top structure is the Nexus AI Orchestration Model; each pipeline below is one catalog entry.
+#
+# SINGLE SOURCE OF TRUTH (R9 reconciliation):
+#   This catalog is summary-only. The AUTHORITATIVE per-pipeline definition (full Pipeline
+#   Definition Contract — stages, owner_domain, uses_tools, uses_audit_schemas, etc.) lives in
+#   each pipeline's markdown `definition_doc` under docs/ai-sdlc-factory/pipeline-catalog/*.md
+#   (and, for the SDLC Pipeline, in configs/nexus-ai/sdlc_pipeline.yaml + stages/sdlc/*.yaml).
+#   This file MUST NOT re-embed or duplicate that detail. Earlier drafts carried a per-pipeline
+#   `definition_contract` block that diverged from the markdown on stage_count / owner_domain /
+#   uses_tools / uses_audit_schemas; that duplicated detail has been REMOVED so there is exactly
+#   one place each fact is owned. Each entry here only POINTS to its definition_doc.
+#
+# Per-pipeline summary fields (only these):
+#   pipeline_id, name, purpose, status, required_team_type, required_team_lead_role,
+#   stage_count, definition_doc.
+#   stage_count mirrors the authoritative definition_doc (and the README table in
+#   docs/ai-sdlc-factory/pipeline-catalog/README.md §3); it is a convenience index, not a
+#   second source of truth. If a definition_doc changes its stage list, update stage_count here.
+#
+# Locked context (see .memory/0002-locked-decisions.md):
+#   - Plugin is cancelled and is NEVER reintroduced.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are NOT agents.
+#   - owner_agent (in stage contracts) = snake_case Agent role.
+#   - team_lead is a pipeline-specific *_team_lead role, NOT the Supervisor Core Ability.
+#   - Skill != Tool ; Governance != Audit ; Evidence != Trace.
+#   - Shared Registry + Usage Mapping: every shared item a pipeline uses is listed in that
+#     pipeline's definition_doc usage mapping, not duplicated here.
+#
+# Contract source: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (section 2 — Pipeline Definition Contract).
+#
+# Catalog status of THIS file:
+catalog_id: nexus_ai_pipeline_catalog
+catalog_name: Nexus AI Orchestration Model — Pipeline Catalog
+catalog_version: draft-0.2
+catalog_status: draft
+catalog_kind: summary_index   # summary-only; authoritative detail is in each definition_doc
+top_structure: nexus_ai_orchestration_model
+no_plugin: true
+canonical_contract_doc: docs/ai-sdlc-factory/07-pipeline-contract-standard.md
+canonical_contract_section: "2"
+shared_registry_doc: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md
+locked_decisions_doc: .memory/0002-locked-decisions.md
+pipeline_catalog_expansion_plan_doc: docs/ai-sdlc-factory/16-pipeline-catalog-expansion-plan.md
+catalog_index_doc: docs/ai-sdlc-factory/pipeline-catalog/README.md
+
+# Canonical shared skills (prefer these; non-canonical names are flagged in this repo's open questions).
+# Locked semantics: prism = brainstorming/divergence ; verification-loop = bug/defect finding.
+canonical_skills:
+  - prism
+  - verification-loop
+  - sentinel
+  - llm-council
+  - fmea
+  - adr-builder
+  - gap-audit
+  - prompt-fidelity
+  - calibrate
+  - refraction
+  - fermi-decompose
+  - bayesian-update
+
+# Core Abilities are a shared capability layer, NOT agents and NOT teams.
+core_abilities:
+  - Supervisor
+  - Coder
+  - Vision
+  - Audio
+  - Creative
+  - Memory
+  - Web
+  - OS
+
+# ---------------------------------------------------------------------------
+# PIPELINES (each is one catalog entry — SUMMARY ONLY).
+# The full Pipeline Definition Contract (07 §2) for each pipeline lives in its
+# `definition_doc`. This catalog references it; it does not duplicate it.
+# ---------------------------------------------------------------------------
+pipelines:
+
+  # =========================================================================
+  # 1. SDLC PIPELINE — already defined; referenced only, NOT regenerated here.
+  # =========================================================================
+  - pipeline_id: sdlc_pipeline
+    name: SDLC Pipeline
+    purpose: >-
+      Sıfırdan ürün seviyesine yazılım geliştirme sürecini no-human governance ile yürütmek
+      (drive software development from scratch to product grade under no-human governance).
+    status: reference   # stable reference pipeline (most mature); not regenerated in this phase
+    required_team_type: sdlc_team
+    required_team_lead_role: sdlc_team_lead
+    stage_count: 31
+    definition_doc: configs/nexus-ai/sdlc_pipeline.yaml
+
+  # =========================================================================
+  # 2. RESEARCH PIPELINE
+  # =========================================================================
+  - pipeline_id: research_pipeline
+    name: Research Pipeline
+    purpose: >-
+      Kaynaklı araştırma, kaynak güvenilirliği, claim/evidence mapping ve belirsizlik raporu üretmek
+      (produce sourced research with source-reliability scoring, claim/evidence mapping, and an uncertainty report).
+    status: draft
+    required_team_type: research_team
+    required_team_lead_role: research_team_lead
+    stage_count: 10
+    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md
+
+  # =========================================================================
+  # 3. ACTIVATION PIPELINE
+  # =========================================================================
+  - pipeline_id: activation_pipeline
+    name: Activation Pipeline
+    purpose: >-
+      Özellik / capability / pipeline aktivasyonunu staged (preview → pilot → public) şekilde yönetmek
+      (manage staged activation of a feature / capability / pipeline: preview, pilot, public, rollback-ready).
+    status: draft
+    required_team_type: activation_team
+    required_team_lead_role: activation_team_lead
+    stage_count: 7
+    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md
+
+  # =========================================================================
+  # 4. OPERATIONS PIPELINE
+  # =========================================================================
+  - pipeline_id: operations_pipeline
+    name: Operations Pipeline
+    purpose: >-
+      Incident, monitoring, runbook, rollback, postmortem ve operational learning yönetmek
+      (manage incidents, monitoring, runbooks, rollback/fix, postmortems, and operational learning).
+    status: draft
+    required_team_type: operations_team
+    required_team_lead_role: operations_team_lead
+    stage_count: 6
+    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md
+
+  # =========================================================================
+  # 5. SKILL GOVERNANCE PIPELINE
+  # =========================================================================
+  - pipeline_id: skill_governance_pipeline
+    name: Skill Governance Pipeline
+    purpose: >-
+      Skill keşfi, semantic extraction, safety audit, binding, deprecation ve update yönetmek
+      (govern skill discovery, semantic extraction, safety/misuse audit, binding, deprecation, and updates).
+    status: draft
+    required_team_type: skill_governance_team
+    required_team_lead_role: skill_governance_team_lead
+    stage_count: 7   # authoritative definition_doc lists 7 stages (skill_intake..skill_deprecation_update, §1 + §2.1–2.7). README table's "6" is the stale draft-scope value.
+    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+
+  # =========================================================================
+  # 6. KNOWLEDGE / MEMORY PIPELINE
+  # =========================================================================
+  - pipeline_id: knowledge_memory_pipeline
+    name: Knowledge / Memory Pipeline
+    purpose: >-
+      Memory ingestion, summarization, validity, expiration, retrieval profile ve context pack yönetmek
+      (govern memory ingestion, summarization, validity windows, expiration, retrieval profiles, and context packs).
+    status: draft
+    required_team_type: knowledge_team
+    required_team_lead_role: knowledge_team_lead
+    stage_count: 6
+    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md
+
+# ---------------------------------------------------------------------------
+# CANDIDATE PIPELINES (doc 16, section 3 — "Aday / sonraki pipeline'lar").
+# Not yet defined. Listed as catalog placeholders only (no definition_doc yet).
+# ---------------------------------------------------------------------------
+candidate_pipelines:
+  - pipeline_id: content_pipeline
+    name: Content Pipeline
+    purpose: Plan, draft, review, and govern multi-format content production end to end.
+    status: candidate
+
+  - pipeline_id: data_processing_pipeline
+    name: Data Processing Pipeline
+    purpose: Ingest, validate, transform, and quality-gate data sets for downstream use.
+    status: candidate
+
+  - pipeline_id: model_inference_pipeline
+    name: Model / Inference Pipeline
+    purpose: Serve, route, evaluate, and monitor model inference under cost and quality gates.
+    status: candidate
+
+  - pipeline_id: customer_support_pipeline
+    name: Customer Support Pipeline
+    purpose: Triage, resolve, escalate, and learn from customer support interactions.
+    status: candidate
+
+  - pipeline_id: business_strategy_pipeline
+    name: Business / Strategy Pipeline
+    purpose: Frame, analyze, stress-test, and decide on business and strategy questions.
+    status: candidate
+
+# ---------------------------------------------------------------------------
+# Shared Registry + Usage Mapping note:
+#   This catalog is a SUMMARY INDEX. The authoritative existence of each Core Ability, Skill,
+#   Tool, Governance Profile, Audit Schema, Model/Provider Profile, and Context/Memory Profile
+#   is owned by the Shared Registry (configs/nexus-ai/*_registry.yaml, governance_profiles.yaml,
+#   audit_schemas.yaml, model_provider_profiles.yaml, context_memory_profiles.yaml). The USAGE
+#   mapping (which pipeline uses which shared item) is owned by each pipeline's definition_doc.
+#   Neither is duplicated here, so the catalog can never diverge from the definitions it indexes.
+# ---------------------------------------------------------------------------

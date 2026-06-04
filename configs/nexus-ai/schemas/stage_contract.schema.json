@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-ai/configs/nexus-ai/schemas/stage_contract.schema.json",
+  "title": "Nexus AI SDLC Pipeline Stage Contract",
+  "description": "JSON Schema (draft 2020-12) for a single Nexus AI pipeline stage contract. Field set is the Pipeline Stage Contract from docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 4 (mirrored in configs/nexus-ai/pipeline_contract_standard.yaml stage_required_fields), PLUS applicability_decision (conditional stages only), conditional_required_gates, and max_iterations. Locked decisions enforced: no 'plugin' concept anywhere; owner_agent is a snake_case pipeline Agent ROLE string and may never be a Core Ability; all 7 usage-mapping arrays are required (each may be empty []).",
+  "type": "object",
+  "$defs": {
+    "coreAbilityName": {
+      "description": "The 8 canonical Core Abilities. Core Abilities are NOT agents and NOT team members; they may never appear as owner_agent or as an Agent role.",
+      "enum": [
+        "Supervisor",
+        "Coder",
+        "Vision",
+        "Audio",
+        "Creative",
+        "Memory",
+        "Web",
+        "OS"
+      ]
+    },
+    "agentRole": {
+      "description": "A pipeline Agent ROLE: snake_case identifier. Must NOT be one of the 8 Core Abilities (neither the canonical PascalCase form nor a lowercased form).",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "not": {
+        "enum": [
+          "supervisor",
+          "coder",
+          "vision",
+          "audio",
+          "creative",
+          "memory",
+          "web",
+          "os"
+        ]
+      }
+    },
+    "routingTarget": {
+      "description": "A routing destination: either a known stage_id (snake_case) or a canonical terminal (done, relevant_failed_stage, block_and_report).",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "usageArray": {
+      "description": "A Shared Registry + Usage Mapping array. Required to be present even when empty ([]).",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "conditionalRequiredGate": {
+      "description": "A gate that is required only under a condition. Canonical artifacts use three shapes: (a) a bare gate-id string; (b) an object keyed by 'gate_id' with required_when; (c) an object keyed by 'gate' with required_when plus optional severity/attested_by. All three are accepted. Object forms must carry required_when and identify the gate via 'gate' or 'gate_id'. No 'plugin' key is permitted.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "gate_id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+            },
+            "gate": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+            },
+            "required_when": {
+              "type": "string",
+              "minLength": 1
+            },
+            "severity": {
+              "enum": [
+                "blocker",
+                "major",
+                "advisory",
+                "informational"
+              ]
+            }
+          },
+          "required": [
+            "required_when"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "gate_id"
+              ]
+            },
+            {
+              "required": [
+                "gate"
+              ]
+            }
+          ],
+          "propertyNames": {
+            "not": {
+              "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]"
+            }
+          }
+        }
+      ]
+    },
+    "applicabilityDecision": {
+      "description": "Applicability decision for a CONDITIONAL stage. The only field guaranteed across all canonical stage variants is required_when; other keys (decision/decision_artifact, produced_by, evaluated_from, on_not_applicable/when_not_applicable, record_evidence, route, etc.) vary by stage and are permitted. No 'plugin' key is allowed at any depth handled here.",
+      "type": "object",
+      "properties": {
+        "required_when": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "required_when"
+      ],
+      "propertyNames": {
+        "not": {
+          "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]"
+        }
+      }
+    }
+  },
+  "properties": {
+    "stage_id": {
+      "description": "Canonical stage identifier (snake_case).",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "applicability_decision": {
+      "$ref": "#/$defs/applicabilityDecision"
+    },
+    "owner_team": {
+      "description": "Owning team. Canonically sdlc_team for the SDLC pipeline.",
+      "type": "string",
+      "minLength": 1
+    },
+    "team_lead": {
+      "description": "Team lead role. Canonically sdlc_team_lead. Supervisor (a Core Ability) is NOT the team lead.",
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "$ref": "#/$defs/coreAbilityName"
+      }
+    },
+    "owner_agent": {
+      "description": "The single pipeline Agent ROLE that owns this stage. Always a snake_case agent role; NEVER a Core Ability.",
+      "$ref": "#/$defs/agentRole"
+    },
+    "sub_agents": {
+      "description": "Sub-agent roles activated within this stage (snake_case). May be empty.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/agentRole"
+      }
+    },
+    "uses_core_abilities": {
+      "description": "Core Abilities used by this stage. Items should be from the 8 canonical Core Abilities. Required even if empty.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/coreAbilityName"
+      }
+    },
+    "uses_skills": {
+      "$ref": "#/$defs/usageArray"
+    },
+    "uses_tools": {
+      "$ref": "#/$defs/usageArray"
+    },
+    "uses_governance_profiles": {
+      "$ref": "#/$defs/usageArray"
+    },
+    "uses_audit_schemas": {
+      "$ref": "#/$defs/usageArray"
+    },
+    "uses_model_provider_profiles": {
+      "$ref": "#/$defs/usageArray"
+    },
+    "uses_context_memory_profiles": {
+      "$ref": "#/$defs/usageArray"
+    },
+    "inputs": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "outputs": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "evidence": {
+      "description": "Evidence artifacts produced by this stage. Distinct from trace.",
+      "$ref": "#/$defs/stringArray"
+    },
+    "trace": {
+      "description": "Trace items recorded by this stage. Distinct from evidence.",
+      "$ref": "#/$defs/stringArray"
+    },
+    "gates": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "on_pass": {
+      "$ref": "#/$defs/routingTarget"
+    },
+    "on_fail": {
+      "$ref": "#/$defs/routingTarget"
+    },
+    "rework_route": {
+      "$ref": "#/$defs/routingTarget"
+    },
+    "blocking_conditions": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "optional_conditions": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "conditional_required_gates": {
+      "description": "Gates required only under a condition. Array (possibly empty); each item is a bare gate-id string or an object with required_when plus a gate identifier ('gate' or 'gate_id'). See $defs/conditionalRequiredGate.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/conditionalRequiredGate"
+      }
+    },
+    "max_iterations": {
+      "description": "Maximum rework iterations for this stage. Default 3.",
+      "type": "integer",
+      "minimum": 1,
+      "default": 3
+    }
+  },
+  "required": [
+    "stage_id",
+    "name",
+    "purpose",
+    "owner_team",
+    "team_lead",
+    "owner_agent",
+    "sub_agents",
+    "uses_core_abilities",
+    "uses_skills",
+    "uses_tools",
+    "uses_governance_profiles",
+    "uses_audit_schemas",
+    "uses_model_provider_profiles",
+    "uses_context_memory_profiles",
+    "inputs",
+    "outputs",
+    "evidence",
+    "trace",
+    "gates",
+    "on_pass",
+    "on_fail",
+    "rework_route",
+    "blocking_conditions",
+    "optional_conditions",
+    "conditional_required_gates",
+    "max_iterations"
+  ],
+  "propertyNames": {
+    "not": {
+      "pattern": "[Pp][Ll][Uu][Gg][Ii][Nn]"
+    }
+  },
+  "additionalProperties": true
+}

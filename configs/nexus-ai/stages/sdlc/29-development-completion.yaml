@@ -1,0 +1,204 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #29 of 31: development_completion (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this is the
+#   penultimate SDLC build stage — the always-on aggregate readiness gate that decides whether
+#   ALL required and applicable conditional stage gates have passed before a release candidate
+#   may be produced). It produces the always-required gate `no_blocking_policy_failure` and is the
+#   precondition for release_candidate.
+# Reconciled against:
+#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §3 (canonical-aligned
+#     prose contract; owner_agent=release_manager_agent, fuller required+conditional gate set),
+#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.21 (legacy detail — STALE 23-stage assumption,
+#     thinner gate set; do NOT carry it; legacy skill `release-readiness-judge` reconciled below),
+#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §8 (Required / always-on; canonical
+#     "minimum gate set" that development_completion must evaluate),
+#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §9 (release-candidate minimum evidence set),
+#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §9 (override:
+#     compliance_pass_if_applicable is a guaranteed member of the gate set),
+#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract field order),
+#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §4/§6/§7 (mandatory + conditional gates;
+#     §6: completion requires ALL required + applicable conditional gates evaluated; §7: release
+#     candidate cannot be produced before development completion passes),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names DEVELOPMENT_COMPLETION_REPORT
+#     / DEVELOPMENT_COMPLETION_GATE_RESULT; `release_evidence_required.core` + `.conditional` define
+#     the gate-result / evidence set this stage aggregates).
+#
+# Reconciliation notes (legacy doc 05 / prose 05 -> Phase A canonical registry):
+#   - owner_agent = release_manager_agent (canonical, task-suggested; matches prose §3 and legacy
+#     §4.21). NO-SELF-APPROVAL COMPLIANT: this is a review/aggregate gate, and release_manager_agent
+#     does NOT author ANY of the artifacts or gate results it judges — requirements/code/tests/
+#     security/etc. are produced by their respective owner agents, and the EVIDENCE_GRAPH /
+#     TRACEABILITY_MATRIX it consumes are authored by evidence_graph_agent (stage 28). The author of
+#     each judged artifact differs from this gate's owner, so no sdlc_team_lead override is required.
+#     team_lead = sdlc_team_lead (manages, does not own/run); Supervisor is a Core Ability, NOT this
+#     stage's owner and NOT a team member.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are abilities only —
+#     NONE is used as owner_agent or as a team member, per locked decision. This stage uses Supervisor
+#     (aggregate routing/decision over all stage gates) + Memory (recall run history / accepted
+#     findings); it neither writes code nor brainstorms.
+#   - skill `release-readiness-judge` is NON-CANONICAL: not in the canonical shared skills registry,
+#     but it is the load-bearing capability named by BOTH legacy doc 05 §4.21 and prose §3 for the
+#     final go/no-go readiness judgement. Carried per the "you MAY reference a legacy-doc-05 skill"
+#     allowance and FLAGGED in open_questions for registry formalization.
+#   - prism and verification-loop are deliberately NOT used here. Per LOCKED skill semantics:
+#     prism = divergent brainstorming (irrelevant to a deterministic readiness gate) and
+#     verification-loop = bug/defect finding (already executed at stage 15) and must NOT be reused as
+#     a general readiness checklist — which is exactly what this stage is. gap-audit (find missing
+#     required/applicable gates or evidence) and calibrate (confidence on accepted-risk decisions)
+#     are the correct skills.
+#   - context `development_completion_context_pack` (prose §3, NON-CANONICAL) reconciled to canonical
+#     `release_context_pack` + `sdlc_run_context`. Flagged in open_questions.
+#   - audit schemas keep evidence and trace DISTINCT. Prose `development_completion_evidence_schema`
+#     (non-canonical) reconciled to canonical evidence schemas `release_evidence_schema` +
+#     `sdlc_pipeline_evidence_schema`; trace kept separate via canonical `stage_gate_trace_schema`
+#     plus stage-appropriate `gate_decision_trace_schema` (a TRACE schema for the aggregate go/no-go
+#     decision). Flagged in open_questions.
+#   - governance: canonical base profiles + canonical-permitted stage-specific gate profiles
+#     `development_completion_gate` and `no_blocking_policy_failure_gate`; legacy/prose
+#     `development_completion_governance` maps onto these.
+#   - gate set is the UNION of doc 06 §8 (always) + doc 08 §4 (always + conditional) + doc 06-
+#     corrections §9 (compliance_pass_if_applicable guaranteed) + the conditional gate list in
+#     configs/nexus-ai/sdlc_pipeline.yaml. Conditional gates carry the canonical `_if_applicable`
+#     suffix and are listed in conditional_required_gates as well.
+#   - Always-on stage per gap-audit (Required) and the pipeline yaml (not in the `*_if_applicable`
+#     stage family): NO applicability_decision block.
+
+stage_id: development_completion
+name: Development Completion
+purpose: >-
+  Decide — under no-human governance — whether development is genuinely complete by aggregating
+  the EVIDENCE_GRAPH, TRACEABILITY_MATRIX and every upstream stage gate result, and confirming
+  that ALL always-required gates have passed and ALL applicable conditional gates (resolved via
+  their upstream applicability decisions) have either passed or carry an owned, documented
+  acceptance. Emit the DEVELOPMENT_COMPLETION_REPORT and a single binary DEVELOPMENT_COMPLETION_GATE_RESULT
+  that is the hard precondition for producing a release candidate; on any failed required gate or
+  unresolved blocking finding, route back to the relevant failed stage rather than passing forward.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: release_manager_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Supervisor   # aggregate-decision/routing over every upstream stage gate; pick rework target
+  - Memory       # recall run history, accepted-risk decisions and prior gate results
+
+uses_skills:
+  - release-readiness-judge   # NON-CANONICAL (legacy doc 05 / prose): final go/no-go readiness judgement
+  - gap-audit                 # detect any missing required gate, unevaluated applicable gate, or missing evidence
+  - calibrate                 # calibrate confidence on accepted-risk / conditional-acceptance decisions
+
+uses_tools:
+  - policy_query        # query governance/policy state for required + conditional gate verdicts
+  - evidence_reader     # read EVIDENCE_GRAPH, TRACEABILITY_MATRIX and all stage gate results
+  - artifact_writer     # write DEVELOPMENT_COMPLETION_REPORT (side-effect: governance + trace)
+  - evidence_writer     # write stage evidence / gate result (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - release_candidate_governance       # gates the development-completion -> release-candidate boundary
+  - development_completion_gate         # stage-specific gate profile
+  - no_blocking_policy_failure_gate     # stage-specific gate profile
+
+uses_audit_schemas:
+  - release_evidence_schema          # evidence schema (distinct from trace)
+  - sdlc_pipeline_evidence_schema    # evidence schema (distinct from trace)
+  - stage_gate_trace_schema          # trace schema (distinct from evidence)
+  - gate_decision_trace_schema       # trace schema: aggregate go/no-go decision lineage (distinct from evidence)
+
+uses_model_provider_profiles:
+  - release_reasoning_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - release_context_pack
+
+inputs:
+  - EVIDENCE_GRAPH
+  - TRACEABILITY_MATRIX
+  - ALL_STAGE_GATE_RESULTS
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - CODE_REVIEW_REPORT
+  - TEST_EXECUTION_REPORT
+  - BUG_FINDING_REPORT
+  - SECURITY_SCAN_REPORT
+  - SUPPLY_CHAIN_GATE_RESULT
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+
+outputs:
+  - DEVELOPMENT_COMPLETION_REPORT
+  - DEVELOPMENT_COMPLETION_GATE_RESULT
+
+evidence:
+  - DEVELOPMENT_COMPLETION_REPORT
+  - DEVELOPMENT_COMPLETION_GATE_RESULT
+
+trace:
+  - development_completion_stage_trace
+  - gate_aggregation_decision_trace
+  - policy_query_tool_trace
+  - release_readiness_judge_skill_activation_trace
+
+gates:
+  # always-required (doc 06 §8 / doc 08 §4)
+  - requirements_complete
+  - nfr_coverage_complete
+  - architecture_complete
+  - adr_coverage_complete
+  - security_privacy_design_complete
+  - risk_register_reviewed
+  - implementation_scope_clean
+  - code_review_pass
+  - tests_pass
+  - verification_loop_bug_finding_pass
+  - security_validation_pass
+  - supply_chain_pass
+  - license_pass
+  - sbom_present
+  - performance_resilience_pass_or_accepted
+  - agentic_safety_eval_pass
+  - operations_readiness_pass
+  - evidence_graph_complete
+  - no_blocking_policy_failure
+  # conditional-required (evaluated only when the upstream applicability decision is true)
+  - accessibility_pass_if_applicable
+  - data_migration_pass_if_applicable
+  - privacy_lifecycle_pass_if_applicable
+  - api_contract_compatibility_pass_if_applicable
+  - compliance_pass_if_applicable
+  - backup_restore_dr_pass_if_applicable
+  - cost_resource_governance_pass_if_applicable
+
+on_pass: release_candidate
+on_fail: relevant_failed_stage
+rework_route: relevant_failed_stage
+
+blocking_conditions:
+  - any_required_gate_failed
+  - applicable_conditional_gate_failed
+  - missing_required_evidence
+  - evidence_graph_incomplete
+  - unresolved_blocker_finding
+  - accepted_risk_without_owner
+
+optional_conditions: []
+
+conditional_required_gates:
+  - accessibility_pass_if_applicable
+  - data_migration_pass_if_applicable
+  - privacy_lifecycle_pass_if_applicable
+  - api_contract_compatibility_pass_if_applicable
+  - compliance_pass_if_applicable
+  - backup_restore_dr_pass_if_applicable
+  - cost_resource_governance_pass_if_applicable
+
+max_iterations: 3

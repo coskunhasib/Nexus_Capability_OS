@@ -7,6 +7,100 @@ owner_domain: software_engineering
 required_team_type: sdlc_team
 required_team_lead_role: sdlc_team_lead
 
+# Product/problem domains this pipeline applies to (doc 08 §1).
+applicable_domains:
+  - software_product
+  - saas
+  - ai_agent_product
+  - api_service
+  - web_app
+  - internal_tool
+
+# Risk profiles this pipeline can operate under (doc 08 §1).
+risk_profiles:
+  - prototype
+  - internal_tool
+  - commercial_product
+  - regulated_or_high_risk
+
+# Conditions that must hold before the pipeline may start (first stage is intake;
+# doc 06 §3 / doc 08 §3 — the run begins from a product intent, not from requirements).
+entry_criteria:
+  - product_intent_or_request_provided
+  - domain_and_risk_profile_resolvable
+  - sdlc_team_and_sdlc_team_lead_assigned
+  - required_skills_available_for_semantic_extraction
+
+# Conditions that mark the pipeline complete (doc 06 §8 gate set + the canonical
+# forward path ending at the `done` terminal after refraction_learning; doc 08 §7:
+# release_candidate cannot be produced before development_completion passes).
+exit_criteria:
+  - development_completion_pass
+  - all_always_required_gates_pass
+  - all_applicable_conditional_gates_pass
+  - release_candidate_report_produced
+  - refraction_learning_complete
+
+# Pipeline-level conditions that block progression / release (doc 08 §4
+# no_blocking_policy_failure; sdlc_pipeline_runtime_rules.yaml iteration limit ->
+# block_and_report; release_candidate gating from doc 08 §7).
+blocking_conditions:
+  - unresolved_blocking_policy_failure
+  - required_evidence_missing_or_inconsistent
+  - mandatory_gate_failed_or_unevaluated
+  - rework_iteration_limit_exceeded
+  - release_candidate_attempted_before_development_completion
+
+# Permitted rework routes (sdlc_pipeline_runtime_rules.yaml rework_routing_table.by_stage
+# distinct targets + canonical routing_terminals). Each entry is a known stage_id or a
+# canonical terminal (done | relevant_failed_stage | block_and_report).
+allowed_rework_routes:
+  - intake
+  - skill_semantic_extraction
+  - requirements
+  - architecture
+  - security_privacy_design
+  - planning
+  - implementation
+  - development_completion
+  - refraction_learning
+  - relevant_failed_stage
+  - block_and_report
+  - done
+
+# Evidence artifacts the pipeline must produce (artifact_registry.yaml
+# release_evidence_required.core). Evidence = decision proof, DISTINCT from trace.
+required_evidence:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - THREAT_MODEL
+  - FMEA_RISK_REGISTER
+  - CODE_REVIEW_REPORT
+  - TEST_EXECUTION_REPORT
+  - BUG_FINDING_REPORT
+  - SECURITY_SCAN_REPORT
+  - SBOM
+  - LICENSE_REPORT
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+  - EVIDENCE_GRAPH
+  - DEVELOPMENT_COMPLETION_REPORT
+  - RELEASE_CANDIDATE_REPORT
+
+# Trace records the pipeline must produce (the canonical stage_gate_trace_schema TRACE
+# record + the cross-stage trace records the run must keep). Trace = operation/decision
+# log, DISTINCT from evidence (so no evidence schema is listed here).
+required_trace:
+  - stage_gate_trace_schema
+  - stage_gate_decision_trace
+  - rework_routing_trace
+  - iteration_count_trace
+  - governance_gate_evaluation_trace
+
 stages:
   - intake
   - domain_risk_profile
@@ -129,6 +223,7 @@ required_gates:
     - architecture_complete
     - adr_coverage_complete
     - security_privacy_design_complete
+    - risk_register_reviewed
     - implementation_scope_clean
     - code_review_pass
     - tests_pass
@@ -137,6 +232,7 @@ required_gates:
     - supply_chain_pass
     - license_pass
     - sbom_present
+    - performance_resilience_pass_or_accepted
     - agentic_safety_eval_pass
     - operations_readiness_pass
     - evidence_graph_complete

@@ -1,0 +1,775 @@
+# Nexus AI Orchestration Model — Core Abilities Registry
+#
+# Phase C / doc 17 §4 — Shared Registry Formalization.
+# This is the AUTHORITATIVE existence record ("what exists") for the Core Abilities
+# shared category. Usage ("who uses what") is recorded per item under `used_by`, so the
+# Shared-Registry + Usage-Mapping rule (doc 05; doc 17 §13) is enforceable from registry data.
+#
+# Documentation / blueprint artifact ONLY. No runtime code, no merge, no deploy.
+#
+# ---------------------------------------------------------------------------
+# LOCKED DECISIONS honored here (.memory/0002-locked-decisions.md):
+#   - K-001 Plugin is cancelled and NEVER reintroduced. There is no plugin registry.
+#   - K-003/K-004 Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#       are a shared CAPABILITY layer. They are NOT agents, NOT teams, NOT SDLC team members.
+#   - K-006 Supervisor (Core Ability) != sdlc_team_lead / any *_team_lead role.
+#   - K-011/D-014 Web, OS, Memory remain Core Abilities; their callable operations live in the
+#       Tools Registry (configs/nexus-ai/tools_registry.yaml) and are referenced, not owned, here.
+#   - Concept boundaries: Skill != Tool ; Governance != Audit ; Evidence != Trace.
+#
+# HARD RULES enforced by this registry (doc 17 §4):
+#   - A Core Ability MUST NEVER be listed as an Agent / owner_agent / sub_agent / team member.
+#   - Supervisor MUST NEVER be listed as a Team Lead.
+#   Both are asserted per item (never_agent: true; for Supervisor also never_team_lead: true)
+#   and validated by hard_rules below.
+#
+# ---------------------------------------------------------------------------
+# REGISTRY ITEM CONTRACT (doc 17 §3) — every entry carries:
+#   id, name, display_name, type, status, purpose, owner_domain, allowed_usage, forbidden_usage,
+#   governance_profiles, audit_schemas, notes
+#   (display_name is the capitalized reference form added in R11; see name_form_convention below —
+#    the lowercase id remains the canonical identifier.)
+# PLUS category fields (doc 17 §4):
+#   category: core_ability, model_provider_profiles, exposed_tools, governance_profiles,
+#   audit_schemas, allowed_callers, forbidden_usage
+# PLUS status + used_by (doc 17 §11/§13).
+#
+# STATUS vocabulary: canonical (locked/established) | candidate (referenced, not yet ratified) | deprecated.
+#   All 8 Core Ability NAMES are locked-canonical (K-003), so every entry is status: canonical.
+#   Names they REFERENCE (governance_profiles, audit_schemas, model_provider_profiles, tools) may
+#   still be candidate; those are owned by their own registries (Phase C / Phase E), not here.
+#
+# NAMING RECONCILIATION (doc 17): the SDLC stage contracts bind the governance variants
+#   `no_self_approval_policy` and `evidence_required_policy`. The canonical policy ids are
+#   `no_self_approval` and `evidence_required` (docs 06 §3, 01 §8). This registry references the
+#   CANONICAL ids and records the bound variants under `aliases` on the relevant items.
+# ---------------------------------------------------------------------------
+
+registry_id: nexus_ai_core_abilities
+registry_name: Nexus AI Orchestration Model — Core Abilities Registry
+registry_version: draft-0.1
+registry_status: draft
+shared_category: core_abilities
+top_structure: nexus_ai_orchestration_model
+no_plugin: true
+
+# ---------------------------------------------------------------------------
+# R11 — CORE ABILITY NAME-FORM CONVENTION
+#   Each Core Ability carries BOTH a lowercase `id` (e.g. supervisor) and a capitalized
+#   `display_name` (e.g. Supervisor). The two are the same ability under two spellings.
+#   - CANONICAL identifier = the lowercase `id`. Validation/resolution keys on it.
+#   - Contracts and registries MAY reference EITHER form. In practice the corpus references
+#     the capitalized display form throughout (uses_core_abilities: [Supervisor, Coder, Memory,
+#     Web, OS, Vision, ...] in stage/agent contracts; provided_by_core_ability: Web|OS|Memory|Coder
+#     in tools_registry.yaml). The `name` field already held the capitalized label; `display_name`
+#     is added so a resolver can map a capitalized reference to the canonical lowercase id WITHOUT
+#     mass-renaming any existing reference (no reference spelling was changed by R11).
+#   This is a NAME-FORM alias only. It does NOT make a Core Ability an Agent, a Tool, or an
+#   allowed_caller, and it does not alter any locked boundary (Skill != Tool; Supervisor != team lead).
+name_form_convention:
+  canonical_form: lowercase_id            # the `id` field is the canonical identifier
+  display_form: display_name              # capitalized label; equals `name`
+  both_forms_resolve_to_same_ability: true
+  references_unchanged_by_r11: true       # no existing capitalized reference was renamed
+  id_to_display:
+    supervisor: Supervisor
+    coder: Coder
+    vision: Vision
+    audio: Audio
+    creative: Creative
+    memory: Memory
+    web: Web
+    os: OS
+
+# Source documents scanned to build this registry (read from disk, Phase C scope).
+sources:
+  contract_plan: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md          # §3 item contract + §4 category fields + §11/§13 rules
+  locked_decisions: .memory/0002-locked-decisions.md                                     # K-001..K-012
+  operating_model: docs/ai-sdlc-factory/01-nexus-ai-operating-model.md                   # §6 Capability System (the 8 abilities), §11 Model/Provider, §12 Context/Memory
+  core_definitions: docs/ai-sdlc-factory/01-core-definitions.md                          # Skill/Tool/Agent boundaries
+  shared_registry: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md          # registry vs usage; §8 Core Ability sub-tools; §11 model profiles
+  shared_registry_decisions: docs/ai-sdlc-factory/00a-shared-registry-decisions.md       # D-011..D-015
+  governance_audit_layering: docs/ai-sdlc-factory/03-governance-and-audit-layering.md    # §7 Core Ability Governance profile names; §10-12 Evidence/Trace
+  governance_policy_evidence: docs/ai-sdlc-factory/06-governance-policy-evidence.md       # canonical policy ids (no_self_approval, evidence_required, no_secret_read, ...)
+  artifact_registry: configs/nexus-ai/artifact_registry.yaml                             # evidence artifact names
+  sdlc_stage_contracts: configs/nexus-ai/stages/sdlc/                                    # 31 contracts — richest source of uses_core_abilities + model profiles
+  pipeline_catalog: configs/nexus-ai/pipeline_catalog.yaml                               # SDLC + 5 non-SDLC pipelines' uses_core_abilities
+  pipeline_catalog_review: docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md        # §4 consolidated new names; §4.4 new model/provider profiles
+  skill_agent_review: docs/ai-sdlc-factory/reviews/claude-code-skill-agent-review.md      # §4/§5 Core Ability boundary confirmation
+
+# Hard rules this registry asserts and is validated against (doc 17 §4, §11 Validation).
+hard_rules:
+  - id: core_ability_is_never_agent
+    rule: No core_ability id may appear as owner_agent, sub_agent, agent, or team member in any pipeline/stage/team catalog.
+    severity: blocker
+    enforced_field: never_agent      # every item sets never_agent: true
+  - id: supervisor_is_never_team_lead
+    rule: The Supervisor core_ability may never be a team_lead / *_team_lead. team_lead roles are pipeline-specific Agent-tier roles.
+    severity: blocker
+    enforced_field: never_team_lead  # Supervisor sets never_team_lead: true
+  - id: core_ability_tools_are_referenced_not_defined
+    rule: exposed_tools list tool ids owned by the Tools Registry; this registry does not define tool schemas (K-011 / D-014).
+    severity: advisory
+  - id: every_item_has_status_and_usage
+    rule: Every item has status and at least one used_by entry (or status candidate). All 8 names are canonical and each carries used_by.
+    severity: blocker
+  - id: no_plugin_registry
+    rule: No plugin / plugin registry concept appears anywhere (K-001).
+    severity: blocker
+
+# The canonical capability layer that registers all 8 abilities (operating model §6).
+# Used as the baseline `used_by` anchor so even abilities not yet bound by a pipeline
+# (Audio, Creative) carry a truthful usage mapping rather than an empty list.
+capability_system_id: nexus_ai_capability_system
+
+# ===========================================================================
+# CORE ABILITIES — exactly 8 canonical entries (K-003). No more, no fewer.
+# ===========================================================================
+core_abilities:
+
+  # -------------------------------------------------------------------------
+  # 1. SUPERVISOR — orchestration / routing capability.
+  #    HARD: never an Agent; never a Team Lead (K-006). Pure reasoning -> low I/O risk.
+  # -------------------------------------------------------------------------
+  - id: supervisor
+    name: Supervisor
+    display_name: Supervisor              # R11: capitalized reference form; canonical id is the lowercase `supervisor` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    never_team_lead: true
+    purpose: >-
+      Cross-stage orchestration and routing capability: reason over upstream gate results, choose
+      rework targets, and arbitrate model/provider routing trade-offs. It REASONS about routing;
+      it does not execute side-effecting I/O and it does not hold the team_lead role.
+    owner_domain: orchestration_routing
+    model_provider_profiles:
+      - supervisor_routing_model        # canonical: routing/aggregation reasoning (pipeline_catalog: all 5 new pipelines; SDLC stages 07,10,18,24,25,29,30)
+    exposed_tools: []                   # pure-reasoning ability: no exclusive callable tools. Any side-effecting tool (e.g. policy_query) is provided by OS / a pipeline role, not by Supervisor.
+    governance_profiles:
+      - orchestration_governance        # candidate: Supervisor routing/arbitration rules; no gate bypass, no self-approval (Phase E)
+      - no_self_approval                # canonical policy (doc 06 §3) — Supervisor cannot approve its own routing/aggregation decision
+      - no_policy_bypass                # canonical policy (doc 06 §3) — routing may not override a blocking gate
+      - evidence_required               # canonical policy (doc 06 §3) — routing/aggregation decisions require evidence
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: trace of supervisor invocations (Trace family; doc 03 §12)
+      - gate_decision_trace_schema             # canonical: routing/aggregation gate-decision provenance (SDLC stages)
+      - release_decision_trace_schema          # canonical: final go/no-go routing provenance (SDLC 29/30)
+    allowed_callers:
+      - sdlc_team_lead                  # the orchestrator ROLE calls the Supervisor ability; the role != the ability (K-006)
+      - research_team_lead
+      - activation_team_lead
+      - operations_team_lead
+      - skill_governance_team_lead
+      - knowledge_team_lead
+      - pipeline_orchestration_layer
+    allowed_usage:
+      - cross_stage_routing_and_rework_target_selection
+      - multi_agent_tool_delegation_reasoning
+      - model_provider_routing_arbitration
+      - aggregate_gate_result_reasoning_for_completion_and_release
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - being_declared_as_a_team_lead_or_sdlc_team_lead
+      - approving_its_own_output
+      - overriding_or_bypassing_a_blocking_policy_gate
+      - performing_a_release_or_deploy_action
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+      stages:                           # SDLC stage_ids whose uses_core_abilities lists Supervisor
+        - architecture_review
+        - planning
+        - ai_agent_safety_evaluation
+        - cost_resource_governance
+        - development_completion
+        - release_candidate
+      capability_systems:
+        - nexus_ai_capability_system
+    notes: >-
+      LOCKED: Supervisor is a Core Ability, never an Agent and never the team_lead (K-006; confirmed
+      by claude-code-skill-agent-review §5). The *_team_lead roles in allowed_callers are Agent-tier
+      orchestrator ROLES that CALL this ability — they are not this ability. Low default risk because
+      Supervisor performs no environment/repo mutation and reads no raw secrets.
+
+  # -------------------------------------------------------------------------
+  # 2. CODER — code reasoning / engineering capability.
+  #    Reasons over code; side-effecting repo/test tools are provided by OS.
+  # -------------------------------------------------------------------------
+  - id: coder
+    name: Coder
+    display_name: Coder                   # R11: capitalized reference form; canonical id is the lowercase `coder` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    purpose: >-
+      Software-engineering reasoning capability: read/diff/reason over code changesets, decompose
+      implementation tasks, synthesize tests, and interpret scanner/coverage/contract output. The
+      Coder ability supplies engineering judgement; the actual filesystem/shell/test execution is
+      performed by the OS ability's tools (no_silent_mutation: every repo mutation goes through an OS tool with trace).
+    owner_domain: software_engineering
+    model_provider_profiles:
+      - coder_engineering_model         # canonical: engineering reasoning (SDLC stages 11,12,13,14,22,24)
+    exposed_tools: []                   # reasoning ability: no exclusive tools. Engineering side-effects (repo_reader/repo_writer/test_runner) are OS-provided tools (see OS.exposed_tools) requested by code-owning agents.
+    governance_profiles:
+      - code_generation_governance      # canonical core-ability governance (doc 03 §7)
+      - no_secret_read                  # canonical policy (doc 06 §3) — Coder reasoning may not surface raw secrets
+      - no_silent_mutation              # canonical policy (doc 06 §3) — no repo/env mutation without an explicit OS tool + trace
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: trace of coder invocations (Trace family)
+      - code_change_trace_schema               # canonical: changeset provenance (SDLC 11/12) — Trace family
+      - implementation_evidence_schema         # canonical: engineering evidence (SDLC 11) — Evidence family
+    allowed_callers:
+      - engineering_agent
+      - code_reviewer_agent
+      - qa_agent
+      - security_validation_agent
+      - contract_validation_agent
+      - data_migration_agent
+      - performance_resilience_agent
+      - operations_readiness_agent
+      - compliance_agent
+      - privacy_agent
+      - architecture_agent
+    allowed_usage:
+      - read_and_reason_over_code_changesets_and_diffs
+      - implementation_task_decomposition
+      - test_synthesis_and_failure_triage
+      - interpret_scanner_coverage_and_contract_output
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - mutating_the_repository_or_environment_without_an_explicit_os_tool_and_trace
+      - reading_or_emitting_raw_secrets
+      - approving_a_changeset_authored_under_the_same_owner_role
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:                           # SDLC stage_ids whose uses_core_abilities lists Coder
+        - architecture
+        - security_privacy_design
+        - planning
+        - implementation
+        - code_review
+        - test_generation
+        - test_execution
+        - verification_loop_bug_finding
+        - security_validation
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - privacy_data_lifecycle_validation
+        - api_contract_compatibility_validation
+        - domain_regulatory_compliance_validation_if_applicable
+        - data_migration_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - performance_resilience
+        - cost_resource_governance
+        - backup_restore_dr_validation_if_applicable
+        - operations_readiness
+      capability_systems:
+        - nexus_ai_capability_system
+    notes: >-
+      Coder is the single most broadly-used ability across SDLC (20 stages). It is a reasoning
+      capability; it owns no I/O tools. Filesystem/shell/test tools belong to OS so tool ownership
+      stays unambiguous in the Tools Registry (provided_by_core_ability). Not bound by any of the 5
+      non-SDLC pipelines in the current catalog.
+
+  # -------------------------------------------------------------------------
+  # 3. VISION — visual perception / reasoning capability.
+  # -------------------------------------------------------------------------
+  - id: vision
+    name: Vision
+    display_name: Vision                  # R11: capitalized reference form; canonical id is the lowercase `vision` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    purpose: >-
+      Visual perception and reasoning capability: inspect rendered UI for contrast, focus
+      indicators, layout, and visual state, and reason over images/visual artifacts. Visual capture
+      from the built/rendered UI is driven by an OS-provided auditor tool; Vision supplies the
+      visual judgement.
+    owner_domain: visual_perception
+    model_provider_profiles:
+      - vision_model                    # canonical: visual reasoning (operating model §11; SDLC stage 23)
+    exposed_tools: []                   # reasoning/perception ability: no exclusive callable tools. The accessibility_auditor / contrast_checker that render and capture UI are OS-provided side-effect tools.
+    governance_profiles:
+      - vision_governance               # candidate: visual-perception use rules (Phase E core-ability governance)
+      - no_secret_read                  # canonical policy — may not extract secrets/PII from rendered content
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: Trace family
+      - accessibility_evidence_schema          # canonical: a11y/UX evidence (SDLC 23) — Evidence family
+    allowed_callers:
+      - accessibility_ux_agent          # owner_agent of SDLC stage 23 (Agent-tier role; not a Core Ability)
+    allowed_usage:
+      - inspect_rendered_ui_for_contrast_focus_layout_and_visual_state
+      - reason_over_images_and_visual_artifacts
+      - support_accessibility_and_ux_visual_validation
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - extracting_secrets_or_pii_from_rendered_content
+      - rendering_a_gate_pass_decision_without_evidence
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - accessibility_ux_validation_if_applicable   # the only SDLC stage that lists Vision
+      capability_systems:
+        - nexus_ai_capability_system
+    notes: >-
+      Vision is bound only by the conditional accessibility/UX validation stage in the current SDLC
+      contract set. Still status: canonical (the NAME is locked, K-003); usage is narrow but real.
+
+  # -------------------------------------------------------------------------
+  # 4. AUDIO — audio perception / reasoning capability.
+  #    Locked-canonical NAME; not yet bound by any current pipeline/stage.
+  # -------------------------------------------------------------------------
+  - id: audio
+    name: Audio
+    display_name: Audio                   # R11: capitalized reference form; canonical id is the lowercase `audio` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    unused_in_current_pipelines: true   # locked name (K-003); no current pipeline/stage binds it
+    purpose: >-
+      Audio perception and reasoning capability: transcribe, analyze, and reason over speech and
+      audio signals. Reserved as a locked Core Ability; no SDLC stage or non-SDLC pipeline in the
+      current catalog binds it yet.
+    owner_domain: audio_perception
+    model_provider_profiles:
+      - audio_model                     # candidate: audio perception/reasoning model (not referenced by any current stage/pipeline)
+    exposed_tools: []                   # no callable tools defined yet; capture/transcription tools would be OS-provided when a pipeline binds Audio.
+    governance_profiles:
+      - audio_governance                # candidate: audio-perception use rules (Phase E)
+      - no_secret_read                  # canonical policy — may not surface secrets/PII from audio
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: Trace family
+    allowed_callers: []                 # none in the current catalog
+    allowed_usage:
+      - transcribe_and_analyze_speech_and_audio_signals
+      - reason_over_audio_artifacts
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - extracting_secrets_or_pii_from_audio_content
+    used_by:
+      pipelines: []
+      stages: []
+      capability_systems:
+        - nexus_ai_capability_system    # registered by the operating-model Capability System (§6); satisfies the usage-mapping rule even with no pipeline binding
+    notes: >-
+      LOCKED canonical NAME (K-003) but currently UNUSED by any pipeline/stage. used_by is anchored
+      to nexus_ai_capability_system so the doc-17 §13 "at least one used_by" rule holds without
+      fabricating pipeline usage. Its model_provider_profile (audio_model) is a candidate owned by
+      the Model/Provider Profiles Registry; do not ratify until a pipeline binds Audio.
+
+  # -------------------------------------------------------------------------
+  # 5. CREATIVE — creative generation capability.
+  #    Locked-canonical NAME; not yet bound by any current pipeline/stage.
+  # -------------------------------------------------------------------------
+  - id: creative
+    name: Creative
+    display_name: Creative                # R11: capitalized reference form; canonical id is the lowercase `creative` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    unused_in_current_pipelines: true   # locked name (K-003); no current pipeline/stage binds it
+    purpose: >-
+      Creative generation capability: produce and reason over generated creative artifacts (visual,
+      multi-format, design-oriented). Reserved as a locked Core Ability; no SDLC stage or non-SDLC
+      pipeline in the current catalog binds it yet.
+    owner_domain: creative_generation
+    model_provider_profiles:
+      - creative_generation_model       # candidate: creative generation model (not referenced by any current stage/pipeline)
+    exposed_tools: []                   # no callable tools defined yet; any generation/export tools would be OS-provided when a pipeline binds Creative.
+    governance_profiles:
+      - creative_governance             # candidate: creative-generation use rules (Phase E)
+      - no_secret_read                  # canonical policy — generated artifacts may not embed secrets/PII
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: Trace family
+    allowed_callers: []                 # none in the current catalog
+    allowed_usage:
+      - generate_creative_and_multi_format_artifacts
+      - reason_over_design_and_creative_options
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - embedding_secrets_or_pii_in_generated_artifacts
+    used_by:
+      pipelines: []
+      stages: []
+      capability_systems:
+        - nexus_ai_capability_system    # registered by the operating-model Capability System (§6); satisfies the usage-mapping rule
+    notes: >-
+      LOCKED canonical NAME (K-003) but currently UNUSED. used_by anchored to
+      nexus_ai_capability_system. The content_pipeline candidate (pipeline_catalog) is the likely
+      future consumer; do not ratify creative_generation_model until a pipeline binds Creative.
+
+  # -------------------------------------------------------------------------
+  # 6. MEMORY — memory / recall capability. Exposes the canonical memory tools (task-mandated).
+  # -------------------------------------------------------------------------
+  - id: memory
+    name: Memory
+    display_name: Memory                  # R11: capitalized reference form; canonical id is the lowercase `memory` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    purpose: >-
+      Long-term memory and recall capability: search, write, summarize, and recall run/project
+      context across stages and pipelines. Memory is a Core Ability (K-011); its callable operations
+      are tools in the Tools Registry. Context (run/agent working context) is distinct and lives in
+      the Context/Memory Profiles Registry, not here.
+    owner_domain: knowledge_memory
+    model_provider_profiles:
+      - memory_reasoning_profile        # candidate: memory summarization/recall reasoning (pipeline_catalog: knowledge_memory_pipeline)
+    exposed_tools:                      # task-mandated Memory tools (K-011) — owned by the Tools Registry, referenced here
+      - memory_search                   # read-only recall query
+      - memory_write                    # side-effect: persist a memory item -> governance + trace required
+      - memory_summarize                # summarize memory/run history
+      - context_recall                  # recall run/agent working context
+    governance_profiles:
+      - memory_access_governance        # canonical core-ability governance (doc 03 §7)
+      - no_secret_read                  # canonical policy — stored/recalled memory may not surface raw secrets
+      - no_silent_mutation              # canonical policy — memory_write mutates state, requires explicit tool + trace
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: Trace family
+      - memory_update_trace_schema             # canonical: memory write/update provenance (SDLC 31) — Trace family
+    allowed_callers:
+      # Memory is used by 31/31 SDLC stages (every SDLC owner_agent) plus non-SDLC roles.
+      - all_sdlc_agents                 # shorthand: every SDLC owner_agent (see used_by.stages = all 31)
+      - research_intake_agent
+      - knowledge_memory_agents
+      - operations_agents
+      - skill_librarian_agent
+    allowed_usage:
+      - recall_prior_run_and_project_context
+      - search_and_summarize_memory_and_run_history
+      - persist_curated_learning_and_memory_items_via_memory_write
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - persisting_memory_without_an_explicit_tool_and_trace
+      - surfacing_raw_secrets_from_stored_memory
+      - being_conflated_with_context_memory_profiles_which_are_a_separate_registry
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      stages:                           # Memory appears in ALL 31 SDLC stages' uses_core_abilities
+        - intake
+        - domain_risk_profile
+        - skill_semantic_extraction
+        - requirements
+        - requirements_review
+        - architecture
+        - architecture_review
+        - security_privacy_design
+        - premortem_fmea
+        - planning
+        - implementation
+        - code_review
+        - test_generation
+        - test_execution
+        - verification_loop_bug_finding
+        - security_validation
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - privacy_data_lifecycle_validation
+        - api_contract_compatibility_validation
+        - domain_regulatory_compliance_validation_if_applicable
+        - data_migration_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - performance_resilience
+        - cost_resource_governance
+        - backup_restore_dr_validation_if_applicable
+        - operations_readiness
+        - evidence_graph_build
+        - development_completion
+        - release_candidate
+        - refraction_learning
+      capability_systems:
+        - nexus_ai_capability_system
+    notes: >-
+      Memory is bound by every SDLC stage (31/31) and by all 5 non-SDLC pipelines plus the dedicated
+      knowledge_memory_pipeline — the most universally-used ability after Coder. Memory (the ability,
+      with tools memory_search/memory_write/memory_summarize/context_recall) is NOT the same as
+      Context/Memory Profiles (run/agent working context), which are owned by
+      configs/nexus-ai/context_memory_profiles.yaml.
+
+  # -------------------------------------------------------------------------
+  # 7. WEB — web access capability. Higher default risk (external network egress).
+  #    Exposes the canonical web tools (task-mandated).
+  # -------------------------------------------------------------------------
+  - id: web
+    name: Web
+    display_name: Web                     # R11: capitalized reference form; canonical id is the lowercase `web` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    default_risk_level: high            # external network egress -> higher default risk than pure-reasoning abilities (task rule)
+    purpose: >-
+      External web access capability: search, fetch, and scrape external sources for product/domain
+      context, advisories, license metadata, standards, and consumer interface expectations. Web is
+      a Core Ability (K-011); its callable operations are tools in the Tools Registry. External
+      egress makes Web a higher-risk ability than pure-reasoning abilities.
+    owner_domain: external_web_access
+    model_provider_profiles: []         # Web is an access ability; reasoning over fetched content uses the calling stage's model profile (e.g. sdlc_reasoning_profile), not a Web-owned model.
+    exposed_tools:                      # task-mandated Web tools — owned by the Tools Registry, referenced here
+      - web_search                      # query external search (network egress)
+      - web_fetch                       # fetch a specific external URL (network egress)
+      - web_scrape                      # extract structured content from fetched pages (network egress)
+    governance_profiles:
+      - web_access_governance           # canonical core-ability governance (doc 03 §7) — HIGHER default risk
+      - no_secret_read                  # canonical policy — outbound requests may not leak secrets/credentials
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: Trace family
+      - source_fetch_trace_schema              # candidate: external fetch provenance (Trace family; research_pipeline source-fetch trace)
+    allowed_callers:
+      - product_requirements_agent
+      - architecture_agent
+      - security_privacy_agent
+      - security_validation_agent
+      - compliance_agent
+      - contract_validation_agent
+      - accessibility_ux_agent
+      - operations_readiness_agent
+      - research_intake_agent
+      - knowledge_memory_agents
+    allowed_usage:
+      - search_fetch_and_scrape_external_context_advisories_standards_and_specs
+      - resolve_license_metadata_and_package_reputation_sources
+      - source_current_attack_techniques_and_accessibility_criteria
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - transmitting_secrets_credentials_or_pii_in_outbound_requests
+      - performing_unsandboxed_or_untraced_network_egress
+      - treating_fetched_content_as_trusted_without_provenance_trace
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - knowledge_memory_pipeline
+      stages:                           # SDLC stage_ids whose uses_core_abilities lists Web
+        - intake
+        - domain_risk_profile
+        - requirements
+        - architecture
+        - architecture_review
+        - security_privacy_design
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - api_contract_compatibility_validation
+        - domain_regulatory_compliance_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - operations_readiness
+      capability_systems:
+        - nexus_ai_capability_system
+    notes: >-
+      Web carries a HIGHER default risk than pure-reasoning abilities (Supervisor/Coder/Vision)
+      because it performs external network egress (task rule). Its tools require sandbox/trace and
+      a no-secret-leak posture. Web is the headline example of K-011 / D-014 (ability name in the
+      registry; web_search/web_fetch/web_scrape in the Tools Registry).
+
+  # -------------------------------------------------------------------------
+  # 8. OS — operating-system / execution capability. HIGHEST default risk
+  #    (filesystem + shell + process). Exposes the canonical OS tools (task-mandated).
+  # -------------------------------------------------------------------------
+  - id: os
+    name: OS
+    display_name: OS                      # R11: capitalized reference form; canonical id is the lowercase `os` (see name_form_convention)
+    type: core_ability
+    category: core_ability
+    status: canonical
+    never_agent: true
+    default_risk_level: high            # filesystem write + shell + process execution -> highest default risk (task rule)
+    purpose: >-
+      Operating-system and execution capability: read/write files and run shell commands / processes
+      in the (sandboxed) build environment to drive test runners, scanners, eval harnesses, migration
+      checks, and artifact/evidence I/O. OS is a Core Ability (K-011); its callable operations are
+      tools in the Tools Registry. It is the highest-risk ability and provides the side-effecting
+      tools that Coder/Vision reasoning requests.
+    owner_domain: system_execution
+    model_provider_profiles: []         # OS is an execution ability; it runs tools and does not own a reasoning model. Interpretation of results uses the calling stage's model profile.
+    exposed_tools:                      # task-mandated OS tools — owned by the Tools Registry, referenced here
+      - file_read                       # read a file from the environment (read-only)
+      - file_write                      # side-effect: write/modify a file -> governance + trace + sandbox required
+      - shell_exec                      # side-effect: execute a shell command -> sandbox + timeout + trace required (doc 03 §9)
+      - process_run                     # side-effect: run a process / harness -> sandbox + timeout + trace required
+    governance_profiles:
+      - system_access_governance        # canonical core-ability governance (doc 03 §7) — HIGHEST default risk
+      - sandbox_execution_governance    # canonical (doc 03 §9): sandbox + timeout + trace required for shell_exec/process_run
+      - no_silent_mutation              # canonical policy (doc 06 §3) — no env/repo mutation without explicit tool + trace
+      - no_destructive_action_without_gate   # canonical policy (doc 06 §3) — destructive tools require explicit policy + evidence
+      - no_secret_read                  # canonical policy (doc 06 §3) — execution may not read/emit raw secrets
+    audit_schemas:
+      - core_ability_invocation_trace_schema   # candidate: Trace family
+      - code_change_trace_schema               # canonical: file/repo mutation provenance (SDLC 11/12) — Trace family
+      - evidence_integrity_report_schema       # canonical: integrity of evidence written via OS tools (SDLC 18/28) — Evidence family
+    allowed_callers:
+      - skill_librarian_agent
+      - engineering_agent
+      - code_reviewer_agent
+      - qa_agent
+      - security_validation_agent
+      - privacy_agent
+      - data_migration_agent
+      - accessibility_ux_agent
+      - performance_resilience_agent
+      - operations_readiness_agent
+      - evidence_graph_agent
+      - refraction_learning_agent
+    allowed_usage:
+      - read_and_write_files_in_the_sandboxed_build_environment
+      - run_test_runners_scanners_eval_harnesses_and_migration_checks
+      - exercise_backup_restore_rollback_and_runbook_steps_in_a_recovery_environment
+      - drive_artifact_and_evidence_io_for_pipeline_stages
+    forbidden_usage:
+      - being_declared_as_an_agent_owner_agent_or_sub_agent
+      - executing_shell_or_processes_outside_a_sandbox_or_without_timeout_and_trace
+      - performing_destructive_actions_without_an_explicit_policy_gate_and_evidence
+      - mutating_the_environment_or_repository_silently
+      - reading_or_emitting_raw_secrets
+      - performing_a_production_deploy
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+      stages:                           # SDLC stage_ids whose uses_core_abilities lists OS
+        - skill_semantic_extraction
+        - implementation
+        - code_review
+        - test_execution
+        - verification_loop_bug_finding
+        - security_validation
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - privacy_data_lifecycle_validation
+        - data_migration_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - performance_resilience
+        - cost_resource_governance
+        - backup_restore_dr_validation_if_applicable
+        - operations_readiness
+        - evidence_graph_build
+        - refraction_learning
+      capability_systems:
+        - nexus_ai_capability_system
+    notes: >-
+      OS is the HIGHEST-risk ability (filesystem write + shell + process execution) and therefore
+      carries the strictest governance stack: system_access_governance + sandbox_execution_governance
+      plus the no_silent_mutation / no_destructive_action_without_gate / no_secret_read blocker
+      policies. Per K-011/D-014 the filesystem/shell tools (file_read/file_write/shell_exec/
+      process_run) and the engineering tools that Coder reasons with (repo_reader/repo_writer/
+      test_runner) are OS-provided in the Tools Registry, keeping tool ownership single-sourced.
+
+# ===========================================================================
+# NAMING RECONCILIATION RECORD (doc 17) — canonical id <- bound variant(s).
+# The SDLC stage contracts bind *_policy variants; the canonical ids are the bare names.
+# These canonical policies are owned by the Governance Profiles Registry (Phase E); recorded
+# here because Core Ability governance_profiles reference the canonical ids.
+# ===========================================================================
+policy_aliases:
+  - canonical_id: no_self_approval        # doc 06 §3 ; doc 01 §8
+    aliases:
+      - no_self_approval_policy           # variant bound by SDLC stage contracts + all 5 non-SDLC pipelines
+    referenced_by_core_abilities:
+      - supervisor
+  - canonical_id: evidence_required       # doc 06 §3
+    aliases:
+      - evidence_required_policy          # variant bound by SDLC stage contracts + non-SDLC pipelines
+    referenced_by_core_abilities:
+      - supervisor
+
+# ===========================================================================
+# CANDIDATE NAMES this registry REFERENCES but does not own (for Phase C sibling
+# registries + Phase E governance). Listed so downstream registries can ratify them.
+# ===========================================================================
+referenced_candidates:
+  model_provider_profiles:
+    - id: supervisor_routing_model
+      status: canonical                 # already established across all pipelines + SDLC stages
+      owned_by: configs/nexus-ai/model_provider_profiles.yaml
+    - id: coder_engineering_model
+      status: canonical
+      owned_by: configs/nexus-ai/model_provider_profiles.yaml
+    - id: vision_model
+      status: canonical                 # operating model §11 example; SDLC stage 23
+      owned_by: configs/nexus-ai/model_provider_profiles.yaml
+    - id: memory_reasoning_profile
+      status: candidate                 # knowledge_memory_pipeline (pipeline_catalog)
+      owned_by: configs/nexus-ai/model_provider_profiles.yaml
+    - id: audio_model
+      status: candidate                 # no current binding
+      owned_by: configs/nexus-ai/model_provider_profiles.yaml
+    - id: creative_generation_model
+      status: candidate                 # no current binding
+      owned_by: configs/nexus-ai/model_provider_profiles.yaml
+  governance_profiles:
+    - id: code_generation_governance
+      status: canonical                 # doc 03 §7
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: web_access_governance
+      status: canonical                 # doc 03 §7
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: system_access_governance
+      status: canonical                 # doc 03 §7
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: memory_access_governance
+      status: canonical                 # doc 03 §7
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: sandbox_execution_governance
+      status: canonical                 # doc 03 §9
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: orchestration_governance
+      status: candidate                 # Supervisor routing/arbitration governance (Phase E)
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: vision_governance
+      status: candidate
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: audio_governance
+      status: candidate
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+    - id: creative_governance
+      status: candidate
+      owned_by: configs/nexus-ai/governance_profiles.yaml
+  audit_schemas:
+    - id: core_ability_invocation_trace_schema
+      status: candidate                 # Trace family (doc 03 §12 "core ability invocation trace"); owned by Audit Schemas Registry
+      owned_by: configs/nexus-ai/audit_schemas.yaml
+    - id: source_fetch_trace_schema
+      status: candidate                 # Web external-fetch provenance (research_pipeline source_fetch_trace)
+      owned_by: configs/nexus-ai/audit_schemas.yaml
+
+# ===========================================================================
+# REGISTRY-LEVEL VALIDATION SUMMARY (doc 17 §11 / §13) — self-check assertions.
+# ===========================================================================
+validation:
+  expected_core_ability_count: 8
+  actual_core_ability_count: 8
+  every_item_has_status: true
+  every_item_has_display_name: true              # R11: all 8 carry a capitalized display_name; lowercase id stays canonical
+  display_name_is_alias_not_new_identity: true   # R11: name-form alias only — no new agent/tool/caller created
+  every_item_has_used_by_or_is_candidate: true   # all 8 carry used_by (min anchor: nexus_ai_capability_system)
+  no_core_ability_is_an_agent: true              # never_agent: true on all 8
+  supervisor_is_not_team_lead: true              # never_team_lead: true on supervisor
+  no_plugin_registry: true
+  web_and_os_higher_default_risk_than_reasoning_abilities: true   # web/os default_risk_level: high
+  tool_maps:
+    web: [web_search, web_fetch, web_scrape]
+    os: [file_read, file_write, shell_exec, process_run]
+    memory: [memory_search, memory_write, memory_summarize, context_recall]
+  unused_but_locked_canonical:
+    - audio       # locked name, no current pipeline binding
+    - creative    # locked name, no current pipeline binding

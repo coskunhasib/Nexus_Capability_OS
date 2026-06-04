@@ -1,0 +1,1638 @@
+# =============================================================================
+# Nexus AI — SKILL-SCOPE GOVERNANCE (applicable config layer)
+# Phase E / doc 19 §9 (19-governance-audit-readiness-plan.md). Output of the
+# Governance & Audit Implementation Readiness phase.
+# Documentation / blueprint ONLY — NO runtime code, NO merge, NO deploy.
+# =============================================================================
+#
+# WHAT THIS FILE IS
+#   The APPLICABLE skill-scope governance layer. The Phase C registry
+#   (configs/nexus-ai/governance_profiles.yaml, SCOPE: skill) is the CATALOG of
+#   *what* skill-governance profiles exist. THIS file IMPLEMENTS them as granular,
+#   per-skill governance_profiles with concrete, evaluatable RULES so the locked
+#   skill semantics and the SDLC required gates can be evaluated from config.
+#
+#   Registry profile (catalog, WHAT exists)        -> implemented here AS
+#   ---------------------------------------------     ----------------------------
+#   brainstorming_skill_governance (prism)         -> gov.skill.prism
+#   defect_finding_skill_governance (verifctn-loop)-> gov.skill.verification_loop
+#   skill_governance (generic skill profile)       -> gov.skill.<each other skill>
+#   locked_semantics_enforcement_policy            -> referenced by every profile;
+#                                                     made evaluatable in prism +
+#                                                     verification-loop rules
+#   skill_must_have_semantic_extraction_before_    -> rule on EVERY profile
+#     binding (== no_unread_skill_binding)
+#
+# CONTRACTS HONORED
+#   governance_profile contract (doc 19 §4): governance_profile_id, scope, purpose,
+#     applies_to, severity_default, rules, required_evidence, required_trace, owner,
+#     escalation.
+#   rule contract (doc 19 §5): rule_id, description, severity, required_when,
+#     pass_condition, fail_condition, on_fail, rework_route, evidence_required,
+#     trace_required.
+#
+# LOCKED DECISIONS honored
+#   - Plugin CANCELLED: no plugin concept anywhere; no skill is a plugin.
+#   - Governance != Audit: this file is GOVERNANCE only. It REFERENCES audit
+#     schemas by id (they live in configs/nexus-ai/audit_schemas.yaml) but defines
+#     none. required_evidence / required_trace point at those schema ids.
+#   - Evidence != Trace: required_evidence lists EVIDENCE-family schema ids only;
+#     required_trace lists TRACE-family schema ids only. They are NEVER merged and
+#     the two schema families live in SEPARATE dirs
+#     (configs/nexus-ai/audit/evidence_schemas/ vs .../audit/trace_schemas/).
+#   - Skill != Tool: every applies_to here is a SKILL id from skills_registry.yaml.
+#     No Core Ability, Tool, Agent, Sub-agent, or Plugin appears as a governed item.
+#   - Core Abilities are NOT agents and NOT skills: they never appear as a governed
+#     skill or as an owner. Owners/escalation targets are Agent roles / the skill
+#     governance team — never a Core Ability, never the Supervisor.
+#   - Supervisor != team lead. prism = brainstorming/divergence; verification-loop
+#     = bug/defect finding. These boundaries are ENFORCED in rules below.
+#
+# LOCKED SKILL SEMANTICS — ENFORCED HERE (doc 03 §1/§5/§8; doc 19 §9; runtime
+#   rules sdlc_pipeline_runtime_rules.yaml prism_as_non_divergence /
+#   verification_loop_replaces_test_execution / concept_boundary_collapse):
+#     * prism             = brainstorming / divergence ONLY.
+#                           FORBIDDEN: bug finding (and any defect-discovery use).
+#     * verification-loop = bug / defect finding ONLY.
+#                           FORBIDDEN: general readiness checklist;
+#                                      replacing test_execution (stage 14).
+#
+# RECONCILIATION (doc 19 RECONCILIATION INPUTS, applied consistently):
+#   (a) no_self_approval and evidence_required are FIRST-CLASS governance_profile
+#       ids (global scope, governance_profiles.yaml). The *_policy spellings are
+#       recorded as ALIASES (see reconciliation_aliases below) — never as the
+#       primary id.
+#   (b) Authoritative TEAM names are used: skill_governance_team, knowledge_team
+#       (NOT knowledge_memory_team), activation_team, operations_team.
+#   (c) Core Abilities are referenced by lowercase REGISTRY id where a skill rule
+#       must name one (e.g. a skill may not invoke the `os` ability); the
+#       capitalized Name is kept only as a human label. (No skill here needs a
+#       Core Ability reference except as a forbidden target; none is introduced.)
+#
+# AUTHORITATIVE SOURCES (read from disk for this file)
+#   - configs/nexus-ai/skills_registry.yaml            # the 12 canonical + 6 candidate skills, allowed/forbidden_usage, used_by
+#   - configs/nexus-ai/governance_profiles.yaml        # SCOPE: skill catalog profiles being implemented
+#   - configs/nexus-ai/audit_schemas.yaml              # evidence/trace schema ids referenced by required_evidence/required_trace
+#   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml# locked anti-patterns (prism_as_non_divergence, etc.)
+#   - configs/nexus-ai/stages/sdlc/*.yaml              # gate/on_fail/rework routes the rework_route fields align to
+#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md  # §8 skill governance
+#   - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md# §4/§5/§9 contracts + locked semantics
+# =============================================================================
+
+config_id: nexus_ai_governance_skill_scope
+config_kind: governance_layer
+scope: skill
+layer: applicable                       # implements the Phase C catalog profiles
+version: draft-0.1
+status: draft
+phase: E
+source_doc: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md
+implements_registry: configs/nexus-ai/governance_profiles.yaml#scope=skill
+no_plugin: true
+
+# ----- closed vocabularies (mirror the registries) ---------------------------
+severity_vocabulary: [blocker, major, advisory, informational]   # doc 19 §5 rule severities
+scope_vocabulary: [global, pipeline, team, stage, core_ability, skill, tool]
+
+# ----- governance ownership & escalation defaults for the skill layer ---------
+# Owners/escalation are Agent roles / the skill governance TEAM — NEVER a Core
+# Ability, NEVER the Supervisor (locked). skill_governance_team is the
+# authoritative team name (reconciliation (b)).
+skill_layer_defaults:
+  owner: skill_librarian_agent                     # authors/maintains skill semantics + governance bindings
+  decision_owner: skill_runtime_safety_agent       # decides activate/hold/deprecate (proposer != decider)
+  escalation:
+    - skill_governance_team_lead                   # team-lead orchestrates; cannot bypass a blocking gate (no_policy_bypass)
+    - owner_human_gate                             # human/owner authority for unresolved blocker semantics violations
+  governing_team: skill_governance_team            # authoritative team name (NOT knowledge_memory_team)
+  # Profiles that EVERY skill profile inherits (catalog ids from the Phase C registry):
+  inherited_governance_profiles:
+    - skill_governance                             # generic skill-level governance umbrella (registry, stage-03 + class default)
+    - locked_semantics_enforcement_policy          # repo-wide locked semantics (registry, skill scope)
+    - skill_must_have_semantic_extraction_before_binding   # == no_unread_skill_binding (doc 06 §3); gated by skill_semantic_required_gate
+  # Cross-cutting global policies re-shown at the skill layer (first-class ids;
+  # see reconciliation_aliases for the *_policy spellings):
+  cross_cutting_policies:
+    - evidence_required                            # every gate decision needs evidence (alias: evidence_required_policy)
+    - trace_required                               # every governed skill activation emits a trace
+    - no_policy_bypass                             # no actor may pass a blocking skill gate
+
+# ----- reconciliation: first-class ids vs *_policy alias spellings (doc 19 (a)) -
+reconciliation_aliases:
+  - canonical: no_self_approval                    # FIRST-CLASS id (global scope)
+    alias: no_self_approval_policy                 # spelling recorded as alias only
+  - canonical: evidence_required                   # FIRST-CLASS id (global scope)
+    alias: evidence_required_policy
+  - canonical: skill_must_have_semantic_extraction_before_binding
+    alias: no_unread_skill_binding                 # doc 06 §3 spelling
+
+# ----- audit schema families referenced below (defined in audit_schemas.yaml) --
+# Listed so a reader can confirm Evidence and Trace are kept in SEPARATE families
+# (and, at rest, SEPARATE dirs). This file references them by id only.
+referenced_audit_schemas:
+  evidence_family:                                 # -> configs/nexus-ai/audit/evidence_schemas/
+    - bug_finding_evidence_schema                  # verification-loop defect evidence (stage 15)
+    - skill_semantic_extract_schema                # skill semantic-extraction evidence
+    - script_audit_evidence_schema                 # script/reference safety-audit evidence
+    - skill_misuse_warning_schema                  # misuse-warning evidence
+    - skill_binding_decision_schema                # binding/activation decision proof
+    - sdlc_pipeline_evidence_schema                # SDLC decision-evidence set (gap/coverage skills feed it)
+    - release_evidence_schema                      # release minimum evidence set
+    - source_evidence_schema                       # research source evidence
+  trace_family:                                    # -> configs/nexus-ai/audit/trace_schemas/
+    - skill_activation_trace_schema                # EVERY skill activation emits this (skill_class_defaults)
+    - skill_governance_trace_schema                # skill-governance pipeline trace
+    - stage_gate_trace_schema                      # gate-evaluation provenance
+    - decision_trace_schema                        # multi-perspective decision history
+
+# =============================================================================
+# SKILL-SCOPE GOVERNANCE PROFILES
+#   One profile per skill. Canonical 12 first, then the 6 candidates.
+#   prism + verification-loop carry the LOCKED-semantics enforcement rules.
+# =============================================================================
+governance_profiles:
+
+  # ===========================================================================
+  # CANONICAL 12
+  # ===========================================================================
+
+  # -------------------------------------------------------------------------
+  # prism — brainstorming / divergence ONLY (LOCKED). Implements the registry
+  # profile `brainstorming_skill_governance`.
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.prism
+    implements: brainstorming_skill_governance       # Phase C registry catalog id
+    scope: skill
+    purpose: >-
+      Govern the prism skill so it is used for brainstorming / divergent thinking
+      ONLY. prism widens the option space and never decides, gates readiness, or
+      finds defects. Enforces the locked semantic boundary (prism != defect
+      finding) and the no-binding-before-semantics rule.
+    applies_to:
+      - skill:prism                                  # registry id; label "Prism"
+    severity_default: blocker
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:                                   # mirror of skills_registry.yaml (governance view)
+      - divergent_exploration
+      - option_space_expansion
+      - brainstorming
+      - requirement_elicitation
+      - candidate_architecture_generation
+      - failure_mode_and_abuse_case_ideation
+      - subskill_of_llm_council_or_sentinel
+    forbidden_usage:
+      - bug_finding                                  # LOCKED
+      - defect_finding
+      - general_readiness_gate
+      - final_release_approval
+      - decision_making
+    rules:
+
+      - rule_id: prism.semantics_locked_divergence_only
+        description: >-
+          prism MUST be activated only for brainstorming / divergence (option-space
+          expansion). Its semantic_category must remain `divergence`; any binding or
+          extraction that reclassifies prism (e.g. to defect finding or a readiness
+          gate) is a locked-semantics violation.
+        severity: blocker
+        required_when: skill_activation.skill_id == prism
+        pass_condition: >-
+          activation.intended_use in prism.allowed_usage
+          AND prism.semantic_category == divergence
+          AND activation.intended_use not in [bug_finding, defect_finding,
+              general_readiness_gate, decision_making, final_release_approval]
+        fail_condition: >-
+          activation.intended_use in [bug_finding, defect_finding,
+          general_readiness_gate, decision_making, final_release_approval]
+          OR prism.semantic_category != divergence
+        on_fail: block_activation                    # the activation is refused; no divergence-skill reuse for defect/readiness
+        rework_route: skill_governance:skill_semantic_extraction   # re-extract/correct semantics before any binding
+        evidence_required:
+          - skill_semantic_extract_schema            # evidence the semantic record still says divergence
+        trace_required:
+          - skill_activation_trace_schema
+          - skill_governance_trace_schema
+
+      - rule_id: prism.not_a_bug_finder
+        description: >-
+          prism MUST NOT be substituted for verification-loop or used to produce a
+          defect/bug report. Defect discovery is verification-loop's exclusive role.
+        severity: blocker
+        required_when: stage.requires_defect_finding == true OR activation.intended_use == bug_finding
+        pass_condition: stage.bound_defect_skill == verification-loop AND activation.skill_id != prism_for_defects
+        fail_condition: activation.skill_id == prism AND activation.intended_use in [bug_finding, defect_finding]
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding         # defect finding belongs to the verification-loop stage/skill
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: prism.not_a_readiness_or_decision_gate
+        description: >-
+          prism output is options, never a decision or a readiness verdict. It must
+          not stand in as a readiness/coverage gate or a release approval.
+        severity: blocker
+        required_when: gate.kind in [readiness_gate, release_gate, decision_gate]
+        pass_condition: gate.bound_skill != prism
+        fail_condition: gate.bound_skill == prism
+        on_fail: block_gate_binding
+        rework_route: skill_governance:skill_binding_proposal       # re-propose with an appropriate skill (gap-audit/calibrate/judge)
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: prism.semantic_extraction_before_binding
+        description: >-
+          prism may only be bound to a stage after skill_semantic_extraction has
+          produced its semantic record (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == prism
+        pass_condition: prism.semantic_extraction_status == complete
+        fail_condition: prism.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:                               # EVIDENCE-family schema ids only (separate dir)
+      - skill_semantic_extract_schema
+    required_trace:                                  # TRACE-family schema ids only (separate dir)
+      - skill_activation_trace_schema
+      - skill_governance_trace_schema
+    notes: >-
+      Implements registry brainstorming_skill_governance. Enforced cross-file by
+      sdlc_pipeline_runtime_rules.yaml `prism_as_non_divergence`. Correctly absent
+      from every review/validation/readiness stage (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # verification-loop — bug / defect finding ONLY (LOCKED). Implements the
+  # registry profile `defect_finding_skill_governance`.
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.verification_loop
+    implements: defect_finding_skill_governance      # Phase C registry catalog id
+    scope: skill
+    purpose: >-
+      Govern the verification-loop skill so it is used for bug / defect finding
+      ONLY. It performs a rigorous defect sweep and emits a defect report + a
+      blocking gate result with residual risk — it is NOT a general readiness
+      checklist and is NOT a replacement for stage 14 test_execution.
+    applies_to:
+      - skill:verification-loop                      # registry id; label "Verification-loop"
+    severity_default: blocker
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - bug_finding
+      - defect_finding
+      - verification_sweep
+      - adversarial_defect_discovery
+      - migration_defect_finding
+      - script_defect_sweep
+      - post_fix_regression_review
+    forbidden_usage:
+      - general_readiness_checklist                  # LOCKED
+      - replacing_test_execution                     # LOCKED
+      - ideation
+      - architecture_brainstorming
+      - bug_free_guarantee
+    rules:
+
+      - rule_id: verification_loop.semantics_locked_defect_only
+        description: >-
+          verification-loop MUST be activated only for bug/defect finding. Its
+          semantic_category must remain `verification_defect_discovery`; any binding
+          or extraction that reclassifies it (e.g. to a readiness checklist or
+          ideation) is a locked-semantics violation.
+        severity: blocker
+        required_when: skill_activation.skill_id == verification-loop
+        pass_condition: >-
+          activation.intended_use in verification-loop.allowed_usage
+          AND verification-loop.semantic_category == verification_defect_discovery
+          AND activation.intended_use not in [general_readiness_checklist,
+              replacing_test_execution, ideation, architecture_brainstorming]
+        fail_condition: >-
+          activation.intended_use in [general_readiness_checklist,
+          replacing_test_execution, ideation, architecture_brainstorming]
+          OR verification-loop.semantic_category != verification_defect_discovery
+        on_fail: block_activation
+        rework_route: skill_governance:skill_semantic_extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+          - skill_governance_trace_schema
+
+      - rule_id: verification_loop.not_a_test_execution_replacement
+        description: >-
+          verification-loop MUST NOT replace stage 14 test_execution. test_execution
+          runs the suite; verification-loop sweeps for defects beyond what the suite
+          caught. A run that skips test_execution and uses verification-loop in its
+          place is forbidden.
+        severity: blocker
+        required_when: stage.id == "sdlc:14-test-execution" OR activation.intended_use == replacing_test_execution
+        pass_condition: >-
+          test_execution.executed == true
+          AND verification-loop.not_bound_as(test_execution_substitute)
+        fail_condition: >-
+          activation.intended_use == replacing_test_execution
+          OR (test_execution.executed == false AND stage.bound_skill == verification-loop)
+        on_fail: block_activation
+        rework_route: sdlc:14-test-execution                       # run the suite first; verification-loop is stage 15
+        evidence_required:
+          - bug_finding_evidence_schema              # stage-15 defect evidence (distinct from test results)
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: verification_loop.not_a_readiness_checklist
+        description: >-
+          verification-loop MUST NOT be reused as a general readiness/coverage
+          checklist (the exact locked anti-pattern stages 29/30 refuse). Readiness
+          adjudication uses gap-audit + calibrate + release-readiness-judge.
+        severity: blocker
+        required_when: gate.kind == readiness_gate OR activation.intended_use == general_readiness_checklist
+        pass_condition: gate.bound_skill != verification-loop
+        fail_condition: gate.bound_skill == verification-loop AND gate.kind == readiness_gate
+        on_fail: block_gate_binding
+        rework_route: skill_governance:skill_binding_proposal       # bind a readiness skill instead (gap-audit/judge)
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: verification_loop.defect_evidence_required
+        description: >-
+          A verification-loop defect sweep MUST emit a defect report and a blocking
+          gate result (blocker bug count == 0 to pass). It produces residual risk,
+          never a bug-free guarantee.
+        severity: blocker
+        required_when: stage.id == "sdlc:15-verification-loop-bug-finding"
+        pass_condition: bug_finding_report.present == true AND defect_gate.blocker_bug_count == 0
+        fail_condition: bug_finding_report.absent == true OR defect_gate.blocker_bug_count > 0
+        on_fail: rework                              # defects route back to fix; the gate blocks
+        rework_route: sdlc:11-implementation                       # fix the defects, then re-run 14 -> 15
+        evidence_required:
+          - bug_finding_evidence_schema
+        trace_required:
+          - skill_activation_trace_schema
+          - stage_gate_trace_schema
+
+      - rule_id: verification_loop.semantic_extraction_before_binding
+        description: >-
+          verification-loop may only be bound to a stage after skill_semantic_
+          extraction has produced its semantic record (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == verification-loop
+        pass_condition: verification-loop.semantic_extraction_status == complete
+        fail_condition: verification-loop.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - bug_finding_evidence_schema
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+      - skill_governance_trace_schema
+      - stage_gate_trace_schema
+    notes: >-
+      Implements registry defect_finding_skill_governance. Enforced cross-file by
+      sdlc_pipeline_runtime_rules.yaml `verification_loop_replaces_test_execution`
+      and the `concept_boundary_collapse` guard. Stage 29 explicitly refuses to
+      reuse it as a readiness checklist.
+
+  # -------------------------------------------------------------------------
+  # sentinel — premortem / risk foresight (informs a gate; never sole approver).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.sentinel
+    implements: skill_governance                     # generic skill-level governance (registry)
+    scope: skill
+    purpose: >-
+      Govern the sentinel skill as pre-commitment stress test / premortem / risk
+      foresight. sentinel surfaces hidden assumptions and failure paths; it informs
+      a gate but is never the sole approver, and it is not a defect finder.
+    applies_to:
+      - skill:sentinel
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - premortem
+      - risk_surfacing
+      - hidden_assumption_surfacing
+      - adversarial_foresight
+      - pre_commitment_review
+      - misuse_scenario_premortem
+    forbidden_usage:
+      - implementation
+      - final_approval_by_itself
+      - bug_finding                                  # defect discovery is verification-loop
+    rules:
+
+      - rule_id: sentinel.not_sole_approver
+        description: >-
+          sentinel may inform a readiness/validation gate but MUST NOT be recorded as
+          the sole approver of that gate (no_self_approval / owner-decision still applies).
+        severity: blocker
+        required_when: gate.kind in [readiness_gate, decision_gate, validation_gate]
+        pass_condition: gate.owner_agent != null AND gate.sole_approver != skill:sentinel
+        fail_condition: gate.sole_approver == skill:sentinel
+        on_fail: block_gate_binding
+        rework_route: skill_governance:skill_binding_proposal
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+          - decision_trace_schema
+
+      - rule_id: sentinel.not_a_bug_finder
+        description: >-
+          sentinel performs foresight, not defect discovery. It must not be bound as
+          the defect-finding skill (that is verification-loop).
+        severity: blocker
+        required_when: stage.requires_defect_finding == true
+        pass_condition: stage.bound_defect_skill == verification-loop
+        fail_condition: stage.bound_defect_skill == skill:sentinel
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: sentinel.semantic_extraction_before_binding
+        description: sentinel may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == sentinel
+        pass_condition: sentinel.semantic_extraction_status == complete
+        fail_condition: sentinel.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: >-
+      Generic skill_governance + locked-semantics. Bound across design/risk/pre-
+      commitment surfaces (skills_registry used_by). Activation, operations bind it
+      as foresight; prism/verification-loop are intentionally NOT bound in activation.
+
+  # -------------------------------------------------------------------------
+  # llm-council — multi-perspective adjudication (informs; does not replace owner).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.llm_council
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the llm-council skill as multi-perspective decision review / verdict
+      synthesis for genuinely contested judgement. It informs a decision; it MUST
+      NOT replace the single recorded owner decision, execute code, or bypass policy.
+    applies_to:
+      - skill:llm-council
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - multi_perspective_review
+      - verdict_synthesis
+      - contested_judgement_adjudication
+      - option_scoring
+      - severity_adjudication
+      - binding_proposal_review
+    forbidden_usage:
+      - direct_code_execution
+      - policy_bypass
+      - replacing_a_single_owner_decision_record
+    rules:
+
+      - rule_id: llm_council.does_not_replace_owner_decision
+        description: >-
+          llm-council informs a decision gate; the gate MUST still record a single
+          owner decision (producer != approver preserved). The council verdict is
+          not itself the recorded owner decision.
+        severity: blocker
+        required_when: gate.kind == decision_gate AND gate.uses_skill == llm-council
+        pass_condition: gate.owner_decision_record.present == true AND gate.owner_agent != null
+        fail_condition: gate.owner_decision_record.absent == true AND gate.sole_basis == skill:llm-council
+        on_fail: block_gate_decision
+        rework_route: skill_governance:skill_activation_decision
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - decision_trace_schema
+          - stage_gate_trace_schema
+
+      - rule_id: llm_council.no_direct_execution_or_bypass
+        description: >-
+          llm-council MUST NOT execute code/tools directly or be used to override a
+          blocking governance gate (no_policy_bypass).
+        severity: blocker
+        required_when: activation.skill_id == llm-council
+        pass_condition: activation.executes_code == false AND activation.bypasses_gate == false
+        fail_condition: activation.executes_code == true OR activation.bypasses_gate == true
+        on_fail: block_activation
+        rework_route: skill_governance:skill_binding_proposal
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: llm_council.semantic_extraction_before_binding
+        description: llm-council may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == llm-council
+        pass_condition: llm-council.semantic_extraction_status == complete
+        fail_condition: llm-council.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+      - decision_trace_schema
+    notes: Generic skill_governance. Bound at contested judgement contexts (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # fmea — structured failure-mode analysis (not free ideation, not code defects).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.fmea
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the fmea skill as structured failure-mode-and-effects analysis
+      producing a ranked failure-mode register. It is structured analysis — not
+      free brainstorming (that is prism) and not live-code defect discovery (that
+      is verification-loop).
+    applies_to:
+      - skill:fmea
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - failure_mode_analysis
+      - effects_and_severity_ranking
+      - risk_register_construction
+      - script_failure_mode_analysis
+    forbidden_usage:
+      - brainstorming_only                           # free ideation is prism
+      - defect_discovery_in_code                      # live code defects are verification-loop
+    rules:
+
+      - rule_id: fmea.not_free_ideation
+        description: fmea produces a structured failure-mode register; it MUST NOT be substituted for prism divergence.
+        severity: major
+        required_when: activation.skill_id == fmea
+        pass_condition: activation.intended_use in fmea.allowed_usage
+        fail_condition: activation.intended_use == brainstorming_only
+        on_fail: block_activation
+        rework_route: skill_governance:skill_semantic_extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: fmea.not_code_defect_discovery
+        description: fmea analyses failure modes; finding live code defects is verification-loop's role.
+        severity: blocker
+        required_when: stage.requires_defect_finding == true
+        pass_condition: stage.bound_defect_skill == verification-loop
+        fail_condition: stage.bound_defect_skill == skill:fmea
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: fmea.semantic_extraction_before_binding
+        description: fmea may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == fmea
+        pass_condition: fmea.semantic_extraction_status == complete
+        fail_condition: fmea.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: Generic skill_governance. Bound at failure-mode-relevant surfaces (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # adr-builder — records architecture decisions (does not make them unilaterally).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.adr_builder
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the adr-builder skill as the recorder of architecture/contract
+      decisions as structured ADRs. It captures a decision; it MUST NOT make the
+      decision unilaterally (review/council still owns the decision) and is not a
+      defect finder.
+    applies_to:
+      - skill:adr-builder
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - architecture_decision_recording
+      - adr_authoring
+      - api_contract_decision_recording
+    forbidden_usage:
+      - making_the_decision_unilaterally
+      - bug_finding
+    rules:
+
+      - rule_id: adr_builder.records_not_decides
+        description: >-
+          adr-builder records a decision reached by review/council; it MUST NOT be
+          the sole basis for the architecture decision (no_self_approval upstream).
+        severity: major
+        required_when: gate.kind == decision_gate AND gate.uses_skill == adr-builder
+        pass_condition: gate.decision_owner != skill:adr-builder AND adr_record.references_review == true
+        fail_condition: gate.decision_owner == skill:adr-builder
+        on_fail: block_gate_decision
+        rework_route: sdlc:07-architecture-review
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - decision_trace_schema
+
+      - rule_id: adr_builder.semantic_extraction_before_binding
+        description: adr-builder may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == adr-builder
+        pass_condition: adr-builder.semantic_extraction_status == complete
+        fail_condition: adr-builder.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+      - decision_trace_schema
+    notes: Generic skill_governance. Produces ADR_INDEX-class evidence (stages 06, 20).
+
+  # -------------------------------------------------------------------------
+  # gap-audit — coverage/completeness audit (NOT defect finding).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.gap_audit
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the gap-audit skill as the broad coverage/completeness helper —
+      detect missing required/applicable elements before a handoff/gate. Coverage
+      gaps are NOT code defects; it MUST NOT stand in for verification-loop.
+    applies_to:
+      - skill:gap-audit
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - completeness_audit
+      - coverage_gap_detection
+      - missing_evidence_detection
+      - missing_gate_detection
+    forbidden_usage:
+      - defect_finding                               # coverage gaps != code defects
+      - decision_making
+    rules:
+
+      - rule_id: gap_audit.not_defect_finding
+        description: >-
+          gap-audit detects missing coverage/evidence/gates; it MUST NOT be bound as
+          the defect-finding skill (that is verification-loop's exclusive role).
+        severity: blocker
+        required_when: stage.requires_defect_finding == true
+        pass_condition: stage.bound_defect_skill == verification-loop
+        fail_condition: stage.bound_defect_skill == skill:gap-audit
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: gap_audit.semantic_extraction_before_binding
+        description: gap-audit may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == gap-audit
+        pass_condition: gap-audit.semantic_extraction_status == complete
+        fail_condition: gap-audit.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+      - sdlc_pipeline_evidence_schema                # gap-audit feeds the SDLC evidence coverage check
+    required_trace:
+      - skill_activation_trace_schema
+    notes: >-
+      Generic skill_governance. The most broadly bound skill (29 SDLC stages); used
+      as a coverage helper only, never as a defect finder (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # prompt-fidelity — intent-fidelity checking (not defect finding, not deciding).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.prompt_fidelity
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the prompt-fidelity skill as the intent-fidelity check (artifacts
+      faithfully reflect stated intent). It checks alignment; it MUST NOT find
+      defects or make the decision.
+    applies_to:
+      - skill:prompt-fidelity
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - intent_fidelity_check
+      - brief_to_intent_alignment
+      - requirement_to_intent_alignment
+      - changeset_to_intent_alignment
+    forbidden_usage:
+      - bug_finding
+      - decision_making
+    rules:
+
+      - rule_id: prompt_fidelity.not_defect_finding
+        description: prompt-fidelity checks intent alignment; defect discovery is verification-loop.
+        severity: blocker
+        required_when: stage.requires_defect_finding == true
+        pass_condition: stage.bound_defect_skill == verification-loop
+        fail_condition: stage.bound_defect_skill == skill:prompt-fidelity
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: prompt_fidelity.semantic_extraction_before_binding
+        description: prompt-fidelity may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == prompt-fidelity
+        pass_condition: prompt-fidelity.semantic_extraction_status == complete
+        fail_condition: prompt-fidelity.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: Generic skill_governance. Bound at intent-alignment surfaces (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # calibrate — severity/confidence calibration (companion; not deciding alone).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.calibrate
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the calibrate skill as the severity/confidence calibration companion
+      across review/validation gates so decisions carry honest confidence. It
+      calibrates; it MUST NOT find defects or decide by itself.
+    applies_to:
+      - skill:calibrate
+    severity_default: advisory
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - confidence_calibration
+      - severity_calibration
+      - accepted_risk_confidence
+    forbidden_usage:
+      - bug_finding
+      - decision_making_by_itself
+    rules:
+
+      - rule_id: calibrate.not_sole_decider
+        description: calibrate informs a gate's confidence; it MUST NOT be the sole decider of the gate.
+        severity: major
+        required_when: gate.uses_skill == calibrate
+        pass_condition: gate.owner_agent != null AND gate.sole_decider != skill:calibrate
+        fail_condition: gate.sole_decider == skill:calibrate
+        on_fail: block_gate_decision
+        rework_route: skill_governance:skill_binding_proposal
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: calibrate.semantic_extraction_before_binding
+        description: calibrate may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == calibrate
+        pass_condition: calibrate.semantic_extraction_status == complete
+        fail_condition: calibrate.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: Generic skill_governance. Broad companion calibration (14 SDLC stages; skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # refraction — post-hoc learning/reflection (NOT an in-run gate).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.refraction
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the refraction skill as post-hoc learning/reflection over a completed
+      run or incident. It runs AFTER completion; it MUST NOT act as a live in-run
+      gate and is not a defect finder.
+    applies_to:
+      - skill:refraction
+    severity_default: advisory
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - learning_reflection
+      - lesson_extraction
+      - retrospective_analysis
+    forbidden_usage:
+      - bug_finding
+      - in_run_gating                                # refraction is post-hoc
+    rules:
+
+      - rule_id: refraction.not_an_in_run_gate
+        description: refraction is post-hoc; it MUST NOT be bound as a live in-run gate that blocks progression.
+        severity: major
+        required_when: gate.kind in [readiness_gate, decision_gate, validation_gate] AND gate.uses_skill == refraction
+        pass_condition: gate.bound_skill != skill:refraction
+        fail_condition: gate.bound_skill == skill:refraction
+        on_fail: block_gate_binding
+        rework_route: skill_governance:skill_binding_proposal
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: refraction.semantic_extraction_before_binding
+        description: refraction may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == refraction
+        pass_condition: refraction.semantic_extraction_status == complete
+        fail_condition: refraction.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: >-
+      Generic skill_governance. SDLC learning stage 31; also the canonical learning
+      skill in operations and knowledge (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # fermi-decompose — estimation/decomposition (approximates; not measured data).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.fermi_decompose
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the fermi-decompose skill as estimation / problem decomposition into
+      tractable parts. It approximates; it MUST NOT be presented as measured data
+      and is not a defect finder.
+    applies_to:
+      - skill:fermi-decompose
+    severity_default: advisory
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - problem_decomposition
+      - estimation
+      - sizing
+      - cost_resource_estimation
+    forbidden_usage:
+      - bug_finding
+      - precise_measurement_substitute               # approximation, not measured data
+    rules:
+
+      - rule_id: fermi_decompose.not_measured_data_substitute
+        description: >-
+          fermi-decompose output is an approximation; a gate that requires measured
+          data MUST NOT accept a fermi estimate as that measured evidence.
+        severity: major
+        required_when: gate.requires_measured_data == true AND gate.uses_skill == fermi-decompose
+        pass_condition: gate.measured_evidence.present == true
+        fail_condition: gate.measured_evidence.absent == true AND gate.basis == skill:fermi-decompose
+        on_fail: rework
+        rework_route: sdlc:24-performance-resilience                # obtain measured evidence where required
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: fermi_decompose.semantic_extraction_before_binding
+        description: fermi-decompose may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == fermi-decompose
+        pass_condition: fermi-decompose.semantic_extraction_status == complete
+        fail_condition: fermi-decompose.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: Generic skill_governance. Bound at risk sizing / planning / cost stages (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # bayesian-update — belief update from evidence (not deciding alone).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.bayesian_update
+    implements: skill_governance
+    scope: skill
+    purpose: >-
+      Govern the bayesian-update skill as prior/belief revision from new evidence.
+      It updates beliefs; it MUST NOT be a defect finder or the sole decider of a gate.
+    applies_to:
+      - skill:bayesian-update
+    severity_default: advisory
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - belief_update
+      - prior_revision
+      - evidence_weighted_estimation
+    forbidden_usage:
+      - bug_finding
+      - decision_making_by_itself
+    rules:
+
+      - rule_id: bayesian_update.not_sole_decider
+        description: bayesian-update informs a belief/estimate; it MUST NOT be the sole decider of a gate.
+        severity: major
+        required_when: gate.uses_skill == bayesian-update
+        pass_condition: gate.owner_agent != null AND gate.sole_decider != skill:bayesian-update
+        fail_condition: gate.sole_decider == skill:bayesian-update
+        on_fail: block_gate_decision
+        rework_route: skill_governance:skill_binding_proposal
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: bayesian_update.semantic_extraction_before_binding
+        description: bayesian-update may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == bayesian-update
+        pass_condition: bayesian-update.semantic_extraction_status == complete
+        fail_condition: bayesian-update.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: Generic skill_governance. Bound at learning/uncertainty surfaces (skills_registry used_by).
+
+  # ===========================================================================
+  # CANDIDATE SKILLS (status: candidate in skills_registry.yaml) — governed the
+  # same way; each governance_profile_status is `candidate` pending ratification.
+  # ===========================================================================
+
+  # -------------------------------------------------------------------------
+  # skill-architect — the meta-skill that performs semantic extraction itself.
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.skill_architect
+    implements: skill_governance
+    governance_profile_status: candidate
+    scope: skill
+    purpose: >-
+      Govern the skill-architect meta-skill that reads a skill package and extracts
+      its semantic identity (so other skills can be safely bound). It MUST NOT bind
+      a skill without extraction and MUST NEVER alter the locked semantics of prism
+      / verification-loop (it may record, never change them).
+    applies_to:
+      - skill:skill-architect
+    severity_default: blocker
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_semantic_required_gate                 # the gate this meta-skill produces evidence for
+      - locked_semantics_enforcement_policy
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - skill_semantic_extraction
+      - skill_package_classification
+      - misuse_warning_drafting
+    forbidden_usage:
+      - binding_a_skill_without_extraction
+      - altering_locked_skill_semantics              # may record but never change prism/verification-loop
+      - bug_finding
+    rules:
+
+      - rule_id: skill_architect.may_not_alter_locked_semantics
+        description: >-
+          skill-architect may RECORD a skill's semantics but MUST NOT emit an
+          extraction that reclassifies prism (away from divergence) or
+          verification-loop (away from defect finding).
+        severity: blocker
+        required_when: extraction.subject_skill in [prism, verification-loop]
+        pass_condition: >-
+          (extraction.subject_skill == prism AND extraction.semantic_category == divergence)
+          OR (extraction.subject_skill == verification-loop AND extraction.semantic_category == verification_defect_discovery)
+        fail_condition: >-
+          (extraction.subject_skill == prism AND extraction.semantic_category != divergence)
+          OR (extraction.subject_skill == verification-loop AND extraction.semantic_category != verification_defect_discovery)
+        on_fail: block_extraction                    # the reclassifying extraction is refused
+        rework_route: skill_governance:skill_semantic_extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+
+      - rule_id: skill_architect.extraction_precedes_binding
+        description: >-
+          skill-architect performs extraction; binding is a separate later decision.
+          A binding proposed without a completed extraction is forbidden.
+        severity: blocker
+        required_when: skill_binding.requested == true
+        pass_condition: skill_binding.subject.semantic_extraction_status == complete
+        fail_condition: skill_binding.subject.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: skill_governance:skill_semantic_extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+      - skill_governance_trace_schema
+    notes: >-
+      CANDIDATE. The meta-skill that drives skill_semantic_extraction (SDLC stage 03
+      and the skill-governance pipeline). Recommend RATIFY (no canonical equivalent).
+
+  # -------------------------------------------------------------------------
+  # handoff-designer — designs executor handoff packets (planning helper).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.handoff_designer
+    implements: skill_governance
+    governance_profile_status: candidate
+    scope: skill
+    purpose: >-
+      Govern the handoff-designer skill that partitions planned work into
+      well-scoped executor HANDOFF_PACKETS. It authors handoffs; it MUST NOT make
+      the plan decision by itself and is not a defect finder.
+    applies_to:
+      - skill:handoff-designer
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - handoff_partitioning
+      - work_package_boundary_design
+      - executor_handoff_authoring
+    forbidden_usage:
+      - bug_finding
+      - making_the_plan_decision_by_itself
+    rules:
+
+      - rule_id: handoff_designer.not_sole_plan_decider
+        description: handoff-designer authors handoff packets; the planning decision still has a distinct owner.
+        severity: major
+        required_when: gate.id == "sdlc:10-planning:planning_handoff_completeness_gate" AND gate.uses_skill == handoff-designer
+        pass_condition: gate.owner_agent == planning_agent AND gate.sole_decider != skill:handoff-designer
+        fail_condition: gate.sole_decider == skill:handoff-designer
+        on_fail: block_gate_decision
+        rework_route: sdlc:10-planning
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: handoff_designer.semantic_extraction_before_binding
+        description: handoff-designer may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == handoff-designer
+        pass_condition: handoff-designer.semantic_extraction_status == complete
+        fail_condition: handoff-designer.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: CANDIDATE. Produces HANDOFF_PACKETS at stage 10 (skills_registry used_by). remap_candidate fermi-decompose.
+
+  # -------------------------------------------------------------------------
+  # context-pack-builder — assembles scoped context packs (must honor retrieval).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.context_pack_builder
+    implements: skill_governance
+    governance_profile_status: candidate
+    scope: skill
+    purpose: >-
+      Govern the context-pack-builder skill that assembles the scoped context pack
+      an executor/implementation stage needs. It MUST honor context/memory retrieval
+      and redaction rules and is not a defect finder.
+    applies_to:
+      - skill:context-pack-builder
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - context_pack_assembly
+      - relevant_artifact_selection
+      - executor_context_preparation
+    forbidden_usage:
+      - bug_finding
+      - retrieval_policy_bypass                      # must honor retrieval & redaction rules
+    rules:
+
+      - rule_id: context_pack_builder.honors_retrieval_and_redaction
+        description: >-
+          context-pack-builder MUST honor context/memory retrieval scope and
+          redaction rules; assembling a pack that bypasses redaction or pulls
+          out-of-scope/sensitive artifacts is forbidden.
+        severity: blocker
+        required_when: activation.skill_id == context-pack-builder
+        pass_condition: pack.retrieval_scope_respected == true AND pack.redaction_applied == true
+        fail_condition: pack.retrieval_scope_respected == false OR pack.redaction_applied == false
+        on_fail: block_activation
+        rework_route: sdlc:10-planning                              # re-assemble within retrieval/redaction rules
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: context_pack_builder.semantic_extraction_before_binding
+        description: context-pack-builder may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == context-pack-builder
+        pass_condition: context-pack-builder.semantic_extraction_status == complete
+        fail_condition: context-pack-builder.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: >-
+      CANDIDATE. Bridges into context_memory_profiles.yaml (stages 10 & 11;
+      skills_registry used_by). Bound by retrieval/redaction governance.
+
+  # -------------------------------------------------------------------------
+  # scanner-result-normalizer — normalizes scanner output (NOT defect finding).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.scanner_result_normalizer
+    implements: skill_governance
+    governance_profile_status: candidate
+    scope: skill
+    purpose: >-
+      Govern the scanner-result-normalizer skill that normalizes/dedupes raw
+      SAST/SCA/secret/IaC scanner output into a canonical findings set. It shapes
+      existing findings; it MUST NOT itself find defects or decide severity alone.
+    applies_to:
+      - skill:scanner-result-normalizer
+    severity_default: major
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - scanner_output_normalization
+      - finding_deduplication
+      - severity_harmonization
+    forbidden_usage:
+      - bug_finding                                  # the defect sweep is verification-loop
+      - severity_decision_by_itself                  # calibrate / the gate decide accepted risk
+    rules:
+
+      - rule_id: scanner_result_normalizer.not_defect_finding
+        description: >-
+          scanner-result-normalizer normalizes existing findings; it MUST NOT be
+          bound as the defect-finding skill (that is verification-loop).
+        severity: blocker
+        required_when: stage.requires_defect_finding == true
+        pass_condition: stage.bound_defect_skill == verification-loop
+        fail_condition: stage.bound_defect_skill == skill:scanner-result-normalizer
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: scanner_result_normalizer.not_sole_severity_decider
+        description: severity/accepted-risk decisions are owned by calibrate + the gate, not the normalizer.
+        severity: major
+        required_when: gate.id == "sdlc:16-security-validation" AND gate.uses_skill == scanner-result-normalizer
+        pass_condition: gate.severity_decider != skill:scanner-result-normalizer
+        fail_condition: gate.severity_decider == skill:scanner-result-normalizer
+        on_fail: block_gate_decision
+        rework_route: sdlc:16-security-validation
+        evidence_required:
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: scanner_result_normalizer.semantic_extraction_before_binding
+        description: scanner-result-normalizer may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == scanner-result-normalizer
+        pass_condition: scanner-result-normalizer.semantic_extraction_status == complete
+        fail_condition: scanner-result-normalizer.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+    notes: CANDIDATE. Data-shaping helper feeding security-validation triage at stage 16 (skills_registry used_by).
+
+  # -------------------------------------------------------------------------
+  # evidence-graph-builder — assembles the evidence DAG (NOT a defect sweep).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.evidence_graph_builder
+    implements: skill_governance
+    governance_profile_status: candidate
+    scope: skill
+    purpose: >-
+      Govern the evidence-graph-builder skill that assembles the requirement -> ...
+      -> release evidence DAG and audits it for integrity/completeness. It is
+      evidence/trace assembly — explicitly NOT a defect sweep — and may not fabricate
+      evidence.
+    applies_to:
+      - skill:evidence-graph-builder
+    severity_default: blocker
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - evidence_required                            # FIRST-CLASS id (alias: evidence_required_policy)
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - evidence_graph_assembly
+      - traceability_linking
+      - evidence_integrity_audit
+    forbidden_usage:
+      - bug_finding                                  # explicitly NOT a defect sweep (stage 28)
+      - evidence_fabrication
+    rules:
+
+      - rule_id: evidence_graph_builder.not_defect_finding
+        description: >-
+          evidence-graph-builder assembles/audits the evidence DAG; it MUST NOT be
+          bound as the defect-finding skill (that is verification-loop).
+        severity: blocker
+        required_when: stage.requires_defect_finding == true
+        pass_condition: stage.bound_defect_skill == verification-loop
+        fail_condition: stage.bound_defect_skill == skill:evidence-graph-builder
+        on_fail: block_activation
+        rework_route: sdlc:15-verification-loop-bug-finding
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_activation_trace_schema
+
+      - rule_id: evidence_graph_builder.no_evidence_fabrication
+        description: >-
+          Every node in the evidence DAG MUST reference a real produced evidence
+          record; fabricating or inferring missing evidence is forbidden.
+        severity: blocker
+        required_when: stage.id == "sdlc:28-evidence-graph-build"
+        pass_condition: evidence_graph.all_nodes_reference_real_evidence == true
+        fail_condition: evidence_graph.has_fabricated_or_unbacked_node == true
+        on_fail: block_gate_decision
+        rework_route: sdlc:28-evidence-graph-build
+        evidence_required:
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: evidence_graph_builder.semantic_extraction_before_binding
+        description: evidence-graph-builder may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == evidence-graph-builder
+        pass_condition: evidence-graph-builder.semantic_extraction_status == complete
+        fail_condition: evidence-graph-builder.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - skill_semantic_extract_schema
+      - sdlc_pipeline_evidence_schema                # operates over the SDLC evidence set
+    required_trace:
+      - skill_activation_trace_schema
+      - stage_gate_trace_schema
+    notes: >-
+      CANDIDATE. Bridges into audit_schemas.yaml at stage 28. Binds the FIRST-CLASS
+      evidence_required (alias evidence_required_policy). Explicitly not a defect sweep.
+
+  # -------------------------------------------------------------------------
+  # release-readiness-judge — go/no-go adjudication (NOT a defect sweep; no self-approval).
+  # -------------------------------------------------------------------------
+  - governance_profile_id: gov.skill.release_readiness_judge
+    implements: skill_governance
+    governance_profile_status: candidate
+    scope: skill
+    purpose: >-
+      Govern the release-readiness-judge skill: a deterministic readiness gate over
+      assembled evidence (all required + applicable conditional gates passed,
+      minimum evidence present). It is explicitly NOT a defect sweep, MUST NOT reuse
+      verification-loop as a readiness checklist, and MUST NOT self-approve.
+    applies_to:
+      - skill:release-readiness-judge
+    severity_default: blocker
+    owner: skill_librarian_agent
+    escalation:
+      - skill_governance_team_lead
+      - sdlc_team_lead                               # stages 29/30 route re-attestation to sdlc_team_lead
+      - owner_human_gate
+    inherited_governance_profiles:
+      - skill_governance
+      - no_self_approval                             # FIRST-CLASS id (alias: no_self_approval_policy)
+      - skill_must_have_semantic_extraction_before_binding
+    allowed_usage:
+      - release_readiness_adjudication
+      - gate_completeness_confirmation
+      - go_no_go_judgement
+    forbidden_usage:
+      - bug_finding                                  # NOT a defect sweep (stages 29/30 bind gap-audit + calibrate)
+      - reusing_verification_loop_as_a_readiness_checklist   # the exact locked anti-pattern
+      - self_approval
+    rules:
+
+      - rule_id: release_readiness_judge.not_a_defect_sweep
+        description: >-
+          release-readiness-judge confirms gate/evidence completeness; it MUST NOT be
+          bound as the defect-finding skill nor reuse verification-loop as a readiness
+          checklist (the locked anti-pattern stages 29/30 refuse).
+        severity: blocker
+        required_when: stage.id in ["sdlc:29-development-completion", "sdlc:30-release-candidate"]
+        pass_condition: >-
+          stage.readiness_skill == release-readiness-judge
+          AND stage.companion_skills includes [gap-audit, calibrate]
+          AND verification-loop.not_bound_as(readiness_checklist)
+        fail_condition: stage.readiness_skill == verification-loop OR stage.bound_defect_skill == skill:release-readiness-judge
+        on_fail: block_gate_binding
+        rework_route: skill_governance:skill_binding_proposal
+        evidence_required:
+          - release_evidence_schema
+          - skill_binding_decision_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: release_readiness_judge.no_self_approval
+        description: >-
+          The readiness verdict MUST NOT be self-approved by the producing agent;
+          re-attestation routes to sdlc_team_lead (producer != approver).
+        severity: blocker
+        required_when: gate.kind == readiness_gate AND gate.uses_skill == release-readiness-judge
+        pass_condition: gate.approver_agent != gate.producer_agent
+        fail_condition: gate.approver_agent == gate.producer_agent
+        on_fail: rework
+        rework_route: sdlc:30-release-candidate                     # re-attestation by sdlc_team_lead
+        evidence_required:
+          - release_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: release_readiness_judge.requires_all_required_gates
+        description: >-
+          A go verdict requires ALL required gates and ALL applicable conditional
+          gates to have passed with the minimum evidence set present.
+        severity: blocker
+        required_when: stage.id == "sdlc:29-development-completion"
+        pass_condition: required_gates.all_passed == true AND applicable_conditional_gates.all_passed == true AND minimum_evidence_set.present == true
+        fail_condition: required_gates.any_failed == true OR applicable_conditional_gates.any_failed == true OR minimum_evidence_set.absent == true
+        on_fail: block_gate_decision
+        rework_route: sdlc:28-evidence-graph-build                  # close the missing gate/evidence first
+        evidence_required:
+          - release_evidence_schema
+          - sdlc_pipeline_evidence_schema
+        trace_required:
+          - stage_gate_trace_schema
+
+      - rule_id: release_readiness_judge.semantic_extraction_before_binding
+        description: release-readiness-judge may only be bound after its semantic record exists (no_unread_skill_binding).
+        severity: blocker
+        required_when: skill_binding.skill_id == release-readiness-judge
+        pass_condition: release-readiness-judge.semantic_extraction_status == complete
+        fail_condition: release-readiness-judge.semantic_extraction_status != complete
+        on_fail: block_binding
+        rework_route: sdlc:03-skill-semantic-extraction
+        evidence_required:
+          - skill_semantic_extract_schema
+        trace_required:
+          - skill_governance_trace_schema
+    required_evidence:
+      - release_evidence_schema
+      - skill_semantic_extract_schema
+    required_trace:
+      - skill_activation_trace_schema
+      - stage_gate_trace_schema
+    notes: >-
+      CANDIDATE. Deliberately distinct from verification-loop: stages 29/30 refuse to
+      reuse verification-loop as a readiness checklist and instead bind this judge +
+      gap-audit + calibrate. Binds FIRST-CLASS no_self_approval (alias no_self_approval_policy).
+
+# =============================================================================
+# VALIDATION SELF-CHECK (doc 19 §14) — assertions a reviewer/linter can verify
+# against this file. (Documentation aid; not runtime code.)
+# =============================================================================
+validation_self_check:
+  every_profile_references_known_scope: true            # all scope == skill (in scope_vocabulary)
+  every_rule_has_severity: true                          # every rule carries severity in severity_vocabulary
+  every_blocker_rule_has_on_fail: true                   # every blocker rule sets on_fail
+  evidence_trace_distinction_preserved: true             # required_evidence = evidence-family only; required_trace = trace-family only; never merged
+  no_plugin_governance_introduced: true                  # no plugin concept anywhere
+  locked_prism_semantics_enforced: true                  # gov.skill.prism forbids bug_finding (rules semantics_locked_divergence_only / not_a_bug_finder)
+  locked_verification_loop_semantics_enforced: true      # gov.skill.verification_loop forbids general_readiness_checklist + replacing_test_execution
+  first_class_policy_ids_used: true                      # no_self_approval / evidence_required used as ids; *_policy only as aliases
+  authoritative_team_names_used: true                    # skill_governance_team (not knowledge_memory_team)
+  no_core_ability_as_owner_or_skill: true                # owners/escalation are agents/teams; no Core Ability governed as a skill
+  skill_not_tool: true                                   # every applies_to is a skill id
+
+coverage_summary:
+  scope: skill
+  total_governed_skills: 18
+  canonical_profiles: 12
+  candidate_profiles: 6
+  canonical_skill_ids:
+    [prism, verification-loop, sentinel, llm-council, fmea, adr-builder,
+     gap-audit, prompt-fidelity, calibrate, refraction, fermi-decompose, bayesian-update]
+  candidate_skill_ids:
+    [skill-architect, handoff-designer, context-pack-builder,
+     scanner-result-normalizer, evidence-graph-builder, release-readiness-judge]
+  locked_semantics_profiles:
+    prism: gov.skill.prism                               # brainstorming/divergence ONLY (forbids bug finding)
+    verification-loop: gov.skill.verification_loop       # bug/defect finding ONLY (forbids readiness checklist + test_execution replacement)
+
+# =============================================================================
+# OPEN QUESTIONS (carried for the Phase E governance-audit-readiness review)
+# =============================================================================
+open_questions:
+  - id: OQ-GOV-SKILL-1
+    question: >-
+      Should the 6 candidate skill governance profiles
+      (skill-architect, handoff-designer, context-pack-builder,
+      scanner-result-normalizer, evidence-graph-builder, release-readiness-judge)
+      be RATIFIED to canonical now, matching the skills_registry.yaml "recommend
+      RATIFY" notes, or held as candidate until each skill's stage-03 open_question
+      is resolved? This file marks them governance_profile_status: candidate.
+  - id: OQ-GOV-SKILL-2
+    question: >-
+      The rework_route values point at SDLC stage ids (e.g. sdlc:15-verification-loop-
+      bug-finding) and skill-governance pipeline stage tokens (e.g.
+      skill_governance:skill_semantic_extraction). Phase E review should confirm the
+      exact stage-id spelling to use for cross-pipeline rework routing (SDLC stage
+      file ids vs skill-governance pipeline stage tokens) so the routes resolve uniformly.
+  - id: OQ-GOV-SKILL-3
+    question: >-
+      Naming variant carry-over from OQ-GOV-1 (registry): this file uses the
+      FIRST-CLASS ids no_self_approval / evidence_required and records the *_policy
+      spellings as reconciliation_aliases. Phase E must confirm whether all skill
+      bindings standardize on the bare canonical id (recommended) or also accept the
+      *_policy alias at evaluation time.

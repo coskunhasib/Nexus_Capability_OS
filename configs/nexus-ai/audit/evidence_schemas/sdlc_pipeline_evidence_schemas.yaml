@@ -1,0 +1,955 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — SDLC Pipeline
+# =============================================================================
+# Phase E / doc 19 §12 output. Documentation/blueprint ONLY — NO runtime code,
+# NO merge, NO deploy.
+#
+# This file MATERIALIZES the `type: evidence_schema` items whose owner_domain is
+# `sdlc` from the Phase C catalog (configs/nexus-ai/audit_schemas.yaml) into the
+# applicable, per-scope audit-schema config layer required by doc 19 §13:
+#     configs/nexus-ai/audit/evidence_schemas/*.yaml
+#
+# -----------------------------------------------------------------------------
+# LOCKED DECISIONS honored
+# -----------------------------------------------------------------------------
+#   - Plugin CANCELLED: no plugin schema/registry/concept appears anywhere.
+#   - Audit != Governance: this is an AUDIT file; governance profiles live in
+#     configs/nexus-ai/governance/** and the registry
+#     configs/nexus-ai/governance_profiles.yaml.
+#   - Evidence != Trace (locked K-008; doc 03 §10–§12; doc 19 §11): EVIDENCE ONLY
+#     lives here. Trace schemas live in the SEPARATE directory
+#     configs/nexus-ai/audit/trace_schemas/ and are NEVER merged in.
+#       * This file therefore contains ONLY type: evidence_schema items.
+#       * decision_record_schema and gate_result_schema are Evidence-FAMILY but
+#         are a DISTINCT `type` (doc 19 §12 type vocabulary); they are NOT
+#         emitted here. See OPEN QUESTIONS in the index file.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents: they never appear as a `producer` or `consumer`. Those are
+#     always snake_case Agent roles, a gate id, or the policy/evidence engine.
+#     Supervisor != any *_team_lead.
+#
+# -----------------------------------------------------------------------------
+# AUDIT SCHEMA CONTRACT (doc 19 §12) — every item below carries EXACTLY:
+#   audit_schema_id, type, applies_to, required_fields, producer, consumer,
+#   retention, redaction_rules
+# Field values are transcribed verbatim from the catalog so this applicable layer
+# stays in lock-step with the single registry catalog (doc 19 §15: "SDLC required
+# gates can be evaluated from configs"). Two non-contract labels are kept for
+# traceability and break nothing downstream:
+#   - registry_id : the catalog id (identical to audit_schema_id here) — anchor.
+#   - name        : the human-facing Name label from the catalog.
+# -----------------------------------------------------------------------------
+
+version: draft-0.1
+layer_id: nexus_ai_audit_evidence_schemas_sdlc
+family: audit
+audit_kind: evidence            # Evidence family ONLY (Evidence != Trace)
+scope: pipeline
+applies_to_pipeline: sdlc_pipeline
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+purpose: >-
+  Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the SDLC
+  pipeline. Each item is one type: evidence_schema record shape that an SDLC stage
+  emits as decision proof. Trace (process history) is excluded by design and lives
+  under configs/nexus-ai/audit/trace_schemas/.
+
+evidence_schemas:
+
+  # ---------------------------------------------------------------------------
+  # Cross-cutting base SDLC evidence schema
+  # ---------------------------------------------------------------------------
+  - audit_schema_id: sdlc_pipeline_evidence_schema
+    registry_id: sdlc_pipeline_evidence_schema
+    name: SDLC Pipeline Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage_evidence
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_pipeline
+      - related_run
+      - related_stage
+      - related_agent
+      - related_sub_agent
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: stage_owner_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+      - redact_pii_in_source_artifacts
+
+  # ---------------------------------------------------------------------------
+  # Stage-specific SDLC evidence schemas (stage order)
+  # ---------------------------------------------------------------------------
+  - audit_schema_id: domain_risk_evidence_schema
+    registry_id: domain_risk_evidence_schema
+    name: Domain & Risk Profile Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:domain_risk_profile
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: domain_classifier_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: skill_semantic_evidence_schema
+    registry_id: skill_semantic_evidence_schema
+    name: Skill Semantic Extraction Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:skill_semantic_extraction
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: skill_librarian_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: requirements_review_evidence_schema
+    registry_id: requirements_review_evidence_schema
+    name: Requirements Review Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:requirements_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: sdlc_team_lead
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: architecture_evidence_schema
+    registry_id: architecture_evidence_schema
+    name: Architecture Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:architecture
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: architecture_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: architecture_review_evidence_schema
+    registry_id: architecture_review_evidence_schema
+    name: Architecture Review Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:architecture_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: sdlc_team_lead
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: threat_model_evidence_schema
+    registry_id: threat_model_evidence_schema
+    name: Threat Model Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:security_privacy_design
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: security_privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_threat_detail_secrets
+
+  - audit_schema_id: privacy_evidence_schema
+    registry_id: privacy_evidence_schema
+    name: Privacy Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:security_privacy_design
+      - sdlc_stage:privacy_data_lifecycle_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_data_inventory
+
+  - audit_schema_id: premortem_evidence_schema
+    registry_id: premortem_evidence_schema
+    name: Premortem Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:premortem_fmea
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: risk_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: risk_register_schema
+    registry_id: risk_register_schema
+    name: Risk Register Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:premortem_fmea
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - risk_id
+      - severity
+      - likelihood
+      - detectability
+      - mitigation
+      - status
+      - created_at
+    producer: risk_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: implementation_evidence_schema
+    registry_id: implementation_evidence_schema
+    name: Implementation Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:implementation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: engineering_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_changeset
+
+  - audit_schema_id: code_review_evidence_schema
+    registry_id: code_review_evidence_schema
+    name: Code Review Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:code_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: code_reviewer_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: test_plan_evidence_schema
+    registry_id: test_plan_evidence_schema
+    name: Test Plan Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:test_generation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: qa_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: test_execution_evidence_schema
+    registry_id: test_execution_evidence_schema
+    name: Test Execution Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:test_execution
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: qa_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: bug_finding_evidence_schema
+    registry_id: bug_finding_evidence_schema
+    name: Bug Finding Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:verification_loop_bug_finding
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - blocker_bug_count
+      - major_bug_count
+      - summary
+      - status
+      - created_at
+    producer: qa_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_repro_steps
+
+  - audit_schema_id: security_scan_evidence_schema
+    registry_id: security_scan_evidence_schema
+    name: Security Scan Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:security_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - critical_finding_count
+      - high_finding_count
+      - summary
+      - status
+      - created_at
+    producer: security_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_exploit_detail_secrets
+
+  - audit_schema_id: supply_chain_evidence_schema
+    registry_id: supply_chain_evidence_schema
+    name: Supply Chain Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:supply_chain_sbom_license
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: supply_chain_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: agentic_eval_evidence_schema
+    registry_id: agentic_eval_evidence_schema
+    name: Agentic Safety Evaluation Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: ai_safety_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_injection_payload_secrets
+
+  - audit_schema_id: prompt_injection_test_schema
+    registry_id: prompt_injection_test_schema
+    name: Prompt Injection Test Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: ai_safety_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_injection_payload_secrets
+
+  - audit_schema_id: evidence_integrity_report_schema
+    registry_id: evidence_integrity_report_schema
+    name: Evidence Integrity Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - integrity_status
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: ai_safety_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: data_lifecycle_report_schema
+    registry_id: data_lifecycle_report_schema
+    name: Data Lifecycle Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:privacy_data_lifecycle_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii
+
+  - audit_schema_id: tenant_isolation_report_schema
+    registry_id: tenant_isolation_report_schema
+    name: Tenant Isolation Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:privacy_data_lifecycle_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_tenant_identifiers
+
+  - audit_schema_id: api_contract_evidence_schema
+    registry_id: api_contract_evidence_schema
+    name: API Contract Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:api_contract_compatibility_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: contract_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: compatibility_report_schema
+    registry_id: compatibility_report_schema
+    name: Compatibility Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:api_contract_compatibility_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - breaking_change_count
+      - summary
+      - status
+      - created_at
+    producer: contract_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: compliance_matrix_schema
+    registry_id: compliance_matrix_schema
+    name: Compliance Matrix Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage:domain_regulatory_compliance_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - control_id
+      - requirement_ref
+      - compliance_status
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: compliance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: regulatory_evidence_schema
+    registry_id: regulatory_evidence_schema
+    name: Regulatory Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage:domain_regulatory_compliance_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - regulation_ref
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: compliance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: migration_evidence_schema
+    registry_id: migration_evidence_schema
+    name: Data Migration Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:data_migration_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: data_migration_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_migration_samples
+
+  - audit_schema_id: accessibility_evidence_schema
+    registry_id: accessibility_evidence_schema
+    name: Accessibility Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:accessibility_ux_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: accessibility_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: ux_validation_report_schema
+    registry_id: ux_validation_report_schema
+    name: UX Validation Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:accessibility_ux_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: accessibility_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: performance_evidence_schema
+    registry_id: performance_evidence_schema
+    name: Performance Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:performance_resilience
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: performance_resilience_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: resilience_report_schema
+    registry_id: resilience_report_schema
+    name: Resilience Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:performance_resilience
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: performance_resilience_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: cost_evidence_schema
+    registry_id: cost_evidence_schema
+    name: Cost Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:cost_resource_governance
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: cost_governance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: resource_budget_report_schema
+    registry_id: resource_budget_report_schema
+    name: Resource Budget Report Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:cost_resource_governance
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: cost_governance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: backup_restore_evidence_schema
+    registry_id: backup_restore_evidence_schema
+    name: Backup Restore Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: operations_readiness_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: dr_validation_schema
+    registry_id: dr_validation_schema
+    name: Disaster Recovery Validation Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: operations_readiness_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: rollback_validation_schema
+    registry_id: rollback_validation_schema
+    name: Rollback Validation Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: operations_readiness_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: evidence_graph_evidence_schema
+    registry_id: evidence_graph_evidence_schema
+    name: Evidence Graph Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:evidence_graph_build
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - graph_node_count
+      - graph_edge_count
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: evidence_graph_agent
+    consumer: release_manager_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: traceability_matrix_schema
+    registry_id: traceability_matrix_schema
+    name: Traceability Matrix Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:evidence_graph_build
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - requirement_ref
+      - artifact_ref
+      - coverage_status
+      - status
+      - created_at
+    producer: evidence_graph_agent
+    consumer: release_manager_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: release_evidence_schema
+    registry_id: release_evidence_schema
+    name: Release Evidence Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage:operations_readiness
+      - sdlc_stage:development_completion
+      - sdlc_stage:release_candidate
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_pipeline
+      - related_run
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - residual_risks
+      - rollback_plan_present
+      - runbook_present
+      - summary
+      - status
+      - created_at
+    producer: release_manager_agent
+    consumer: policy_and_evidence_engine
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+
+  - audit_schema_id: learning_record_schema
+    registry_id: learning_record_schema
+    name: Learning Record Schema
+    type: evidence_schema
+    applies_to:
+      - sdlc_stage:refraction_learning
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: refraction_learning_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure

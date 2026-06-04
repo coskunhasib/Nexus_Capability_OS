@@ -1,0 +1,281 @@
+# =============================================================================
+# Nexus AI — Pipeline-Scope Governance Profile: Operations Pipeline
+# =============================================================================
+# Phase E / doc 19. Documentation / blueprint ONLY — NO runtime code, NO merge,
+# NO deploy.
+#
+# Applicable pipeline-scope governance LAYER for the Operations Pipeline.
+# Implements (makes evaluable from config) the registry umbrella
+# governance_profiles.yaml -> pipeline.operations_pipeline_governance.
+#
+# DERIVED FROM (doc 19 §4):
+#   - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md (MARKDOWN is
+#     authoritative; §1 uses_governance_profiles + §2 per-stage key gates + §3.2
+#     governance placeholders):
+#       uses_governance_profiles:
+#         operations_pipeline_governance, no_self_approval_policy,
+#         evidence_required_policy, incident_severity_required_gate,
+#         mitigation_plan_required_gate, rollback_runbook_evidence_gate,
+#         postmortem_required_gate
+#   - SDLC §7 minimums applied AS RELEVANT (doc 19 §4): operations is an incident
+#     lifecycle, not a build pipeline; the SDLC build/security/supply-chain
+#     minimums do not apply. The "all required gates" minimum is realized as the
+#     ordered operations invariants (severity -> mitigation -> rollback/fix
+#     evidence -> mandatory postmortem) + no_blocking_policy_failure at exit.
+#
+# NAMING RECONCILIATION:
+#   - operations_pipeline_governance is the canonical-source (markdown) id; the
+#     catalog YAML's divergent `incident_response_governance` is recorded as an
+#     ALIAS (pipeline-catalog-review.md F-1; doc 19 (a) reconciliation discipline).
+#   - no_self_approval / evidence_required are first-class ids; *_policy spellings
+#     recorded as aliases.
+#
+# LOCKED DECISIONS: Plugin cancelled. Governance != Audit. Evidence != Trace.
+#   Core Abilities are NOT agents; operations_team_lead != Supervisor and may not
+#   perform a rollback_or_fix execution itself. verification-loop is used ONLY for
+#   bug/defect confirmation of a forward fix (LOCKED semantics), never as a
+#   readiness checklist.
+# =============================================================================
+
+governance_profile_id: operations_pipeline_governance
+scope: pipeline
+purpose: >-
+  Pipeline-wide governance for the Operations Pipeline, made evaluable from
+  config: incident severity classification is mandatory before mitigation; an
+  active incident must have a mitigation plan; any rollback-or-fix must carry
+  runbook or rollback execution evidence; a postmortem is mandatory (always for
+  major / critical severities); and operational learning is recorded. Umbrella
+  re-shown under each operations stage.
+
+applies_to:
+  pipeline: operations_pipeline
+  stages:
+    - incident_intake
+    - severity_classification
+    - mitigation_plan
+    - rollback_or_fix
+    - postmortem
+    - learning_update
+
+severity_default: blocker
+
+binds_governance_profiles:
+  - operations_pipeline_governance  # registry umbrella (self); alias: incident_response_governance
+  - incident_severity_required_gate
+  - mitigation_plan_required_gate
+  - rollback_runbook_evidence_gate
+  - postmortem_required_gate
+  - no_self_approval                # alias: no_self_approval_policy
+  - evidence_required               # alias: evidence_required_policy
+
+aliases:
+  - incident_response_governance    # divergent catalog-YAML name reconciled to this id
+
+rules:
+
+  # ---- incident severity classification mandatory (incident_severity_required_gate)
+  - rule_id: operations_severity_classification_required
+    description: >-
+      A severity level must be assigned before any mitigation work may begin;
+      blast radius and confidence are recorded. Enforces
+      incident_severity_required_gate (operations-pipeline.md §2.2 / §3.2).
+    severity: blocker
+    required_when: stage == severity_classification
+    pass_condition: >-
+      severity_assigned == true AND blast_radius_estimated == true AND
+      severity_confidence_recorded == true
+    fail_condition: missing_severity_classification == true
+    on_fail: route_to_incident_intake
+    rework_route: incident_intake
+    evidence_required:
+      - SEVERITY_CLASSIFICATION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - severity_classification_trace
+
+  # ---- mitigation plan required for active incident (mitigation_plan_required_gate)
+  - rule_id: operations_mitigation_plan_required
+    description: >-
+      Any active (non-resolved) incident must have an actionable mitigation plan
+      with a rollback-vs-fix recommendation and resolved runbook reference.
+      Enforces mitigation_plan_required_gate (operations-pipeline.md §2.3 / §3.2).
+    severity: blocker
+    required_when: stage == mitigation_plan
+    pass_condition: >-
+      mitigation_plan_present == true AND rollback_or_fix_decision_recommended == true AND
+      runbook_reference_resolved == true
+    fail_condition: missing_mitigation_plan_for_active_incident == true
+    on_fail: route_to_severity_classification
+    rework_route: severity_classification
+    evidence_required:
+      - MITIGATION_PLAN
+    trace_required:
+      - stage_gate_trace_schema
+      - mitigation_plan_trace
+
+  # ---- rollback/fix backed by runbook or rollback evidence (rollback_runbook_evidence_gate)
+  - rule_id: operations_rollback_or_fix_evidence_required
+    description: >-
+      Either path (roll back via ROLLBACK_PLAN or forward fix via RUNBOOK) must be
+      backed by runbook or rollback execution evidence, and service recovery must
+      be confirmed. Enforces rollback_runbook_evidence_gate. verification-loop is
+      used here ONLY to confirm a forward fix resolves the defect (LOCKED
+      semantics). operations-pipeline.md §2.4 / §3.2.
+    severity: blocker
+    required_when: stage == rollback_or_fix
+    pass_condition: >-
+      rollback_or_fix_executed == true AND runbook_or_rollback_evidence_present == true AND
+      service_recovery_confirmed == true
+    fail_condition: rollback_or_fix_lacks_runbook_or_rollback_evidence == true
+    on_fail: route_to_mitigation_plan
+    rework_route: mitigation_plan
+    evidence_required:
+      - ROLLBACK_OR_FIX_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - rollback_or_fix_trace
+
+  # ---- postmortem mandatory (postmortem_required_gate) + no self-approval -------
+  - rule_id: operations_postmortem_required
+    description: >-
+      A postmortem is mandatory — always for major_incident and
+      critical_outage_or_safety_event, and required-when severity >= major OR
+      rollback_executed == true; a lightweight POSTMORTEM_REPORT is still produced
+      for lower severities. Root cause identified, corrective actions defined, and
+      the postmortem may not be self-approved (no_self_approval). Enforces
+      postmortem_required_gate (operations-pipeline.md §2.5 / §3.2).
+    severity: blocker
+    required_when: >-
+      stage == postmortem AND
+      (severity >= major OR rollback_executed == true)
+    pass_condition: >-
+      postmortem_present == true AND root_cause_identified == true AND
+      corrective_actions_defined == true AND no_self_approved_postmortem == true
+    fail_condition: >-
+      postmortem_missing_for_required_severity == true OR self_approved_resolution == true
+    on_fail: route_to_rollback_or_fix
+    rework_route: rollback_or_fix
+    evidence_required:
+      - POSTMORTEM_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - postmortem_trace
+
+  # ---- lightweight postmortem floor for low severity ---------------------------
+  - rule_id: operations_postmortem_record_floor
+    description: >-
+      Even for low_severity_incident, a POSTMORTEM_REPORT evidence item must exist
+      so learning_update always has an input. This is not a release blocker but
+      the evidence item is mandatory for clean pipeline exit
+      (operations-pipeline.md §2.5 conditional note).
+    severity: major
+    required_when: stage == postmortem AND severity == low_severity_incident
+    pass_condition: postmortem_record_present == true
+    fail_condition: postmortem_record_present == false
+    on_fail: route_to_postmortem
+    rework_route: postmortem
+    evidence_required:
+      - POSTMORTEM_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- operational learning recorded (operations completion analogue) ----------
+  - rule_id: operations_learning_update_required
+    description: >-
+      The postmortem must be converted into a durable OPERATIONAL_LEARNING_RECORD
+      with an improvement backlog handed off toward the SDLC (referenced, not
+      regenerated). Not an incident-resolution blocker, but the evidence item must
+      exist for clean exit (operations-pipeline.md §2.6).
+    severity: major
+    required_when: stage == learning_update
+    pass_condition: >-
+      operational_learning_record_present == true AND improvement_backlog_handed_off == true
+    fail_condition: operational_learning_record_present == false
+    on_fail: route_to_postmortem
+    rework_route: postmortem
+    evidence_required:
+      - OPERATIONAL_LEARNING_RECORD
+    trace_required:
+      - stage_gate_trace_schema
+      - learning_update_trace
+
+  # ---- no self-approved resolution (first-class no_self_approval) --------------
+  - rule_id: operations_no_self_approval
+    description: >-
+      No actor may approve its own mitigation, rollback/fix, or postmortem. Binds
+      the canonical no_self_approval (alias: no_self_approval_policy);
+      operations_team_lead orchestrates but may not self-approve or execute a
+      rollback_or_fix itself (operations-pipeline.md §3.1).
+    severity: blocker
+    required_when: stage in [mitigation_plan, rollback_or_fix, postmortem]
+    pass_condition: approver_agent_id != produced_artifact_author_agent_id
+    fail_condition: self_approved_resolution == true
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - POSTMORTEM_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- cross-cutting: evidence_required (first-class; alias evidence_required_policy)
+  - rule_id: operations_evidence_required
+    description: >-
+      Every gate decision in the Operations Pipeline must be backed by a
+      machine-readable evidence record. Binds canonical evidence_required (alias:
+      evidence_required_policy). Evidence != Trace.
+    severity: blocker
+    required_when: any_gate_decision == true
+    pass_condition: gate_decision_has_evidence_record == true
+    fail_condition: gate_decision_has_evidence_record == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - INCIDENT_RECORD
+    trace_required:
+      - stage_gate_trace_schema
+
+required_evidence:
+  evidence_schemas:
+    - incident_evidence_schema
+    - severity_classification_evidence_schema
+    - mitigation_plan_evidence_schema
+    - rollback_fix_evidence_schema
+    - postmortem_evidence_schema
+    - operational_learning_evidence_schema
+  evidence_artifacts:
+    - INCIDENT_RECORD
+    - SEVERITY_CLASSIFICATION_REPORT
+    - MITIGATION_PLAN
+    - ROLLBACK_OR_FIX_REPORT
+    - POSTMORTEM_REPORT
+    - OPERATIONAL_LEARNING_RECORD
+
+required_trace:
+  trace_schemas:
+    - stage_gate_trace_schema
+  trace_records:
+    - incident_intake_trace
+    - severity_classification_trace
+    - mitigation_plan_trace
+    - rollback_or_fix_trace
+    - postmortem_trace
+    - learning_update_trace
+    - stage_gate_decision_trace
+
+owner: operations_reliability
+escalation:
+  on_blocker: operations_team_lead
+  on_postmortem_missing_for_required_severity: block_and_report
+  on_unresolved_blocking_policy_failure: block_and_report
+  cannot_override_gate: true        # operations_team_lead != Supervisor; no gate bypass
+
+provenance:
+  registry_profile: governance_profiles.yaml#pipeline.operations_pipeline_governance
+  derived_from:
+    - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md  # markdown authoritative
+    - configs/nexus-ai/pipeline_catalog.yaml                         # operations_pipeline entry (incident_response_governance alias)
+    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md     # §4, §5
+    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md       # §4 operations pipeline governance
+no_plugin: true
+governance_not_audit: true
+evidence_not_trace: true

@@ -1,0 +1,4042 @@
+# Nexus AI Orchestration Model — Shared Registry: GOVERNANCE PROFILES
+#
+# Phase C / doc 17 (17-shared-registry-formalization-plan.md §7). Machine-readable
+# documentation/blueprint ONLY — NO runtime code, NO merge, NO deploy.
+#
+# Governance != Audit (locked). This file holds the GOVERNANCE family only:
+#   Policy | Gates | Permissions | Risk Rules (per 03-governance-and-audit-layering.md §1).
+# Audit (Evidence + Trace) schemas live in configs/nexus-ai/audit_schemas.yaml — NOT here.
+# Therefore *_trace / *_trace_schema / *_evidence_schema names are deliberately ABSENT below;
+# only governance profiles (policies + gates + governance umbrellas) are registered here.
+#
+# Shared Registry + Usage Mapping rule (05-shared-registry-and-usage-mapping.md):
+#   A governance profile appears ONCE here (registry = "what exists") and is RE-SHOWN under
+#   each pipeline/stage/team/agent/core_ability/skill/tool that uses it (usage mapping). The
+#   `used_by` list on every item below makes that usage mapping enforceable from registry data
+#   (doc 17 §13 exit criterion: "Usage mapping rule is enforceable from registry data").
+#
+# LOCKED CONTEXT (.memory/0002-locked-decisions.md):
+#   - Plugin is CANCELLED and NEVER reintroduced (no plugin registry, ever). The global
+#     profile `plugin_absent` ENFORCES this; it does not create a plugin concept.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are NOT agents
+#     and NOT team members; owner_agent / Agent roles are NEVER a Core Ability. Supervisor is NOT
+#     any *_team_lead.
+#   - Skill != Tool ; Governance != Audit ; Evidence != Trace.
+#
+# CATEGORY CONTRACT (doc 17 §3 item contract + §7 governance-specific fields). Every item carries:
+#   id, name, type, status, purpose, owner_domain, allowed_usage, forbidden_usage,
+#   governance_profiles, audit_schemas, notes,            # §3 common item contract
+#   scope, applies_to, severity_default,                  # §7 governance-specific fields
+#   used_by                                               # usage-mapping enforcement (§13)
+#   (+ aliases where a pipeline used a *_policy variant of a canonical id — naming reconciliation)
+#
+# STATUS vocabulary (doc 17): canonical (locked/established) | candidate (referenced, not yet
+#   ratified) | deprecated. NEW pipeline-introduced profiles are marked `candidate`. Every item
+#   has a status AND at least one used_by entry (or status: candidate).
+#
+# NAMING RECONCILIATION: the 5 new catalog pipelines reference `no_self_approval_policy` and
+#   `evidence_required_policy`, which are naming variants of the canonical core policies
+#   `no_self_approval` / `evidence_required` (06-governance-policy-evidence.md §2–§3;
+#   pipeline-catalog-review.md §4.7). The canonical bare id is registered; the `_policy` variant
+#   is recorded under `aliases`. (Per pipeline-catalog-review.md §4 note, where the catalog
+#   markdown doc and the catalog YAML disagree, the MARKDOWN name is authoritative.)
+#
+# SCOPE taxonomy (doc 17 §7 / 03-governance-and-audit-layering.md §2), 7 layers — items are
+# GROUPED by scope below:
+#   global | pipeline | team | stage | core_ability | skill | tool
+#
+# severity_default vocabulary mirrors the policy severities in 06-governance-policy-evidence.md
+#   (blocker | advisory) plus the stage-contract gate severities (major) where a profile defaults
+#   a gate that is blocking-on-applicability or advisory->blocker. Values used: blocker | major |
+#   advisory.
+
+registry_id: nexus_ai_governance_profiles
+registry_name: Nexus AI Orchestration Model — Governance Profiles Registry
+registry_version: draft-0.1
+registry_status: draft
+category: governance_profiles
+top_structure: nexus_ai_orchestration_model
+no_plugin: true
+
+# Provenance — sources scanned to extract every governance profile below.
+canonical_sources:
+  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md          # scope layers + GLOBAL governance set
+  - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md      # registry + usage-mapping rule
+  - docs/ai-sdlc-factory/06-governance-policy-evidence.md             # canonical blocker/advisory policies
+  - docs/ai-sdlc-factory/11-artifact-registry-standard.md             # artifact/evidence vs gate-result naming
+  - docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md     # §3 item contract + §7 governance fields
+  - configs/nexus-ai/sdlc_pipeline.yaml                               # SDLC pipeline-level uses_governance_profiles
+  - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml                 # locked-decision guards (no_self_approval, no plugin)
+  - configs/nexus-ai/stages/sdlc/*.yaml                               # 31 SDLC stage uses_governance_profiles (richest source)
+  - configs/nexus-ai/pipeline_catalog.yaml                            # catalog uses_governance_profiles (YAML variant names noted)
+  - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md        # research governance (markdown authoritative)
+  - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md      # activation governance (markdown authoritative)
+  - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md      # operations governance (markdown authoritative)
+  - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md# skill-governance governance (markdown authoritative)
+  - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md# knowledge/memory governance (markdown authoritative)
+  - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md           # §4 consolidated newly-introduced governance names
+  - docs/ai-sdlc-factory/reviews/claude-code-skill-agent-review.md    # §8 undeclared skills (cross-ref for skill-scope governance)
+  # Reconciliation sweep (post-Phase G/H): intra-registry references resolved to first-class items or aliases.
+  - configs/nexus-ai/tools_registry.yaml                              # tool_call_governance + global_no_secret_policy (referenced_governance_profiles)
+  - configs/nexus-ai/model_provider_profiles.yaml                     # model_invocation_governance / global_governance / research_pipeline_governance refs
+  - configs/nexus-ai/context_memory_profiles.yaml                     # context_access_governance + per-domain context-pack governance refs
+  - configs/nexus-ai/core_abilities.yaml                              # orchestration/vision/audio/creative core-ability governance refs
+  - configs/nexus-ai/skills_registry.yaml                             # skill_must_have_semantic_extraction_before_binding (skill_class_defaults)
+  - configs/nexus-ai/audit_schemas.yaml                               # audit-side governance refs (variant names + blocker_bug_zero / residual_risk_recorded)
+
+status_vocabulary: [canonical, candidate, deprecated]
+scope_vocabulary: [global, pipeline, team, stage, core_ability, skill, tool]
+severity_vocabulary: [blocker, major, advisory]
+# type vocabulary additions (reconciliation): stage_risk_rule (named SDLC risk rules referenced by audit
+# evidence schemas, e.g. blocker_bug_zero / residual_risk_recorded). No new SCOPE was introduced: model
+# invocation and context access are cross-cutting dimensions registered at `global` scope (the 7-layer
+# taxonomy in 03 §3–§9 has no model/context layer; cf. the model/context "trace" dimensions in 03 §12).
+
+# =====================================================================================
+# Governance profiles, GROUPED by the 7 scopes (doc 17 §7).
+# =====================================================================================
+governance_profiles:
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: global — apply to ALL of Nexus AI (03-governance-and-audit-layering.md §3).
+  # Includes the 6 task-mandated GLOBAL profiles + the 2 cross-cutting canonical core
+  # policies (no_self_approval / evidence_required) that every pipeline binds (and which
+  # the new catalog pipelines reference via *_policy aliases — reconciled here).
+  # -----------------------------------------------------------------------------------
+  global:
+
+    - id: plugin_absent
+      name: Plugin Absent (No Plugin Anywhere)
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        Enforce the locked decision that Plugin is cancelled and never reintroduced: no plugin
+        concept, field, stage, or registry may exist anywhere in Nexus AI. Documentation/blueprint
+        guardrail — asserts absence, does not create a plugin concept.
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Reject any pipeline/stage/registry that introduces a plugin concept, field, or stage.
+        - Be referenced by every pipeline as a standing global guard.
+      forbidden_usage:
+        - Used to (re)introduce, gate, or "manage" any plugin — there is no plugin to govern.
+      governance_profiles: []            # global profiles are not themselves governed by another profile
+      audit_schemas:
+        - stage_gate_trace_schema        # cross-pipeline canonical trace for the guard's evaluation
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_stages
+        - shared_registry
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      aliases:
+        - no_plugin_core      # 06-governance-policy-evidence.md §3 (plugin_must_not_be_required_by_core_pipeline)
+        - no_plugin           # pipeline_catalog.yaml `no_plugin: true`
+      notes: >-
+        Corresponds to 06 §3 `no_plugin_core` (plugin_must_not_be_required_by_core_pipeline) and the
+        `plugin_stage` anti-pattern in sdlc_pipeline_runtime_rules.yaml. LOCKED: no plugin registry, ever.
+
+    - id: no_secret_exposure
+      name: No Secret Exposure
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        Agents/LLMs must never read, emit, log, or leak raw secrets/credentials. Distinct from
+        raw_credential_redaction (which governs masking in outputs/evidence): this profile forbids
+        the read/exposure itself.
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Block any stage/tool path that would read or surface a raw secret.
+        - Bind to security-sensitive stages (e.g. security_validation no_secret_leak_gate).
+      forbidden_usage:
+        - Granting an agent raw-secret read access "for convenience".
+      governance_profiles: []
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_stages
+        - all_tools
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+        - security_validation        # stage 16 no_secret_leak_gate is the stage-scope expression of this global rule
+      aliases:
+        - no_secret_read             # 06 §3 (agents_cannot_read_raw_secrets)
+        - global_no_secret_policy    # R4: spelling used in tools_registry.yaml (global no-secret/no raw-credential exposure, 03 §3)
+        - no_secret_read_policy      # R4: _policy spelling used in context_memory_profiles.yaml (canonical: no_secret_exposure)
+      notes: >-
+        06 §3 `no_secret_read`. The stage-scope `no_secret_leak_gate` (stage 16) enforces the
+        leak-detection expression of this global policy. R4 naming reconciliation: tools_registry.yaml
+        spells it `global_no_secret_policy` and context_memory_profiles.yaml spells it
+        `no_secret_read_policy`; both recorded here as aliases of canonical `no_secret_exposure`.
+
+    - id: no_policy_bypass
+      name: No Policy Bypass
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        No actor — including any *_team_lead orchestrator, LLM council, or prompt — may override,
+        skip, or "pass" a blocking governance gate. Prompt does not replace policy; Team Lead does
+        not replace policy; LLM council does not replace policy (06 §1).
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Reject any run where a blocking gate was overridden without satisfying it.
+        - Stand as the invariant behind every *_team_lead's "cannot bypass a gate" constraint.
+      forbidden_usage:
+        - Team Lead override to force release/pass; prompt-engineered gate bypass.
+      governance_profiles: []
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_team_leads
+        - all_gates
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      notes: >-
+        06 §3 `no_policy_bypass` (team_lead_cannot_override_blocking_gate). Reinforced by the
+        `release_candidate_without_policy_gate` and `self_approval_gate` anti-patterns in
+        sdlc_pipeline_runtime_rules.yaml.
+
+    - id: trace_required
+      name: Trace Required
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        Every governed action (agent/sub-agent/skill/tool/core-ability invocation, handoff, policy
+        evaluation, pipeline transition) must emit a trace record. GOVERNANCE rule that MANDATES
+        trace; the trace record SHAPES themselves are audit schemas (Governance != Audit, kept
+        distinct — this profile points at trace schemas but is not one).
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Require a trace for every tool call / skill activation / gate decision.
+        - Bind globally so no governed action is untraced.
+      forbidden_usage:
+        - Treating this profile AS the trace schema (it requires trace; audit_schemas defines trace).
+        - Environment/repo mutation without an accompanying trace (see notes).
+      governance_profiles: []
+      audit_schemas:
+        - stage_gate_trace_schema
+        - stage_gate_decision_trace
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_stages
+        - all_tools
+        - all_skills
+        - all_core_abilities
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      aliases:
+        - no_silent_mutation         # 06 §3 (no_environment_or_repo_mutation_without_explicit_tool_and_trace)
+        - global_trace_required_policy  # R4: _policy spelling used in audit_schemas.yaml (canonical: trace_required)
+        - no_silent_mutation_policy     # R4: _policy spelling used in context_memory_profiles.yaml (the no_silent_mutation sub-rule)
+      notes: >-
+        Global "trace zorunlu" (03 §3). Encompasses 06 §3 `no_silent_mutation` (no mutation without
+        explicit tool AND trace). Evidence != Trace: this MANDATES trace; it is not an evidence rule.
+        R4 naming reconciliation: audit_schemas.yaml spells the global form `global_trace_required_policy`
+        and context_memory_profiles.yaml spells the mutation sub-rule `no_silent_mutation_policy`; both
+        are recorded here as aliases of canonical `trace_required` (matching the no_self_approval/_policy pattern).
+
+    - id: raw_credential_redaction
+      name: Raw Credential Redaction
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        Any credential/secret material that would otherwise appear in an output, log, artifact, or
+        evidence record MUST be redacted/masked. Complements no_secret_exposure: that forbids the
+        read; this forbids the un-redacted surfacing.
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Require masking of credential-like tokens in all emitted artifacts/evidence/traces.
+        - Bind to any stage/tool that handles secret-adjacent material.
+      forbidden_usage:
+        - Emitting raw credentials in any artifact or trace "because it was only internal".
+      governance_profiles: []
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_stages
+        - all_tools
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      notes: >-
+        Global "raw credential gösterme yok" (03 §3). Distinct from the redaction_required_gate
+        (knowledge/memory stage scope), which governs sensitive-content redaction before
+        summarization/storage rather than credential masking in outputs.
+
+    - id: high_risk_action_default_deny
+      name: High-Risk Action Default Deny
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        High-risk / destructive actions are DENIED by default and require an explicit enabling
+        policy + evidence + gate before they may execute. The default posture for any high-risk
+        action is deny (03 §3 "high-risk action default deny").
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Deny destructive/high-risk tool actions unless an explicit policy+gate+evidence permits them.
+        - Back stage gates such as rollback_required_gate / disaster_recovery_gate that gate risky ops.
+      forbidden_usage:
+        - Allowing a destructive tool to run with no explicit policy/gate (see notes).
+      governance_profiles: []
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_tools
+        - high_risk_actions
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      aliases:
+        - no_destructive_action_without_gate   # 06 §3 (destructive_tools_require_explicit_policy_and_evidence)
+      notes: >-
+        Encompasses 06 §3 `no_destructive_action_without_gate`. Tool-scope expressions
+        (sandbox_execution_governance, etc.) belong in the tools registry; this is the global default.
+
+    - id: no_self_approval
+      name: No Self-Approval
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        A producing agent may not be the sole approver/validator of its own output: producer_agent_id
+        != approver_agent_id for any gate decision (06 §2–§3, §6 no-self-approval matrix). The single
+        most-referenced cross-cutting policy in the repo (every SDLC review/validation gate + all 5
+        new pipelines bind it).
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Require a review/validation/decision gate's owner to differ from the reviewed artifact's author.
+        - Fall back to *_team_lead as the gate owner where no dedicated reviewer role fits (SDLC 05/07).
+        - Enforce producer-role != validator-role structurally (research cross_validation; skill activation).
+      forbidden_usage:
+        - A review/gate stage whose owner_agent equals the author of the artifact it adjudicates.
+        - Used to authorize a HUMAN/owner gate — owner_activation_decision_gate is a distinct human gate.
+      governance_profiles: []
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_review_and_validation_gates
+        - all_decision_gates
+      severity_default: blocker
+      used_by:
+        # SDLC stages that bind no_self_approval_policy (extracted from stage uses_governance_profiles):
+        - skill_semantic_extraction      # 03
+        - requirements_review            # 05
+        - architecture_review            # 07
+        - security_privacy_design        # 08
+        - premortem_fmea                 # 09
+        - code_review                    # 12
+        - test_execution                 # 14 (standing guard)
+        - verification_loop_bug_finding  # 15
+        - security_validation            # 16
+        - supply_chain_sbom_license      # 17
+        - ai_agent_safety_evaluation     # 18
+        - privacy_data_lifecycle_validation        # 19
+        - api_contract_compatibility_validation    # 20
+        - domain_regulatory_compliance_validation_if_applicable   # 21
+        - data_migration_validation_if_applicable                 # 22
+        - accessibility_ux_validation_if_applicable               # 23
+        - performance_resilience         # 24
+        - cost_resource_governance       # 25
+        - backup_restore_dr_validation_if_applicable              # 26
+        - operations_readiness           # 27
+        - evidence_graph_build           # 28
+        - development_completion         # 29
+        - release_candidate              # 30
+        - refraction_learning            # 31
+        - sdlc_pipeline                  # declared at SDLC pipeline level
+        # New catalog pipelines (markdown authoritative) that bind it:
+        - research_pipeline              # cross_validation + research_completion
+        - activation_pipeline            # public_activation_decision (autonomous-agent self-approval guard)
+        - operations_pipeline            # mitigation_plan / rollback_or_fix / postmortem
+        - skill_governance_pipeline      # skill_activation_decision (proposer != decider)
+        - knowledge_memory_pipeline      # bound at pipeline level (catalog YAML)
+      aliases:
+        - no_self_approval_policy        # naming variant used by all 5 new pipelines + every SDLC stage file
+      notes: >-
+        Canonical id is `no_self_approval` (06 §2 example). The repo and all 5 new pipelines spell it
+        `no_self_approval_policy`; recorded under aliases per the naming-reconciliation rule. DISTINCT
+        from owner_activation_decision_gate, which is a HUMAN/owner authority gate, not autonomous
+        agent self-approval.
+
+    - id: evidence_required
+      name: Evidence Required
+      type: global_governance_policy
+      status: canonical
+      purpose: >-
+        Every gate decision must be backed by machine-readable evidence: no pass/approve/release
+        without an evidence record (06 §3 every_gate_decision_requires_evidence). Bound by all 31
+        SDLC stages and all 5 new pipelines.
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Require an evidence record for every gate decision before it can pass.
+        - Block approval/release that rests on LLM output alone with no evidence.
+      forbidden_usage:
+        - Producing an approval/gate-pass with no evidence record (evidence != trace; evidence required).
+        - Treating any arbitrary artifact AS evidence without a gate/decision linkage (11 §1).
+      governance_profiles: []
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema   # SDLC decision-evidence schema this policy requires be populated
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_gates
+        - all_decisions
+      severity_default: blocker
+      used_by:
+        # Bound by ALL 31 SDLC stages (every stage file lists evidence_required_policy):
+        - intake
+        - domain_risk_profile
+        - skill_semantic_extraction
+        - requirements
+        - requirements_review
+        - architecture
+        - architecture_review
+        - security_privacy_design
+        - premortem_fmea
+        - planning
+        - implementation
+        - code_review
+        - test_generation
+        - test_execution
+        - verification_loop_bug_finding
+        - security_validation
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - privacy_data_lifecycle_validation
+        - api_contract_compatibility_validation
+        - domain_regulatory_compliance_validation_if_applicable
+        - data_migration_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - performance_resilience
+        - cost_resource_governance
+        - backup_restore_dr_validation_if_applicable
+        - operations_readiness
+        - evidence_graph_build
+        - development_completion
+        - release_candidate
+        - refraction_learning
+        - sdlc_pipeline
+        # New catalog pipelines (markdown authoritative):
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline    # bound implicitly via evidence_required across stages; see notes
+      aliases:
+        - evidence_required_policy       # naming variant used by all SDLC stages + the new pipelines
+      notes: >-
+        Canonical id is `evidence_required` (06 §3). Spelled `evidence_required_policy` in every stage
+        file and the new pipelines; recorded under aliases. Knowledge/Memory lists no explicit
+        `evidence_required_policy` token but is governed by it via memory_provenance evidence
+        completeness exit criteria — flagged in open_questions for Phase E confirmation.
+
+    - id: global_governance
+      name: Global Governance (All-Pipeline Umbrella)
+      type: global_governance_policy
+      status: candidate
+      purpose: >-
+        Aggregate global umbrella that binds the standing global policies (plugin_absent,
+        no_secret_exposure, no_policy_bypass, trace_required, raw_credential_redaction,
+        high_risk_action_default_deny, no_self_approval, evidence_required) as one reference. Used where
+        a profile wants to assert "all global governance applies" without enumerating each policy
+        (e.g. the Supervisor routing model in model_provider_profiles.yaml).
+      owner_domain: nexus_global_governance
+      allowed_usage:
+        - Be referenced as shorthand for the full standing global policy set across pipelines/abilities.
+        - Bind at the Supervisor routing/orchestration model level (model_provider_profiles.yaml).
+      forbidden_usage:
+        - Used to weaken any constituent global policy (it aggregates, it does not relax).
+        - Treated as introducing a new scope — it remains a global-scope aggregate.
+      governance_profiles:
+        - plugin_absent
+        - no_secret_exposure
+        - no_policy_bypass
+        - trace_required
+        - raw_credential_redaction
+        - high_risk_action_default_deny
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_pipelines
+        - all_core_abilities
+      severity_default: blocker
+      used_by:
+        - supervisor_routing_model     # model_provider_profiles.yaml (Supervisor orchestration model)
+      notes: >-
+        NEW (reconciliation). Aggregate umbrella referenced by model_provider_profiles.yaml as
+        `global_governance`. Does not create a new scope or policy; it re-shows the 8 canonical global
+        policies as a single binding. Ratify in Phase E alongside the model-provider governance set.
+
+    - id: model_invocation_governance
+      name: Model Invocation Governance
+      type: global_governance_policy
+      status: candidate
+      purpose: >-
+        Cross-cutting governance for any model-provider invocation: every model call is bounded by the
+        invoking layer's permissions, must not exfiltrate secrets, must not silently downgrade a
+        required specialised model, and must emit a model-invocation trace. The governance dimension
+        paired with the model_invocation_trace_schema (Governance != Audit: this MANDATES, the schema RECORDS).
+      owner_domain: nexus_model_providers
+      allowed_usage:
+        - Bind to every model_provider_profile so model invocations are governed + traced.
+        - Enforce the fallback_policy (no silent downgrade of a required specialised model).
+      forbidden_usage:
+        - Treating a model provider profile as a Core Ability, Agent, Skill, or Tool.
+        - Used as the trace schema itself (it requires the trace; audit_schemas defines it).
+      governance_profiles:
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_model_provider_profiles
+      severity_default: blocker
+      used_by:
+        # Every model_provider_profile in model_provider_profiles.yaml binds model_invocation_governance:
+        - sdlc_reasoning_profile
+        - supervisor_routing_model
+        - coder_engineering_model
+        - architecture_reasoning_model
+        - security_analysis_model
+        - risk_analysis_model
+        - defect_analysis_model
+        - vision_model
+        - research_reasoning_profile
+        - source_evaluation_model
+        - knowledge_reasoning_profile
+        - summarization_model
+        - activation_reasoning_model
+        - operations_analysis_model
+        - incident_triage_model
+        - postmortem_reasoning_model
+        - skill_governance_reasoning_profile
+        - script_safety_analysis_model
+        - skill_semantic_extraction_model
+        - learning_reflection_model
+        - release_reasoning_model
+        - model_invocation_trace_schema   # audit_schemas.yaml binds it as model_provider_governance (via alias)
+      aliases:
+        - model_provider_governance       # naming variant used in audit_schemas.yaml (Model Invocation Trace Schema)
+      notes: >-
+        NEW (reconciliation). The 7-layer governance scope taxonomy (03 §3–§9) has no dedicated "model"
+        layer; model invocation is a cross-cutting dimension (mirroring the "model invocation trace" in
+        03 §12). Registered at global scope as the standing model-invocation policy. audit_schemas.yaml
+        spells it `model_provider_governance` on the model-invocation trace schema; recorded as an alias.
+        Ratify in Phase E.
+
+    - id: context_access_governance
+      name: Context Access Governance
+      type: global_governance_policy
+      status: candidate
+      purpose: >-
+        Cross-cutting governance for reading/writing a context/memory profile slice: run-scoped
+        isolation (one run cannot read another run's context), prior-run memory is advisory-only and
+        may not auto-satisfy a gate, redaction rules apply, and every context read/write emits a
+        context-usage trace. Governs how working context is accessed; does NOT turn a context pack into
+        an agent/skill/tool, and does NOT make Memory an agent (Memory stays a Core Ability).
+      owner_domain: nexus_context_memory
+      allowed_usage:
+        - Bind to every context/memory profile so context access is scoped, isolated, and traced.
+        - Enforce run-scoped isolation + advisory-only prior-run memory across all context packs.
+      forbidden_usage:
+        - Letting one run read another run's context, or auto-satisfying a gate from prior-run memory.
+        - Treating a context pack as an agent/team/skill/tool (locked concept boundary).
+      governance_profiles:
+        - trace_required
+        - raw_credential_redaction
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: global
+      applies_to:
+        - all_context_memory_profiles
+      severity_default: blocker
+      used_by:
+        # Every context/memory profile in context_memory_profiles.yaml binds context_access_governance:
+        - sdlc_run_context
+        - requirements_context_pack
+        - architecture_context_pack
+        - implementation_context_pack
+        - verification_context_pack
+        - security_context_pack
+        - operations_context_pack
+        - release_context_pack
+        - domain_risk_context_pack
+        - skill_semantic_context_pack
+        - research_run_context
+        - source_corpus_context_pack
+        - claim_evidence_context_pack
+        - activation_run_context
+        - preview_context_pack
+        - pilot_evidence_context_pack
+        - activation_decision_context_pack
+        - operations_run_context
+        - incident_context_pack
+        - postmortem_context_pack
+        - skill_governance_run_context
+        - skill_registry_context_pack
+        - knowledge_run_context
+        - memory_candidate_context_pack
+        - retrieval_profile_context_pack
+        - learning_context_pack
+      notes: >-
+        NEW (reconciliation). The 7-layer governance scope taxonomy (03 §3–§9) has no dedicated
+        "context" layer; context access is a cross-cutting dimension (mirroring the "context usage trace"
+        in 03 §12). Registered at global scope as the standing context-access policy. Complements (does
+        not replace) the Memory core-ability memory_access_governance. Ratify in Phase E.
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: pipeline — umbrella governance for one whole pipeline
+  # (03-governance-and-audit-layering.md §4). One per pipeline + release_candidate_governance
+  # which spans the development_completion -> release_candidate boundary inside SDLC.
+  # -----------------------------------------------------------------------------------
+  pipeline:
+
+    - id: sdlc_pipeline_governance
+      name: SDLC Pipeline Governance
+      type: pipeline_governance_profile
+      status: canonical
+      purpose: >-
+        Pipeline-wide governance for the 31-stage SDLC pipeline: no development_completion without
+        code review; no release_candidate with an open blocker bug; no progression with high/critical
+        security findings (03 §4). The umbrella under which every SDLC stage-scope gate sits.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Bind at the SDLC pipeline level and be re-shown under each SDLC stage (usage mapping).
+        - Govern the cross-stage SDLC invariants (code-review-before-completion, blocker-bug-zero, etc.).
+      forbidden_usage:
+        - Applied to non-SDLC pipelines (each pipeline has its own umbrella profile).
+        - Used to override a blocking stage gate (see global no_policy_bypass).
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - sdlc_pipeline
+        - all_31_sdlc_stages
+      severity_default: blocker
+      used_by:
+        # Listed by ALL 31 SDLC stages' uses_governance_profiles + the SDLC pipeline:
+        - sdlc_pipeline
+        - intake
+        - domain_risk_profile             # via domain_risk_governance umbrella; sdlc_pipeline_governance at pipeline level
+        - requirements
+        - requirements_review
+        - architecture
+        - architecture_review
+        - security_privacy_design
+        - premortem_fmea
+        - planning
+        - implementation
+        - code_review
+        - test_generation
+        - test_execution
+        - verification_loop_bug_finding
+        - security_validation
+        - supply_chain_sbom_license
+        - ai_agent_safety_evaluation
+        - privacy_data_lifecycle_validation
+        - api_contract_compatibility_validation
+        - domain_regulatory_compliance_validation_if_applicable
+        - data_migration_validation_if_applicable
+        - accessibility_ux_validation_if_applicable
+        - performance_resilience
+        - cost_resource_governance
+        - backup_restore_dr_validation_if_applicable
+        - operations_readiness
+        - evidence_graph_build
+        - development_completion
+        - release_candidate
+        - refraction_learning
+      notes: >-
+        SDLC pipeline-level umbrella (sdlc_pipeline.yaml uses_governance_profiles). Stages 01/02 list
+        sdlc_pipeline_governance / domain_risk_governance explicitly; all other stages list it directly.
+
+    - id: research_source_governance
+      name: Research Source Governance
+      type: pipeline_governance_profile
+      status: candidate
+      purpose: >-
+        Rules for what counts as an acceptable source, minimum reliability/diversity, and how
+        low-reliability sources may be used in the Research Pipeline (research-pipeline.md §3).
+        Source reliability scoring is mandatory; uncertainty must be explicit (03 §4).
+      owner_domain: research_and_knowledge
+      allowed_usage:
+        - Govern source admissibility, minimum reliability score, and source diversity in research.
+        - Bind at research pipeline level and re-show under source_reliability_assessment.
+      forbidden_usage:
+        - Used outside the Research Pipeline.
+        - Used as a citation gate (that is the separate citation_required_gate).
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - source_evidence_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - research_pipeline
+        - source_discovery
+        - source_reliability_assessment
+        - claim_extraction
+      severity_default: blocker
+      used_by:
+        - research_pipeline
+        - source_reliability_assessment   # research stage 2.4 (uses governance: research_source_governance)
+        - research_reasoning_profile      # model_provider_profiles.yaml binds this as the research umbrella (via alias)
+      aliases:
+        - research_pipeline_governance    # naming variant used in model_provider_profiles.yaml (umbrella sibling-name); MD authoritative id is research_source_governance
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Pairs with citation_required_gate.
+        model_provider_profiles.yaml refers to the research umbrella as `research_pipeline_governance`
+        (consistent with the activation/operations/skill `*_pipeline_governance` naming); recorded as an
+        alias here since the authoritative markdown umbrella id is `research_source_governance`.
+
+    - id: activation_pipeline_governance
+      name: Activation Pipeline Governance
+      type: pipeline_governance_profile
+      status: candidate
+      purpose: >-
+        Umbrella governance for the Activation Pipeline: no pilot activation without a passing
+        superadmin preview; no public activation without sufficient pilot evidence; a validated
+        rollback plan is mandatory before public completion; public activation is a human/owner gate
+        that cannot be self-approved (activation-pipeline.md §3; 03 §4).
+      owner_domain: activation_and_release_operations
+      allowed_usage:
+        - Bind at the Activation Pipeline level and re-show under each activation stage.
+        - Govern the preview -> pilot -> public staged-activation invariants.
+      forbidden_usage:
+        - Used outside the Activation Pipeline.
+        - Used to bypass the owner/human activation decision (that gate is human authority).
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - activation_evidence_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - activation_pipeline
+        - activation_intake
+        - superadmin_preview
+        - pilot_activation
+        - pilot_evidence_review
+        - public_activation_decision
+        - rollback_readiness
+        - activation_completion
+      severity_default: blocker
+      used_by:
+        - activation_pipeline
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Layered over the gate-style
+        profiles preview_required_gate / pilot_evidence_gate / rollback_required_gate /
+        owner_activation_decision_gate.
+
+    - id: operations_pipeline_governance
+      name: Operations Pipeline Governance
+      type: pipeline_governance_profile
+      status: candidate
+      purpose: >-
+        Umbrella governance for the Operations Pipeline: incident severity classification mandatory;
+        active incident must have a mitigation plan; rollback/fix must carry runbook or rollback
+        evidence; postmortem mandatory (03 §4; operations-pipeline.md §3.2).
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Bind at the Operations Pipeline level and re-show under each operations stage.
+        - Govern incident handling -> mitigation -> rollback/fix -> postmortem -> learning invariants.
+      forbidden_usage:
+        - Used outside the Operations Pipeline.
+        - Used to skip a mandatory postmortem for qualifying severities.
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - incident_evidence_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - operations_pipeline
+        - incident_intake
+        - severity_classification
+        - mitigation_plan
+        - rollback_or_fix
+        - postmortem
+        - learning_update
+      severity_default: blocker
+      used_by:
+        - operations_pipeline
+        - incident_intake            # operations stage 2.1 uses governance: operations_pipeline_governance
+        - severity_classification    # 2.2
+        - mitigation_plan            # 2.3
+        - rollback_or_fix            # 2.4
+        - postmortem                 # 2.5
+        - learning_update            # 2.6
+      aliases:
+        - incident_response_governance   # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: operations_pipeline_governance
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Catalog YAML uses the divergent
+        name `incident_response_governance` (F-1); markdown `operations_pipeline_governance` is canonical-source.
+        The YAML-only variant is now recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    - id: skill_governance_pipeline_governance
+      name: Skill Governance Pipeline Governance
+      type: pipeline_governance_profile
+      status: candidate
+      purpose: >-
+        Pipeline-level policy for the Skill Governance Pipeline: no binding/activation without
+        mandatory semantic extraction; script/reference safety audit required; misuse-warnings
+        required; locked skill semantics enforced (skill-governance-pipeline.md §3.2).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Bind at the Skill Governance Pipeline level and re-show under each of its stages.
+        - Govern the skill lifecycle (intake -> semantics -> audit -> misuse -> binding -> activation).
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline.
+        - Used to alter the locked semantics of prism/verification-loop (that is enforced separately).
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+        - locked_semantics_enforcement_policy
+      audit_schemas:
+        - skill_governance_evidence_schema
+        - skill_governance_trace_schema
+      scope: pipeline
+      applies_to:
+        - skill_governance_pipeline
+        - skill_intake
+        - skill_semantic_extraction
+        - script_reference_audit
+        - misuse_warning_generation
+        - skill_binding_proposal
+        - skill_activation_decision
+        - skill_deprecation_update
+      severity_default: blocker
+      used_by:
+        - skill_governance_pipeline
+      aliases:
+        - skill_governance_profile       # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: skill_governance_pipeline_governance
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. NOTE the SDLC pipeline already
+        has a stage 03 `skill_governance` (stage-scope) profile — that is DISTINCT from this whole-
+        pipeline umbrella for the dedicated Skill Governance Pipeline. The catalog-YAML variant
+        `skill_governance_profile` is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    - id: memory_source_governance
+      name: Memory Source Governance
+      type: pipeline_governance_profile
+      status: candidate
+      purpose: >-
+        Govern source admissibility, trust tiers, and sensitivity handling across the Knowledge /
+        Memory lifecycle (knowledge-memory-pipeline.md §3.2). Curates what the Memory Core Ability is
+        allowed to remember and how it is classified — does NOT turn Memory into an agent.
+      owner_domain: knowledge_management
+      allowed_usage:
+        - Govern source/trust-tier/sensitivity classification across the knowledge lifecycle.
+        - Bind at the Knowledge/Memory Pipeline level and re-show under memory_intake/classification stages.
+      forbidden_usage:
+        - Used outside the Knowledge/Memory Pipeline.
+        - Used to promote the Memory Core Ability into an agent/owner.
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - memory_provenance_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - knowledge_memory_pipeline
+        - memory_intake
+        - source_classification
+        - summary_generation
+        - retrieval_profile_update
+        - memory_expiration_review
+      severity_default: blocker
+      used_by:
+        - knowledge_memory_pipeline
+        - memory_intake               # knowledge/memory stage 2.1 governance: memory_source_governance
+        - source_classification       # 2.2
+        - summary_generation          # 2.3
+        - retrieval_profile_update    # 2.5
+        - memory_expiration_review    # 2.6
+      aliases:
+        - memory_governance_profile   # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: memory_source_governance
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Catalog YAML uses divergent
+        `memory_governance_profile` (F-1); markdown `memory_source_governance` is canonical-source.
+        The YAML-only variant is now recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    - id: release_candidate_governance
+      name: Release Candidate Governance
+      type: pipeline_governance_profile
+      status: canonical
+      purpose: >-
+        Govern the development_completion -> release_candidate boundary: a release candidate may not
+        be produced before development_completion passes, with release evidence complete, no blocking
+        policy failure, residual risk recorded, and rollback/runbook present (06 §12). Bridges the
+        operations-readiness, completion, and RC stages.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the dev-completion -> RC boundary; be re-shown under stages 27/29/30.
+        - Require release evidence + no blocking policy failure before RC.
+      forbidden_usage:
+        - Producing a release candidate before development_completion passes (anti-pattern).
+        - Used by non-SDLC pipelines.
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - sdlc_pipeline
+        - operations_readiness
+        - development_completion
+        - release_candidate
+      severity_default: blocker
+      used_by:
+        - operations_readiness     # stage 27 uses_governance_profiles: release_candidate_governance
+        - development_completion   # stage 29
+        - release_candidate        # stage 30 (LOCKED canonical governance profile for this stage)
+      notes: >-
+        Canonical. Spans three SDLC stages (27/29/30). Distinct from the global no_policy_bypass: this
+        is the specific dev-completion->RC ordering + release-evidence governance.
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: team — intra-team role/responsibility rules
+  # (03-governance-and-audit-layering.md §5). The repo does not yet define standalone
+  # team-governance profile IDs; the team-level rules are expressed via the global
+  # no_self_approval policy + the per-stage review-gate owner!=author bindings. The two
+  # team-governance profiles below are CANDIDATES recording the §5 team rules so the
+  # team scope is not described only in prose (doc 17 §13: "No category is only described
+  # in prose"). They will be ratified in Phase D (team/agent catalog) / Phase E.
+  # -----------------------------------------------------------------------------------
+  team:
+
+    - id: sdlc_team_governance
+      name: SDLC Team Governance
+      type: team_governance_profile
+      status: candidate
+      purpose: >-
+        Intra-team rules for the sdlc_team (03 §5): a developer cannot approve their own code; QA
+        cannot manipulate test results; the release agent cannot pass a failed gate; the
+        sdlc_team_lead orchestrates but is NOT the Supervisor Core Ability and cannot self-approve.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern role separation inside the sdlc_team (producer != approver at the team level).
+        - Re-show the global no_self_approval policy in the sdlc_team context (usage mapping).
+      forbidden_usage:
+        - Treating the sdlc_team (a team) as a stage owner (owner is always an Agent role).
+        - Treating Supervisor as sdlc_team_lead.
+      governance_profiles:
+        - no_self_approval
+        - no_policy_bypass
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: team
+      applies_to:
+        - sdlc_team
+        - sdlc_team_lead
+      severity_default: blocker
+      used_by:
+        - sdlc_pipeline    # the sdlc_team runs the SDLC pipeline; team rules apply across all 31 stages
+      notes: >-
+        CANDIDATE — records 03 §5 SDLC team rules. The sdlc_team_lead != Supervisor (locked) is the
+        team-scope expression of the supervisor_as_team_lead guard in sdlc_pipeline_runtime_rules.yaml.
+        Ratify in Phase D team/agent catalog.
+
+    - id: research_team_governance
+      name: Research Team Governance
+      type: team_governance_profile
+      status: candidate
+      purpose: >-
+        Intra-team rules for the research_team (03 §5): a researcher cannot solely validate their own
+        source; source validation is performed by a separate role (cross_validation_agent distinct
+        from the producing agents).
+      owner_domain: research_and_knowledge
+      allowed_usage:
+        - Govern producer-role != validator-role separation inside the research_team.
+        - Re-show no_self_approval in the research_team context (cross_validation is a distinct owner).
+      forbidden_usage:
+        - Letting the producing researcher be the sole validator of their own source.
+        - Treating research_team_lead as the Supervisor Core Ability.
+      governance_profiles:
+        - no_self_approval
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: team
+      applies_to:
+        - research_team
+        - research_team_lead
+      severity_default: blocker
+      used_by:
+        - research_pipeline   # the research_team runs the Research Pipeline; enforced at cross_validation
+      notes: >-
+        CANDIDATE — records 03 §5 Research team rules; enforced structurally by the
+        validator_role_distinct_from_producer gate in research cross_validation. Ratify in Phase D.
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: stage — rules for a single stage within a pipeline
+  # (03-governance-and-audit-layering.md §6). Extracted verbatim from each SDLC stage's
+  # uses_governance_profiles (the *_governance and *_gate stage profiles) PLUS the NEW
+  # per-stage gates introduced by the 5 catalog pipelines.
+  # -----------------------------------------------------------------------------------
+  stage:
+
+    # ---- SDLC stage-scope governance profiles (status: canonical) ----
+
+    - id: intake_scope_gate
+      name: Intake Scope Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-01 gate: product goal present + initial scope bounded + success metrics present before
+        intake hands off to domain_risk_profile.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the intake stage outputs (PRODUCT_BRIEF / INITIAL_SCOPE / SUCCESS_METRICS).
+      forbidden_usage:
+        - Used outside the intake stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - intake
+      severity_default: blocker
+      used_by:
+        - intake     # stage 01 uses_governance_profiles
+      notes: Gates product_goal_present / initial_scope_bounded / success_metrics_present (stage 01).
+
+    - id: domain_risk_governance
+      name: Domain Risk Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: >-
+        Stage-02 governance: govern domain classification and risk-profile decision so every
+        downstream conditional gate's applicability inherits a governed risk class.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the domain_risk_profile stage (DOMAIN_PROFILE_DECISION / RISK_PROFILE).
+      forbidden_usage:
+        - Used outside the domain_risk_profile stage.
+      governance_profiles:
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - domain_risk_profile
+      severity_default: blocker
+      used_by:
+        - domain_risk_profile     # stage 02
+      notes: Pairs with the domain_risk_profile_gate (stage 02).
+
+    - id: domain_risk_profile_gate
+      name: Domain Risk Profile Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-02 gate ensuring a domain profile + risk profile decision is recorded with evidence.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the domain_risk_profile stage decision.
+      forbidden_usage:
+        - Used outside the domain_risk_profile stage.
+      governance_profiles:
+        - domain_risk_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - domain_risk_profile
+      severity_default: blocker
+      used_by:
+        - domain_risk_profile
+      notes: Stage 02 gate.
+
+    - id: skill_governance
+      name: Skill Governance (SDLC Stage 03)
+      type: stage_governance_profile
+      status: canonical
+      purpose: >-
+        Stage-03 governance: govern in-SDLC skill semantic extraction (no skill bound without
+        semantics). DISTINCT from the dedicated Skill Governance Pipeline umbrella
+        (skill_governance_pipeline_governance).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the SDLC skill_semantic_extraction stage.
+      forbidden_usage:
+        - Confused with skill_governance_pipeline_governance (whole separate pipeline).
+      governance_profiles:
+        - evidence_required
+        - no_self_approval
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - skill_semantic_extraction
+      severity_default: blocker
+      used_by:
+        - skill_semantic_extraction     # SDLC stage 03
+      notes: >-
+        SDLC stage-03 profile. NOT the same as the Skill Governance Pipeline's pipeline-scope umbrella.
+
+    - id: skill_semantic_extraction_gate
+      name: Skill Semantic Extraction Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-03 gate ensuring skill semantics are extracted before any skill is bound (no_unread_skill_binding family).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate that skill semantic extraction precedes binding in SDLC.
+      forbidden_usage:
+        - Used outside skill_semantic_extraction.
+      governance_profiles:
+        - skill_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - skill_semantic_extraction
+      severity_default: blocker
+      used_by:
+        - skill_semantic_extraction
+      aliases:
+        - no_unread_skill_binding   # 06 §3 (skill_must_have_semantic_extraction_before_binding) — the policy this gate enforces
+      notes: Stage 03 gate; enforces the no_unread_skill_binding blocker policy from 06 §3.
+
+    - id: requirements_acceptance_gate
+      name: Requirements Acceptance Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-04 gate ensuring requirements + NFRs + acceptance criteria are present and accepted with evidence.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the requirements stage outputs.
+      forbidden_usage:
+        - Used outside the requirements stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - requirements
+      severity_default: blocker
+      used_by:
+        - requirements     # stage 04
+      notes: Stage 04 gate.
+
+    - id: requirements_review_governance
+      name: Requirements Review Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-05 review governance ensuring the requirements review is performed by a non-author (no self-approval) with evidence.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the requirements_review gate (reviewer != REQUIREMENTS_SPEC author).
+      forbidden_usage:
+        - Used outside requirements_review.
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - requirements_review
+      severity_default: blocker
+      used_by:
+        - requirements_review     # stage 05 (owner sdlc_team_lead as locked review-gate fallback)
+      notes: Pairs with prompt_fidelity_gate (stage 05).
+
+    - id: prompt_fidelity_gate
+      name: Prompt Fidelity Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-05 gate ensuring requirements faithfully reflect stated intent (prompt-fidelity skill output gate).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate fidelity of requirements to the captured intent.
+      forbidden_usage:
+        - Used outside requirements_review.
+      governance_profiles:
+        - requirements_review_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - requirements_review
+      severity_default: blocker
+      used_by:
+        - requirements_review
+      notes: Stage 05 gate (uses prompt-fidelity skill).
+
+    - id: architecture_design_governance
+      name: Architecture Design Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-06 governance over architecture design quality, ADR coverage, and NFR addressing.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the architecture stage outputs (ARCHITECTURE_DOC / ADR_INDEX).
+      forbidden_usage:
+        - Used outside the architecture stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - architecture
+      severity_default: blocker
+      used_by:
+        - architecture            # stage 06
+        - architecture_evidence_schema   # audit_schemas.yaml binds it as architecture_governance_profile (via alias)
+      aliases:
+        - architecture_governance_profile   # naming variant used in audit_schemas.yaml (canonical: architecture_design_governance)
+      notes: >-
+        Pairs with adr_required_gate (stage 06). audit_schemas.yaml refers to this stage governance as
+        `architecture_governance_profile`; recorded under aliases so that reference resolves.
+
+    - id: adr_required_gate
+      name: ADR Required Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-06 gate requiring architecture decisions be captured as ADRs (adr-builder skill output gate).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate that load-bearing architecture decisions are recorded as ADRs.
+      forbidden_usage:
+        - Used outside the architecture stage.
+      governance_profiles:
+        - architecture_design_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - architecture
+      severity_default: blocker
+      used_by:
+        - architecture
+      notes: Stage 06 gate.
+
+    - id: architecture_review_gate
+      name: Architecture Review Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-07 review gate ensuring architecture is reviewed by a non-author (no self-approval) with evidence.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the architecture_review (reviewer != ARCHITECTURE_DOC author).
+      forbidden_usage:
+        - Used outside architecture_review.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - architecture_review
+      severity_default: blocker
+      used_by:
+        - architecture_review     # stage 07 (owner sdlc_team_lead as locked review-gate fallback)
+      notes: Stage 07 gate.
+
+    - id: security_privacy_governance
+      name: Security/Privacy Design Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-08 governance over threat modeling and security/privacy design requirements.
+      owner_domain: security_engineering
+      allowed_usage:
+        - Govern the security_privacy_design stage (THREAT_MODEL / SECURITY_REQUIREMENTS).
+      forbidden_usage:
+        - Used outside security_privacy_design.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - security_privacy_design
+      severity_default: blocker
+      used_by:
+        - security_privacy_design     # stage 08
+        - threat_model_evidence_schema   # audit_schemas.yaml binds it as security_privacy_design_governance (via alias)
+      aliases:
+        - security_privacy_design_governance   # naming variant used in audit_schemas.yaml (canonical: security_privacy_governance)
+      notes: >-
+        Co-listed with privacy_lifecycle_governance and threat_model_required_gate (stage 08).
+        audit_schemas.yaml refers to this stage governance as `security_privacy_design_governance`;
+        recorded under aliases so that reference resolves.
+
+    - id: privacy_lifecycle_governance
+      name: Privacy Lifecycle Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: >-
+        Governance over data lifecycle / retention / tenant-isolation privacy concerns. Bound at
+        stage 08 (security_privacy_design) and stage 19 (privacy_data_lifecycle_validation).
+      owner_domain: privacy_engineering
+      allowed_usage:
+        - Govern privacy data-lifecycle concerns in design (08) and validation (19).
+      forbidden_usage:
+        - Used outside the privacy design/validation stages.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - security_privacy_design
+        - privacy_data_lifecycle_validation
+      severity_default: blocker
+      used_by:
+        - security_privacy_design          # stage 08
+        - privacy_data_lifecycle_validation # stage 19
+        - privacy_evidence_schema          # audit_schemas.yaml binds it as privacy_governance_profile (via alias)
+        - data_lifecycle_report_schema     # audit_schemas.yaml binds it as privacy_governance_profile (via alias)
+      aliases:
+        - privacy_governance_profile       # naming variant used in audit_schemas.yaml (canonical: privacy_lifecycle_governance)
+      notes: >-
+        Spans stages 08 and 19. audit_schemas.yaml refers to this governance as `privacy_governance_profile`;
+        recorded under aliases so that reference resolves.
+
+    - id: threat_model_required_gate
+      name: Threat Model Required Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-08 gate requiring a threat model be produced before design completion.
+      owner_domain: security_engineering
+      allowed_usage:
+        - Gate presence/quality of the THREAT_MODEL.
+      forbidden_usage:
+        - Used outside security_privacy_design.
+      governance_profiles:
+        - security_privacy_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - security_privacy_design
+      severity_default: blocker
+      used_by:
+        - security_privacy_design
+      notes: Stage 08 gate.
+
+    - id: risk_review_governance
+      name: Risk Review Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-09 governance over premortem + FMEA risk review (sentinel + prism + fmea).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the premortem_fmea stage risk register.
+      forbidden_usage:
+        - Used outside premortem_fmea.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - premortem_fmea
+      severity_default: blocker
+      used_by:
+        - premortem_fmea     # stage 09
+      notes: Pairs with fmea_required_gate (stage 09).
+
+    - id: fmea_required_gate
+      name: FMEA Required Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-09 gate requiring an FMEA risk register over failure modes / abuse cases / edge cases.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate presence of the FMEA_RISK_REGISTER / SENTINEL_PREMORTEM.
+      forbidden_usage:
+        - Used outside premortem_fmea.
+      governance_profiles:
+        - risk_review_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - premortem_fmea
+      severity_default: blocker
+      used_by:
+        - premortem_fmea
+      notes: Stage 09 gate.
+
+    - id: planning_handoff_completeness_gate
+      name: Planning Handoff Completeness Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-10 gate ensuring the implementation plan, task breakdown, and handoff packets are complete before build.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate completeness of planning handoff artifacts (HANDOFF_PACKETS etc.).
+      forbidden_usage:
+        - Used outside the planning stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - planning
+      severity_default: blocker
+      used_by:
+        - planning     # stage 10
+      notes: Stage 10 gate (uses handoff-designer / context-pack-builder skills — see open_questions).
+
+    - id: implementation_governance
+      name: Implementation Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-11 authoring/build governance over the code changeset and implementation notes.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the implementation stage outputs (CODE_CHANGESET_SUMMARY etc.).
+      forbidden_usage:
+        - Used outside the implementation stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - implementation
+      severity_default: blocker
+      used_by:
+        - implementation     # stage 11
+      notes: Pairs with no_out_of_scope_change_gate (stage 11).
+
+    - id: no_out_of_scope_change_gate
+      name: No Out-of-Scope Change Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-11 scope-containment gate (implementation_scope_clean) blocking changes outside the planned scope.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate that the changeset stays within planned scope.
+      forbidden_usage:
+        - Used outside the implementation stage.
+      governance_profiles:
+        - implementation_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - implementation
+      severity_default: blocker
+      used_by:
+        - implementation
+      notes: Stage 11 scope-containment gate.
+
+    - id: code_review_gate
+      name: Code Review Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-12 review gate; owner (code_reviewer_agent) must differ from the changeset author (no self-approval).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the code review (reviewer != engineering_agent author).
+      forbidden_usage:
+        - Used outside code_review.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - code_review
+      severity_default: blocker
+      used_by:
+        - code_review     # stage 12
+      notes: Stage 12 gate (dedicated reviewer role).
+
+    - id: test_coverage_completeness_gate
+      name: Test Coverage Completeness Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-13 gate ensuring generated tests cover the changeset adequately.
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Gate test-generation coverage completeness.
+      forbidden_usage:
+        - Used outside test_generation.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - test_generation
+      severity_default: blocker
+      used_by:
+        - test_generation     # stage 13
+      notes: Co-listed with regression_scope_gate (stage 13).
+
+    - id: regression_scope_gate
+      name: Regression Scope Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-13 gate ensuring regression scope is covered by generated tests.
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Gate regression-scope coverage at test generation.
+      forbidden_usage:
+        - Used outside test_generation.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - test_generation
+      severity_default: blocker
+      used_by:
+        - test_generation
+      notes: Stage 13 gate.
+
+    - id: test_execution_governance
+      name: Test Execution Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-14 governance over running the test suite and recording results (no manipulation).
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Govern the test_execution stage (TEST_EXECUTION_REPORT / COVERAGE_REPORT).
+      forbidden_usage:
+        - Used outside test_execution.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+        - no_self_approval
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - test_execution
+      severity_default: blocker
+      used_by:
+        - test_execution     # stage 14
+      notes: Co-listed with coverage_policy_gate and flaky_test_quarantine_gate (stage 14).
+
+    - id: coverage_policy_gate
+      name: Coverage Policy Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-14 gate enforcing coverage thresholds on the executed test suite.
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Gate coverage thresholds (coverage_policy_pass).
+      forbidden_usage:
+        - Used outside test_execution.
+      governance_profiles:
+        - test_execution_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - test_execution
+      severity_default: blocker
+      used_by:
+        - test_execution
+      notes: Stage 14 gate (coverage thresholds).
+
+    - id: flaky_test_quarantine_gate
+      name: Flaky Test Quarantine Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-14 gate governing flaky-test handling/quarantine policy.
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Gate flaky-test quarantine handling.
+      forbidden_usage:
+        - Used outside test_execution.
+      governance_profiles:
+        - test_execution_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - test_execution
+      severity_default: major
+      used_by:
+        - test_execution
+      notes: Stage 14 gate (flaky-test handling). Severity major (handling policy, not a hard test failure).
+
+    - id: verification_loop_bug_gate
+      name: Verification-Loop Bug Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-15 dedicated defect-finding gate over the changeset + test results (blocker bug count
+        == 0). Uses the verification-loop skill (LOCKED: bug/defect finding only — NOT a readiness
+        checklist, NOT a test_execution replacement).
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Gate the verification-loop defect sweep (qa_agent != engineering_agent author).
+      forbidden_usage:
+        - Used as a general readiness checklist or in place of test_execution (anti-pattern).
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - verification_loop_bug_finding
+      severity_default: blocker
+      used_by:
+        - verification_loop_bug_finding     # stage 15
+      notes: Stage 15 gate; enforces blocker_bug_zero (06 §3) for the changeset under review.
+
+    - id: security_validation_gate
+      name: Security Validation Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-16 gate; no critical security findings (critical_security_zero) before progression.
+      owner_domain: security_engineering
+      allowed_usage:
+        - Gate security validation findings (critical == 0).
+      forbidden_usage:
+        - Used outside security_validation.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - security_validation
+      severity_default: blocker
+      used_by:
+        - security_validation     # stage 16
+      aliases:
+        - critical_security_zero   # 06 §3 (critical_security_finding_count == 0) — policy this gate enforces
+      notes: Stage 16 gate; co-listed with no_secret_leak_gate. Uses scanner-result-normalizer skill (see open_questions).
+
+    - id: no_secret_leak_gate
+      name: No Secret Leak Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-16 gate; the stage-scope expression of the global no_secret_exposure policy (no leaked secrets in the changeset).
+      owner_domain: security_engineering
+      allowed_usage:
+        - Gate the changeset/scan output for leaked secrets.
+      forbidden_usage:
+        - Used outside security_validation.
+      governance_profiles:
+        - security_validation_gate
+        - no_secret_exposure
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - security_validation
+      severity_default: blocker
+      used_by:
+        - security_validation
+      notes: Stage 16 gate; stage-scope expression of global no_secret_exposure.
+
+    - id: supply_chain_governance
+      name: Supply Chain Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-17 governance over SBOM, license compliance, and dependency risk.
+      owner_domain: security_engineering
+      allowed_usage:
+        - Govern the supply_chain_sbom_license stage.
+      forbidden_usage:
+        - Used outside supply_chain_sbom_license.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - supply_chain_sbom_license
+      severity_default: blocker
+      used_by:
+        - supply_chain_sbom_license     # stage 17
+      notes: Co-listed with license_compliance_gate, sbom_required_gate, supply_chain_sbom_license_gate.
+
+    - id: license_compliance_gate
+      name: License Compliance Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-17 gate ensuring dependency licenses are compliant.
+      owner_domain: security_engineering
+      allowed_usage:
+        - Gate license compliance of dependencies.
+      forbidden_usage:
+        - Used outside supply_chain_sbom_license.
+      governance_profiles:
+        - supply_chain_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - supply_chain_sbom_license
+      severity_default: blocker
+      used_by:
+        - supply_chain_sbom_license
+      notes: Stage 17 gate.
+
+    - id: sbom_required_gate
+      name: SBOM Required Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-17 gate requiring an SBOM be produced.
+      owner_domain: security_engineering
+      allowed_usage:
+        - Gate presence of the SBOM.
+      forbidden_usage:
+        - Used outside supply_chain_sbom_license.
+      governance_profiles:
+        - supply_chain_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - supply_chain_sbom_license
+      severity_default: blocker
+      used_by:
+        - supply_chain_sbom_license
+      notes: Stage 17 gate.
+
+    - id: supply_chain_sbom_license_gate
+      name: Supply Chain SBOM/License Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-17 aggregate gate over SBOM + license + dependency-risk results (SUPPLY_CHAIN_GATE_RESULT).
+      owner_domain: security_engineering
+      allowed_usage:
+        - Aggregate-gate the supply-chain stage result.
+      forbidden_usage:
+        - Used outside supply_chain_sbom_license.
+      governance_profiles:
+        - supply_chain_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - supply_chain_sbom_license
+      severity_default: blocker
+      used_by:
+        - supply_chain_sbom_license
+      notes: Stage 17 aggregate gate.
+
+    - id: agentic_safety_governance
+      name: Agentic Safety Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-18 governance over AI agent safety evaluation (prompt-injection / tool-misuse / context-poisoning).
+      owner_domain: ai_safety
+      allowed_usage:
+        - Govern the ai_agent_safety_evaluation stage.
+      forbidden_usage:
+        - Used outside ai_agent_safety_evaluation.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - ai_agent_safety_evaluation
+      severity_default: blocker
+      used_by:
+        - ai_agent_safety_evaluation     # stage 18
+        - sdlc_pipeline                  # also declared at SDLC pipeline level
+      notes: Co-listed with tool_misuse_governance, context_safety_governance, evidence_integrity_gate.
+
+    - id: tool_misuse_governance
+      name: Tool Misuse Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-18 governance over tool-misuse / unsafe tool-call defects found via verification-loop (defect sweep).
+      owner_domain: ai_safety
+      allowed_usage:
+        - Govern tool-misuse defect findings in agentic safety evaluation.
+      forbidden_usage:
+        - Used outside ai_agent_safety_evaluation.
+      governance_profiles:
+        - agentic_safety_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - ai_agent_safety_evaluation
+      severity_default: blocker
+      used_by:
+        - ai_agent_safety_evaluation
+      notes: Stage 18 sub-profile.
+
+    - id: context_safety_governance
+      name: Context Safety Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-18 governance over context-poisoning / unsafe-context defects.
+      owner_domain: ai_safety
+      allowed_usage:
+        - Govern context-poisoning defect findings in agentic safety evaluation.
+      forbidden_usage:
+        - Used outside ai_agent_safety_evaluation.
+      governance_profiles:
+        - agentic_safety_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - ai_agent_safety_evaluation
+      severity_default: blocker
+      used_by:
+        - ai_agent_safety_evaluation
+      notes: Stage 18 sub-profile.
+
+    - id: evidence_integrity_gate
+      name: Evidence Integrity Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-18 gate ensuring agentic-safety evidence is intact/untampered.
+      owner_domain: ai_safety
+      allowed_usage:
+        - Gate integrity of agentic-safety evidence.
+      forbidden_usage:
+        - Used outside ai_agent_safety_evaluation.
+      governance_profiles:
+        - agentic_safety_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - ai_agent_safety_evaluation
+      severity_default: blocker
+      used_by:
+        - ai_agent_safety_evaluation
+      notes: Stage 18 gate.
+
+    - id: data_retention_gate
+      name: Data Retention Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-19 gate ensuring a data retention policy is present and enforced.
+      owner_domain: privacy_engineering
+      allowed_usage:
+        - Gate presence/enforcement of the retention policy.
+      forbidden_usage:
+        - Used outside privacy_data_lifecycle_validation.
+      governance_profiles:
+        - privacy_lifecycle_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - privacy_data_lifecycle_validation
+      severity_default: blocker
+      used_by:
+        - privacy_data_lifecycle_validation     # stage 19
+      notes: Stage 19 gate.
+
+    - id: tenant_isolation_gate
+      name: Tenant Isolation Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-19 gate ensuring tenant data isolation holds (no cross-tenant leakage).
+      owner_domain: privacy_engineering
+      allowed_usage:
+        - Gate tenant-isolation correctness.
+      forbidden_usage:
+        - Used outside privacy_data_lifecycle_validation.
+      governance_profiles:
+        - privacy_lifecycle_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - privacy_data_lifecycle_validation
+      severity_default: blocker
+      used_by:
+        - privacy_data_lifecycle_validation
+      notes: Stage 19 gate.
+
+    - id: api_contract_governance
+      name: API Contract Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-20 governance over API contract compatibility (no unapproved breaking changes).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern the api_contract_compatibility_validation stage.
+      forbidden_usage:
+        - Used outside api_contract_compatibility_validation.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - api_contract_compatibility_validation
+      severity_default: blocker
+      used_by:
+        - api_contract_compatibility_validation     # stage 20
+      notes: Co-listed with breaking_change_gate and compatibility_gate.
+
+    - id: breaking_change_gate
+      name: Breaking Change Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-20 gate blocking unapproved breaking API changes (no_unapproved_breaking_change).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the no-unapproved-breaking-change decision.
+      forbidden_usage:
+        - Used outside api_contract_compatibility_validation.
+      governance_profiles:
+        - api_contract_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - api_contract_compatibility_validation
+      severity_default: blocker
+      used_by:
+        - api_contract_compatibility_validation
+      notes: Stage 20 gate.
+
+    - id: compatibility_gate
+      name: Compatibility Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-20 gate over the overall compatibility verdict (contract tests pass).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the compatibility verdict.
+      forbidden_usage:
+        - Used outside api_contract_compatibility_validation.
+      governance_profiles:
+        - api_contract_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - api_contract_compatibility_validation
+      severity_default: blocker
+      used_by:
+        - api_contract_compatibility_validation
+      notes: Stage 20 gate.
+
+    - id: domain_compliance_governance
+      name: Domain Compliance Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-21 governance over domain/regulatory compliance (conditional, if applicable).
+      owner_domain: compliance
+      allowed_usage:
+        - Govern the domain_regulatory_compliance_validation stage when applicable.
+      forbidden_usage:
+        - Used outside the compliance validation stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - domain_regulatory_compliance_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - domain_regulatory_compliance_validation_if_applicable     # stage 21
+        - sdlc_pipeline                                             # also declared at SDLC pipeline level
+      notes: Conditional stage (if_applicable). Co-listed with regulatory_traceability_gate.
+
+    - id: regulatory_traceability_gate
+      name: Regulatory Traceability Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-21 gate ensuring regulatory requirements trace to evidence (REGULATORY_TRACEABILITY_REPORT).
+      owner_domain: compliance
+      allowed_usage:
+        - Gate regulatory traceability when compliance is applicable.
+      forbidden_usage:
+        - Used outside the compliance validation stage.
+      governance_profiles:
+        - domain_compliance_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - domain_regulatory_compliance_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - domain_regulatory_compliance_validation_if_applicable
+      notes: Stage 21 conditional gate.
+
+    - id: data_migration_governance
+      name: Data Migration Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: >-
+        Stage-22 LOCKED canonical governance over data migration validation (lossy / irreversible /
+        ordering / idempotency defects), conditional if applicable.
+      owner_domain: data_engineering
+      allowed_usage:
+        - Govern the data_migration_validation stage when applicable.
+      forbidden_usage:
+        - Used outside the data migration validation stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - data_migration_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - data_migration_validation_if_applicable     # stage 22
+        - sdlc_pipeline                               # also declared at SDLC pipeline level
+      notes: Co-listed with rollback_required_gate and data_integrity_gate (stage 22). Uses verification-loop (defect finding).
+
+    - id: data_integrity_gate
+      name: Data Integrity Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-22 gate ensuring post-migration data integrity holds.
+      owner_domain: data_engineering
+      allowed_usage:
+        - Gate post-migration integrity.
+      forbidden_usage:
+        - Used outside the data migration validation stage.
+      governance_profiles:
+        - data_migration_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - data_migration_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - data_migration_validation_if_applicable
+      notes: Stage 22 conditional gate.
+
+    - id: accessibility_governance
+      name: Accessibility Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-23 governance over accessibility validation (conditional, if applicable / UI present).
+      owner_domain: ux_engineering
+      allowed_usage:
+        - Govern the accessibility_ux_validation stage when applicable.
+      forbidden_usage:
+        - Used outside the accessibility/UX validation stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - accessibility_ux_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - accessibility_ux_validation_if_applicable     # stage 23
+      notes: Co-listed with ux_validation_governance and ui_release_gate (stage 23).
+
+    - id: ux_validation_governance
+      name: UX Validation Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-23 governance over UX validation quality (conditional, if applicable).
+      owner_domain: ux_engineering
+      allowed_usage:
+        - Govern UX validation in the accessibility/UX stage.
+      forbidden_usage:
+        - Used outside the accessibility/UX validation stage.
+      governance_profiles:
+        - accessibility_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - accessibility_ux_validation_if_applicable
+      severity_default: major
+      used_by:
+        - accessibility_ux_validation_if_applicable
+      notes: Stage 23 sub-profile. Severity major (UX quality vs hard accessibility blocker).
+
+    - id: ui_release_gate
+      name: UI Release Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-23 conditional gate (UI_RELEASE_GATE_RESULT) for UI-bearing releases.
+      owner_domain: ux_engineering
+      allowed_usage:
+        - Gate UI release readiness when a UI is present (ui_release_gate_pass_if_applicable).
+      forbidden_usage:
+        - Used when no UI is in scope.
+      governance_profiles:
+        - accessibility_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - accessibility_ux_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - accessibility_ux_validation_if_applicable
+      notes: Stage 23 conditional gate.
+
+    - id: performance_governance
+      name: Performance Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-24 governance over performance budgets.
+      owner_domain: performance_engineering
+      allowed_usage:
+        - Govern the performance_resilience stage performance budgets.
+      forbidden_usage:
+        - Used outside performance_resilience.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - performance_resilience
+      severity_default: major
+      used_by:
+        - performance_resilience     # stage 24
+      notes: >-
+        Co-listed with resilience_governance (stage 24). Severity major: 06 §15 open question flags
+        whether performance gates are blocker or advisory per profile; default major pending Phase E.
+
+    - id: resilience_governance
+      name: Resilience Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-24 governance over failure-behavior / resilience risks.
+      owner_domain: performance_engineering
+      allowed_usage:
+        - Govern resilience/failure-behavior risks in the performance_resilience stage.
+      forbidden_usage:
+        - Used outside performance_resilience.
+      governance_profiles:
+        - performance_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - performance_resilience
+      severity_default: major
+      used_by:
+        - performance_resilience
+      notes: Stage 24 sub-profile.
+
+    - id: cost_resource_governance
+      name: Cost / Resource Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-25 governance over cost estimate, resource budget, and quota policy.
+      owner_domain: finops
+      allowed_usage:
+        - Govern the cost_resource_governance stage (COST_ESTIMATE_REPORT / RESOURCE_BUDGET_REPORT).
+      forbidden_usage:
+        - Used outside the cost_resource_governance stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - cost_resource_governance
+      severity_default: major
+      used_by:
+        - cost_resource_governance     # stage 25
+        - sdlc_pipeline                # also declared at SDLC pipeline level (cost_resource_governance)
+      notes: >-
+        Co-listed with resource_budget_gate and quota_governance (stage 25). NOTE: the stage_id, the
+        stage profile, and the SDLC pipeline entry all share the literal name `cost_resource_governance`.
+
+    - id: resource_budget_gate
+      name: Resource Budget Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-25 gate over resource budget adherence (RESOURCE_GATE_RESULT).
+      owner_domain: finops
+      allowed_usage:
+        - Gate resource-budget adherence.
+      forbidden_usage:
+        - Used outside the cost_resource_governance stage.
+      governance_profiles:
+        - cost_resource_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - cost_resource_governance
+      severity_default: major
+      used_by:
+        - cost_resource_governance
+      notes: Stage 25 gate.
+
+    - id: quota_governance
+      name: Quota Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-25 governance over quota policy (quota_policy_pass / quota_policy_checker).
+      owner_domain: finops
+      allowed_usage:
+        - Govern quota policy in the cost_resource_governance stage.
+      forbidden_usage:
+        - Used outside the cost_resource_governance stage.
+      governance_profiles:
+        - cost_resource_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - cost_resource_governance
+      severity_default: major
+      used_by:
+        - cost_resource_governance
+      notes: Stage 25 sub-profile (quota_policy_checker tool governed here).
+
+    - id: backup_restore_governance
+      name: Backup / Restore Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: Stage-26 governance over backup/restore/DR validation (conditional, if applicable).
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Govern the backup_restore_dr_validation stage when applicable.
+      forbidden_usage:
+        - Used outside the backup/restore/DR validation stage.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - backup_restore_dr_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - backup_restore_dr_validation_if_applicable     # stage 26
+      notes: Co-listed with disaster_recovery_gate and rollback_required_gate (stage 26).
+
+    - id: disaster_recovery_gate
+      name: Disaster Recovery Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-26 gate over DR readiness (DR_READINESS_REPORT / RESTORE_TEST_REPORT).
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Gate DR readiness when applicable.
+      forbidden_usage:
+        - Used outside the backup/restore/DR validation stage.
+      governance_profiles:
+        - backup_restore_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - backup_restore_dr_validation_if_applicable
+      severity_default: blocker
+      used_by:
+        - backup_restore_dr_validation_if_applicable
+      notes: Stage 26 conditional gate.
+
+    - id: operations_readiness_gate
+      name: Operations Readiness Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-27 gate ensuring operations-readiness artifacts (RUNBOOK / ROLLBACK_PLAN /
+        OBSERVABILITY_PLAN / INCIDENT_RESPONSE_PLAN) are present before development completion.
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Gate operations readiness (operations_readiness_pass).
+      forbidden_usage:
+        - Used outside operations_readiness.
+      governance_profiles:
+        - release_candidate_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - operations_readiness
+      severity_default: blocker
+      used_by:
+        - operations_readiness     # stage 27
+      notes: >-
+        Stage 27 gate. SDLC operations_readiness authors RUNBOOK/ROLLBACK_PLAN consumed downstream by
+        the Operations Pipeline (operations-pipeline.md) — referenced, not regenerated.
+
+    - id: evidence_graph_gate
+      name: Evidence Graph Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-28 gate ensuring the requirement->...->release evidence DAG is complete and consistent
+        (legacy evidence_graph_governance maps here).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate completeness of the evidence graph.
+      forbidden_usage:
+        - Used outside evidence_graph_build.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - evidence_graph_build
+      severity_default: blocker
+      used_by:
+        - evidence_graph_build     # stage 28
+      aliases:
+        - evidence_graph_governance   # legacy name that maps to this gate (per stage 28 file comment)
+      notes: >-
+        Stage 28 gate; co-listed with traceability_required_gate. Uses evidence-graph-builder skill
+        (see open_questions). evidence_graph_agent != upstream authors and != release_manager_agent.
+
+    - id: traceability_required_gate
+      name: Traceability Required Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-28 gate requiring a complete traceability matrix (requirement->evidence links).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate presence/completeness of the TRACEABILITY_MATRIX.
+      forbidden_usage:
+        - Used outside evidence_graph_build.
+      governance_profiles:
+        - evidence_graph_gate
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - evidence_graph_build
+      severity_default: blocker
+      used_by:
+        - evidence_graph_build
+      notes: Stage 28 gate.
+
+    - id: development_completion_gate
+      name: Development Completion Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-29 gate aggregating all required gate results (06 §11): requirements/skill/architecture/
+        security/implementation/code-review/tests/verification-loop/security-validation/performance/
+        operations-readiness/evidence-graph all pass and no blocker policy failure.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate the development_completion decision over aggregated upstream gate results.
+      forbidden_usage:
+        - Used outside development_completion.
+      governance_profiles:
+        - release_candidate_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - development_completion
+      severity_default: blocker
+      used_by:
+        - development_completion     # stage 29
+        - sdlc_pipeline_evidence_schema   # audit_schemas.yaml binds the dev-completion governance as sdlc_development_completion_governance (via alias)
+      aliases:
+        - sdlc_development_completion_governance   # legacy/prose name (audit_schemas.yaml + 29-development-completion.yaml header reconciliation); maps onto this stage-29 gate
+      notes: >-
+        Stage 29 gate; co-listed with no_blocking_policy_failure_gate. Uses release-readiness-judge
+        skill (see open_questions). release_manager_agent aggregates others' results. The legacy/prose
+        name `sdlc_development_completion_governance` (used in audit_schemas.yaml, and noted in the
+        29-development-completion.yaml header as mapping onto development_completion_gate +
+        no_blocking_policy_failure_gate) is recorded under aliases so that reference resolves.
+
+    - id: no_blocking_policy_failure_gate
+      name: No Blocking Policy Failure Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: Stage-29 gate ensuring no blocking (blocker-severity) policy failure remains open before completion.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate that the open blocker-policy-failure count is zero.
+      forbidden_usage:
+        - Used outside development_completion / release_candidate boundary.
+      governance_profiles:
+        - release_candidate_governance
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - development_completion
+      severity_default: blocker
+      used_by:
+        - development_completion
+        - sdlc_pipeline    # SDLC pipeline exit also references no_blocking_policy_failure
+      aliases:
+        - no_blocking_policy_failure   # condition spelling used in sdlc_pipeline.yaml + new pipelines' exit_criteria
+      notes: >-
+        Stage 29 gate. The bare `no_blocking_policy_failure` exit-criterion token (SDLC pipeline +
+        all 5 new pipelines) is the same rule expressed as a pipeline exit condition.
+
+    - id: release_after_development_completion_gate
+      name: Release-After-Development-Completion Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-30 gate: a release candidate cannot be produced before development_completion passes
+        (06 §3 release_after_development_completion).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate that RC production is preceded by a development_completion pass.
+      forbidden_usage:
+        - Used to produce an RC before development_completion (anti-pattern).
+      governance_profiles:
+        - release_candidate_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - release_candidate
+      severity_default: blocker
+      used_by:
+        - release_candidate     # stage 30
+      aliases:
+        - release_after_development_completion   # 06 §3 policy id this gate enforces
+      notes: >-
+        Stage 30 gate; development_completion_pass re-attestation routed to sdlc_team_lead to avoid
+        self-approval of the stage-29 decision. Uses release-readiness-judge skill (see open_questions).
+
+    - id: learning_record_gate
+      name: Learning Record Gate
+      type: stage_gate_profile
+      status: canonical
+      purpose: >-
+        Stage-31 gate ensuring lessons learned / improvement backlog are recorded (legacy
+        learning_governance maps here). Non-blocking self-completeness gate.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Gate presence of LESSONS_LEARNED / FUTURE_IMPROVEMENT_BACKLOG.
+      forbidden_usage:
+        - Used outside refraction_learning.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - refraction_learning
+      severity_default: major
+      used_by:
+        - refraction_learning     # stage 31
+      aliases:
+        - learning_governance   # legacy name that maps to this gate (per stage 31 file comment)
+      notes: >-
+        Stage 31 gate; co-listed with memory_update_governance. Uses refraction skill. Severity major
+        (terminal learning stage; non-blocking self-completeness per stage-31 file).
+
+    - id: memory_update_governance
+      name: Memory Update Governance
+      type: stage_governance_profile
+      status: canonical
+      purpose: >-
+        Stage-31 governance enforcing proposal-not-direct-mutation of project memory (MEMORY_UPDATE_PROPOSAL).
+        Memory is updated by proposal, never silently mutated.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern that refraction_learning proposes memory updates rather than directly mutating memory.
+      forbidden_usage:
+        - Direct silent mutation of project memory (use a proposal).
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - sdlc_pipeline_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - refraction_learning
+      severity_default: major
+      used_by:
+        - refraction_learning
+      notes: Stage 31 sub-profile (proposal-not-mutation rule).
+
+    # ---- NEW pipeline-catalog stage-scope gates (status: candidate) ----
+    # All from pipeline-catalog-review.md §4.1; markdown docs authoritative.
+
+    - id: citation_required_gate
+      name: Citation Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Research synthesis gate: blocks any uncited load-bearing claim in the final research
+        synthesis (research-pipeline.md §2.9). Citation/evidence is mandatory (03 §4).
+      owner_domain: research_and_knowledge
+      allowed_usage:
+        - Gate the research synthesis stage for full citation of load-bearing claims.
+      forbidden_usage:
+        - Used outside the Research Pipeline.
+        - Confused with research_source_governance (source admissibility, not citation).
+      governance_profiles:
+        - research_source_governance
+        - evidence_required
+      audit_schemas:
+        - claim_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - synthesis
+        - research_completion
+      severity_default: blocker
+      used_by:
+        - synthesis             # research stage 2.9 (uses governance: citation_required_gate)
+        - research_completion   # research stage 2.10 (citation_required_gate_pass exit criterion)
+      notes: NEW (pipeline-catalog-review.md §4.1). Research Pipeline gate.
+
+    - id: preview_required_gate
+      name: Preview Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Activation gate: no pilot activation may begin without a passing superadmin/internal preview
+        (activation-pipeline.md §2.2; 03 §4 "superadmin preview olmadan pilot activation yok").
+      owner_domain: activation_and_release_operations
+      allowed_usage:
+        - Gate that a passing superadmin preview precedes pilot activation.
+      forbidden_usage:
+        - Used outside the Activation Pipeline.
+      governance_profiles:
+        - activation_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - activation_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - superadmin_preview
+      severity_default: blocker
+      used_by:
+        - superadmin_preview     # activation stage 2.2
+      notes: NEW (pipeline-catalog-review.md §4.1). Activation Pipeline gate.
+
+    - id: pilot_evidence_gate
+      name: Pilot Evidence Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Activation gate: public activation is impossible without sufficient pilot evidence
+        (activation-pipeline.md §2.4; 03 §4 "pilot evidence olmadan public activation yok").
+      owner_domain: activation_and_release_operations
+      allowed_usage:
+        - Gate that sufficient pilot evidence exists before public activation.
+      forbidden_usage:
+        - Used outside the Activation Pipeline.
+      governance_profiles:
+        - activation_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - activation_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - pilot_evidence_review
+      severity_default: blocker
+      used_by:
+        - pilot_evidence_review     # activation stage 2.4 (separate-owner review)
+      notes: NEW (pipeline-catalog-review.md §4.1). Activation Pipeline gate; reviewer != pilot owner.
+
+    - id: rollback_required_gate
+      name: Rollback Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        A validated, executable rollback path is mandatory before a risky transition completes.
+        Introduced by the Activation Pipeline (rollback_readiness, activation-pipeline.md §2.6) and
+        ALSO bound in two SDLC stages (data_migration 22, backup_restore_dr 26) as a tested-rollback
+        requirement.
+      owner_domain: activation_and_release_operations
+      allowed_usage:
+        - Gate that a validated rollback path exists before public activation / risky migration completes.
+        - Be re-shown under each stage that requires a tested rollback.
+      forbidden_usage:
+        - Completing a risky transition without a validated rollback path.
+      governance_profiles:
+        - high_risk_action_default_deny
+        - evidence_required
+      audit_schemas:
+        - rollback_readiness_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - rollback_readiness                            # activation pipeline
+        - data_migration_validation_if_applicable       # SDLC stage 22
+        - backup_restore_dr_validation_if_applicable     # SDLC stage 26
+      severity_default: blocker
+      used_by:
+        - rollback_readiness                            # activation stage 2.6 (NEW)
+        - data_migration_validation_if_applicable        # SDLC stage 22 (canonical binding)
+        - backup_restore_dr_validation_if_applicable      # SDLC stage 26 (canonical binding)
+      notes: >-
+        Listed in pipeline-catalog-review.md §4.1 as a NEW activation profile, but the SAME id is
+        already a canonical SDLC stage gate (stages 22 + 26). Registered once, status candidate
+        (pending Phase E ratification of the cross-pipeline shared definition); SDLC usages are
+        canonical bindings. Flagged in open_questions.
+
+    - id: owner_activation_decision_gate
+      name: Owner Activation Decision Gate (HUMAN/OWNER)
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        The public-activation decision is a HUMAN / owner authority gate: the authorizing actor is
+        the human owner, NOT an autonomous agent. The owner reviews pilot evidence + validated
+        rollback + residual risk and explicitly authorizes general-availability activation
+        (activation-pipeline.md §2.5).
+      owner_domain: activation_and_release_operations
+      allowed_usage:
+        - Gate public activation on a recorded human/owner decision (owner decision record).
+        - Coexist with no_self_approval (the agent recording the decision is not the authorizer).
+      forbidden_usage:
+        - Treated as autonomous agent approval — this is HUMAN authority, DISTINCT from no_self_approval.
+        - An autonomous agent self-authorizing public activation.
+      governance_profiles:
+        - activation_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - activation_decision_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - public_activation_decision
+      severity_default: blocker
+      used_by:
+        - public_activation_decision     # activation stage 2.5
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1, F-4). HUMAN/owner gate — the one place a pipeline asserts
+        human-in-the-loop authority under the otherwise no-human governance framing. EXPLICITLY DISTINCT
+        from autonomous-agent no_self_approval. Phase E must sign off the owner/human gate (F-4).
+
+    - id: incident_severity_required_gate
+      name: Incident Severity Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Operations gate: severity classification is mandatory before any mitigation work may begin
+        (operations-pipeline.md §2.2; 03 §4 "incident severity sınıflandırması zorunlu").
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Gate that a severity is assigned before mitigation planning.
+      forbidden_usage:
+        - Used outside the Operations Pipeline.
+      governance_profiles:
+        - operations_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - severity_classification_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - severity_classification
+      severity_default: blocker
+      used_by:
+        - severity_classification     # operations stage 2.2
+      notes: NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate (severity_assigned blocker).
+
+    - id: mitigation_plan_required_gate
+      name: Mitigation Plan Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Operations gate: an active (non-resolved) incident must have a mitigation plan before
+        rollback-or-fix execution (operations-pipeline.md §2.3).
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Gate presence of a MITIGATION_PLAN for an active incident.
+      forbidden_usage:
+        - Used outside the Operations Pipeline.
+      governance_profiles:
+        - operations_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - mitigation_plan_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - mitigation_plan
+      severity_default: blocker
+      used_by:
+        - mitigation_plan     # operations stage 2.3
+      notes: NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate (mitigation_plan_present blocker).
+
+    - id: rollback_runbook_evidence_gate
+      name: Rollback / Runbook Evidence Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Operations gate: any rollback-or-fix must carry runbook OR rollback execution evidence
+        (operations-pipeline.md §2.4; 03 §4 "rollback/runbook evidence zorunlu").
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Gate that the rollback_or_fix step is backed by runbook or rollback evidence.
+      forbidden_usage:
+        - Used outside the Operations Pipeline.
+      governance_profiles:
+        - operations_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - rollback_fix_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - rollback_or_fix
+      severity_default: blocker
+      used_by:
+        - rollback_or_fix     # operations stage 2.4
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate. Consumes SDLC RUNBOOK /
+        ROLLBACK_PLAN (produced by SDLC operations_readiness) — referenced, not regenerated.
+
+    - id: postmortem_required_gate
+      name: Postmortem Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Operations gate: postmortem mandatory — always for major_incident / critical_outage_or_safety_event;
+        a lightweight POSTMORTEM_REPORT is still produced for lower severities (operations-pipeline.md §2.5).
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Gate presence of a postmortem (blocking for required severities).
+      forbidden_usage:
+        - Used outside the Operations Pipeline.
+      governance_profiles:
+        - operations_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - postmortem_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - postmortem
+      severity_default: blocker
+      used_by:
+        - postmortem     # operations stage 2.5
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate. Conditional: blocker for
+        severity >= major OR rollback_executed == true; otherwise the POSTMORTEM_REPORT must still exist.
+
+    - id: skill_semantic_required_gate
+      name: Skill Semantic Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Skill Governance gate: no progression without skill semantic extraction
+        (semantic_category, primary_purpose, not_for, used_by_agents, used_in_stages, confidence >=
+        threshold) — binding never precedes semantics (skill-governance-pipeline.md §2.2).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Gate that skill semantics are extracted before binding/activation in the Skill Governance Pipeline.
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline (the SDLC in-pipeline equivalent is skill_semantic_extraction_gate).
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - locked_semantics_enforcement_policy
+        - evidence_required
+      audit_schemas:
+        - skill_semantic_extract_schema
+        - skill_governance_trace_schema
+      scope: stage
+      applies_to:
+        - skill_semantic_extraction
+      severity_default: blocker
+      used_by:
+        - skill_semantic_extraction     # skill-governance stage 2.2
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Skill Governance Pipeline gate. Distinct from the SDLC
+        stage-03 skill_semantic_extraction_gate (same intent, different pipeline). Enforces the
+        no_unread_skill_binding family.
+
+    - id: script_reference_audit_gate
+      name: Script / Reference Audit Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Skill Governance gate: an unsafe skill script may not pass un-mitigated; static safety/
+        side-effect audit over scripts/** and references/** (skill-governance-pipeline.md §2.3).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Gate that unsafe skill scripts are mitigated before binding/activation.
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline.
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - script_audit_evidence_schema
+        - skill_governance_trace_schema
+      scope: stage
+      applies_to:
+        - script_reference_audit
+      severity_default: blocker
+      used_by:
+        - script_reference_audit     # skill-governance stage 2.3
+      aliases:
+        - skill_safety_gate          # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: script_reference_audit_gate
+      notes: >-
+        NEW. In pipeline-catalog-review.md §4.1 the consolidated header list names the five gates
+        explicitly requested; this gate is part of the same Skill Governance set (review §4.1 lists it).
+        verification-loop used here strictly as defect/bug-finding (locked semantics). The catalog-YAML
+        variant `skill_safety_gate` is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    - id: misuse_warning_required_gate
+      name: Misuse Warning Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Skill Governance gate: a skill cannot proceed to binding/activation with empty or missing
+        misuse-warnings; each locked-semantics skill requires at least one `not_for` warning
+        (skill-governance-pipeline.md §2.4).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Gate presence/completeness of SKILL_MISUSE_WARNINGS before binding.
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline.
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - skill_misuse_warning_schema
+        - skill_governance_trace_schema
+      scope: stage
+      applies_to:
+        - misuse_warning_generation
+      severity_default: blocker
+      used_by:
+        - misuse_warning_generation     # skill-governance stage 2.4
+      notes: NEW (pipeline-catalog-review.md §4.1). Skill Governance Pipeline gate.
+
+    - id: skill_binding_proposal_gate
+      name: Skill Binding Proposal Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Skill Governance gate: binding may not be proposed without upstream semantic + script-audit +
+        misuse-warning evidence (anti-pattern: binding without semantics) (skill-governance-pipeline.md §2.5).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Gate that a SKILL_BINDING_PROPOSAL rests on completed semantics/audit/misuse evidence.
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline.
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - skill_binding_decision_schema
+        - skill_governance_trace_schema
+      scope: stage
+      applies_to:
+        - skill_binding_proposal
+      severity_default: blocker
+      used_by:
+        - skill_binding_proposal     # skill-governance stage 2.5
+      aliases:
+        - skill_binding_gate         # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: skill_binding_proposal_gate
+      notes: >-
+        NEW. Part of the Skill Governance set (pipeline-catalog-review.md §4.1). Enforces
+        binding_proposed_without_semantics == false. The catalog-YAML variant `skill_binding_gate` is
+        recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    - id: skill_activation_decision_gate
+      name: Skill Activation Decision Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Skill Governance gate: the activate/hold/deprecate decision requires evidence and may not be
+        self-approved (proposer != decider); locked semantics re-checked
+        (skill-governance-pipeline.md §2.6).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Gate the skill activation decision (evidence-backed, no self-approval).
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline.
+        - Self-approval of the activation decision.
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - no_self_approval
+        - locked_semantics_enforcement_policy
+        - evidence_required
+      audit_schemas:
+        - skill_binding_decision_schema
+        - skill_governance_trace_schema
+      scope: stage
+      applies_to:
+        - skill_activation_decision
+      severity_default: blocker
+      used_by:
+        - skill_activation_decision     # skill-governance stage 2.6
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Skill Governance Pipeline gate. skill_runtime_safety_agent
+        decides over skill_librarian_agent's proposal (review independence).
+
+    - id: skill_deprecation_required_gate
+      name: Skill Deprecation Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Skill Governance conditional gate: on version/hash change, skill_semantic_required_gate is
+        re-triggered; manages deprecation/update and registry consistency
+        (skill-governance-pipeline.md §2.7).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Gate skill deprecation/update; re-trigger semantic extraction on version/hash change.
+      forbidden_usage:
+        - Used outside the Skill Governance Pipeline.
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - skill_binding_decision_schema
+        - skill_governance_trace_schema
+      scope: stage
+      applies_to:
+        - skill_deprecation_update
+      severity_default: major
+      used_by:
+        - skill_deprecation_update     # skill-governance stage 2.7
+      notes: >-
+        NEW. Conditional (required_when: deprecation_or_update == true OR version_or_hash_changed).
+        Severity major per the stage definition. Not in the §4.1 header but present in the
+        skill-governance markdown stage set (the 7th stage).
+
+    - id: validity_window_required_gate
+      name: Validity Window Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Knowledge/Memory gate: every retained memory must carry an explicit validity window, and
+        retrieval-profile updates must be bound to it ("no window" is not allowed)
+        (knowledge-memory-pipeline.md §3.2).
+      owner_domain: knowledge_management
+      allowed_usage:
+        - Gate that a validity window exists before retrieval exposure; bind updates to the window.
+      forbidden_usage:
+        - Used outside the Knowledge/Memory Pipeline.
+      governance_profiles:
+        - memory_source_governance
+        - evidence_required
+      audit_schemas:
+        - memory_provenance_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - validity_window_assignment
+        - retrieval_profile_update
+        - memory_expiration_review
+      severity_default: blocker
+      used_by:
+        - validity_window_assignment   # knowledge/memory stage 2.4
+        - retrieval_profile_update      # stage 2.5
+        - memory_expiration_review      # stage 2.6
+      aliases:
+        - memory_validity_gate          # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml); MD canonical: validity_window_required_gate
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Knowledge/Memory Pipeline gate. The catalog-YAML variant
+        `memory_validity_gate` is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    - id: redaction_required_gate
+      name: Redaction Required Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Knowledge/Memory gate: sensitive content must be redacted before summarization, storage, or
+        retrieval exposure (knowledge-memory-pipeline.md §3.2). Conditional:
+        required_when sensitivity_requires_redaction == true.
+      owner_domain: knowledge_management
+      allowed_usage:
+        - Gate redaction of sensitive content before it is summarized/stored/exposed.
+      forbidden_usage:
+        - Used outside the Knowledge/Memory Pipeline.
+        - Confused with the global raw_credential_redaction (credential masking in outputs).
+      governance_profiles:
+        - memory_source_governance
+        - evidence_required
+      audit_schemas:
+        - memory_provenance_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - source_classification
+      severity_default: blocker
+      used_by:
+        - source_classification     # knowledge/memory stage 2.2 (redaction_applied_if_required)
+      aliases:
+        - memory_expiration_gate    # F-1 / OQ-GOV-4: catalog-YAML name (pipeline_catalog.yaml) — third knowledge/memory gate; MD canonical: redaction_required_gate
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). Knowledge/Memory Pipeline gate. Distinct from the
+        global raw_credential_redaction policy (which masks credentials in any output/evidence). The
+        catalog-YAML variant `memory_expiration_gate` (the third knowledge/memory gate token, per
+        OQ-GOV-4) is recorded under aliases so the pipeline_catalog.yaml reference resolves.
+
+    # ---- Context-pack stage-domain governance profiles (status: candidate) ----
+    # Referenced by context_memory_profiles.yaml as the per-domain governance that bounds a context
+    # pack. DISTINCT from the same-stage review/acceptance gates above: these govern the CONTEXT PACK
+    # (what state a stage may see), not the gate decision. Recorded so the context refs resolve.
+
+    - id: requirements_governance
+      name: Requirements Context Governance
+      type: stage_governance_profile
+      status: candidate
+      purpose: >-
+        Govern the requirements-domain context pack: which requirements/scope artifacts a stage may
+        see, traceability-link resolution, and PII redaction in examples. Bounds requirements_context_pack.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern read/write of the requirements context pack across requirements-related stages.
+      forbidden_usage:
+        - Used as the requirements review/acceptance gate (those are requirements_review_governance / requirements_acceptance_gate).
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - context_access_governance
+      audit_schemas:
+        - requirements_evidence_schema
+        - context_usage_trace_schema
+      scope: stage
+      applies_to:
+        - requirements_context_pack
+      severity_default: blocker
+      used_by:
+        - requirements_context_pack    # context_memory_profiles.yaml binds requirements_governance
+      notes: >-
+        NEW (reconciliation). Context-pack governance referenced by context_memory_profiles.yaml.
+        Distinct from the stage-05 requirements_review_governance gate. Ratify in Phase E.
+
+    - id: architecture_governance
+      name: Architecture Context Governance
+      type: stage_governance_profile
+      status: candidate
+      purpose: >-
+        Govern the architecture-domain context pack: which architecture/ADR/NFR artifacts a stage may
+        see when reasoning about design. Bounds architecture_context_pack.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern read/write of the architecture context pack across architecture-related stages.
+      forbidden_usage:
+        - Confused with the stage-06 architecture_design_governance gate (this governs the context pack).
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - context_access_governance
+      audit_schemas:
+        - architecture_evidence_schema
+        - context_usage_trace_schema
+      scope: stage
+      applies_to:
+        - architecture_context_pack
+      severity_default: blocker
+      used_by:
+        - architecture_context_pack    # context_memory_profiles.yaml binds architecture_governance
+      notes: >-
+        NEW (reconciliation). Context-pack governance referenced by context_memory_profiles.yaml.
+        DISTINCT from architecture_design_governance (stage-06 gate). Ratify in Phase E.
+
+    - id: verification_governance
+      name: Verification Context Governance
+      type: stage_governance_profile
+      status: candidate
+      purpose: >-
+        Govern the verification/defect-finding context pack: which test outputs, failing cases, and
+        bug-finding state the verification stages may see. Bounds verification_context_pack. Used with
+        verification-loop strictly as defect/bug-finding (locked semantics — not a readiness checklist).
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Govern read/write of the verification context pack across test/bug-finding stages.
+      forbidden_usage:
+        - Repurposing verification context to drive a readiness checklist (locked-semantics violation).
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - context_access_governance
+      audit_schemas:
+        - bug_finding_evidence_schema
+        - context_usage_trace_schema
+      scope: stage
+      applies_to:
+        - verification_context_pack
+      severity_default: blocker
+      used_by:
+        - verification_context_pack    # context_memory_profiles.yaml binds verification_governance
+      notes: >-
+        NEW (reconciliation). Context-pack governance referenced by context_memory_profiles.yaml.
+        Distinct from verification_loop_bug_gate (stage-15 gate). Ratify in Phase E.
+
+    - id: operations_readiness_governance
+      name: Operations Readiness Context Governance
+      type: stage_governance_profile
+      status: candidate
+      purpose: >-
+        Govern the operations-readiness context pack: which runbook/observability/backup-DR/cost state
+        the operations-readiness family of stages may see. Bounds operations_context_pack.
+      owner_domain: operations_reliability
+      allowed_usage:
+        - Govern read/write of the operations context pack across operations-readiness stages.
+      forbidden_usage:
+        - Confused with operations_readiness_gate (stage-27 gate) — this governs the context pack.
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - context_access_governance
+      audit_schemas:
+        - operations_readiness_evidence_schema
+        - context_usage_trace_schema
+      scope: stage
+      applies_to:
+        - operations_context_pack
+      severity_default: blocker
+      used_by:
+        - operations_context_pack    # context_memory_profiles.yaml binds operations_readiness_governance
+      notes: >-
+        NEW (reconciliation). Context-pack governance referenced by context_memory_profiles.yaml.
+        DISTINCT from operations_readiness_gate (stage-27 gate). Ratify in Phase E.
+
+    - id: release_governance
+      name: Release Context Governance
+      type: stage_governance_profile
+      status: candidate
+      purpose: >-
+        Govern the release-domain context pack: which evidence-graph / completion / RC state the
+        release-boundary stages may see. Bounds release_context_pack. Sits alongside the canonical
+        release_candidate_governance (which is the dev-completion -> RC ordering governance).
+      owner_domain: software_delivery
+      allowed_usage:
+        - Govern read/write of the release context pack across stages 28/29/30/31.
+      forbidden_usage:
+        - Used to bypass the dev-completion -> RC ordering (that is release_candidate_governance + no_policy_bypass).
+      governance_profiles:
+        - sdlc_pipeline_governance
+        - release_candidate_governance
+        - context_access_governance
+      audit_schemas:
+        - release_evidence_schema
+        - context_usage_trace_schema
+      scope: stage
+      applies_to:
+        - release_context_pack
+      severity_default: blocker
+      used_by:
+        - release_context_pack    # context_memory_profiles.yaml binds release_governance
+      notes: >-
+        NEW (reconciliation). Context-pack governance referenced by context_memory_profiles.yaml.
+        Complements (does not replace) the pipeline-scope release_candidate_governance. Ratify in Phase E.
+
+    # ---- SDLC stage risk-rule policies (status: candidate) ----
+    # Named risk rules referenced by audit evidence schemas (audit_schemas.yaml) as the policy the
+    # schema's gate enforces. Recorded so those governance refs resolve. Risk-rule family per 03 §1.
+
+    - id: blocker_bug_zero
+      name: Blocker Bug Zero
+      type: stage_risk_rule
+      status: candidate
+      purpose: >-
+        Risk rule: no open blocker-severity bug may remain when the verification-loop bug gate decides
+        (open blocker bug count == 0). The named risk rule behind verification_loop_bug_gate (stage 15)
+        and the SDLC "no release_candidate with an open blocker bug" pipeline invariant.
+      owner_domain: quality_engineering
+      allowed_usage:
+        - Require open-blocker-bug-count == 0 before the verification-loop bug gate passes.
+      forbidden_usage:
+        - Used as a general readiness checklist or a test-execution replacement (locked semantics).
+      governance_profiles:
+        - verification_loop_bug_gate
+        - evidence_required
+      audit_schemas:
+        - bug_finding_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - verification_loop_bug_finding
+      severity_default: blocker
+      used_by:
+        - verification_loop_bug_finding   # stage 15
+        - bug_finding_evidence_schema     # audit_schemas.yaml binds blocker_bug_zero as the enforced rule
+      notes: >-
+        NEW (reconciliation). Risk-rule token referenced by audit_schemas.yaml (bug_finding_evidence_schema).
+        Expresses the blocker-bug-zero invariant carried by sdlc_pipeline_governance. Ratify in Phase E.
+
+    - id: residual_risk_recorded
+      name: Residual Risk Recorded
+      type: stage_risk_rule
+      status: candidate
+      purpose: >-
+        Risk rule: a release candidate may not be sealed unless residual (accepted/unmitigated) risk is
+        explicitly recorded (06 §12). The named risk rule co-bound with release_candidate_governance and
+        release_after_development_completion on the release evidence schema.
+      owner_domain: software_delivery
+      allowed_usage:
+        - Require an explicit residual-risk record before a release candidate is sealed.
+      forbidden_usage:
+        - Sealing a release candidate with unrecorded residual risk.
+      governance_profiles:
+        - release_candidate_governance
+        - evidence_required
+      audit_schemas:
+        - release_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - release_candidate
+      severity_default: blocker
+      used_by:
+        - release_candidate           # stage 30
+        - release_evidence_schema     # audit_schemas.yaml binds residual_risk_recorded as the enforced rule
+      notes: >-
+        NEW (reconciliation). Risk-rule token referenced by audit_schemas.yaml (release_evidence_schema).
+        Part of the 06 §12 release-candidate gate set. Ratify in Phase E.
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: core_ability — Core Ability usage governance
+  # (03-governance-and-audit-layering.md §7). NOT every Core Ability has the same risk/
+  # permission profile. These profiles are CANDIDATES recorded so the core_ability scope
+  # is not described only in prose (doc 17 §13). They will be populated against the Core
+  # Abilities Registry (core_abilities.yaml) in this same Phase C / and ratified in Phase E.
+  # Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are
+  # abilities ONLY — never agents.
+  # -----------------------------------------------------------------------------------
+  core_ability:
+
+    - id: code_generation_governance
+      name: Code Generation Governance (Coder)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Coder Core Ability (03 §7): how generated code is bounded, what it
+        may touch, and the sandbox/trace requirements for code-producing actions.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Coder Core Ability usage; be re-shown under Coder in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Coder as an agent/owner (it is a Core Ability only).
+      governance_profiles:
+        - trace_required
+        - high_risk_action_default_deny
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Coder
+      severity_default: blocker
+      used_by:
+        - Coder    # Core Ability (core_abilities.yaml — to be authored in Phase C)
+      notes: CANDIDATE — 03 §7 example. Bind in core_abilities.yaml; ratify in Phase E.
+
+    - id: web_access_governance
+      name: Web Access Governance (Web)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Web Core Ability (03 §7): allowed destinations, rate/scope of web
+        access, and trace requirements for web fetches/searches.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Web Core Ability usage; be re-shown under Web in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Web as an agent/owner.
+      governance_profiles:
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Web
+      severity_default: blocker
+      used_by:
+        - Web
+      notes: CANDIDATE — 03 §7 example. Bind in core_abilities.yaml; ratify in Phase E.
+
+    - id: system_access_governance
+      name: System Access Governance (OS)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the OS Core Ability (03 §7): system/filesystem/process access bounds,
+        sandbox requirement, and the high-risk default-deny posture for destructive OS actions.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern OS Core Ability usage; be re-shown under OS in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating OS as an agent/owner; running destructive OS actions without a gate.
+      governance_profiles:
+        - trace_required
+        - high_risk_action_default_deny
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - OS
+      severity_default: blocker
+      used_by:
+        - OS
+      notes: CANDIDATE — 03 §7 example. Bind in core_abilities.yaml; ratify in Phase E.
+
+    - id: memory_access_governance
+      name: Memory Access Governance (Memory)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Memory Core Ability (03 §7): what may be read/written to memory and
+        under what provenance/validity constraints. The Knowledge/Memory Pipeline curates the
+        lifecycle; this governs the ability itself.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Memory Core Ability usage; be re-shown under Memory in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Memory as an agent/owner (knowledge-memory-pipeline.md keeps Memory an ability).
+      governance_profiles:
+        - trace_required
+        - raw_credential_redaction
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Memory
+      severity_default: blocker
+      used_by:
+        - Memory
+      notes: >-
+        CANDIDATE — 03 §7 example. Complements (does not replace) the pipeline-scope
+        memory_source_governance. Bind in core_abilities.yaml; ratify in Phase E.
+
+    - id: orchestration_governance
+      name: Orchestration Governance (Supervisor)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Supervisor Core Ability (03 §7): routing/arbitration/sequencing rules.
+        The Supervisor dispatches and sequences work but may NOT bypass a blocking gate and may NOT
+        self-approve. Supervisor is a Core Ability ONLY — it is NOT any *_team_lead and NOT an agent.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Supervisor routing/arbitration; be re-shown under Supervisor in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Supervisor as a team lead, agent, or owner (locked: Supervisor != team_lead).
+        - Using Supervisor routing to override a blocking gate (no_policy_bypass applies).
+      governance_profiles:
+        - trace_required
+        - no_policy_bypass
+        - no_self_approval
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Supervisor
+      severity_default: blocker
+      used_by:
+        - supervisor    # Core Ability (core_abilities.yaml)
+      notes: >-
+        CANDIDATE — 03 §7. Encodes the locked Supervisor != team_lead + no-gate-bypass constraints at the
+        core-ability scope. Bound by core_abilities.yaml; ratify in Phase E.
+
+    - id: vision_governance
+      name: Vision Governance (Vision)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Vision Core Ability (03 §7): how visual-perception inputs are bounded,
+        what may be extracted from images, and the trace + no-secret-exposure requirements for vision use.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Vision Core Ability usage; be re-shown under Vision in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Vision as an agent/owner (it is a Core Ability only).
+      governance_profiles:
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Vision
+      severity_default: blocker
+      used_by:
+        - vision    # Core Ability (core_abilities.yaml)
+      notes: CANDIDATE — 03 §7 core-ability example. Bound by core_abilities.yaml; ratify in Phase E.
+
+    - id: audio_governance
+      name: Audio Governance (Audio)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Audio Core Ability (03 §7): how audio-perception inputs are bounded,
+        what may be transcribed/extracted, and the trace + no-secret-exposure requirements for audio use.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Audio Core Ability usage; be re-shown under Audio in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Audio as an agent/owner (it is a Core Ability only).
+      governance_profiles:
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Audio
+      severity_default: blocker
+      used_by:
+        - audio    # Core Ability (core_abilities.yaml)
+      notes: CANDIDATE — 03 §7 core-ability example. Bound by core_abilities.yaml; ratify in Phase E.
+
+    - id: creative_governance
+      name: Creative Governance (Creative)
+      type: core_ability_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the Creative Core Ability (03 §7): how creative-generation outputs are
+        bounded (no secret/credential leakage, no high-risk action without a gate) and the trace
+        requirement for creative-generation use.
+      owner_domain: nexus_core_abilities
+      allowed_usage:
+        - Govern Creative Core Ability usage; be re-shown under Creative in the Core Abilities Registry.
+      forbidden_usage:
+        - Treating Creative as an agent/owner (it is a Core Ability only).
+      governance_profiles:
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: core_ability
+      applies_to:
+        - Creative
+      severity_default: blocker
+      used_by:
+        - creative    # Core Ability (core_abilities.yaml)
+      notes: CANDIDATE — 03 §7 core-ability example. Bound by core_abilities.yaml; ratify in Phase E.
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: skill — Skill usage governance (03-governance-and-audit-layering.md §8).
+  # Skill != Tool. These profiles encode the LOCKED skill semantics. The locked-semantics
+  # enforcement policy is referenced by the Skill Governance Pipeline (status candidate);
+  # the per-skill brainstorming/defect-finding governance profiles are 03 §8 examples,
+  # recorded as candidates for the Skills Registry (skills_registry.yaml, Phase C).
+  # -----------------------------------------------------------------------------------
+  skill:
+
+    - id: locked_semantics_enforcement_policy
+      name: Locked Semantics Enforcement Policy
+      type: skill_governance_policy
+      status: candidate
+      purpose: >-
+        Enforce the LOCKED skill semantics: prism = brainstorming/divergence ONLY;
+        verification-loop = bug/defect finding ONLY. Any extraction/binding that alters these
+        semantics fails (skill-governance-pipeline.md §3.2; sdlc_pipeline_runtime_rules.yaml
+        prism_as_non_divergence guard + verification_loop_replaces_test_execution anti-pattern).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Block any skill semantic record that reclassifies prism or verification-loop.
+        - Bind in the Skill Governance Pipeline (semantic_extraction + activation_decision stages).
+      forbidden_usage:
+        - Using prism for bug-finding/readiness; using verification-loop as a readiness checklist or test replacement.
+      governance_profiles:
+        - skill_governance_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - skill_semantic_extract_schema
+        - skill_governance_trace_schema
+      scope: skill
+      applies_to:
+        - prism
+        - verification-loop
+        - skill_semantic_extraction      # skill-governance pipeline stage
+        - skill_activation_decision       # skill-governance pipeline stage
+      severity_default: blocker
+      used_by:
+        - skill_governance_pipeline
+        - skill_semantic_extraction       # skill-governance stage 2.2 (blocker)
+        - skill_activation_decision        # skill-governance stage 2.6 (re-checked)
+      notes: >-
+        NEW (pipeline-catalog-review.md §4.1). The repo-wide locked semantics expressed as an
+        enforceable governance policy. Cross-referenced by sdlc_pipeline_runtime_rules.yaml guards.
+
+    - id: skill_must_have_semantic_extraction_before_binding
+      name: Skill Must Have Semantic Extraction Before Binding
+      type: skill_governance_policy
+      status: candidate
+      purpose: >-
+        Skill-class policy: a skill may only be bound to a stage AFTER its semantic extraction has run
+        (no_unread_skill_binding, 06 §3). The standing skill-class default applied to every skill in the
+        Skills Registry, independent of any single stage. Skill != Tool (locked).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Block any skill binding that lacks a completed semantic-extraction record.
+        - Bind as a skill-class default across the entire Skills Registry (skill_class_defaults).
+      forbidden_usage:
+        - Binding/activating a skill with no semantic extraction (anti-pattern).
+        - Used as a tool-call permission profile (Skill != Tool).
+      governance_profiles:
+        - skill_governance
+        - locked_semantics_enforcement_policy
+        - evidence_required
+      audit_schemas:
+        - skill_semantic_extract_schema
+        - skill_governance_trace_schema
+      scope: skill
+      applies_to:
+        - all_skills
+      severity_default: blocker
+      used_by:
+        # skills_registry.yaml skill_class_defaults binds this on EVERY skill:
+        - prism
+        - verification-loop
+        - sentinel
+        - llm-council
+        - fmea
+        - adr-builder
+        - gap-audit
+        - prompt-fidelity
+        - calibrate
+        - refraction
+        - fermi-decompose
+        - bayesian-update
+        - skill-architect
+        - handoff-designer
+        - context-pack-builder
+        - scanner-result-normalizer
+        - evidence-graph-builder
+        - release-readiness-judge
+      aliases: []
+      notes: >-
+        NEW (reconciliation). The 06 §3 no_unread_skill_binding rule expressed as a standing skill-class
+        policy (referenced in skills_registry.yaml skill_class_defaults + each skill's governance_profiles).
+        The SDLC stage-03 gate `skill_semantic_extraction_gate` (which already carries the
+        `no_unread_skill_binding` alias) is the stage-scope ENFORCER of this skill-class policy — kept
+        distinct (gate vs policy) to avoid a duplicate alias key. Ratify in Phase E.
+
+    - id: skill_activation_governance
+      name: Skill Activation Governance
+      type: skill_governance_profile
+      status: candidate
+      purpose: >-
+        Standing skill-activation governance (03 §8): every Skill activation must be permission-scoped,
+        respect the skill's locked semantics + misuse-warnings, and emit a skill-activation trace. The
+        skill-scope governance dimension paired with the skill_activation_trace_schema (Governance !=
+        Audit: this MANDATES; the schema RECORDS). Skill != Tool (locked).
+      owner_domain: skill_governance
+      allowed_usage:
+        - Bind as a skill-class default so every skill activation is governed + traced.
+        - Enforce locked semantics + misuse-warning presence at activation time.
+      forbidden_usage:
+        - Activating a skill outside its locked semantics or without a trace.
+        - Used as a tool-call governance profile (Skill != Tool).
+      governance_profiles:
+        - skill_governance
+        - locked_semantics_enforcement_policy
+        - trace_required
+      audit_schemas:
+        - skill_activation_trace_schema
+        - stage_gate_trace_schema
+      scope: skill
+      applies_to:
+        - all_skills
+      severity_default: blocker
+      used_by:
+        # skills_registry.yaml skill_class_defaults -> every skill activation emits the trace under this:
+        - prism
+        - verification-loop
+        - sentinel
+        - llm-council
+        - fmea
+        - adr-builder
+        - gap-audit
+        - prompt-fidelity
+        - calibrate
+        - refraction
+        - fermi-decompose
+        - bayesian-update
+        - skill-architect
+        - handoff-designer
+        - context-pack-builder
+        - scanner-result-normalizer
+        - evidence-graph-builder
+        - release-readiness-judge
+        - skill_activation_trace_schema   # audit_schemas.yaml binds skill_activation_governance on this trace
+      notes: >-
+        NEW (reconciliation). Standing skill-activation governance referenced by audit_schemas.yaml
+        (Skill Activation Trace Schema). Distinct from the SDLC stage-03 `skill_governance` (semantic
+        extraction stage) and from skill_must_have_semantic_extraction_before_binding (binding-time
+        policy): this governs activation-time. Ratify in Phase E.
+
+    - id: brainstorming_skill_governance
+      name: Brainstorming Skill Governance (prism)
+      type: skill_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the prism skill (03 §8): used for brainstorming/divergence ONLY; NOT
+        for bug finding and NOT as a readiness/coverage checklist.
+      owner_domain: skill_governance
+      allowed_usage:
+        - Govern prism usage as divergence/ideation; be re-shown under prism in the Skills Registry.
+      forbidden_usage:
+        - Using prism for bug-finding or as a readiness checklist (locked-semantics violation).
+      governance_profiles:
+        - locked_semantics_enforcement_policy
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: skill
+      applies_to:
+        - prism
+      severity_default: blocker
+      used_by:
+        # SDLC stages that bind prism (skill-agent-review §1) — divergence only:
+        - intake                 # 01
+        - requirements           # 04
+        - architecture           # 06
+        - premortem_fmea         # 09
+        - planning               # 10
+        - skill_governance_pipeline   # prism used for divergence in scope/option expansion
+      notes: >-
+        CANDIDATE — 03 §8 example. prism bindings confirmed divergent in claude-code-skill-agent-review.md
+        §1. Ratify in skills_registry.yaml (Phase C) / Phase E.
+
+    - id: defect_finding_skill_governance
+      name: Defect-Finding Skill Governance (verification-loop)
+      type: skill_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for the verification-loop skill (03 §8): used for bug/defect finding ONLY;
+        it is NOT a general readiness checklist and NOT a test_execution replacement.
+      owner_domain: skill_governance
+      allowed_usage:
+        - Govern verification-loop usage as defect/bug finding; be re-shown under it in the Skills Registry.
+      forbidden_usage:
+        - Using verification-loop in place of test_execution or as a readiness checklist (anti-pattern).
+      governance_profiles:
+        - locked_semantics_enforcement_policy
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: skill
+      applies_to:
+        - verification-loop
+      severity_default: blocker
+      used_by:
+        # SDLC stages that bind verification-loop (skill-agent-review §2) — defect finding only:
+        - verification_loop_bug_finding             # 15
+        - ai_agent_safety_evaluation                # 18
+        - data_migration_validation_if_applicable    # 22
+        # New pipelines that bind it as defect finding:
+        - operations_pipeline                        # rollback_or_fix forward-fix confirmation
+        - skill_governance_pipeline                   # script_reference_audit defect sweep
+      notes: >-
+        CANDIDATE — 03 §8 example. verification-loop bindings confirmed defect-only and correctly
+        excluded from test/review/readiness stages in claude-code-skill-agent-review.md §2.
+
+  # -----------------------------------------------------------------------------------
+  # SCOPE: tool — Tool-call permission/risk governance
+  # (03-governance-and-audit-layering.md §9). Skill != Tool. The example below is the
+  # 03 §9 sandbox-execution profile, recorded as a candidate for the Tools Registry
+  # (tools_registry.yaml, Phase C). Per-tool bindings are populated there; this registry
+  # holds the governance profile definition so the tool scope is not prose-only (§13).
+  # -----------------------------------------------------------------------------------
+  tool:
+
+    - id: tool_call_governance
+      name: Tool Call Governance
+      type: tool_governance_profile
+      status: candidate
+      purpose: >-
+        Base tool-layer permission/risk governance for ANY tool call (03 §9): a tool may only be called
+        by an allowed caller, within its declared scope/side-effects, with a tool-call trace emitted.
+        The default profile bound by every tool in the Tools Registry (side-effecting tools additionally
+        bind sandbox_execution_governance). Skill != Tool (locked): this governs tool calls, not skills.
+      owner_domain: nexus_tools
+      allowed_usage:
+        - Bind to every tool so each tool call is permission-scoped and traced.
+        - Restrict callers to a tool's allowed_callers; bound the tool's declared side-effects.
+      forbidden_usage:
+        - Calling a tool from a non-allowed caller or outside its declared scope.
+        - Used as a skill-usage profile (Skill != Tool).
+      governance_profiles:
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - tool_call_trace_schema
+        - stage_gate_trace_schema
+      scope: tool
+      applies_to:
+        - all_tools
+      severity_default: blocker
+      used_by:
+        # tools_registry.yaml binds tool_call_governance on EVERY tool:
+        - artifact_writer
+        - evidence_writer
+        - evidence_reader
+        - repo_reader
+        - repo_writer
+        - repo_diff_reader
+        - test_runner
+        - test_writer
+        - coverage_parser
+        - defect_tracker
+        - policy_query
+        - requirements_trace_checker
+        - diagram_generator
+        - scanner_runner
+        - dependency_scanner
+        - sbom_generator
+        - license_checker
+        - prompt_injection_tester
+        - tool_misuse_tester
+        - context_poisoning_tester
+        - evidence_consistency_checker
+        - agent_permission_auditor
+        - eval_runner
+        - contract_test_runner
+        - migration_checker
+        - compliance_matrix_builder
+        - accessibility_auditor
+        - benchmark_runner
+        - resource_budget_checker
+        - cost_estimator
+        - quota_policy_checker
+        - backup_plan_checker
+        - restore_test_runner
+        - dr_runbook_checker
+        - package_reputation_checker
+        - data_inventory_checker
+        - retention_policy_checker
+        - deletion_flow_checker
+        - tenant_isolation_checker
+        - ux_flow_checker
+        - contrast_checker
+        - rollback_validator
+        - observability_plan_checker
+        - incident_runbook_checker
+        - web_search
+        - web_fetch
+        - web_scrape
+        - file_read
+        - file_write
+        - shell_exec
+        - process_run
+        - memory_write
+        - memory_search
+        - memory_summarize
+        - context_recall
+        - runbook_executor
+        - rollback_executor
+        - skill_package_reader
+        - source_reliability_checker
+        - claim_mapper
+        - activation_flag_controller
+        - cohort_selector
+        - telemetry_reader
+        - incident_intake_tool
+        - monitoring_query_tool
+        - alert_correlator
+        - severity_classifier_tool
+        - mitigation_plan_builder
+        - postmortem_builder
+        - skill_semantic_extractor
+        - script_static_analyzer
+        - reference_index_builder
+        - skill_binding_proposer
+        - memory_ingestor
+        - source_classifier
+        - summary_writer
+        - validity_window_calculator
+        - retrieval_profile_writer
+        - expiration_scanner
+        - redaction_tool
+        - provenance_recorder
+      notes: >-
+        NEW (reconciliation). 03 §9 tool-layer permission scoping — the base profile every tool in
+        tools_registry.yaml binds (declared there in `referenced_governance_profiles`). Side-effecting
+        tools additionally bind sandbox_execution_governance. Ratify in Phase E.
+
+    - id: sandbox_execution_governance
+      name: Sandbox Execution Governance
+      type: tool_governance_profile
+      status: candidate
+      purpose: >-
+        Usage governance for execution tools such as shell_exec (03 §9): sandbox required, timeout
+        required, trace required. The tool-scope expression of the global high-risk-default-deny +
+        trace-required posture.
+      owner_domain: nexus_tools
+      allowed_usage:
+        - Govern sandboxed execution tools (sandbox + timeout + trace mandatory).
+        - Be re-shown under each execution tool in the Tools Registry.
+      forbidden_usage:
+        - Running an execution tool outside a sandbox or without a timeout/trace.
+      governance_profiles:
+        - high_risk_action_default_deny
+        - trace_required
+        - no_secret_exposure
+      audit_schemas:
+        - stage_gate_trace_schema
+      scope: tool
+      applies_to:
+        - shell_exec       # 03 §9 example tool (in tools_registry.yaml, Phase C)
+      severity_default: blocker
+      used_by:
+        - shell_exec       # tool (tools_registry.yaml — to be authored in Phase C)
+      notes: >-
+        CANDIDATE — 03 §9 example. Bind to concrete execution tools in tools_registry.yaml (Phase C);
+        ratify in Phase E. The runbook_executor / rollback_executor operations tools inherit this posture.
+
+# =====================================================================================
+# Registry-level open questions (carried to Phase E governance/audit readiness, doc 19).
+# =====================================================================================
+open_questions:
+  - id: OQ-GOV-1
+    question: >-
+      no_self_approval / evidence_required canonical bare ids vs the *_policy variant names. This
+      registry registers the canonical id and records `no_self_approval_policy` /
+      `evidence_required_policy` under `aliases`. Phase E must decide whether to standardize all
+      pipeline references onto the bare canonical id or formally bless the `_policy` binding names
+      (pipeline-catalog-review.md §4.7).
+  - id: OQ-GOV-2
+    question: >-
+      owner_activation_decision_gate is a HUMAN/owner authority gate (the authorizing actor is the
+      human owner), the one place a pipeline asserts human-in-the-loop authority under the otherwise
+      no-human governance framing. Phase E must explicitly sign this off as permitted and confirm it
+      is modeled as an owner decision record gate, distinct from autonomous-agent no_self_approval
+      (pipeline-catalog-review.md F-4).
+  - id: OQ-GOV-3
+    question: >-
+      rollback_required_gate appears BOTH as a NEW activation-pipeline profile (review §4.1) AND as
+      a canonical SDLC stage gate (stages 22 + 26). Registered once with status candidate; SDLC
+      usages are canonical bindings. Phase E must ratify a single cross-pipeline shared definition or
+      split into pipeline-specific ids.
+  - id: OQ-GOV-4
+    question: >-
+      Catalog YAML uses divergent governance names vs the authoritative markdown docs (F-1):
+      operations `incident_response_governance` (YAML) vs `operations_pipeline_governance` (MD);
+      skill-governance `skill_governance_profile`/`skill_safety_gate`/`skill_binding_gate` (YAML) vs
+      the markdown `*_pipeline_governance` + `skill_semantic_required_gate` / `script_reference_audit_gate`
+      / `misuse_warning_required_gate` / `skill_binding_proposal_gate` (MD); knowledge/memory
+      `memory_governance_profile`/`memory_validity_gate`/`memory_expiration_gate` (YAML) vs
+      `memory_source_governance` / `validity_window_required_gate` / `redaction_required_gate` (MD).
+      This registry follows the MARKDOWN names (review §4 note). Phase C F-1 reconciliation must
+      regenerate the catalog YAML from the markdown so the names converge.
+  - id: OQ-GOV-5
+    question: >-
+      severity_default for performance_governance / resilience_governance / cost/quota gates is set
+      to `major` pending the 06 §15 open question (is the performance gate blocker or advisory per
+      risk profile?). Phase E must fix per-profile severities (blocker | major | advisory).
+  - id: OQ-GOV-6
+    question: >-
+      The 6 undeclared skills (skill-architect, handoff-designer, context-pack-builder,
+      scanner-result-normalizer, evidence-graph-builder, release-readiness-judge; claude-code-skill-agent-review.md
+      §8) are used by stages that bind governance profiles here (planning, security_validation,
+      evidence_graph_build, development_completion, release_candidate, skill_semantic_extraction).
+      They must be formalized in skills_registry.yaml (Phase C); their absence does not affect the
+      governance profiles above but is cross-referenced for traceability.
+  - id: OQ-GOV-7
+    question: >-
+      Knowledge/Memory Pipeline does not list an explicit evidence_required_policy token in its
+      uses_governance_profiles, yet is governed by evidence completeness via memory_provenance and
+      its exit criteria. Confirm in Phase E whether evidence_required should be added explicitly to
+      the Knowledge/Memory governance set (this registry lists knowledge_memory_pipeline under
+      evidence_required.used_by on that basis).
+  - id: OQ-GOV-8
+    question: >-
+      core_ability- / skill- / tool-scope profiles here are 03 §7–§9 examples recorded as candidates
+      so no scope is prose-only (doc 17 §13). Their concrete per-item bindings must be authored in
+      core_abilities.yaml / skills_registry.yaml / tools_registry.yaml (the other Phase C outputs)
+      and ratified in Phase E.
+  - id: OQ-GOV-9
+    question: >-
+      Reconciliation sweep (R3) registered two cross-cutting governance dimensions —
+      model_invocation_governance (every model_provider_profile) and context_access_governance (every
+      context/memory profile) — at `global` scope, because the locked 7-layer scope taxonomy (03 §3–§9)
+      has no dedicated model/context governance layer (these mirror the model/context "trace" dimensions
+      in 03 §12). Also registered global_governance as an aggregate umbrella over the 8 standing global
+      policies (referenced by the Supervisor routing model). Phase E must confirm: keep these at global
+      scope, or formally extend the scope taxonomy with model/context layers. (audit_schemas.yaml spells
+      model_invocation_governance as `model_provider_governance` on the model-invocation trace schema —
+      recorded as an alias. The activation-time skill governance `skill_activation_governance`, bound by
+      skill_class_defaults and the skill-activation trace, was registered as a skill-scope candidate.)
+  - id: OQ-GOV-10
+    question: >-
+      Reconciliation sweep (R3/R15) registered context-pack stage governance profiles
+      (requirements_governance, architecture_governance, verification_governance,
+      operations_readiness_governance, release_governance) and SDLC stage risk-rules (blocker_bug_zero,
+      residual_risk_recorded) as `candidate`, because context_memory_profiles.yaml / audit_schemas.yaml
+      referenced them as first-class governance ids distinct from the same-named stage gates. Phase E
+      must ratify whether each stays a distinct context/risk-rule profile or folds into the existing
+      stage gate (e.g. requirements_governance vs requirements_review_governance).
+  - id: OQ-GOV-11
+    question: >-
+      Reconciliation sweep (R4 + F-1/OQ-GOV-4) recorded these as aliases of their canonical ids so all
+      intra-registry governance references resolve: global_trace_required_policy / no_silent_mutation_policy
+      -> trace_required; global_no_secret_policy / no_secret_read_policy -> no_secret_exposure;
+      research_pipeline_governance -> research_source_governance; architecture_governance_profile ->
+      architecture_design_governance; security_privacy_design_governance -> security_privacy_governance;
+      privacy_governance_profile -> privacy_lifecycle_governance; sdlc_development_completion_governance ->
+      development_completion_gate; incident_response_governance -> operations_pipeline_governance;
+      skill_governance_profile -> skill_governance_pipeline_governance; skill_safety_gate ->
+      script_reference_audit_gate; skill_binding_gate -> skill_binding_proposal_gate;
+      memory_governance_profile -> memory_source_governance; memory_validity_gate ->
+      validity_window_required_gate; memory_expiration_gate -> redaction_required_gate. Phase E must
+      decide whether to rename the references onto the canonical ids or formally bless the variant spellings.

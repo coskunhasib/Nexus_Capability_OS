@@ -1,0 +1,168 @@
+%% Nexus AI Orchestration Model — Operating Model Overview
+%% Source of truth: docs/ai-sdlc-factory/01-nexus-ai-operating-model.md
+%%                  docs/ai-sdlc-factory/03-governance-and-audit-layering.md
+%% Locked decisions encoded visually:
+%%   - Top structure is "Nexus AI Orchestration Model"; SDLC is ONE pipeline, not the top.
+%%   - Pipeline System != Team System (separate subgraphs + explicit boundary edge).
+%%   - Core Abilities is a SEPARATE layer; an Agent is NOT a Core Ability (explicit boundary edge).
+%%   - Core Abilities are never agents and never team members.
+%%   - Skill != Tool ; Governance != Audit ; Evidence != Trace.
+%%   - No plugin concept anywhere.
+flowchart TB
+
+    NEXUS(["Nexus AI Orchestration Model"]):::root
+
+    %% ============================================================
+    %% 1. SHARED REGISTRY — "what exists" (7 categories, registry only)
+    %% ============================================================
+    subgraph SR["Shared Registry &mdash; what exists (registry only, not usage)"]
+        direction TB
+        SR_CA["Core Abilities"]:::regcat
+        SR_SK["Skills"]:::regcat
+        SR_TL["Tools"]:::regcat
+        SR_GP["Governance Profiles"]:::regcat
+        SR_AS["Audit Schemas"]:::regcat
+        SR_MP["Model / Provider Profiles"]:::regcat
+        SR_CM["Context / Memory Profiles"]:::regcat
+    end
+
+    %% ============================================================
+    %% 2. PIPELINE SYSTEM — Catalog (templates) + Run (instance)
+    %% ============================================================
+    subgraph PS["Pipeline System &mdash; defines & runs (NOT a Team)"]
+        direction TB
+        subgraph PCAT["Pipeline Catalog (process templates)"]
+            direction TB
+            P_SDLC["SDLC Pipeline (one pipeline among many)"]:::pipeline
+            P_OTHER["Research / Activation / Operations Pipelines"]:::pipeline
+        end
+        subgraph PRUN["Pipeline Run (live instance of a template)"]
+            direction TB
+            PR_STATE["selected_pipeline | assigned_team | active_stage<br/>run_context | governance_state | evidence | trace"]:::run
+        end
+        PCAT -->|"instantiated as"| PRUN
+    end
+
+    %% ============================================================
+    %% 3. TEAM SYSTEM — Team > Team Lead > Agents > Sub-agents
+    %%    (passive ownership boundary; works FOR a Pipeline Run)
+    %% ============================================================
+    subgraph TS["Team System &mdash; the organization (NOT a Pipeline)"]
+        direction TB
+        T_TEAM["sdlc_team<br/><i>ownership / policy boundary, passive</i>"]:::team
+        T_LEAD["sdlc_team_lead<br/><i>orchestrator &mdash; NOT the Supervisor core ability</i>"]:::lead
+        T_AGENTS["Agents (pipeline roles, snake_case)<br/>e.g. product_requirements_agent, architecture_agent,<br/>engineering_agent, code_reviewer_agent, qa_agent,<br/>release_manager_agent, evidence_graph_agent"]:::agent
+        T_SUBS["Sub-agents<br/>e.g. threat_modeling_subagent, test_generation_subagent,<br/>bug_hunter_subagent, evidence_trace_subagent"]:::subagent
+
+        T_TEAM --> T_LEAD
+        T_LEAD --> T_AGENTS
+        T_AGENTS --> T_SUBS
+    end
+
+    %% ============================================================
+    %% 4. CORE ABILITIES LAYER — SEPARATE. Not agents, not team members.
+    %% ============================================================
+    subgraph CA["Core Abilities &mdash; shared capability layer (SEPARATE: not agents, not team members)"]
+        direction LR
+        CA_SUP["Supervisor"]:::ability
+        CA_COD["Coder"]:::ability
+        CA_VIS["Vision"]:::ability
+        CA_AUD["Audio"]:::ability
+        CA_CRE["Creative"]:::ability
+        CA_MEM["Memory"]:::ability
+        CA_WEB["Web"]:::ability
+        CA_OS["OS"]:::ability
+    end
+
+    %% ============================================================
+    %% 5. METHOD vs EXECUTION — Skill != Tool
+    %% ============================================================
+    subgraph MX["Method & Execution &mdash; Skill is NOT a Tool"]
+        direction TB
+        subgraph SKILLS["Skills (methods / protocols)"]
+            direction TB
+            SK_LIST["prism (divergent / brainstorming) | verification-loop (bug/defect finding)<br/>sentinel | llm-council | fmea | adr-builder | gap-audit<br/>prompt-fidelity | calibrate | refraction | fermi-decompose | bayesian-update"]:::skill
+        end
+        subgraph TOOLS["Tools (callable side-effecting operations)"]
+            direction TB
+            TL_LIST["artifact_writer | repo_reader | repo_writer | repo_diff_reader<br/>test_runner | test_writer | coverage_parser | scanner_runner<br/>sbom_generator | license_checker | evidence_writer | policy_query | ..."]:::tool
+        end
+        SK_LIST -. "Skill != Tool" .- TL_LIST
+    end
+
+    %% ============================================================
+    %% 6. GOVERNANCE SYSTEM — 7 layers (Governance != Audit)
+    %% ============================================================
+    subgraph GOV["Governance System &mdash; 7 layers (rules, gates, permissions, risk)"]
+        direction TB
+        G1["Global Governance"]:::gov
+        G2["Pipeline Governance"]:::gov
+        G3["Team Governance"]:::gov
+        G4["Stage Governance"]:::gov
+        G5["Core Ability Governance"]:::gov
+        G6["Skill Governance"]:::gov
+        G7["Tool Governance"]:::gov
+        G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
+    end
+
+    %% ============================================================
+    %% 7. AUDIT SYSTEM — Evidence vs Trace (kept distinct)
+    %% ============================================================
+    subgraph AUD["Audit System &mdash; Evidence is NOT Trace"]
+        direction TB
+        EV["Evidence &mdash; decision proof<br/>REQUIREMENTS_SPEC | ARCHITECTURE_DECISION | TEST_REPORT<br/>BUG_FINDING_REPORT | SECURITY_SCAN_REPORT | RELEASE_EVIDENCE"]:::evidence
+        TR["Trace &mdash; operation history<br/>agent/sub-agent invocation | skill activation | tool call<br/>core ability invocation | model invocation | policy evaluation | pipeline transition"]:::trace
+        EV -. "Evidence != Trace" .- TR
+    end
+
+    %% ============================================================
+    %% TOP-LEVEL COMPOSITION (Nexus AI owns all systems)
+    %% ============================================================
+    NEXUS --> SR
+    NEXUS --> PS
+    NEXUS --> TS
+    NEXUS --> CA
+    NEXUS --> MX
+    NEXUS --> GOV
+    NEXUS --> AUD
+
+    %% ============================================================
+    %% KEY BOUNDARY EDGES — the locked "must never merge" distinctions
+    %% ============================================================
+    PS == "Pipeline != Team" ==x TS
+    T_AGENTS == "Agent != Core Ability" ==x CA
+    GOV -. "Governance != Audit" .- AUD
+
+    %% ============================================================
+    %% USAGE RELATIONSHIPS (registry is referenced, never owned)
+    %% ============================================================
+    PRUN -. "assigns" .-> T_TEAM
+    T_AGENTS -. "use (never own)" .-> CA
+    T_AGENTS -. "apply methods" .-> SKILLS
+    T_AGENTS -. "invoke" .-> TOOLS
+    PS -. "references" .-> SR
+    TS -. "references" .-> SR
+    SR_GP -. "realized in layers" .-> GOV
+    SR_AS -. "realized in schemas" .-> AUD
+
+    %% Side-effecting tools imply governance + trace
+    TOOLS -. "side-effects imply" .-> GOV
+    TOOLS -. "side-effects imply" .-> TR
+
+    %% ============================================================
+    %% STYLES
+    %% ============================================================
+    classDef root fill:#0b3d91,stroke:#062a66,stroke-width:3px,color:#ffffff,font-weight:bold;
+    classDef regcat fill:#eef2ff,stroke:#3949ab,stroke-width:1px,color:#1a237e;
+    classDef pipeline fill:#e0f2f1,stroke:#00796b,stroke-width:2px,color:#004d40;
+    classDef run fill:#b2dfdb,stroke:#00695c,stroke-width:2px,color:#003d33;
+    classDef team fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
+    classDef lead fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#bf360c,font-weight:bold;
+    classDef agent fill:#ffe0b2,stroke:#ef6c00,stroke-width:1px,color:#e65100;
+    classDef subagent fill:#fff8e1,stroke:#f9a825,stroke-width:1px,color:#f57f17;
+    classDef ability fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,color:#4a148c,font-weight:bold;
+    classDef skill fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#1b5e20;
+    classDef tool fill:#fce4ec,stroke:#c2185b,stroke-width:1px,color:#880e4f;
+    classDef gov fill:#ffebee,stroke:#c62828,stroke-width:1px,color:#b71c1c;
+    classDef evidence fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef trace fill:#ede7f6,stroke:#5e35b1,stroke-width:2px,color:#311b92;

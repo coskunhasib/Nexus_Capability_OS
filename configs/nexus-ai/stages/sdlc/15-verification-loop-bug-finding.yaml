@@ -1,0 +1,125 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #15 of 31: verification_loop_bug_finding (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; stage #15).
+# Reconciled against:
+#   - docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md §5 (stage prose contract),
+#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §5 (worked stage example; routing),
+#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.16 / §5 (legacy detail; stale owner/profile
+#     names superseded — qa_lead_agent -> qa_agent; do NOT carry the stale 23-stage assumption),
+#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (status: Required / always-on),
+#   - docs/ai-sdlc-factory/04-team-agent-subagent-model.md §6.2 + 01-core-definitions.md
+#     (canonical sub-agent id: bug_hunter_subagent),
+#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract field set/order),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names; test_bugfinding group).
+#
+# Reconciliation notes:
+#   - Sub-agent reconciled from legacy `bug_hunter_sub_agent` (sdlc-stages/03 §5, doc 08 §5) to
+#     canonical `bug_hunter_subagent` (doc 04 §6.2, doc 01, and the Phase A sub-agent registry).
+#   - owner_agent = qa_agent per canonical registry (legacy doc 05 named qa_lead_agent — superseded
+#     per phase-0-context-lock-report item 1).
+#   - No-self-approval: this is a defect-finding GATE over the implementation author's artifact.
+#     The author of CODE_CHANGESET_SUMMARY is the implementation stage (owner_agent: engineering_agent);
+#     this stage's owner_agent (qa_agent) differs from it, so the locked no_self_approval_policy is
+#     satisfied with a dedicated role (no fallback to sdlc_team_lead needed). no_self_approval_policy +
+#     evidence_required_policy + sdlc_pipeline_governance added to match the base-governance pattern
+#     used by every other stage contract (legacy prose listed only verification_loop_bug_gate).
+#   - Skill semantics LOCKED: verification-loop is used here for bug/defect finding ONLY — NOT as a
+#     general readiness checklist and NOT as a replacement for test_execution (stage #14). This stage
+#     consumes TEST_EXECUTION_REPORT; it does not re-run the test suite as the source of truth.
+#   - evidence vs trace kept distinct: evidence = produced artifacts (UPPER_SNAKE); trace = activation/
+#     tool/gate trace types. bug_finding_evidence_schema (evidence) and stage_gate_trace_schema (trace)
+#     are separate schemas.
+# Always-on (Required) stage: no applicability_decision block.
+
+stage_id: verification_loop_bug_finding
+name: Verification-loop Bug Finding
+purpose: >-
+  Run a rigorous verification-loop bug/defect sweep over the implemented changeset and its test
+  results — multi-lens probing, invariant/mutation/regression red-teaming — to surface real defects
+  beyond what the executed test suite caught, triage each by severity, and produce a defect report
+  plus a gate result that blocks progression while any open blocker bug (or over-threshold open
+  major bugs) remains. This is defect FINDING, not a readiness checklist and not a re-run of
+  test_execution.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: qa_agent
+sub_agents:
+  - bug_hunter_subagent
+
+uses_core_abilities:
+  - Coder    # read/diff/reason over the changeset and probe defect hypotheses
+  - Memory   # recall requirements, prior defects and risk register for regression red-teaming
+  - OS       # drive test_runner / repo tooling to reproduce and confirm defects
+
+uses_skills:
+  - verification-loop   # LOCKED semantics: bug/defect finding (NOT readiness checklist, NOT a test_execution replacement)
+
+uses_tools:
+  - repo_diff_reader   # read the changeset under test to target the defect sweep
+  - test_runner        # reproduce/confirm suspected defects (side-effect: governance + trace)
+  - defect_tracker     # record and triage found defects (side-effect: governance + trace)
+  - artifact_writer    # write BUG_FINDING_REPORT / gate result (side-effect: governance + trace)
+  - evidence_writer    # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy      # qa_agent != engineering_agent (author of the reviewed changeset)
+  - evidence_required_policy
+  - verification_loop_bug_gate   # stage-specific defect gate profile
+
+uses_audit_schemas:
+  - bug_finding_evidence_schema   # evidence schema (distinct from trace)
+  - stage_gate_trace_schema       # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - defect_analysis_model
+
+uses_context_memory_profiles:
+  - verification_context_pack
+
+inputs:
+  - CODE_CHANGESET_SUMMARY
+  - IMPLEMENTATION_NOTES
+  - TEST_EXECUTION_REPORT
+  - COVERAGE_REPORT
+  - CODE_REVIEW_REPORT
+  - REQUIREMENTS_SPEC
+  - FMEA_RISK_REGISTER
+
+outputs:
+  - BUG_FINDING_REPORT
+  - BUG_FINDING_GATE_RESULT
+
+evidence:
+  - BUG_FINDING_REPORT
+  - BUG_FINDING_GATE_RESULT
+
+trace:
+  - verification_loop_bug_finding_stage_trace
+  - verification_loop_skill_activation_trace
+  - defect_tracker_tool_trace
+  - bug_finding_gate_decision_trace
+
+gates:
+  - open_blocker_bugs_zero
+  - open_major_bugs_below_threshold
+  - found_defects_triaged
+  - blocker_defects_traced_to_changeset
+
+on_pass: security_validation
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - open_blocker_bug_count_greater_than_zero
+  - open_major_bug_count_above_threshold
+  - untriaged_blocker_defect
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

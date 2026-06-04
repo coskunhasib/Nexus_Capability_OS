@@ -1,0 +1,568 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-ai.local/configs/nexus-ai/schemas/pipeline_definition.schema.json",
+  "title": "Nexus AI Pipeline Definition Contract",
+  "description": "Machine-readable contract for a Nexus AI pipeline DEFINITION (catalog template, not a run). Fields are taken verbatim from docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 2 (Pipeline Definition Contract) and the canonical field list in configs/nexus-ai/pipeline_contract_standard.yaml. This is a documentation/blueprint schema: no runtime code, no merge, no deploy. LOCKED: there is NO 'plugin' concept anywhere in the model; SDLC is one pipeline type, not the top of the model (top is the 'Nexus AI Orchestration Model'). Core Abilities are NOT agents or team members and MUST NEVER appear as an owner_agent. owner_agent is always a pipeline Agent ROLE in snake_case.",
+  "type": "object",
+  "$comment": "Section 2 of doc 07 lists exactly 24 fields, all required. The 7 shared usage-mapping arrays must be present (may be empty []). 'plugin' is globally forbidden.",
+  "properties": {
+    "pipeline_id": {
+      "type": "string",
+      "description": "Stable snake_case identifier for the pipeline definition (e.g. sdlc_pipeline).",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable pipeline name (e.g. 'SDLC Pipeline').",
+      "minLength": 1
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What this pipeline accomplishes.",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Definition version label (e.g. draft-0.1).",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "description": "Lifecycle status of the pipeline definition. The canonical sdlc_pipeline.yaml uses 'discussion'.",
+      "enum": [
+        "discussion",
+        "draft",
+        "proposed",
+        "approved",
+        "active",
+        "deprecated",
+        "retired"
+      ]
+    },
+    "owner_domain": {
+      "type": "string",
+      "description": "Owning domain of the pipeline (e.g. software_engineering).",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1
+    },
+    "required_team_type": {
+      "type": "string",
+      "description": "Team type required to run this pipeline. For SDLC this is sdlc_team.",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1
+    },
+    "required_team_lead_role": {
+      "type": "string",
+      "description": "Team lead role required to run this pipeline. For SDLC this is sdlc_team_lead. LOCKED: the team lead is NOT the Supervisor Core Ability (Supervisor != sdlc_team_lead).",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1,
+      "not": {
+        "enum": [
+          "supervisor",
+          "coder",
+          "vision",
+          "audio",
+          "creative",
+          "memory",
+          "web",
+          "os"
+        ]
+      }
+    },
+    "applicable_domains": {
+      "type": "array",
+      "description": "Product/problem domains this pipeline applies to (e.g. software_product, saas, api_service).",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "minLength": 1
+      }
+    },
+    "risk_profiles": {
+      "type": "array",
+      "description": "Risk profiles this pipeline can operate under.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "prototype",
+          "internal_tool",
+          "commercial_product",
+          "regulated_or_high_risk"
+        ]
+      }
+    },
+    "stages": {
+      "type": "array",
+      "description": "Ordered list of pipeline stages. Each item is EITHER a canonical snake_case stage_id reference (as in sdlc_pipeline.yaml) OR a full inline stage_contract object. A full pipeline definition must declare a stage list (doc 07 section 14: a pipeline is incomplete if the stage list is missing).",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Canonical stage_id reference (snake_case).",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "minLength": 1
+          },
+          {
+            "$ref": "#/$defs/stage_contract"
+          }
+        ]
+      }
+    },
+    "uses_core_abilities": {
+      "$ref": "#/$defs/core_ability_array"
+    },
+    "uses_skills": {
+      "$ref": "#/$defs/usage_name_array"
+    },
+    "uses_tools": {
+      "$ref": "#/$defs/usage_name_array"
+    },
+    "uses_governance_profiles": {
+      "$ref": "#/$defs/usage_name_array"
+    },
+    "uses_audit_schemas": {
+      "$ref": "#/$defs/usage_name_array"
+    },
+    "uses_model_provider_profiles": {
+      "$ref": "#/$defs/usage_name_array"
+    },
+    "uses_context_memory_profiles": {
+      "$ref": "#/$defs/usage_name_array"
+    },
+    "entry_criteria": {
+      "type": "array",
+      "description": "Conditions that must hold before the pipeline may start.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "exit_criteria": {
+      "type": "array",
+      "description": "Conditions that mark the pipeline complete.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blocking_conditions": {
+      "type": "array",
+      "description": "Pipeline-level conditions that block progression / release.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "allowed_rework_routes": {
+      "type": "array",
+      "description": "Permitted rework routes. Each entry references a known stage_id or a canonical terminal (done, relevant_failed_stage, block_and_report).",
+      "items": {
+        "$ref": "#/$defs/route_target"
+      }
+    },
+    "required_evidence": {
+      "type": "array",
+      "description": "Evidence artifacts the pipeline must produce. Evidence is decision proof and is DISTINCT from trace.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_trace": {
+      "type": "array",
+      "description": "Trace records the pipeline must produce. Trace is the operation log and is DISTINCT from evidence.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_gates": {
+      "type": "object",
+      "description": "Optional convenience index of the pipeline's mandatory gates (doc 08 §4): 'always' lists gates required for every run; 'conditional' lists gates required only when their _if_applicable stage is applicable. Gate names are snake_case gate ids. Not part of doc 07 section 2's 24 required fields, but a useful canonical pipeline-definition extra kept in sdlc_pipeline.yaml.",
+      "properties": {
+        "always": {
+          "type": "array",
+          "description": "Gates required for every product-grade run.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "minLength": 1
+          }
+        },
+        "conditional": {
+          "type": "array",
+          "description": "Gates required only when their conditional (_if_applicable) stage is applicable.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "canonical_docs": {
+      "type": "array",
+      "description": "Optional list of canonical documentation paths this pipeline definition is bound to (repo-relative). Not part of doc 07 section 2's 24 required fields, but a useful canonical pipeline-definition extra kept in sdlc_pipeline.yaml.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "pipeline_id",
+    "name",
+    "purpose",
+    "version",
+    "status",
+    "owner_domain",
+    "required_team_type",
+    "required_team_lead_role",
+    "applicable_domains",
+    "risk_profiles",
+    "stages",
+    "uses_core_abilities",
+    "uses_skills",
+    "uses_tools",
+    "uses_governance_profiles",
+    "uses_audit_schemas",
+    "uses_model_provider_profiles",
+    "uses_context_memory_profiles",
+    "entry_criteria",
+    "exit_criteria",
+    "blocking_conditions",
+    "allowed_rework_routes",
+    "required_evidence",
+    "required_trace"
+  ],
+  "additionalProperties": false,
+  "not": {
+    "required": [
+      "plugin"
+    ]
+  },
+  "$defs": {
+    "no_plugin_guard": {
+      "$comment": "LOCKED DECISION: the plugin concept is cancelled. No object anywhere in a pipeline definition may carry a 'plugin' property.",
+      "type": "object",
+      "not": {
+        "required": [
+          "plugin"
+        ]
+      }
+    },
+    "core_ability_array": {
+      "type": "array",
+      "description": "Subset of the eight canonical Core Abilities. Core Abilities are capabilities, NOT agents and NOT team members.",
+      "items": {
+        "$ref": "#/$defs/core_ability"
+      }
+    },
+    "core_ability": {
+      "type": "string",
+      "description": "One of the eight canonical Core Abilities (PascalCase).",
+      "enum": [
+        "Supervisor",
+        "Coder",
+        "Vision",
+        "Audio",
+        "Creative",
+        "Memory",
+        "Web",
+        "OS"
+      ]
+    },
+    "usage_name_array": {
+      "type": "array",
+      "description": "Shared-registry usage list (skills / tools / governance profiles / audit schemas / model-provider profiles / context-memory profiles). MAY be empty []. Names are snake_case registry ids, except skills which also allow hyphens (e.g. verification-loop, adr-builder).",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_-]*$",
+        "minLength": 1
+      }
+    },
+    "agent_role": {
+      "type": "string",
+      "description": "A pipeline Agent ROLE in snake_case (e.g. requirements_agent, qa_agent). LOCKED: a Core Ability is NEVER a valid agent role. The snake_case pattern already excludes the PascalCase ability names, and the explicit 'not' also blocks their lowercased forms.",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1,
+      "not": {
+        "enum": [
+          "supervisor",
+          "coder",
+          "vision",
+          "audio",
+          "creative",
+          "memory",
+          "web",
+          "os"
+        ]
+      }
+    },
+    "route_target": {
+      "type": "string",
+      "description": "A routing target: either a known stage_id (snake_case) or a canonical terminal.",
+      "anyOf": [
+        {
+          "enum": [
+            "done",
+            "relevant_failed_stage",
+            "block_and_report"
+          ]
+        },
+        {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "minLength": 1
+        }
+      ]
+    },
+    "applicability_decision": {
+      "type": "object",
+      "description": "Present ONLY on CONDITIONAL stages, immediately after purpose. Declares when the stage applies.",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "description": "Name of the applicability decision artifact (e.g. ACCESSIBILITY_UX_APPLICABILITY_DECISION).",
+          "minLength": 1
+        },
+        "required_when": {
+          "type": "string",
+          "description": "Boolean expression that makes the stage applicable (e.g. 'product_has_ui == true').",
+          "minLength": 1
+        },
+        "produced_by": {
+          "$ref": "#/$defs/agent_role"
+        },
+        "on_not_applicable": {
+          "type": "object",
+          "description": "What to do when the stage does not apply (route + recorded evidence).",
+          "properties": {
+            "route": {
+              "$ref": "#/$defs/route_target"
+            },
+            "record_evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "route"
+          ]
+        }
+      },
+      "required": [
+        "required_when"
+      ]
+    },
+    "conditional_required_gate": {
+      "description": "A gate that is required only under a condition. May be a plain gate-name string or an object pairing a gate_id with its required_when expression.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "properties": {
+            "gate_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required_when": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "gate_id",
+            "required_when"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "stage_contract": {
+      "type": "object",
+      "description": "A Nexus AI pipeline Stage Contract (doc 07 section 4, extended with applicability_decision / optional_conditions / conditional_required_gates / max_iterations). owner_team is always sdlc_team, team_lead is always sdlc_team_lead, and owner_agent is a pipeline Agent ROLE that is NEVER a Core Ability. All seven usage-mapping arrays are REQUIRED (and may be empty []). No-self-approval: a review/gate stage's owner_agent must differ from the author of the artifact it reviews; if no dedicated reviewer role fits, sdlc_team_lead is used as the review-gate owner (the schema cannot enforce the cross-stage author check; it is a governance rule).",
+      "properties": {
+        "stage_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "applicability_decision": {
+          "$ref": "#/$defs/applicability_decision"
+        },
+        "owner_team": {
+          "type": "string",
+          "description": "Owning team. LOCKED for SDLC stages: sdlc_team.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "minLength": 1
+        },
+        "team_lead": {
+          "type": "string",
+          "description": "Team lead. LOCKED for SDLC stages: sdlc_team_lead. Never the Supervisor Core Ability.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "minLength": 1,
+          "not": {
+            "enum": [
+              "supervisor",
+              "coder",
+              "vision",
+              "audio",
+              "creative",
+              "memory",
+              "web",
+              "os"
+            ]
+          }
+        },
+        "owner_agent": {
+          "$ref": "#/$defs/agent_role"
+        },
+        "sub_agents": {
+          "type": "array",
+          "description": "Sub-agent roles activated by this stage (snake_case; may be empty). A Core Ability is never a sub-agent.",
+          "items": {
+            "$ref": "#/$defs/agent_role"
+          }
+        },
+        "uses_core_abilities": {
+          "$ref": "#/$defs/core_ability_array"
+        },
+        "uses_skills": {
+          "$ref": "#/$defs/usage_name_array"
+        },
+        "uses_tools": {
+          "$ref": "#/$defs/usage_name_array"
+        },
+        "uses_governance_profiles": {
+          "$ref": "#/$defs/usage_name_array"
+        },
+        "uses_audit_schemas": {
+          "$ref": "#/$defs/usage_name_array"
+        },
+        "uses_model_provider_profiles": {
+          "$ref": "#/$defs/usage_name_array"
+        },
+        "uses_context_memory_profiles": {
+          "$ref": "#/$defs/usage_name_array"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Evidence artifacts produced by this stage (DISTINCT from trace).",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "trace": {
+          "type": "array",
+          "description": "Trace records produced by this stage (DISTINCT from evidence).",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "on_pass": {
+          "$ref": "#/$defs/route_target"
+        },
+        "on_fail": {
+          "$ref": "#/$defs/route_target"
+        },
+        "rework_route": {
+          "$ref": "#/$defs/route_target"
+        },
+        "blocking_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "optional_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "conditional_required_gates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/conditional_required_gate"
+          }
+        },
+        "max_iterations": {
+          "type": "integer",
+          "description": "Maximum rework iterations before escalation. Default 3.",
+          "minimum": 1,
+          "default": 3
+        }
+      },
+      "required": [
+        "stage_id",
+        "name",
+        "purpose",
+        "owner_team",
+        "team_lead",
+        "owner_agent",
+        "sub_agents",
+        "uses_core_abilities",
+        "uses_skills",
+        "uses_tools",
+        "uses_governance_profiles",
+        "uses_audit_schemas",
+        "uses_model_provider_profiles",
+        "uses_context_memory_profiles",
+        "inputs",
+        "outputs",
+        "evidence",
+        "trace",
+        "gates",
+        "on_pass",
+        "on_fail",
+        "rework_route",
+        "blocking_conditions"
+      ],
+      "additionalProperties": false,
+      "not": {
+        "required": [
+          "plugin"
+        ]
+      }
+    }
+  }
+}

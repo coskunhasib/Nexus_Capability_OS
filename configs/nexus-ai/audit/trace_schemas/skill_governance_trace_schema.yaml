@@ -1,0 +1,103 @@
+# =============================================================================
+# Nexus AI — Trace Schema (Audit / Trace family) — TRACE ONLY
+# =============================================================================
+# Phase E / doc 19 §12 materialization of ONE `type: trace_schema` item from the
+# Phase C registry (configs/nexus-ai/audit_schemas.yaml). Documentation/blueprint
+# only — NO runtime code, NO merge, NO deploy.
+#
+# STATUS: candidate — NEW schema introduced by the skill_governance pipeline
+# (doc 16 / pipeline-catalog-review §4.2). Referenced but not yet ratified;
+# confirmed in Phase E. Do not treat as locked.
+#
+# LOCKED DECISIONS honored here:
+#   - Audit != Governance. Governance profiles live in
+#     configs/nexus-ai/governance_profiles.yaml (a SEPARATE file). Note: this is a
+#     governance-PIPELINE trace schema, but it is still an AUDIT artifact — the
+#     pipeline's name does not make it governance.
+#   - Evidence != Trace (K-008 / doc 03 §10–§12; doc 19 §11). This is a TRACE
+#     schema = operation/process history. It proves the PRODUCTION PATH of
+#     evidence but is NEVER itself evidence and is NEVER merged with any
+#     evidence_schema. Evidence schemas live in the SEPARATE sibling directory
+#     configs/nexus-ai/audit/evidence_schemas/ — this directory holds traces only.
+#   - Skill != Tool. Plugin cancelled: no plugin* key appears anywhere.
+#   - Core Abilities are NOT agents; they never appear as producer or consumer.
+# =============================================================================
+
+version: draft-0.1
+schema_family: trace            # Trace family ONLY (never evidence)
+source_registry: configs/nexus-ai/audit_schemas.yaml
+materializes: skill_governance_trace_schema
+
+# ----- doc 19 §12 audit schema contract (authoritative) ----------------------
+audit_schema_id: skill_governance_trace_schema
+type: trace_schema
+applies_to:
+  - skill_governance_pipeline
+  - skill_governance_provenance
+required_fields:
+  - trace_id
+  - type
+  - actor
+  - action
+  - related_stage
+  - related_skill               # Skill != Tool; the skill whose governance step is traced
+  - input_refs
+  - output_refs
+  - status
+  - timestamp
+producer: skill_librarian_agent   # snake_case Agent role; never a Core Ability
+consumer: evidence_graph_agent
+retention: retain_with_skill_registry_entry
+redaction_rules:
+  - no_raw_secret_exposure
+  - redact_secrets_in_script_snippets
+
+# ----- registry context (doc 17 §3 contract — preserved for traceability) ----
+registry_context:
+  name: Skill Governance Trace Schema
+  status: candidate
+  owner_domain: skill_governance
+  purpose: >-
+    Trace record for skill-governance operation history (skill_package_read,
+    semantic_extraction, script_static_analysis, misuse_warning,
+    binding_proposal, activation_decision, gate_evaluation traces).
+  allowed_usage:
+    - Record the operation history of every skill-governance stage step.
+  forbidden_usage:
+    - Used as a skill-governance decision proof itself (those are the
+      skill-governance evidence/decision schemas — Evidence family, kept distinct).
+    - Merged with any evidence_schema record (Evidence != Trace).
+  notes: >-
+    NEW (skill governance). The single NEW trace schema for the skill-governance
+    pipeline; spans all 7 stages.
+
+# ----- governance binding (Governance != Audit; ids live in the SEPARATE file) -
+# Source registry binds `global_trace_required_policy` (alias of canonical
+# `trace_required`) plus `skill_governance_pipeline_governance`.
+governance_profiles:
+  - trace_required                # canonical id (governance_profiles.yaml)
+  - skill_governance_pipeline_governance
+governance_profile_aliases:
+  trace_required:
+    - global_trace_required_policy  # spelling used in audit_schemas.yaml
+
+# ----- co-emitted audit schemas (SELF-CATEGORY cross-reference, doc 17 §8) -----
+companion_evidence_schemas:
+  - skill_governance_evidence_schema   # evidence whose production path this traces
+  - skill_binding_decision_schema      # binding decision proof (kept distinct)
+
+# ----- usage mapping (doc 17 §13) ---------------------------------------------
+used_by:
+  pipelines:
+    - skill_governance_pipeline
+  stages:
+    - skill_intake
+    - skill_semantic_extraction
+    - script_reference_audit
+    - misuse_warning_generation
+    - skill_binding_proposal
+    - skill_activation_decision
+    - skill_deprecation_update
+  agents:
+    - skill_librarian_agent
+    - skill_runtime_safety_agent

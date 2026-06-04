@@ -1,0 +1,90 @@
+# =============================================================================
+# Nexus AI — Trace Schema (Audit / Trace family) — TRACE ONLY
+# =============================================================================
+# Phase E / doc 19 §12 materialization of ONE `type: trace_schema` item from the
+# Phase C registry (configs/nexus-ai/audit_schemas.yaml). Documentation/blueprint
+# only — NO runtime code, NO merge, NO deploy.
+#
+# LOCKED DECISIONS honored here:
+#   - Audit != Governance. Governance profiles live in
+#     configs/nexus-ai/governance_profiles.yaml (a SEPARATE file).
+#   - Evidence != Trace (K-008 / doc 03 §10–§12; doc 19 §11). This is a TRACE
+#     schema = operation/process history. It proves the PRODUCTION PATH of
+#     evidence but is NEVER itself evidence and is NEVER merged with any
+#     evidence_schema. Evidence schemas live in the SEPARATE sibling directory
+#     configs/nexus-ai/audit/evidence_schemas/ — this directory holds traces only.
+#   - Plugin cancelled: no plugin* key appears anywhere.
+#   - Core Abilities are NOT agents; they never appear as producer or consumer.
+# =============================================================================
+
+version: draft-0.1
+schema_family: trace            # Trace family ONLY (never evidence)
+source_registry: configs/nexus-ai/audit_schemas.yaml
+materializes: gate_decision_trace_schema
+
+# ----- doc 19 §12 audit schema contract (authoritative) ----------------------
+audit_schema_id: gate_decision_trace_schema
+type: trace_schema
+applies_to:
+  - sdlc_stage:development_completion
+  - aggregate_gate_decision_provenance
+required_fields:
+  - trace_id
+  - type
+  - actor
+  - action
+  - related_stage
+  - input_refs
+  - output_refs
+  - status
+  - timestamp
+producer: release_manager_agent   # snake_case Agent role; never a Core Ability
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+  - no_raw_secret_exposure
+
+# ----- registry context (doc 17 §3 contract — preserved for traceability) ----
+registry_context:
+  name: Gate Decision Trace Schema
+  status: canonical
+  owner_domain: sdlc
+  purpose: >-
+    Trace record for aggregate go/no-go decision lineage — the operation history
+    of how a development-completion gate decision was aggregated.
+  allowed_usage:
+    - Record the aggregate go/no-go decision lineage (which gate results fed the
+      decision).
+  forbidden_usage:
+    - Used as the go/no-go decision proof itself (that is release_evidence_schema
+      or a gate_result_schema — Evidence family, kept distinct).
+    - Merged with any evidence_schema record (Evidence != Trace).
+  notes: >-
+    Stage 29 trace schema. Aggregate decision process history. Distinct from
+    stage_gate_trace_schema (single gate) and from the decision proof itself.
+
+# ----- governance binding (Governance != Audit; ids live in the SEPARATE file) -
+governance_profiles:
+  - trace_required                # canonical id (governance_profiles.yaml)
+governance_profile_aliases:
+  trace_required:
+    - global_trace_required_policy  # spelling used in audit_schemas.yaml
+
+# ----- co-emitted audit schemas (SELF-CATEGORY cross-reference, doc 17 §8) -----
+# Records the production path of the development-completion / release decision
+# proof. The aggregated single-gate traces it composes use stage_gate_trace_schema
+# (a sibling TRACE schema, not evidence). The decision proof itself is an evidence
+# schema, kept strictly distinct.
+companion_evidence_schemas:
+  - release_evidence_schema       # the decision proof whose production path this traces
+companion_trace_schemas:
+  - stage_gate_trace_schema       # per-gate traces this aggregate composes (sibling trace)
+
+# ----- usage mapping (doc 17 §13) ---------------------------------------------
+used_by:
+  pipelines:
+    - sdlc_pipeline
+  stages:
+    - development_completion
+  agents:
+    - release_manager_agent

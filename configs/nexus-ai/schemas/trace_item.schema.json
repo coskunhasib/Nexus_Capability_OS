@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-ai/configs/nexus-ai/schemas/trace_item.schema.json",
+  "title": "Nexus AI Trace Item",
+  "description": "Machine-readable contract for a single Nexus AI audit Trace item, per docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 12 (Trace Contract). A Trace item is operation history (islem gecmisi) that proves the production path of evidence (K-008: Evidence = decision proof; Trace = operation history; the two are grouped under Audit but kept distinct). Documentation/blueprint only; no runtime code. LOCKED: no 'plugin' concept anywhere (K-001).",
+  "type": "object",
+  "additionalProperties": false,
+  "unevaluatedProperties": false,
+  "allOf": [
+    {
+      "$comment": "LOCKED K-001: the plugin concept is cancelled and must never appear. Defense-in-depth: additionalProperties:false already rejects unknown keys, and this clause makes the prohibition explicit and self-documenting.",
+      "not": {
+        "anyOf": [
+          { "required": ["plugin"] },
+          { "required": ["plugins"] },
+          { "required": ["plugin_id"] },
+          { "required": ["plugin_registry"] },
+          { "required": ["uses_plugins"] }
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_]*$",
+      "description": "Unique snake_case identifier for this trace item."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_]*$",
+      "description": "Trace category in snake_case. Canonical kinds (doc 06 section 10): agent_invocation, sub_agent_invocation, skill_activation, tool_call, handoff_event, policy_evaluation, rework_route. Stage contracts also use descriptive composite names such as <stage>_stage_trace, <skill>_skill_activation_trace, <tool>_tool_trace, <gate>_gate_decision_trace. This is a Trace type, never an Evidence type (Evidence != Trace).",
+      "examples": [
+        "agent_invocation",
+        "sub_agent_invocation",
+        "skill_activation",
+        "tool_call",
+        "handoff_event",
+        "policy_evaluation",
+        "rework_route"
+      ]
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The entity that performed the action being traced (e.g. a pipeline Agent role, a sub-agent, the team_lead, or a Core Ability such as Supervisor when it routes). Free-form string; this is NOT owner_agent and carries no owner/authorship semantics. owner_agent is a stage_contract field and does not exist on a trace item, so the 'Core Ability must never be owner_agent' rule (K-003/K-004) is not enforced here. See open_questions."
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the actor did (e.g. invoked, activated, called, evaluated, handed_off, routed_rework). Plain string description of the traced operation."
+    },
+    "related_pipeline": {
+      "type": ["string", "null"],
+      "description": "pipeline_id this trace belongs to (e.g. the SDLC pipeline). Null if not bound to a specific pipeline."
+    },
+    "related_run": {
+      "type": ["string", "null"],
+      "description": "run_id of the pipeline run this trace belongs to. Null if not bound to a specific run."
+    },
+    "related_stage": {
+      "type": ["string", "null"],
+      "description": "stage_id this trace occurred within. Null if not stage-scoped."
+    },
+    "related_skill": {
+      "type": ["string", "null"],
+      "description": "Skill from the shared registry that this trace activated, if any (Skill != Tool). Null when no skill is involved. Canonical skills: prism, verification-loop, sentinel, llm-council, fmea, adr-builder, gap-audit, prompt-fidelity, calibrate, refraction, fermi-decompose, bayesian-update."
+    },
+    "related_tool": {
+      "type": ["string", "null"],
+      "description": "Tool from the shared registry that this trace called, if any (Tool != Skill; side-effect tools imply governance + trace). Null when no tool is involved."
+    },
+    "related_core_ability": {
+      "type": ["string", "null"],
+      "enum": [
+        "Supervisor",
+        "Coder",
+        "Vision",
+        "Audio",
+        "Creative",
+        "Memory",
+        "Web",
+        "OS",
+        null
+      ],
+      "description": "The Core Ability involved in this trace, if any. LOCKED closed set (K-003): Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS. A Core Ability is NOT an agent and NOT a team member; it may be referenced here as a capability layer only. Null when no Core Ability is involved."
+    },
+    "input_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "default": [],
+      "description": "References to inputs consumed by this operation (artifact ids, evidence ids, or other trace ids). Empty array if none."
+    },
+    "output_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "default": [],
+      "description": "References to outputs produced by this operation (artifact ids, evidence ids, or other trace ids). Empty array if none. Note: a trace records the production path; the evidence it produced lives in Evidence items (Evidence != Trace)."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "failed",
+        "blocked",
+        "skipped"
+      ],
+      "description": "Lifecycle status of the traced operation."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 / ISO 8601 timestamp of when the traced operation occurred."
+    }
+  },
+  "required": [
+    "trace_id",
+    "type",
+    "actor",
+    "action",
+    "related_pipeline",
+    "related_run",
+    "related_stage",
+    "related_skill",
+    "related_tool",
+    "related_core_ability",
+    "input_refs",
+    "output_refs",
+    "status",
+    "timestamp"
+  ]
+}

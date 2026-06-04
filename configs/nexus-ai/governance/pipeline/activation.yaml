@@ -1,0 +1,281 @@
+# =============================================================================
+# Nexus AI — Pipeline-Scope Governance Profile: Activation Pipeline
+# =============================================================================
+# Phase E / doc 19. Documentation / blueprint ONLY — NO runtime code, NO merge,
+# NO deploy.
+#
+# Applicable pipeline-scope governance LAYER for the Activation Pipeline.
+# Implements (makes evaluable from config) the registry umbrella
+# governance_profiles.yaml -> pipeline.activation_pipeline_governance.
+#
+# DERIVED FROM (doc 19 §4):
+#   - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md (MARKDOWN is
+#     authoritative; the markdown's 7-stage set + §1 uses_governance_profiles +
+#     §2 per-stage key gates + §3 governance notes supersede the 5-stage catalog
+#     YAML summary):
+#       uses_governance_profiles:
+#         activation_pipeline_governance, no_self_approval_policy,
+#         evidence_required_policy, preview_required_gate, pilot_evidence_gate,
+#         rollback_required_gate, owner_activation_decision_gate
+#   - SDLC §7 minimums applied AS RELEVANT (doc 19 §4): the activation analogue of
+#     "*_requires_all_required_gates" is activation_completion
+#     (activation_evidence_complete + all_required_gates_passed +
+#     no_blocking_policy_failure). The staged-activation ordering invariants
+#     (preview -> pilot -> public, rollback before completion) are the activation
+#     equivalent of "release_candidate_requires_development_completion". SDLC
+#     build/security/supply-chain minimums do not apply to activation and are
+#     intentionally absent.
+#
+# LOCKED DECISIONS: Plugin cancelled. Governance != Audit (evidence/trace named
+#   here owned by the SEPARATE audit registry). Evidence != Trace. Core Abilities
+#   are NOT agents; activation_team_lead != Supervisor. owner_activation_decision_gate
+#   is a HUMAN/owner authority gate — DISTINCT from no_self_approval (which guards
+#   autonomous-agent self-approval); both are bound. prism / verification-loop are
+#   intentionally NOT bound (activation promotes an already-built artifact).
+#
+# NAMING RECONCILIATION (doc 19 (a)): no_self_approval / evidence_required are
+#   first-class ids; *_policy spellings recorded as aliases.
+# =============================================================================
+
+governance_profile_id: activation_pipeline_governance
+scope: pipeline
+purpose: >-
+  Pipeline-wide governance for the Activation Pipeline, made evaluable from
+  config: no pilot activation without a passing superadmin preview; no public
+  activation without sufficient pilot evidence; a validated rollback plan is
+  mandatory before public completion; and the public activation decision is a
+  human/owner gate that cannot be self-approved by any autonomous agent. Umbrella
+  re-shown under each activation stage.
+
+applies_to:
+  pipeline: activation_pipeline
+  stages:
+    - activation_intake
+    - superadmin_preview
+    - pilot_activation
+    - pilot_evidence_review
+    - public_activation_decision
+    - rollback_readiness
+    - activation_completion
+
+severity_default: blocker
+
+binds_governance_profiles:
+  - activation_pipeline_governance  # registry umbrella (self)
+  - preview_required_gate
+  - pilot_evidence_gate
+  - rollback_required_gate
+  - owner_activation_decision_gate
+  - no_self_approval                # alias: no_self_approval_policy
+  - evidence_required               # alias: evidence_required_policy
+
+rules:
+
+  # ---- release-candidate evidence precondition --------------------------------
+  - rule_id: activation_requires_release_candidate_evidence
+    description: >-
+      Activation may only target an SDLC release candidate (or higher) with the
+      release-candidate evidence present. Consumes the SDLC output; does not
+      regenerate SDLC (activation-pipeline.md §2.1).
+    severity: blocker
+    required_when: stage == activation_intake
+    pass_condition: >-
+      release_candidate_evidence_present == true AND activation_scope_defined == true
+    fail_condition: missing_release_candidate_evidence == true
+    on_fail: route_to_activation_intake
+    rework_route: activation_intake
+    evidence_required:
+      - ACTIVATION_REQUEST
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- preview required before pilot (preview_required_gate) -------------------
+  - rule_id: activation_preview_required_before_pilot
+    description: >-
+      No pilot activation may begin without a passing superadmin/internal-only
+      preview confirming expected behavior and observable telemetry. Enforces
+      preview_required_gate (activation-pipeline.md §2.2 / §3).
+    severity: blocker
+    required_when: stage == superadmin_preview
+    pass_condition: >-
+      preview_behaves_as_expected == true AND telemetry_observable_in_preview == true
+    fail_condition: pilot_activation_attempted_without_superadmin_preview_pass == true
+    on_fail: route_to_superadmin_preview
+    rework_route: superadmin_preview
+    evidence_required:
+      - PREVIEW_RESULT
+    trace_required:
+      - stage_gate_trace_schema
+      - preview_activation_trace
+
+  # ---- pilot reachable rollback -----------------------------------------------
+  - rule_id: activation_pilot_rollback_reachable
+    description: >-
+      The bounded pilot must run against a defined cohort with rollback reachable
+      at all times; pilot telemetry must be collected
+      (activation-pipeline.md §2.3).
+    severity: blocker
+    required_when: stage == pilot_activation
+    pass_condition: >-
+      pilot_cohort_bounded == true AND pilot_telemetry_collected == true AND
+      rollback_reachable_during_pilot == true
+    fail_condition: rollback_reachable_during_pilot == false
+    on_fail: route_to_rollback_readiness
+    rework_route: rollback_readiness
+    evidence_required:
+      - PILOT_RESULT
+    trace_required:
+      - stage_gate_trace_schema
+      - pilot_activation_trace
+
+  # ---- pilot evidence sufficient before public (pilot_evidence_gate) ----------
+  - rule_id: activation_pilot_evidence_required_before_public
+    description: >-
+      Public activation is impossible without sufficient pilot evidence reviewed
+      by a separate owner (reviewer != pilot owner — no self-approval). Enforces
+      pilot_evidence_gate (activation-pipeline.md §2.4).
+    severity: blocker
+    required_when: stage == pilot_evidence_review
+    pass_condition: >-
+      pilot_acceptance_thresholds_met == true AND no_unresolved_pilot_blocker == true AND
+      reviewer_role_distinct_from_pilot_owner == true
+    fail_condition: public_activation_attempted_without_pilot_evidence == true
+    on_fail: route_to_pilot_activation
+    rework_route: pilot_activation
+    evidence_required:
+      - PILOT_EVIDENCE_REVIEW_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- owner/human activation decision (owner_activation_decision_gate) --------
+  - rule_id: activation_owner_decision_required_for_public
+    description: >-
+      Public (general-availability) activation requires an explicit human/owner
+      decision, recorded as evidence, that cannot be self-approved by any
+      stage-owning agent. Enforces owner_activation_decision_gate AND
+      no_self_approval (the owner gate is HUMAN authority; no_self_approval guards
+      the autonomous-agent path). activation-pipeline.md §2.5 / §3.
+    severity: blocker
+    required_when: stage == public_activation_decision
+    pass_condition: >-
+      owner_activation_decision_recorded == true AND
+      self_approval_of_activation_decision == false AND
+      rollback_plan_present == true
+    fail_condition: >-
+      public_activation_without_owner_decision == true OR
+      self_approval_of_activation_decision == true
+    on_fail: route_to_pilot_evidence_review
+    rework_route: pilot_evidence_review
+    evidence_required:
+      - ACTIVATION_DECISION
+    trace_required:
+      - stage_gate_trace_schema
+      - owner_decision_trace
+
+  # ---- validated rollback before public completion (rollback_required_gate) ----
+  - rule_id: activation_rollback_validated_before_completion
+    description: >-
+      Public activation cannot complete without a validated, executable rollback
+      path: rollback owner assigned, executor wired, drill/dry-run performed,
+      recovery signals observable. Enforces rollback_required_gate
+      (activation-pipeline.md §2.6 / §3).
+    severity: blocker
+    required_when: stage == rollback_readiness
+    pass_condition: >-
+      rollback_plan_validated == true AND rollback_drill_passed == true
+    fail_condition: >-
+      public_activation_attempted_without_validated_rollback_plan == true OR
+      rollback_plan_missing == true
+    on_fail: route_to_rollback_readiness
+    rework_route: rollback_readiness
+    evidence_required:
+      - ROLLBACK_PLAN
+      - ROLLBACK_READINESS_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - rollback_drill_trace
+
+  # ---- activation completion requires all required gates (SDLC §7 analogue) ----
+  - rule_id: activation_completion_requires_all_required_gates
+    description: >-
+      Activation completion may pass only when the activation evidence package is
+      complete, all required gates have passed, and no blocking policy failure
+      remains. Activation analogue of development_completion_requires_all_required
+      _gates (activation-pipeline.md §2.7).
+    severity: blocker
+    required_when: stage == activation_completion
+    pass_condition: >-
+      activation_evidence_complete == true AND all_required_gates_passed == true AND
+      no_blocking_policy_failure == true
+    fail_condition: >-
+      activation_evidence_complete == false OR all_required_gates_passed == false OR
+      no_blocking_policy_failure == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - ACTIVATION_COMPLETION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+      - activation_transition_trace
+
+  # ---- cross-cutting: evidence_required (first-class; alias evidence_required_policy)
+  - rule_id: activation_evidence_required
+    description: >-
+      Every gate decision in the Activation Pipeline must be backed by a
+      machine-readable evidence record. Binds canonical evidence_required (alias:
+      evidence_required_policy). Evidence != Trace.
+    severity: blocker
+    required_when: any_gate_decision == true
+    pass_condition: gate_decision_has_evidence_record == true
+    fail_condition: gate_decision_has_evidence_record == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - ACTIVATION_COMPLETION_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+required_evidence:
+  evidence_schemas:
+    - activation_evidence_schema
+    - activation_decision_evidence_schema
+    - rollback_readiness_evidence_schema
+  evidence_artifacts:
+    - ACTIVATION_REQUEST
+    - PREVIEW_RESULT
+    - PILOT_RESULT
+    - PILOT_EVIDENCE_REVIEW_REPORT
+    - ROLLBACK_PLAN
+    - ROLLBACK_READINESS_REPORT
+    - ACTIVATION_DECISION
+    - ACTIVATION_COMPLETION_REPORT
+
+required_trace:
+  trace_schemas:
+    - stage_gate_trace_schema
+    - activation_transition_trace_schema
+  trace_records:
+    - activation_transition_trace
+    - preview_activation_trace
+    - pilot_activation_trace
+    - rollback_drill_trace
+    - owner_decision_trace
+    - policy_evaluation_trace
+
+owner: activation_and_release_operations
+escalation:
+  on_blocker: activation_team_lead
+  on_public_activation_without_owner_decision: block_and_report
+  on_unresolved_blocking_policy_failure: block_and_report
+  cannot_override_gate: true        # activation_team_lead != Supervisor; no gate bypass
+
+provenance:
+  registry_profile: governance_profiles.yaml#pipeline.activation_pipeline_governance
+  derived_from:
+    - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md  # markdown authoritative
+    - configs/nexus-ai/pipeline_catalog.yaml                         # activation_pipeline entry
+    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md     # §4, §5
+    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md       # §4 activation pipeline governance
+no_plugin: true
+governance_not_audit: true
+evidence_not_trace: true

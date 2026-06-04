@@ -1,8 +1,20 @@
 # 05 — Pipeline Modeli
 
-Bu doküman, AI SDLC Factory pipeline’ının nasıl tanımlanacağını açıklar.
+Bu doküman, Nexus AI SDLC Pipeline’ının nasıl tanımlanacağını açıklar.
 
 Pipeline, agent’ların rastgele konuşma sırası değildir. Pipeline, deterministik bir stage graph’tır.
+
+## 0. Durum ve reconciliation notu
+
+> **Bu doküman erken nesil detaylı taslaktır.** Kanonik SDLC stage seti `06-sdlc-coverage-gap-audit.md`, `08-sdlc-pipeline-contract.md` ve `configs/nexus-ai/sdlc_pipeline.yaml` ile **31 stage**'e genişletilmiştir (buradaki 23 stage + gap-audit eklentileri; `skill_selection`, `skill_semantic_extraction` içine katlanmıştır).
+>
+> Bu dokümanın **korunması gereken benzersiz katkıları** makine-okunabilir config'lere taşınır:
+> - **§5 Rework routing table** + **§6 Iteration policy** + **§7 Anti-patterns** → `configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml`
+> - Per-stage owner/gate/route detayı → `configs/nexus-ai/stages/sdlc/*.yaml` (07 stage-contract formatı + 7 kategorilik usage mapping ile)
+>
+> **Bildirilmemiş skill'ler** (`skill-architect`, `skill-router`, `steelman`, `handoff-designer`, `context-pack-builder`, `scanner-result-normalizer`, `evidence-graph-builder`, `release-readiness-judge`) shared registry formalization (doc 17 / `skills_registry.yaml`) sırasında kanonik karşılıklarına eşlenir ya da registry'ye eklenir.
+>
+> **Rol notu:** Review stage'leri (`requirements_review`, `architecture_review`) yazan agent'tan **farklı** bir owner'a (reviewer / `sdlc_team_lead` gate) verilir — no-self-approval kuralı. Team Lead yönetir, owner agent çalıştırır.
 
 ## 1. Pipeline ilkeleri
 

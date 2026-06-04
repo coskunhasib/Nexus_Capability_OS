@@ -1,0 +1,96 @@
+# =============================================================================
+# Nexus AI — Trace Schema (Audit / Trace family) — TRACE ONLY
+# =============================================================================
+# Phase E / doc 19 §12 materialization of ONE `type: trace_schema` item from the
+# Phase C registry (configs/nexus-ai/audit_schemas.yaml). Documentation/blueprint
+# only — NO runtime code, NO merge, NO deploy.
+#
+# LOCKED DECISIONS honored here:
+#   - Audit != Governance. Governance profiles live in
+#     configs/nexus-ai/governance_profiles.yaml (a SEPARATE file).
+#   - Evidence != Trace (K-008 / doc 03 §10–§12; doc 19 §11). This is a TRACE
+#     schema = operation/process history. It proves the PRODUCTION PATH of
+#     evidence but is NEVER itself evidence and is NEVER merged with any
+#     evidence_schema. Evidence schemas live in the SEPARATE sibling directory
+#     configs/nexus-ai/audit/evidence_schemas/ — this directory holds traces only.
+#   - Plugin cancelled: no plugin* key appears anywhere.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents/team members. Memory may be REFERENCED here as a capability
+#     layer (related_core_ability) ONLY; it is NEVER the producer or consumer.
+# =============================================================================
+
+version: draft-0.1
+schema_family: trace            # Trace family ONLY (never evidence)
+source_registry: configs/nexus-ai/audit_schemas.yaml
+materializes: memory_update_trace_schema
+
+# ----- doc 19 §12 audit schema contract (authoritative) ----------------------
+audit_schema_id: memory_update_trace_schema
+type: trace_schema
+applies_to:
+  - sdlc_stage:refraction_learning
+  - memory_update_provenance
+required_fields:
+  - trace_id
+  - type
+  - actor
+  - action
+  - related_stage
+  - related_core_ability        # Memory (capability layer) may appear here; NEVER as actor/owner
+  - input_refs
+  - output_refs
+  - status
+  - timestamp
+producer: refraction_learning_agent   # snake_case Agent role; never a Core Ability
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+  - no_raw_secret_exposure
+  - redact_pii_in_memory_proposal
+
+# ----- registry context (doc 17 §3 contract — preserved for traceability) ----
+registry_context:
+  name: Memory Update Trace Schema
+  status: canonical
+  owner_domain: sdlc
+  purpose: >-
+    Trace record for the memory-update proposal lineage — the operation history
+    of a proposed update to long-term memory (MEMORY_UPDATE_PROPOSAL).
+  allowed_usage:
+    - Record the lineage of a memory-update proposal emitted by the learning
+      stage.
+  forbidden_usage:
+    - Used as the learning decision proof itself (that is learning_record_schema
+      — an evidence_schema, kept distinct).
+    - Merged with any evidence_schema record (Evidence != Trace).
+    - Naming the Memory Core Ability as producer/consumer (it is a capability
+      layer, referenced via related_core_ability only).
+  notes: >-
+    Stage 31 trace schema. Memory-update proposal process history; distinct from
+    the learning record evidence. The capitalized Name "Memory" is the
+    Core-Ability label in contracts; the related_core_ability field carries that
+    Name as a capability-layer reference, not an agent.
+
+# ----- governance binding (Governance != Audit; ids live in the SEPARATE file) -
+# Source registry binds `global_trace_required_policy` (alias of canonical
+# `trace_required`) plus `memory_access_governance` (a first-class Core-Ability /
+# memory governance profile in governance_profiles.yaml). Cross-reference only.
+governance_profiles:
+  - trace_required                # canonical id (governance_profiles.yaml)
+  - memory_access_governance      # Memory Core-Ability governance (governance_profiles.yaml)
+governance_profile_aliases:
+  trace_required:
+    - global_trace_required_policy  # spelling used in audit_schemas.yaml
+
+# ----- co-emitted audit schemas (SELF-CATEGORY cross-reference, doc 17 §8) -----
+companion_evidence_schemas:
+  - learning_record_schema        # the evidence whose production path this traces
+
+# ----- usage mapping (doc 17 §13) ---------------------------------------------
+used_by:
+  pipelines:
+    - sdlc_pipeline
+  stages:
+    - refraction_learning
+  agents:
+    - refraction_learning_agent

@@ -1,0 +1,108 @@
+# SDLC Pipeline — Stage #6 Contract: architecture
+# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (Pipeline Stage Contract)
+#               configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields)
+# Pipeline: sdlc_pipeline. Always-on stage (not conditional).
+# Reconciled against: sdlc-stages/02-design-risk-and-planning.md (§1 architecture),
+#   docs/ai-sdlc-factory/05-pipeline-model.md (§4.7), configs/nexus-ai/sdlc_pipeline.yaml,
+#   configs/nexus-ai/artifact_registry.yaml (canonical artifact names).
+# Core Abilities are NOT agents; owner_agent is a pipeline Agent role; review/gate lives in
+# the separate architecture_review stage (no self-approval).
+
+stage_id: architecture
+name: Architecture
+purpose: >-
+  Produce the system architecture for the validated requirements: system
+  boundaries, component decomposition, candidate architecture options with
+  trade-offs, the chosen approach, the API/data/deployment strategy, and
+  Architecture Decision Records (ADRs) for every major decision. The stage
+  must demonstrably address the non-functional requirements (NFR_CATALOG) and
+  produce traceable, reviewable design evidence for the downstream
+  architecture_review gate, security_privacy_design, and planning stages.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: architecture_agent
+sub_agents:
+  - api_design_subagent
+  - data_model_subagent
+
+uses_core_abilities:
+  - Coder
+  - Memory
+  - Web
+
+uses_skills:
+  - prism            # divergent generation of candidate architecture options (brainstorming)
+  - llm-council      # multi-model deliberation / scoring of architecture options and trade-offs
+  - adr-builder      # capture every major decision as a structured ADR
+  - gap-audit        # verify NFR / requirement coverage and surface design gaps
+  - sentinel         # surface trade-off risks and hidden assumptions in the chosen design
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+  - diagram_generator
+  - repo_reader
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - evidence_required_policy
+  - architecture_design_governance   # stage-specific gate profile
+  - adr_required_gate                # stage-specific gate profile
+
+uses_audit_schemas:
+  - architecture_evidence_schema     # evidence schema (artifacts produced by this stage)
+  - architecture_decision_trace_schema  # trace schema (ADR decision provenance)
+  - stage_gate_trace_schema          # trace schema (gate evaluation provenance)
+
+uses_model_provider_profiles:
+  - architecture_reasoning_model
+
+uses_context_memory_profiles:
+  - architecture_context_pack
+
+inputs:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ACCEPTANCE_CRITERIA
+  - DOMAIN_PROFILE_DECISION
+  - REQUIREMENTS_REVIEW_REPORT
+
+outputs:
+  - ARCHITECTURE_DOC
+  - SYSTEM_CONTEXT_DIAGRAM
+  - ADR_INDEX
+
+evidence:
+  - ARCHITECTURE_DOC
+  - SYSTEM_CONTEXT_DIAGRAM
+  - ADR_INDEX
+
+trace:
+  - architecture_decision_trace
+  - architecture_agent_action_trace
+  - subagent_invocation_trace
+  - architecture_gate_evaluation_trace
+
+gates:
+  - architecture_addresses_nfrs
+  - adr_present_for_major_decisions
+  - system_boundaries_defined
+  - rejected_options_recorded
+
+on_pass: architecture_review
+on_fail: requirements
+rework_route: requirements
+
+blocking_conditions:
+  - unaddressed_nfr
+  - missing_critical_adr
+  - undefined_system_boundary
+
+optional_conditions:
+  - api_surface_present          # api_design_subagent engaged when an external/public API exists
+  - persistent_data_model_present  # data_model_subagent engaged when the system owns persistent data
+
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,0 +1,139 @@
+%% Nexus AI Orchestration Model - Shared Registry Usage Map
+%% Rule: a shared item appears in TWO places:
+%%   (1) Shared Registry   -> "what exists in the system"
+%%   (2) Usage mapping      -> "which pipeline / stage / agent uses it"
+%% This repetition is a USAGE relationship, not ownership.
+%% Example usage side: SDLC Pipeline -> verification_loop_bug_finding stage.
+%% Core Abilities are NOT agents and NOT team members (Supervisor included).
+flowchart LR
+
+  %% ============================================================
+  %% LEFT SIDE: SHARED REGISTRY  (what exists in the system)
+  %% ============================================================
+  subgraph REG["Shared Registry — what exists in the system"]
+    direction TB
+
+    subgraph REG_CA["Core Abilities (NOT agents, NOT team members)"]
+      direction TB
+      CA_SUP["Supervisor"]
+      CA_COD["Coder"]
+      CA_MEM["Memory"]
+      CA_OS["OS"]
+      CA_MORE_NOTE["... Vision, Audio, Creative, Web"]
+    end
+
+    subgraph REG_SK["Skills"]
+      direction TB
+      SK_VL["verification-loop (bug/defect finding)"]
+      SK_PRISM["prism (divergent / brainstorming)"]
+      SK_MORE_NOTE["... sentinel, llm-council, fmea, ..."]
+    end
+
+    subgraph REG_TL["Tools"]
+      direction TB
+      TL_RDR["repo_diff_reader"]
+      TL_TR["test_runner"]
+      TL_DT["defect_tracker"]
+      TL_AW["artifact_writer"]
+      TL_EW["evidence_writer"]
+    end
+
+    subgraph REG_GOV["Governance Profiles"]
+      direction TB
+      GOV_VLG["verification_loop_bug_gate"]
+      GOV_MORE_NOTE["... no_self_approval_policy, ..."]
+    end
+
+    subgraph REG_AUD["Audit Schemas (evidence != trace)"]
+      direction TB
+      AUD_BUG["bug_finding_evidence_schema (evidence)"]
+      AUD_TRC["stage_gate_trace_schema (trace)"]
+    end
+
+    subgraph REG_MP["Model / Provider Profiles"]
+      direction TB
+      MP_DEF["defect_analysis_model"]
+      MP_MORE_NOTE["... sdlc_reasoning_profile, ..."]
+    end
+
+    subgraph REG_CM["Context / Memory Profiles"]
+      direction TB
+      CM_VER["verification_context_pack"]
+      CM_RUN["sdlc_run_context"]
+    end
+  end
+
+  %% ============================================================
+  %% RIGHT SIDE: USAGE  (who / which stage / which agent uses it)
+  %% Top structure is Nexus AI; SDLC is ONE pipeline (not the top).
+  %% ============================================================
+  subgraph USE["Usage Mapping — who uses it"]
+    direction TB
+
+    NEXUS["Nexus AI Orchestration Model"]
+    PIPE["SDLC Pipeline (one pipeline under Nexus AI)"]
+
+    subgraph STAGE["Stage: verification_loop_bug_finding"]
+      direction TB
+      ST_TEAM["owner_team: sdlc_team / team_lead: sdlc_team_lead"]
+      ST_OWNER["owner_agent: qa_agent (pipeline Agent role)"]
+      ST_SUB["sub_agent: bug_hunter_subagent"]
+
+      U_CA["uses_core_abilities: Coder, Memory, OS"]
+      U_SK["uses_skills: verification-loop"]
+      U_TL["uses_tools: repo_diff_reader, test_runner, defect_tracker, artifact_writer, evidence_writer"]
+      U_GOV["uses_governance_profiles: verification_loop_bug_gate"]
+      U_AUD["uses_audit_schemas: bug_finding_evidence_schema, stage_gate_trace_schema"]
+      U_MP["uses_model_provider_profiles: defect_analysis_model"]
+      U_CM["uses_context_memory_profiles: verification_context_pack"]
+    end
+  end
+
+  %% ---- Usage-side internal structure (containment / ownership) ----
+  NEXUS --> PIPE
+  PIPE --> STAGE
+  ST_TEAM --> ST_OWNER
+  ST_OWNER --> ST_SUB
+
+  %% ============================================================
+  %% SAME-ITEM links: registry item  -.used by.->  usage entry
+  %% Dashed = "this exact registry item also appears here as usage"
+  %% ============================================================
+  CA_COD  -.->|used by| U_CA
+  CA_MEM  -.->|used by| U_CA
+  CA_OS   -.->|used by| U_CA
+
+  SK_VL   -.->|used by| U_SK
+
+  TL_RDR  -.->|used by| U_TL
+  TL_TR   -.->|used by| U_TL
+  TL_DT   -.->|used by| U_TL
+  TL_AW   -.->|used by| U_TL
+  TL_EW   -.->|used by| U_TL
+
+  GOV_VLG -.->|used by| U_GOV
+
+  AUD_BUG -.->|used by| U_AUD
+  AUD_TRC -.->|used by| U_AUD
+
+  MP_DEF  -.->|used by| U_MP
+
+  CM_VER  -.->|used by| U_CM
+
+  %% Note: Supervisor stays a Core Ability in the registry; it is NOT
+  %% sdlc_team_lead and is NOT an owner_agent, so it has no usage link here.
+
+  %% ============================================================
+  %% Styling
+  %% ============================================================
+  classDef registry fill:#eef4ff,stroke:#3b6fb5,stroke-width:1px,color:#10243f;
+  classDef ability fill:#fff4e6,stroke:#cc7a00,stroke-width:1px,color:#3d2400;
+  classDef usage fill:#eaf7ee,stroke:#2e8b57,stroke-width:1px,color:#0f3d23;
+  classDef note fill:#f5f5f5,stroke:#bcbcbc,stroke-dasharray:3 3,color:#555555;
+  classDef anchor fill:#f3e8ff,stroke:#7b3fb5,stroke-width:1px,color:#2c0f47;
+
+  class CA_SUP,CA_COD,CA_MEM,CA_OS ability;
+  class SK_VL,SK_PRISM,TL_RDR,TL_TR,TL_DT,TL_AW,TL_EW,GOV_VLG,AUD_BUG,AUD_TRC,MP_DEF,CM_VER,CM_RUN registry;
+  class U_CA,U_SK,U_TL,U_GOV,U_AUD,U_MP,U_CM,ST_TEAM,ST_OWNER,ST_SUB usage;
+  class NEXUS,PIPE anchor;
+  class CA_MORE_NOTE,SK_MORE_NOTE,GOV_MORE_NOTE,MP_MORE_NOTE note;

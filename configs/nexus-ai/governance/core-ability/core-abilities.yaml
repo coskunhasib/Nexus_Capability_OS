@@ -1,0 +1,946 @@
+# Nexus AI Orchestration Model — Core Ability Governance (APPLIED CONFIG LAYER)
+#
+# Phase E / doc 19 (19-governance-audit-readiness-plan.md §8). Machine-readable
+# documentation / blueprint ONLY — NO runtime code, NO merge, NO deploy.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE IS
+#   The Phase C registry configs/nexus-ai/governance_profiles.yaml is the CATALOG of WHAT
+#   governance profiles exist (scope: core_ability holds the 03 §7 examples as candidates).
+#   THIS file is the APPLIED, GRANULAR core-ability governance layer: it takes those catalog
+#   profiles and expands each into a fully-populated doc-19 §4 profile with doc-19 §5 RULES so
+#   that a runtime can EVALUATE required gates from config (doc 19 §15 exit criterion).
+#   It does not duplicate the registry; it implements it at the core_ability scope.
+#
+# SCOPE: core_ability ONLY. Exactly 8 profiles — one per locked Core Ability (K-003):
+#   Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS (doc 19 §8).
+#
+# ---------------------------------------------------------------------------
+# LOCKED DECISIONS honored here (.memory/0002-locked-decisions.md):
+#   - K-001 Plugin is CANCELLED and never reintroduced. No plugin concept appears here.
+#   - K-003/K-004 Core Abilities are a shared CAPABILITY layer — NOT agents, NOT teams,
+#       NOT SDLC team members. applies_to references the ability; allowed_callers are the
+#       Agent-tier ROLES that call it. A Core Ability is NEVER an allowed_caller / owner.
+#   - K-006 Supervisor (Core Ability) != sdlc_team_lead / any *_team_lead. Supervisor REASONS
+#       about routing; it never holds the team_lead role and never self-approves.
+#   - K-011/D-014 Web, OS, Memory remain Core Abilities; their callable operations are TOOLS in
+#       configs/nexus-ai/tools_registry.yaml. Rules here TIE to those tool ids; they do not
+#       redefine the tools.
+#   - Concept boundaries: Governance != Audit ; Evidence != Trace. This file carries GOVERNANCE
+#       (policy/gates/permissions/risk rules) only. It REFERENCES audit schemas (evidence_schema /
+#       trace_schema ids) under required_evidence / required_trace but defines none — and never
+#       merges an evidence schema with a trace schema (they live in separate audit dirs:
+#       configs/nexus-ai/audit/evidence_schemas/ vs configs/nexus-ai/audit/trace_schemas/).
+#
+# ---------------------------------------------------------------------------
+# RISK ORDERING (doc 19 §8 hard rule): "OS and Web must have higher default risk than pure
+# reasoning abilities." Enforced via severity_default + default_risk_level below:
+#   high  : OS (filesystem write + shell + process exec — HIGHEST), Web (external network egress)
+#   medium: Memory (durable-store mutation via memory_write)
+#   low   : Supervisor, Coder, Vision, Audio, Creative (pure reasoning/perception — no exclusive I/O)
+# The ordering is asserted machine-checkably in `validation.risk_ordering` at the foot of this file.
+#
+# ---------------------------------------------------------------------------
+# PROFILE CONTRACT (doc 19 §4) — every profile carries:
+#   governance_profile_id, scope, purpose, applies_to, severity_default, rules,
+#   required_evidence, required_trace, owner, escalation
+# RULE CONTRACT (doc 19 §5) — every rule carries:
+#   rule_id, description, severity, required_when, pass_condition, fail_condition,
+#   on_fail, rework_route, evidence_required, trace_required
+#
+# severity vocabulary (doc 19 §5): blocker | major | advisory | informational
+#
+# ---------------------------------------------------------------------------
+# RECONCILIATION (doc 19) applied here:
+#   (a) no_self_approval and evidence_required are referenced as FIRST-CLASS canonical ids
+#       (the *_policy spellings are aliases, recorded in governance_profiles.yaml — not re-spelled).
+#   (b) Core Abilities are referenced by registry id (lowercase: supervisor/coder/.../os) as the
+#       primary key; the capitalized Name (Supervisor/Coder/.../OS) is kept as `core_ability_name`
+#       label. Neither is broken (doc 19 reconciliation (d)).
+#   (c) Registry candidate governance ids (orchestration_governance, vision_governance,
+#       audio_governance, creative_governance) are PROMOTED to applied profiles here under the same
+#       id; their status stays candidate until ratified (validation block records this).
+#
+# NAMING NOTE — referenced audit-schema ids:
+#   Existing trace_schema ids reused: stage_gate_trace_schema, gate_decision_trace_schema,
+#     release_decision_trace_schema, code_change_trace_schema, memory_update_trace_schema (all
+#     defined in configs/nexus-ai/audit_schemas.yaml).
+#   Candidate (referenced by core_abilities.yaml / tools_registry.yaml but NOT yet defined as full
+#     schema entries): core_ability_invocation_trace_schema, tool_call_trace_schema,
+#     source_fetch_trace_schema. They are marked `(candidate)` inline and surfaced in
+#     open_questions; their full definitions belong to the Audit Schemas layer
+#     (configs/nexus-ai/audit/trace_schemas/, doc 19 §13).
+
+config_id: nexus_ai_core_ability_governance
+config_name: Nexus AI — Core Ability Governance (Applied)
+config_version: draft-0.1
+config_status: draft
+layer: governance
+scope: core_ability
+top_structure: nexus_ai_orchestration_model
+no_plugin: true
+
+# Sources scanned to build this applied layer (read from disk, Phase E scope).
+sources:
+  readiness_plan: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md          # §4 profile contract, §5 rule contract, §8 core-ability minimum, §14 validation
+  governance_audit_layering: docs/ai-sdlc-factory/03-governance-and-audit-layering.md  # §7 Core Ability Governance; §9 tool sandbox/timeout/trace; §10-12 Evidence/Trace
+  governance_registry: configs/nexus-ai/governance_profiles.yaml                       # scope: core_ability catalog (code_generation/web_access/system_access/memory_access governance) + global policies
+  core_abilities_registry: configs/nexus-ai/core_abilities.yaml                        # the 8 abilities: exposed_tools, governance_profiles, audit_schemas, default_risk_level, allowed_callers
+  tools_registry: configs/nexus-ai/tools_registry.yaml                                 # tool risk_level/requires_sandbox/side_effects/governance_profiles for the rule tie-ins
+  audit_schemas_registry: configs/nexus-ai/audit_schemas.yaml                          # evidence_schema / trace_schema ids referenced under required_evidence / required_trace
+  team_lead_roles: configs/nexus-ai/team_lead_roles.yaml                               # owner/escalation authority roles (skill_governance_team_lead etc.)
+
+# Vocabularies (doc 19 §4/§5).
+scope_vocabulary: [global, pipeline, team, stage, core_ability, skill, tool]
+severity_vocabulary: [blocker, major, advisory, informational]
+risk_level_vocabulary: [low, medium, high]
+
+# Cross-cutting policies every core-ability profile inherits (referenced as first-class canonical
+# ids per reconciliation (a); owned by governance_profiles.yaml scope: global). Listed once here to
+# avoid repeating the chain on every profile; each profile still names the ones it specifically binds.
+inherited_global_policies:
+  - trace_required               # every governed core-ability invocation emits a trace (03 §3)
+  - no_secret_exposure           # no core ability may read/emit raw secrets
+  - raw_credential_redaction     # credential material masked in any emitted artifact/trace
+  - no_policy_bypass             # a core ability may not be used to bypass a blocking gate
+  - high_risk_action_default_deny # high-risk/destructive actions default-deny
+  - evidence_required            # canonical id (alias: evidence_required_policy) — gate decisions need evidence
+  - no_self_approval             # canonical id (alias: no_self_approval_policy) — producer != approver
+
+# =====================================================================================
+# CORE ABILITY GOVERNANCE PROFILES — exactly 8 (doc 19 §8).
+# Ordered: pure-reasoning (low) first, then Memory (medium), then Web & OS (high) so the
+# risk escalation is legible top-to-bottom.
+# =====================================================================================
+core_ability_governance_profiles:
+
+  # -------------------------------------------------------------------------------------
+  # 1. SUPERVISOR — orchestration / routing reasoning. LOW risk (no exclusive I/O tools).
+  #    HARD: never an Agent; never a team_lead (K-006). Reconciliation: promotes the
+  #    candidate `orchestration_governance` (core_abilities.yaml supervisor.governance_profiles).
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: orchestration_governance
+    registry_status: candidate                 # candidate in governance_profiles.yaml; promoted to applied here
+    core_ability_id: supervisor
+    core_ability_name: Supervisor              # capitalized label kept (reconciliation (d)); id is the key
+    scope: core_ability
+    default_risk_level: low                     # pure reasoning — no environment/repo mutation, no raw-secret read
+    purpose: >-
+      Usage governance for the Supervisor Core Ability: it may REASON over upstream gate results,
+      choose rework targets, and arbitrate model/provider routing — but it may never self-approve a
+      routing/aggregation decision, never override a blocking gate, never act as a team_lead, and
+      never perform a release/deploy action (K-006; 06 §3 no_self_approval / no_policy_bypass).
+    applies_to:
+      core_ability: supervisor
+      exposed_tools: []                         # pure-reasoning ability: no exclusive callable tools
+      callers:                                  # Agent-tier ROLES that CALL the ability (never the ability itself)
+        - sdlc_team_lead
+        - research_team_lead
+        - activation_team_lead
+        - operations_team_lead
+        - skill_governance_team_lead
+        - knowledge_team_lead
+        - pipeline_orchestration_layer
+    severity_default: blocker
+    rules:
+      - rule_id: supervisor_no_self_approval
+        description: >-
+          The Supervisor may not be the sole approver of a routing/aggregation/go-no-go decision it
+          produced: producer reasoning context != approver of the resulting gate decision.
+        severity: blocker
+        required_when: supervisor_reasons_over_a_gate_or_routing_decision
+        pass_condition: decision_approver_role_differs_from_the_producing_reasoning_context
+        fail_condition: supervisor_output_is_self_approved_as_the_gate_decision
+        on_fail: block_decision
+        rework_route: route_to_distinct_approver_role
+        evidence_required: [gate_result_evidence]            # decision proof (Evidence family)
+        trace_required: [gate_decision_trace_schema]         # decision lineage (Trace family)
+      - rule_id: supervisor_never_bypasses_blocking_gate
+        description: >-
+          Supervisor routing/arbitration may not override, skip, or "pass" a blocking governance gate
+          (no_policy_bypass). Routing reorders/selects rework; it never forces a blocked gate to pass.
+        severity: blocker
+        required_when: a_blocking_gate_is_open_in_the_routed_path
+        pass_condition: blocking_gate_satisfied_before_progression
+        fail_condition: blocking_gate_overridden_or_skipped_by_routing
+        on_fail: block_progression
+        rework_route: return_to_failing_gate_owner
+        evidence_required: [gate_result_evidence]
+        trace_required: [gate_decision_trace_schema]
+      - rule_id: supervisor_is_never_team_lead_or_agent
+        description: >-
+          The Supervisor ability may never be declared as an Agent, owner_agent, sub_agent, or any
+          *_team_lead. The orchestrator ROLES in applies_to.callers call it; they are not it (K-006).
+        severity: blocker
+        required_when: any_role_or_owner_binding_references_supervisor
+        pass_condition: supervisor_appears_only_as_a_core_ability_capability_never_as_role_or_owner
+        fail_condition: supervisor_declared_as_agent_owner_subagent_or_team_lead
+        on_fail: reject_binding
+        rework_route: reassign_to_an_agent_tier_role
+        evidence_required: [role_binding_evidence]
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate) supervisor invocation lineage
+      - rule_id: supervisor_no_release_or_deploy_action
+        description: >-
+          Supervisor reasons about go/no-go but performs no release or deploy action itself; the
+          release decision is owned by the release role and gated by release_candidate_governance.
+        severity: blocker
+        required_when: a_release_or_deploy_action_is_about_to_execute
+        pass_condition: release_deploy_executed_by_release_role_under_release_governance_not_by_supervisor
+        fail_condition: supervisor_performs_a_release_or_deploy_action
+        on_fail: block_action
+        rework_route: route_to_release_role
+        evidence_required: [release_decision_evidence]
+        trace_required: [release_decision_trace_schema]
+      - rule_id: supervisor_invocation_traced
+        description: Every Supervisor invocation (routing/arbitration/aggregation reasoning) emits a trace.
+        severity: major
+        required_when: supervisor_is_invoked
+        pass_condition: invocation_trace_emitted
+        fail_condition: invocation_untraced
+        on_fail: flag_untraced_invocation
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+    required_evidence:                          # Evidence family (decision proofs) — kept distinct from trace
+      - gate_result_evidence
+      - release_decision_evidence
+      - role_binding_evidence
+    required_trace:                             # Trace family (operation history) — kept distinct from evidence
+      - core_ability_invocation_trace_schema    # (candidate)
+      - gate_decision_trace_schema
+      - release_decision_trace_schema
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead      # governance-owning authority; resolves a contested core-ability binding/finding
+    notes: >-
+      LOW risk: Supervisor mutates no environment/repo and reads no raw secrets. The strict rules here
+      are about authority separation (no self-approval / no bypass / never team_lead), not I/O risk.
+      Mirrors core_abilities.yaml supervisor.governance_profiles (orchestration_governance +
+      no_self_approval + no_policy_bypass + evidence_required).
+
+  # -------------------------------------------------------------------------------------
+  # 2. CODER — software-engineering reasoning. LOW risk (owns no I/O tools; repo/test side
+  #    effects are OS-provided). Promotes canonical `code_generation_governance`.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: code_generation_governance
+    registry_status: candidate                 # candidate in governance_profiles.yaml scope: core_ability
+    core_ability_id: coder
+    core_ability_name: Coder
+    scope: core_ability
+    default_risk_level: low                      # reasoning capability; every repo mutation goes through an OS tool with trace
+    purpose: >-
+      Usage governance for the Coder Core Ability: read/diff/reason over code, decompose tasks,
+      synthesize tests, and interpret scanner/coverage output. Coder supplies engineering judgement;
+      it owns no I/O — any repository/environment mutation MUST go through an OS tool with a trace
+      (no_silent_mutation), and Coder may not approve a changeset authored under the same owner role.
+    applies_to:
+      core_ability: coder
+      exposed_tools: []                         # no exclusive tools; engineering side-effects are OS-provided
+      delegated_tool_owner: os                  # repo/file/shell/process side effects are owned by the OS ability
+      callers:
+        - engineering_agent
+        - code_reviewer_agent
+        - qa_agent
+        - security_validation_agent
+        - contract_validation_agent
+        - data_migration_agent
+        - performance_resilience_agent
+        - operations_readiness_agent
+        - compliance_agent
+        - privacy_agent
+        - architecture_agent
+    severity_default: blocker
+    rules:
+      - rule_id: coder_no_silent_mutation
+        description: >-
+          Coder reasoning may not mutate the repository or environment directly; every mutation is
+          performed by an explicit OS tool (file_write/shell_exec/process_run) and emits a trace.
+        severity: blocker
+        required_when: coder_reasoning_would_change_repo_or_environment_state
+        pass_condition: mutation_performed_via_an_os_tool_with_a_trace
+        fail_condition: repo_or_environment_mutated_without_an_explicit_os_tool_and_trace
+        on_fail: block_mutation
+        rework_route: route_mutation_through_os_tool
+        evidence_required: [implementation_evidence]
+        trace_required: [code_change_trace_schema]
+      - rule_id: coder_no_secret_read
+        description: Coder reasoning may not surface, log, or emit raw secrets/credentials from code or scanner output.
+        severity: blocker
+        required_when: coder_processes_content_that_may_contain_secrets
+        pass_condition: no_raw_secret_surfaced_credentials_redacted
+        fail_condition: raw_secret_or_credential_emitted
+        on_fail: block_and_redact
+        rework_route: redact_then_continue
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+      - rule_id: coder_no_self_approval_of_changeset
+        description: >-
+          Coder may not approve a changeset authored under the same owner role: the code-review gate
+          owner (code_reviewer_agent) must differ from the changeset author (engineering_agent).
+        severity: blocker
+        required_when: a_changeset_is_being_approved
+        pass_condition: review_gate_owner_role_differs_from_changeset_author_role
+        fail_condition: changeset_approved_by_its_own_author_role
+        on_fail: block_approval
+        rework_route: route_to_code_review_gate
+        evidence_required: [code_review_evidence]
+        trace_required: [code_change_trace_schema]
+      - rule_id: coder_invocation_traced
+        description: Every Coder invocation emits a trace (engineering reasoning is a governed action).
+        severity: major
+        required_when: coder_is_invoked
+        pass_condition: invocation_trace_emitted
+        fail_condition: invocation_untraced
+        on_fail: flag_untraced_invocation
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+    required_evidence:
+      - implementation_evidence
+      - code_review_evidence
+    required_trace:
+      - core_ability_invocation_trace_schema    # (candidate)
+      - code_change_trace_schema
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead
+    notes: >-
+      LOW risk because Coder owns no I/O tools; its blocker rules enforce the boundary that all
+      mutation flows through OS tools (no_silent_mutation) and that authoring != approving. Mirrors
+      core_abilities.yaml coder.governance_profiles (code_generation_governance + no_secret_read +
+      no_silent_mutation).
+
+  # -------------------------------------------------------------------------------------
+  # 3. VISION — visual perception/reasoning. LOW risk. Promotes candidate `vision_governance`.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: vision_governance
+    registry_status: candidate
+    core_ability_id: vision
+    core_ability_name: Vision
+    scope: core_ability
+    default_risk_level: low                      # perception/reasoning; capture is an OS-provided auditor tool
+    purpose: >-
+      Usage governance for the Vision Core Ability: inspect rendered UI (contrast/focus/layout/visual
+      state) and reason over images. Vision supplies visual judgement; the capture/render is an
+      OS-provided auditor tool. Vision may not extract secrets/PII from rendered content and may not
+      render a gate pass without evidence.
+    applies_to:
+      core_ability: vision
+      exposed_tools: []                         # capture tools (accessibility_auditor/contrast_checker) are OS-provided
+      callers:
+        - accessibility_ux_agent
+    severity_default: blocker
+    rules:
+      - rule_id: vision_no_secret_or_pii_extraction
+        description: Vision may not extract secrets or PII from rendered/visual content.
+        severity: blocker
+        required_when: vision_inspects_rendered_content
+        pass_condition: no_secret_or_pii_extracted
+        fail_condition: secret_or_pii_extracted_from_rendered_content
+        on_fail: block_and_redact
+        rework_route: redact_then_continue
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+      - rule_id: vision_no_pass_without_evidence
+        description: >-
+          Vision may not render an accessibility/UX gate pass decision without an accompanying
+          evidence record (evidence_required).
+        severity: blocker
+        required_when: vision_supports_a_gate_pass_decision
+        pass_condition: gate_pass_backed_by_accessibility_evidence
+        fail_condition: gate_pass_rendered_with_no_evidence
+        on_fail: block_decision
+        rework_route: require_evidence_then_reassess
+        evidence_required: [accessibility_evidence]
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: vision_invocation_traced
+        description: Every Vision invocation emits a trace.
+        severity: major
+        required_when: vision_is_invoked
+        pass_condition: invocation_trace_emitted
+        fail_condition: invocation_untraced
+        on_fail: flag_untraced_invocation
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+    required_evidence:
+      - accessibility_evidence
+    required_trace:
+      - core_ability_invocation_trace_schema    # (candidate)
+      - stage_gate_trace_schema
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead
+    notes: >-
+      LOW risk: perception/reasoning only; bound by the conditional accessibility/UX stage. Mirrors
+      core_abilities.yaml vision.governance_profiles (vision_governance + no_secret_read).
+
+  # -------------------------------------------------------------------------------------
+  # 4. AUDIO — audio perception/reasoning. LOW risk. Promotes candidate `audio_governance`.
+  #    Locked-canonical NAME, currently unused by any pipeline/stage.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: audio_governance
+    registry_status: candidate
+    core_ability_id: audio
+    core_ability_name: Audio
+    scope: core_ability
+    default_risk_level: low                      # perception/reasoning; no callable tools defined yet
+    unused_in_current_pipelines: true            # locked name (K-003); no current pipeline/stage binds it
+    purpose: >-
+      Usage governance for the Audio Core Ability: transcribe/analyze/reason over speech and audio.
+      Reserved locked ability; no current pipeline binds it. Audio may not surface secrets/PII from
+      audio content and may not render a gate pass without evidence once bound.
+    applies_to:
+      core_ability: audio
+      exposed_tools: []                         # capture/transcription tools would be OS-provided when a pipeline binds Audio
+      callers: []                               # none in the current catalog
+    severity_default: blocker
+    rules:
+      - rule_id: audio_no_secret_or_pii_extraction
+        description: Audio may not extract or surface secrets/PII from audio content.
+        severity: blocker
+        required_when: audio_processes_audio_content
+        pass_condition: no_secret_or_pii_surfaced
+        fail_condition: secret_or_pii_surfaced_from_audio
+        on_fail: block_and_redact
+        rework_route: redact_then_continue
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+      - rule_id: audio_no_pass_without_evidence
+        description: Once bound, Audio may not support a gate pass decision without an evidence record.
+        severity: blocker
+        required_when: audio_supports_a_gate_pass_decision
+        pass_condition: gate_pass_backed_by_evidence
+        fail_condition: gate_pass_rendered_with_no_evidence
+        on_fail: block_decision
+        rework_route: require_evidence_then_reassess
+        evidence_required: [audio_analysis_evidence]   # (candidate) — to be defined when a pipeline binds Audio
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: audio_invocation_traced
+        description: Every Audio invocation emits a trace.
+        severity: major
+        required_when: audio_is_invoked
+        pass_condition: invocation_trace_emitted
+        fail_condition: invocation_untraced
+        on_fail: flag_untraced_invocation
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+    required_evidence:
+      - audio_analysis_evidence                  # (candidate) — defined when Audio is bound
+    required_trace:
+      - core_ability_invocation_trace_schema     # (candidate)
+      - stage_gate_trace_schema
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead
+    notes: >-
+      LOW risk; locked-canonical NAME but UNUSED in the current catalog. Profile authored now so the
+      core_ability scope is fully covered (doc 19 §8 lists Audio); ratify with its model/evidence when
+      a pipeline binds Audio. Mirrors core_abilities.yaml audio.governance_profiles.
+
+  # -------------------------------------------------------------------------------------
+  # 5. CREATIVE — creative generation. LOW risk. Promotes candidate `creative_governance`.
+  #    Locked-canonical NAME, currently unused by any pipeline/stage.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: creative_governance
+    registry_status: candidate
+    core_ability_id: creative
+    core_ability_name: Creative
+    scope: core_ability
+    default_risk_level: low                      # generation/reasoning; no callable tools defined yet
+    unused_in_current_pipelines: true            # locked name (K-003); no current pipeline/stage binds it
+    purpose: >-
+      Usage governance for the Creative Core Ability: generate and reason over creative/multi-format
+      artifacts. Reserved locked ability; no current pipeline binds it. Generated artifacts may not
+      embed secrets/PII, and creative output may not stand in as a gate pass without evidence.
+    applies_to:
+      core_ability: creative
+      exposed_tools: []                         # any generation/export tools would be OS-provided when bound
+      callers: []                               # none in the current catalog
+    severity_default: blocker
+    rules:
+      - rule_id: creative_no_secret_or_pii_in_artifacts
+        description: Creative-generated artifacts may not embed secrets, credentials, or PII.
+        severity: blocker
+        required_when: creative_generates_an_artifact
+        pass_condition: generated_artifact_contains_no_secret_or_pii
+        fail_condition: secret_or_pii_embedded_in_generated_artifact
+        on_fail: block_and_redact
+        rework_route: redact_then_regenerate
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+      - rule_id: creative_output_is_not_a_gate_pass
+        description: >-
+          Creative output is content, not a governance decision; it may not be treated as a gate
+          pass/approval without an explicit evidence-backed decision by an owning role.
+        severity: major
+        required_when: creative_output_is_used_in_a_gate_decision
+        pass_condition: gate_decision_backed_by_evidence_and_owned_by_an_agent_role
+        fail_condition: creative_output_treated_as_the_gate_pass_itself
+        on_fail: block_decision
+        rework_route: route_to_owning_agent_with_evidence
+        evidence_required: [creative_output_evidence]   # (candidate) — defined when Creative is bound
+        trace_required: [stage_gate_trace_schema]
+      - rule_id: creative_invocation_traced
+        description: Every Creative invocation emits a trace.
+        severity: major
+        required_when: creative_is_invoked
+        pass_condition: invocation_trace_emitted
+        fail_condition: invocation_untraced
+        on_fail: flag_untraced_invocation
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+    required_evidence:
+      - creative_output_evidence                 # (candidate) — defined when Creative is bound
+    required_trace:
+      - core_ability_invocation_trace_schema     # (candidate)
+      - stage_gate_trace_schema
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead
+    notes: >-
+      LOW risk; locked-canonical NAME but UNUSED (content_pipeline is the likely future consumer).
+      Authored now to fully cover the core_ability scope (doc 19 §8). Mirrors core_abilities.yaml
+      creative.governance_profiles (creative_governance + no_secret_read).
+
+  # -------------------------------------------------------------------------------------
+  # 6. MEMORY — long-term memory/recall. MEDIUM risk (memory_write mutates a durable store).
+  #    Promotes canonical `memory_access_governance`. Tied to exposed Memory tools.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: memory_access_governance
+    registry_status: candidate                 # candidate in governance_profiles.yaml scope: core_ability
+    core_ability_id: memory
+    core_ability_name: Memory
+    scope: core_ability
+    default_risk_level: medium                   # higher than pure-reasoning (durable-store mutation) but below Web/OS egress/exec
+    purpose: >-
+      Usage governance for the Memory Core Ability: search/summarize/recall (read-only) and persist
+      curated learning via memory_write (durable mutation). Read paths are low-risk; memory_write
+      mutates a durable store and therefore requires an explicit tool + trace + redaction. Memory may
+      not surface raw secrets from stored memory, and persisted items require provenance + validity.
+      Memory (the ability) is NOT the Context/Memory Profiles registry (separate working-context store).
+    applies_to:
+      core_ability: memory
+      exposed_tools:                            # exact ids + order from core_abilities.yaml memory.exposed_tools (K-011/D-014)
+        - memory_search                         # read-only recall (tools_registry: risk_level low, requires_sandbox false)
+        - memory_write                          # SIDE-EFFECT: durable store mutation (tools_registry: risk_level high, requires_sandbox true)
+        - memory_summarize                      # read-only summarization
+        - context_recall                        # read-only working-context recall
+      side_effecting_tools:
+        - memory_write
+      read_only_tools:
+        - memory_search
+        - memory_summarize
+        - context_recall
+      callers:
+        - all_sdlc_agents                       # Memory is bound by all 31 SDLC stages
+        - research_intake_agent
+        - knowledge_memory_agents
+        - operations_agents
+        - skill_librarian_agent
+    severity_default: blocker
+    rules:
+      - rule_id: memory_write_no_silent_mutation
+        description: >-
+          A durable memory mutation must go through the memory_write tool and emit a trace; no memory
+          state may change silently (no_silent_mutation). Read paths (memory_search/summarize/
+          context_recall) are exempt as they perform no mutation.
+        severity: blocker
+        required_when: a_durable_memory_item_is_being_persisted
+        pass_condition: persisted_via_memory_write_tool_with_a_trace
+        fail_condition: memory_state_changed_without_memory_write_and_trace
+        on_fail: block_write
+        rework_route: route_write_through_memory_write_tool
+        evidence_required: [memory_provenance_evidence]
+        trace_required: [memory_update_trace_schema]
+      - rule_id: memory_write_requires_provenance_and_validity
+        description: >-
+          A memory_write must carry provenance and a validity window; unscoped/unsourced writes are
+          rejected (knowledge-memory-pipeline lifecycle requirement).
+        severity: blocker
+        required_when: memory_write_is_invoked
+        pass_condition: memory_item_has_provenance_and_validity_window
+        fail_condition: memory_item_missing_provenance_or_validity_window
+        on_fail: reject_write
+        rework_route: require_provenance_and_validity_then_retry
+        evidence_required: [memory_provenance_evidence]
+        trace_required: [memory_update_trace_schema]
+      - rule_id: memory_no_secret_read
+        description: Stored or recalled memory may not surface raw secrets/credentials; sensitive content is redacted.
+        severity: blocker
+        required_when: memory_reads_or_writes_potentially_sensitive_content
+        pass_condition: no_raw_secret_surfaced_sensitive_content_redacted
+        fail_condition: raw_secret_surfaced_from_or_into_memory
+        on_fail: block_and_redact
+        rework_route: redact_then_continue
+        evidence_required: []
+        trace_required: [memory_update_trace_schema]
+      - rule_id: memory_not_an_agent
+        description: >-
+          Memory is a Core Ability; it may never be declared as an Agent/owner/sub_agent, and it must
+          not be conflated with the Context/Memory Profiles registry (separate working-context store).
+        severity: blocker
+        required_when: any_role_or_owner_binding_references_memory
+        pass_condition: memory_appears_only_as_a_core_ability_capability
+        fail_condition: memory_declared_as_agent_owner_or_conflated_with_context_profiles
+        on_fail: reject_binding
+        rework_route: reassign_to_an_agent_tier_role
+        evidence_required: [role_binding_evidence]
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+      - rule_id: memory_invocation_traced
+        description: Every Memory invocation (read or write) emits a trace.
+        severity: major
+        required_when: memory_is_invoked
+        pass_condition: invocation_trace_emitted
+        fail_condition: invocation_untraced
+        on_fail: flag_untraced_invocation
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+    required_evidence:
+      - memory_provenance_evidence
+      - role_binding_evidence
+    required_trace:
+      - core_ability_invocation_trace_schema     # (candidate)
+      - memory_update_trace_schema
+    owner: nexus_core_abilities
+    escalation: knowledge_team_lead              # the knowledge/memory authority owns Memory-store disputes
+    notes: >-
+      MEDIUM risk: read paths are benign, but memory_write mutates a durable store (tools_registry
+      risk_level: high, requires_sandbox: true) — hence no_silent_mutation + provenance/validity +
+      memory_update_trace_schema. Complements (does not replace) the pipeline-scope
+      memory_source_governance. Mirrors core_abilities.yaml memory.governance_profiles
+      (memory_access_governance + no_secret_read + no_silent_mutation).
+
+  # -------------------------------------------------------------------------------------
+  # 7. WEB — external web access. HIGH risk (external network egress). Higher than all
+  #    pure-reasoning + Memory. Promotes canonical `web_access_governance`. Tied to Web tools.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: web_access_governance
+    registry_status: candidate                 # candidate in governance_profiles.yaml scope: core_ability
+    core_ability_id: web
+    core_ability_name: Web
+    scope: core_ability
+    default_risk_level: high                      # external network egress -> HIGHER default risk than reasoning/Memory (doc 19 §8)
+    purpose: >-
+      Usage governance for the Web Core Ability: search/fetch/scrape external sources. External
+      network egress makes Web a HIGH-risk ability: every egress is sandboxed and traced, outbound
+      requests may not carry secrets/credentials/PII, and fetched content is untrusted until it has a
+      provenance trace. Tied to the Web tools (web_search/web_fetch/web_scrape), each of which is
+      requires_sandbox: true in the Tools Registry.
+    applies_to:
+      core_ability: web
+      exposed_tools:                            # exact ids from core_abilities.yaml web.exposed_tools (K-011/D-014)
+        - web_search                            # tools_registry: side_effects external_network_read, requires_sandbox true
+        - web_fetch                             # tools_registry: side_effects external_network_read, requires_sandbox true
+        - web_scrape                            # tools_registry: side_effects external_network_read, requires_sandbox true
+      all_tools_require_sandbox: true           # ALL Web tools perform egress -> sandbox mandatory
+      callers:
+        - product_requirements_agent
+        - architecture_agent
+        - security_privacy_agent
+        - security_validation_agent
+        - compliance_agent
+        - contract_validation_agent
+        - accessibility_ux_agent
+        - operations_readiness_agent
+        - research_intake_agent
+        - knowledge_memory_agents
+    severity_default: blocker
+    rules:
+      - rule_id: web_egress_sandboxed
+        description: >-
+          Every Web tool call (web_search/web_fetch/web_scrape) performs network egress and MUST run
+          sandboxed; unsandboxed egress is blocked (ties to requires_sandbox: true on each Web tool).
+        severity: blocker
+        required_when: any_web_tool_performs_network_egress
+        pass_condition: egress_executed_inside_sandbox
+        fail_condition: web_egress_executed_outside_a_sandbox
+        on_fail: block_egress
+        rework_route: re_execute_inside_sandbox
+        evidence_required: []
+        trace_required: [tool_call_trace_schema]                 # (candidate) per-tool call trace
+      - rule_id: web_no_secret_in_outbound_request
+        description: >-
+          Outbound web requests (queries, URLs, headers, scrape payloads) may not contain secrets,
+          credentials, or PII (no_secret_exposure on the egress path).
+        severity: blocker
+        required_when: a_web_request_is_constructed
+        pass_condition: outbound_request_contains_no_secret_credential_or_pii
+        fail_condition: secret_credential_or_pii_present_in_outbound_request
+        on_fail: block_request
+        rework_route: strip_sensitive_data_then_retry
+        evidence_required: []
+        trace_required: [tool_call_trace_schema]                 # (candidate)
+      - rule_id: web_fetched_content_requires_provenance
+        description: >-
+          Fetched/scraped content is untrusted until it carries a provenance trace (publisher, date,
+          access timestamp); it may not feed a decision as trusted without that provenance.
+        severity: major
+        required_when: fetched_or_scraped_content_is_used_downstream
+        pass_condition: content_carries_a_provenance_trace
+        fail_condition: fetched_content_treated_as_trusted_without_provenance
+        on_fail: quarantine_until_provenance_recorded
+        rework_route: record_provenance_then_use
+        evidence_required: [source_evidence]
+        trace_required: [source_fetch_trace_schema]              # (candidate) external-fetch provenance
+      - rule_id: web_invocation_traced
+        description: Every Web ability invocation / tool call emits a trace (egress is a governed action).
+        severity: major
+        required_when: web_is_invoked
+        pass_condition: invocation_and_tool_call_traced
+        fail_condition: web_egress_untraced
+        on_fail: flag_untraced_egress
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema, tool_call_trace_schema]   # (candidate)
+    required_evidence:
+      - source_evidence
+    required_trace:
+      - core_ability_invocation_trace_schema     # (candidate)
+      - tool_call_trace_schema                   # (candidate)
+      - source_fetch_trace_schema                # (candidate)
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead
+    notes: >-
+      HIGH risk (doc 19 §8): external network egress. Strictest of the read/perception abilities —
+      sandbox + no-secret-leak + provenance-on-fetch. All three Web tools are requires_sandbox: true in
+      tools_registry.yaml. Mirrors core_abilities.yaml web.governance_profiles (web_access_governance +
+      no_secret_read) and the tool-level sandbox_execution_governance on each Web tool.
+
+  # -------------------------------------------------------------------------------------
+  # 8. OS — operating-system / execution. HIGHEST risk (filesystem write + shell + process).
+  #    Promotes canonical `system_access_governance` and binds sandbox_execution_governance.
+  #    Tied to OS tools; carries the strictest rule stack.
+  # -------------------------------------------------------------------------------------
+  - governance_profile_id: system_access_governance
+    registry_status: candidate                 # candidate in governance_profiles.yaml scope: core_ability
+    core_ability_id: os
+    core_ability_name: OS
+    scope: core_ability
+    default_risk_level: high                      # filesystem write + shell + process exec -> HIGHEST default risk (doc 19 §8)
+    binds_tool_layer_governance:
+      - sandbox_execution_governance              # doc 03 §9 tool-layer: sandbox + timeout + trace for shell_exec/process_run
+    purpose: >-
+      Usage governance for the OS Core Ability — the HIGHEST-risk ability: read/write files and run
+      shell commands / processes in the sandboxed build environment. Side-effecting OS tools
+      (file_write/shell_exec/process_run) require sandbox + timeout + trace; destructive actions are
+      default-deny and need an explicit policy gate + evidence; the environment may not be mutated
+      silently; and execution may not read/emit raw secrets or perform a production deploy.
+    applies_to:
+      core_ability: os
+      exposed_tools:                            # exact ids from core_abilities.yaml os.exposed_tools (K-011/D-014)
+        - file_read                             # tools_registry: side_effects none, risk_level low, requires_sandbox false
+        - file_write                            # tools_registry: side_effects writes_file_in_sandbox, risk_level high, requires_sandbox true
+        - shell_exec                            # tools_registry: side_effects executes_shell_in_sandbox, risk_level high, requires_sandbox true, timeout required
+        - process_run                           # tools_registry: side_effects executes_process_in_sandbox, risk_level high, requires_sandbox true, timeout required
+      side_effecting_tools:
+        - file_write
+        - shell_exec
+        - process_run
+      read_only_tools:
+        - file_read
+      tools_requiring_timeout:                  # doc 03 §9: shell/process execution needs a timeout
+        - shell_exec
+        - process_run
+      callers:
+        - skill_librarian_agent
+        - engineering_agent
+        - code_reviewer_agent
+        - qa_agent
+        - security_validation_agent
+        - privacy_agent
+        - data_migration_agent
+        - accessibility_ux_agent
+        - performance_resilience_agent
+        - operations_readiness_agent
+        - evidence_graph_agent
+        - refraction_learning_agent
+    severity_default: blocker
+    rules:
+      - rule_id: os_execution_sandboxed_with_timeout
+        description: >-
+          shell_exec and process_run MUST run inside a sandbox with an enforced timeout and a trace
+          (doc 03 §9). Unsandboxed or unbounded execution is blocked. Ties to requires_sandbox: true
+          + the timeout input on these tools.
+        severity: blocker
+        required_when: shell_exec_or_process_run_is_invoked
+        pass_condition: executed_in_sandbox_with_timeout_and_trace
+        fail_condition: execution_outside_sandbox_or_without_timeout_or_trace
+        on_fail: block_execution
+        rework_route: re_execute_in_sandbox_with_timeout
+        evidence_required: [evidence_integrity_report]
+        trace_required: [tool_call_trace_schema]                 # (candidate)
+      - rule_id: os_no_silent_mutation
+        description: >-
+          file_write (and any environment/repo change) must go through an explicit OS tool and emit a
+          trace; no environment/repository state changes silently (no_silent_mutation). file_read is
+          read-only and exempt.
+        severity: blocker
+        required_when: a_file_or_environment_mutation_is_performed
+        pass_condition: mutation_via_explicit_os_tool_with_trace
+        fail_condition: environment_or_repo_mutated_silently
+        on_fail: block_mutation
+        rework_route: route_mutation_through_os_tool
+        evidence_required: [evidence_integrity_report]
+        trace_required: [code_change_trace_schema]
+      - rule_id: os_no_destructive_action_without_gate
+        description: >-
+          Destructive/high-risk OS actions (delete/overwrite/rollback/teardown) are default-deny and
+          require an explicit policy gate + evidence before execution (high_risk_action_default_deny /
+          no_destructive_action_without_gate).
+        severity: blocker
+        required_when: a_destructive_or_high_risk_os_action_is_requested
+        pass_condition: destructive_action_authorized_by_explicit_policy_gate_with_evidence
+        fail_condition: destructive_action_executed_without_a_gate_and_evidence
+        on_fail: deny_action
+        rework_route: require_explicit_policy_gate_and_evidence
+        evidence_required: [evidence_integrity_report]
+        trace_required: [tool_call_trace_schema]                 # (candidate)
+      - rule_id: os_no_secret_read
+        description: OS execution may not read or emit raw secrets/credentials; sensitive material is redacted.
+        severity: blocker
+        required_when: os_execution_touches_potentially_secret_material
+        pass_condition: no_raw_secret_read_or_emitted_credentials_redacted
+        fail_condition: raw_secret_read_or_emitted_during_execution
+        on_fail: block_and_redact
+        rework_route: redact_then_continue
+        evidence_required: []
+        trace_required: [tool_call_trace_schema]                 # (candidate)
+      - rule_id: os_no_production_deploy
+        description: The OS ability may not perform a production deploy; deploy is out of the SDLC sandbox scope.
+        severity: blocker
+        required_when: a_production_deploy_action_is_about_to_execute
+        pass_condition: no_production_deploy_performed_by_os_ability
+        fail_condition: os_ability_performs_a_production_deploy
+        on_fail: block_action
+        rework_route: route_to_owner_governed_release_process
+        evidence_required: [evidence_integrity_report]
+        trace_required: [tool_call_trace_schema]                 # (candidate)
+      - rule_id: os_not_an_agent
+        description: OS is a Core Ability; it may never be declared as an Agent/owner_agent/sub_agent.
+        severity: blocker
+        required_when: any_role_or_owner_binding_references_os
+        pass_condition: os_appears_only_as_a_core_ability_capability
+        fail_condition: os_declared_as_agent_owner_or_subagent
+        on_fail: reject_binding
+        rework_route: reassign_to_an_agent_tier_role
+        evidence_required: [role_binding_evidence]
+        trace_required: [core_ability_invocation_trace_schema]   # (candidate)
+      - rule_id: os_invocation_traced
+        description: Every OS invocation / tool call emits a trace (execution is a governed action).
+        severity: major
+        required_when: os_is_invoked
+        pass_condition: invocation_and_tool_call_traced
+        fail_condition: os_execution_untraced
+        on_fail: flag_untraced_execution
+        rework_route: require_trace_emission
+        evidence_required: []
+        trace_required: [core_ability_invocation_trace_schema, tool_call_trace_schema]   # (candidate)
+    required_evidence:
+      - evidence_integrity_report
+      - role_binding_evidence
+    required_trace:
+      - core_ability_invocation_trace_schema     # (candidate)
+      - tool_call_trace_schema                   # (candidate)
+      - code_change_trace_schema
+    owner: nexus_core_abilities
+    escalation: skill_governance_team_lead
+    notes: >-
+      HIGHEST risk (doc 19 §8): filesystem write + shell + process execution. Carries the strictest
+      stack: system_access_governance + sandbox_execution_governance + the no_silent_mutation /
+      no_destructive_action_without_gate / no_secret_read / no_production_deploy blocker rules. The
+      three side-effecting tools are requires_sandbox: true (and shell_exec/process_run require a
+      timeout) in tools_registry.yaml. Mirrors core_abilities.yaml os.governance_profiles.
+
+# =====================================================================================
+# VALIDATION SUMMARY (doc 19 §14) — self-check assertions for this applied layer.
+# =====================================================================================
+validation:
+  expected_core_ability_profile_count: 8
+  actual_core_ability_profile_count: 8
+  one_profile_per_locked_core_ability: true        # supervisor, coder, vision, audio, creative, memory, web, os
+  every_profile_references_known_scope: true       # all scope: core_ability (scope_vocabulary)
+  every_rule_has_severity: true                    # all rules carry severity in {blocker, major, advisory, informational}
+  every_blocker_rule_has_on_fail: true             # doc 19 §14: every blocker rule defines on_fail behavior
+  evidence_and_trace_kept_distinct: true           # required_evidence (Evidence family) never merged with required_trace (Trace family)
+  no_plugin_governance_introduced: true            # K-001 / doc 19 §14
+  no_core_ability_declared_as_agent: true          # supervisor/memory/os carry explicit not-an-agent rules; all applies_to use callers (roles), never the ability
+  supervisor_is_never_team_lead: true              # supervisor_is_never_team_lead_or_agent rule (K-006)
+  # doc 19 §8 risk hard rule: OS and Web > pure-reasoning abilities.
+  risk_ordering:
+    high:   [os, web]                              # os highest (fs+shell+process), web (network egress)
+    medium: [memory]                               # durable-store mutation via memory_write
+    low:    [supervisor, coder, vision, audio, creative]   # pure reasoning/perception, no exclusive I/O
+    os_and_web_higher_than_reasoning_abilities: true
+  promoted_from_registry_candidates:               # reconciliation (c): registry candidate ids promoted to applied profiles
+    - orchestration_governance
+    - vision_governance
+    - audio_governance
+    - creative_governance
+  canonical_registry_profiles_applied:
+    - code_generation_governance
+    - memory_access_governance
+    - web_access_governance
+    - system_access_governance
+  unused_but_locked_canonical:
+    - audio
+    - creative
+  # Audit-schema ids referenced under required_evidence/required_trace that are NOT yet defined as
+  # full entries in the Audit Schemas layer (configs/nexus-ai/audit/{evidence_schemas,trace_schemas}/
+  # or audit_schemas.yaml). Surfaced as open questions; their definitions are a separate doc-19 §13 output.
+  referenced_audit_schema_candidates:
+    trace:
+      - core_ability_invocation_trace_schema
+      - tool_call_trace_schema
+      - source_fetch_trace_schema
+    evidence:
+      - gate_result_evidence
+      - release_decision_evidence
+      - role_binding_evidence
+      - audio_analysis_evidence
+      - creative_output_evidence
+  referenced_audit_schemas_existing:               # already defined in configs/nexus-ai/audit_schemas.yaml
+    trace:
+      - stage_gate_trace_schema
+      - gate_decision_trace_schema
+      - release_decision_trace_schema
+      - code_change_trace_schema
+      - memory_update_trace_schema
+    evidence:
+      - implementation_evidence            # implementation_evidence_schema
+      - code_review_evidence               # code_review_evidence_schema
+      - accessibility_evidence             # accessibility_evidence_schema
+      - source_evidence                    # source_evidence_schema
+      - memory_provenance_evidence         # memory_provenance_schema
+      - evidence_integrity_report          # evidence_integrity_report_schema
+
+# =====================================================================================
+# OPEN QUESTIONS — for the Phase E governance/audit readiness review (doc 19 §13 review output).
+# =====================================================================================
+open_questions:
+  - id: OQ-CAG-1
+    question: >-
+      core_ability_invocation_trace_schema, tool_call_trace_schema, and source_fetch_trace_schema are
+      referenced by core_abilities.yaml / tools_registry.yaml but are NOT yet defined as full schema
+      entries. They must be authored in the Audit Schemas trace layer
+      (configs/nexus-ai/audit/trace_schemas/, doc 19 §13) before these profiles can be fully evaluated.
+  - id: OQ-CAG-2
+    question: >-
+      Evidence ids referenced here use short names (gate_result_evidence, role_binding_evidence,
+      release_decision_evidence). Confirm the canonical schema ids in the evidence layer
+      (configs/nexus-ai/audit/evidence_schemas/): e.g. gate_result_evidence -> gate_result_schema,
+      release_decision_evidence -> release_evidence_schema. role_binding_evidence may need a new schema.
+  - id: OQ-CAG-3
+    question: >-
+      Audio and Creative are locked-canonical but UNUSED; their evidence ids (audio_analysis_evidence,
+      creative_output_evidence) and model profiles are candidates. Ratify only when a pipeline binds
+      them (audio_model / creative_generation_model are candidates in model_provider_profiles.yaml).
+  - id: OQ-CAG-4
+    question: >-
+      escalation authority: Supervisor/Coder/Vision/Web/OS escalate to skill_governance_team_lead and
+      Memory to knowledge_team_lead. Confirm these are the correct governance-owning authorities for a
+      contested core-ability finding, or whether a dedicated governance owner role is preferred in Phase E.
+  - id: OQ-CAG-5
+    question: >-
+      sandbox_execution_governance is bound on the OS profile as a tool-layer governance reference
+      (binds_tool_layer_governance). Confirm whether the tool-scope governance file
+      (configs/nexus-ai/governance/tool/*.yaml) should own the timeout/sandbox rule detail and this
+      core-ability profile should only reference it (to avoid duplication across the two scopes).

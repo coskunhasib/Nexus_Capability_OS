@@ -1,0 +1,672 @@
+# =============================================================================
+# Nexus AI — Team Lead Roles
+# Phase D / doc 18 — Team / Agent / Sub-agent Catalog
+# Output of: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md (§5 Team Lead Role Contract)
+# =============================================================================
+#
+# WHAT THIS FILE IS
+#   One Team Lead role per Team (6 total). A Team Lead is the pipeline-specific
+#   orchestration role that RUNS a pipeline: it assigns stage owners (Agents),
+#   manages handoffs, enforces routing, requests rework, and checks
+#   governance/evidence state. It is NOT a worker that owns a stage's product
+#   (Agents own stages), and it is NEVER a Core Ability.
+#
+#   Companion catalogs (doc 18 §8): team_templates.yaml (the passive team
+#   ownership/policy boundaries), agent_roles.yaml (the active Agent roles that
+#   own stages), sub_agent_roles.yaml (Sub-agents, each with a parent_agent
+#   unless team_lead_direct_call_allowed).
+#
+# LOCKED DECISIONS HONORED (doc 00 decision log + doc 18 §11 boundary rules)
+#   - D-002 Plugin cancelled: no plugin field exists anywhere here.
+#   - D-003/D-004/D-006: Core Abilities [Supervisor, Coder, Vision, Audio,
+#     Creative, Memory, Web, OS] are a separate capability LAYER. A Team Lead may
+#     USE Core Abilities (see may_use_core_abilities) but a Core Ability is never
+#     an Agent and never a Team Lead. In particular Supervisor is NEVER a Team
+#     Lead (D-006); it may be used for routing support but does not replace any
+#     *_team_lead role.
+#   - D-007 Governance != Audit; D-008 Evidence != Trace; Skill != Tool.
+#   - No-self-approval (06-governance-policy-evidence.md §2): an actor cannot
+#     author then approve the same artifact. Every Team Lead's forbidden_actions
+#     therefore include `cannot_author_then_approve_same_artifact` and
+#     `cannot_bypass_a_failed_governance_gate` (doc 18 §11; task mandate).
+#
+# REVIEW-GATE OWNERSHIP (no-self-approval fallback)
+#   The SDLC review-gate stages `requirements_review` (stage #5) and
+#   `architecture_review` (stage #7) have owner_agent: sdlc_team_lead in their
+#   stage contracts (configs/nexus-ai/stages/sdlc/05-*.yaml, 07-*.yaml). The
+#   Phase A canonical Agent-roles list has no dedicated requirements/architecture
+#   reviewer role, so per no_self_approval_policy the review-gate falls back to
+#   the team lead as the independent reviewer (the reviewer differs from the
+#   author of the reviewed artifact). This is the ONLY case where a Team Lead
+#   acts as a stage owner_agent; it is recorded here under `owns_review_gate_stages`
+#   and is consistent with sdlc_pipeline_runtime_rules.yaml self_approval_gate.
+#   It does NOT make sdlc_team_lead an entry in agent_roles.yaml.
+#
+# FIELD CONTRACT (doc 18 §5) — every team-lead entry carries, in order:
+#   team_lead_id, team_id, pipeline_id, mission, responsibilities,
+#   may_assign_agents, may_call_direct_sub_agents, may_use_core_abilities,
+#   may_use_skills, may_call_tools, uses_governance_profiles, uses_audit_schemas,
+#   uses_context_memory_profiles, forbidden_actions, blocking_limits.
+#   (owns_review_gate_stages is an additive, non-§5 annotation on sdlc_team_lead
+#    only, documenting the locked no-self-approval review-gate ownership above.)
+#
+# AUTHORITATIVE SOURCES (read from disk; usage mapping per doc 05)
+#   - configs/nexus-ai/stages/sdlc/*.yaml          # 31 SDLC stage contracts: owner_agent + sub_agents + team_lead (AUTHORITATIVE for SDLC roster)
+#   - docs/ai-sdlc-factory/pipeline-catalog/*.md    # 5 non-SDLC pipelines: per-stage owner_agent rosters (markdown authoritative over catalog YAML)
+#   - configs/nexus-ai/{core_abilities,skills_registry,tools_registry,
+#       governance_profiles,audit_schemas,context_memory_profiles}.yaml
+#                                                   # every may_*/uses_* item below resolves to a registered id
+#
+# NAMING NOTES (see open_questions in the review doc)
+#   - Core Abilities are written with their registry `name` (Supervisor, Memory,
+#     Web, OS, Coder), matching how every SDLC stage contract references them;
+#     these resolve to core_abilities.yaml ids (supervisor, memory, web, os, coder).
+#   - Governance ids use the canonical bare form (no_self_approval, evidence_required);
+#     the *_policy variants used in stage/pipeline files are registered aliases.
+# =============================================================================
+
+version: draft-0.1
+registry_id: nexus_ai_team_lead_roles
+category: team_lead_role
+top_structure: nexus_ai_orchestration_model
+no_plugin: true
+purpose: >-
+  Canonical catalog of the 6 Nexus AI Team Lead roles (one per Team / pipeline),
+  defining what each lead may orchestrate, assign, use, and is forbidden from
+  doing — with registry-resolvable usage mapping and the locked no-self-approval
+  and no-gate-bypass guarantees.
+
+# ---------------------------------------------------------------------------
+# Provenance — sources scanned to author this file.
+# ---------------------------------------------------------------------------
+sources_scanned:
+  - configs/nexus-ai/stages/sdlc/*.yaml                 # SDLC owner_agent/sub_agent roster + sdlc_team_lead review-gate ownership
+  - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md
+  - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md
+  - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md
+  - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+  - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md
+  - configs/nexus-ai/pipeline_catalog.yaml              # pipeline_id / required_team_type / required_team_lead_role
+  - configs/nexus-ai/governance_profiles.yaml           # team/pipeline/global governance ids (incl. sdlc_team_governance, research_team_governance)
+  - configs/nexus-ai/audit_schemas.yaml                 # evidence/trace schema ids
+  - configs/nexus-ai/context_memory_profiles.yaml       # context/memory profile ids
+  - configs/nexus-ai/tools_registry.yaml                # tool ids (orchestration/read tools only for leads)
+  - configs/nexus-ai/skills_registry.yaml               # skill ids
+  - configs/nexus-ai/core_abilities.yaml                # Core Ability ids/names
+  - docs/ai-sdlc-factory/00-decision-log.md             # D-002/D-003/D-004/D-006/D-007/D-008
+  - docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md  # §5 field contract + §11 boundary rules
+
+# ---------------------------------------------------------------------------
+# Registry-wide invariants (enforce the locked rules from this file's data).
+# ---------------------------------------------------------------------------
+invariants:
+  - Exactly 6 team-lead roles, one per team (sdlc, research, activation, operations, skill_governance, knowledge).
+  - No team_lead_id is a Core Ability; Supervisor is never a team_lead (D-006).
+  - Every team_lead's forbidden_actions include cannot_author_then_approve_same_artifact AND cannot_bypass_a_failed_governance_gate.
+  - A Core Ability never appears in may_assign_agents (those are Agent roles only).
+  - No may_assign_agents entry equals the team_lead_id itself (a lead does not assign itself as a stage owner)
+    — EXCEPT the locked review-gate fallback recorded under sdlc_team_lead.owns_review_gate_stages.
+  - No plugin field exists.
+  - Skill ids (may_use_skills) are disjoint from tool ids (may_call_tools): Skill != Tool.
+
+# Cross-cutting forbidden actions every Team Lead inherits (re-listed per lead for
+# self-containment). These encode the locked no-self-approval / no-bypass rules and
+# the "lead orchestrates, does not produce" boundary (doc 04 §3 forbidden list).
+team_lead_forbidden_defaults: &team_lead_forbidden_defaults
+  - cannot_author_then_approve_same_artifact     # no_self_approval (06 §2): author != approver — MANDATED (doc 18 §11)
+  - cannot_bypass_a_failed_governance_gate        # no_policy_bypass (06): a blocking/failed gate cannot be overridden — MANDATED (doc 18 §11)
+  - cannot_mutate_an_artifact_it_reviews          # reviewer != mutator of the reviewed artifact (doc 18 §11; doc 04 §8)
+  - cannot_act_as_the_supervisor_core_ability     # team_lead != Supervisor (D-006); Supervisor is a used capability, not this role
+  - cannot_be_listed_as_a_core_ability            # Core Abilities are never agents/leads (D-003/D-004)
+  - cannot_implement_or_write_product_code        # leads orchestrate; Coder/engineering work belongs to Agents (doc 04 §3)
+  - cannot_read_secrets                           # doc 04 §3 forbidden: secret reads are out of scope for the lead
+  - cannot_perform_production_deploy_or_destructive_tool_actions  # doc 04 §3 forbidden
+  - cannot_reintroduce_a_plugin_concept           # D-002 plugin cancelled, never reintroduced
+
+# Cross-cutting blocking limits every Team Lead inherits (re-listed per lead).
+team_lead_blocking_limits_defaults: &team_lead_blocking_limits_defaults
+  - cannot_close_a_run_with_an_open_blocking_gate     # no_blocking_policy_failure must hold at exit
+  - cannot_advance_past_a_stage_whose_required_evidence_is_missing  # evidence_required
+  - cannot_skip_a_mandatory_stage_or_gate_for_the_pipeline
+  - cannot_route_rework_outside_the_pipeline_allowed_rework_routes
+
+# =============================================================================
+# TEAM LEAD ROLES (6)
+# =============================================================================
+team_lead_roles:
+
+  # ===========================================================================
+  # 1. SDLC TEAM LEAD
+  #    Source of truth: configs/nexus-ai/stages/sdlc/*.yaml (team_lead: sdlc_team_lead
+  #    on all 31 stages; owner_agent: sdlc_team_lead on stages #5 and #7 review gates).
+  # ===========================================================================
+  - team_lead_id: sdlc_team_lead
+    team_id: sdlc_team
+    pipeline_id: sdlc_pipeline
+    mission: >-
+      Orchestrate the 31-stage SDLC Pipeline end to end under no-human governance:
+      select the domain/risk profile, assign each stage to its owner Agent, produce
+      handoff packets, coordinate skill activation, enforce routing and rework, and
+      verify governance/evidence/gate state — without authoring product artifacts or
+      bypassing any gate. Additionally acts as the independent no-self-approval
+      reviewer for the requirements_review and architecture_review gate stages,
+      because no dedicated reviewer Agent role exists for them.
+    responsibilities:
+      - Take the product/user goal and select the applicable domain + risk profile.
+      - Initialize the SDLC pipeline graph and assign each stage to its owner Agent.
+      - Produce per-stage handoff packets and coordinate skill activation.
+      - Enforce stage routing (on_pass / on_fail) and choose rework routes on failure.
+      - Query governance/policy state and inspect evidence/trace completeness at each gate.
+      - Own the requirements_review and architecture_review review gates as the
+        independent reviewer (author of the reviewed artifact is a different Agent),
+        producing the review report + gate result without mutating the reviewed artifact.
+      - Assemble the final review checklist into development_completion / release_candidate readiness.
+    # The 24 distinct SDLC Agent owner roles (every distinct owner_agent across the 31
+    # stage contracts, excluding the sdlc_team_lead review-gate fallback). These are the
+    # Agents this lead may assign as stage owners.
+    may_assign_agents:
+      - product_requirements_agent      # intake (#1), requirements (#4)
+      - domain_risk_agent               # domain_risk_profile (#2)
+      - skill_librarian_agent           # skill_semantic_extraction (#3)
+      - architecture_agent              # architecture (#6)
+      - security_privacy_agent          # security_privacy_design (#8)
+      - risk_agent                      # premortem_fmea (#9)
+      - planning_agent                  # planning (#10)
+      - engineering_agent               # implementation (#11)
+      - code_reviewer_agent             # code_review (#12)
+      - qa_agent                        # test_generation (#13), test_execution (#14), verification_loop_bug_finding (#15)
+      - security_validation_agent       # security_validation (#16)
+      - supply_chain_agent              # supply_chain_sbom_license (#17)
+      - agentic_safety_agent            # ai_agent_safety_evaluation (#18)
+      - privacy_agent                   # privacy_data_lifecycle_validation (#19)
+      - contract_validation_agent       # api_contract_compatibility_validation (#20)
+      - compliance_agent                # domain_regulatory_compliance_validation_if_applicable (#21)
+      - data_migration_agent            # data_migration_validation_if_applicable (#22)
+      - ux_accessibility_agent          # accessibility_ux_validation_if_applicable (#23)
+      - performance_resilience_agent    # performance_resilience (#24)
+      - cost_resource_agent             # cost_resource_governance (#25)
+      - operations_readiness_agent      # backup_restore_dr_validation_if_applicable (#26), operations_readiness (#27)
+      - evidence_graph_agent            # evidence_graph_build (#28)
+      - release_manager_agent           # development_completion (#29), release_candidate (#30)
+      - memory_curator_agent            # refraction_learning (#31)
+    # Sub-agents the lead may invoke directly (team_lead_direct_call_allowed). The 8 SDLC
+    # sub-agents all declare a parent_agent in their stage contracts (no orphans), so under
+    # the standard model they are invoked via their parent Agent, NOT directly by the lead.
+    may_call_direct_sub_agents: []
+    # Core Abilities the lead USES for orchestration (capability layer; never agents).
+    # Matches the SDLC pipeline-level uses_core_abilities minus Coder (leads do not code).
+    may_use_core_abilities:
+      - Supervisor    # routing/orchestration support (used as a capability; does NOT replace this lead — D-006)
+      - Memory        # run context, prior-stage recall, handoff packets
+      - Web           # reference lookups while orchestrating reviews
+    may_use_skills:
+      - prompt-fidelity   # requirements_review: intent/coverage fidelity check
+      - gap-audit         # coverage-gap detection across stage outputs and review gates
+      - calibrate         # confidence calibration on review-gate decisions
+      - llm-council       # architecture_review: multi-perspective adjudication
+      - sentinel          # architecture_review: blind-spot / premortem of architecture decisions
+    # Orchestration + read tools ONLY. A lead reads evidence, queries policy, checks
+    # traceability, and writes orchestration/review artifacts — it does NOT use repo
+    # writers, test runners, scanners, or any product-mutating/deploy tool.
+    may_call_tools:
+      - evidence_reader               # inspect prior-stage evidence at each gate
+      - policy_query                  # query governance/policy state
+      - requirements_trace_checker    # requirements_review gate traceability check
+      - artifact_writer               # write handoff packets + review reports (orchestration artifacts)
+      - evidence_writer               # record review-gate evidence
+    uses_governance_profiles:
+      - sdlc_pipeline_governance      # pipeline-level umbrella
+      - sdlc_team_governance          # team-scope: producer != approver inside sdlc_team; lead != Supervisor
+      - no_self_approval              # author != approver (review gates) ; alias: no_self_approval_policy
+      - evidence_required             # every gate decision requires evidence ; alias: evidence_required_policy
+      - no_policy_bypass              # blocking gate cannot be overridden
+      - requirements_review_governance  # requirements_review gate this lead owns
+      - architecture_review_gate        # architecture_review gate this lead owns
+      - prompt_fidelity_gate            # requirements_review prompt-fidelity blocker
+    uses_audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - stage_gate_trace_schema
+      - requirements_review_evidence_schema   # evidence for the requirements_review gate it owns
+      - architecture_review_evidence_schema    # evidence for the architecture_review gate it owns
+      - gate_decision_trace_schema
+    uses_context_memory_profiles:
+      - sdlc_run_context
+      - requirements_context_pack       # requirements_review gate
+      - architecture_context_pack       # architecture_review gate
+      - release_context_pack            # development_completion / release_candidate readiness assembly
+    # Locked review-gate ownership (additive annotation; NOT a doc 18 §5 field, NOT an
+    # agent_roles.yaml entry). These two stages set owner_agent: sdlc_team_lead because no
+    # dedicated reviewer Agent exists; the reviewer differs from the artifact's author.
+    owns_review_gate_stages:
+      - requirements_review     # stage #5 — reviewed artifact authored by product_requirements_agent
+      - architecture_review     # stage #7 — reviewed artifact authored by architecture_agent
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_author_the_requirements_or_architecture_artifact_it_then_reviews  # would violate no-self-approval on the gates it owns
+      - cannot_pass_a_failed_sdlc_mandatory_gate_to_release_candidate
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_produce_a_release_candidate_before_development_completion_passes  # 08 §7
+      - cannot_mark_development_completion_with_an_unevaluated_mandatory_or_applicable_gate  # 08 §6
+
+  # ===========================================================================
+  # 2. RESEARCH TEAM LEAD
+  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md §2 (per-stage owner_agent).
+  # ===========================================================================
+  - team_lead_id: research_team_lead
+    team_id: research_team
+    pipeline_id: research_pipeline
+    mission: >-
+      Orchestrate the Research Pipeline: assign source discovery, reliability scoring,
+      claim extraction, claim/evidence mapping, cross-validation, uncertainty reporting,
+      synthesis and completion to their owner Agents; enforce the structural
+      no-self-approval rule (the producer of a source/claim is never its sole validator —
+      cross_validation is a distinct owner); and gate on citation and evidence before
+      a cited research output is finalized.
+    responsibilities:
+      - Capture the research goal, scope and risk profile and assign each stage to its owner Agent.
+      - Enforce that cross_validation is owned by an Agent distinct from the producing Agents (no self-approval).
+      - Route rework along the pipeline's allowed routes (e.g. source_discovery, claim_evidence_mapping).
+      - Check the citation_required and evidence-required gates before synthesis is accepted.
+      - Confirm the research evidence graph and completion criteria at the final gate.
+    # 10 research Agents (every owner_agent named across research-pipeline.md §2.1–§2.10).
+    may_assign_agents:
+      - research_intake_agent           # research_intake
+      - research_scoping_agent          # scope_and_questions
+      - source_discovery_agent          # source_discovery
+      - source_reliability_agent        # source_reliability_assessment
+      - claim_extraction_agent          # claim_extraction
+      - claim_evidence_agent            # claim_evidence_mapping
+      - cross_validation_agent          # cross_validation (distinct validator — enforces no-self-approval)
+      - uncertainty_reporting_agent     # uncertainty_reporting
+      - research_synthesis_agent        # synthesis
+      - research_completion_agent       # research_completion
+    may_call_direct_sub_agents: []      # research pipeline defines no sub-agents
+    may_use_core_abilities:
+      - Web           # source discovery/fetch context
+      - Memory        # run context, source corpus, claim/evidence recall
+      - Supervisor    # routing/orchestration support (capability only — not this lead)
+    may_use_skills:
+      - gap-audit         # coverage gaps in question set / evidence
+      - calibrate         # confidence calibration on findings and reliability scores
+      - llm-council       # cross-model adjudication of contested claims (used in cross_validation)
+    may_call_tools:
+      - evidence_reader   # inspect source/claim evidence at gates
+      - artifact_writer   # research brief / orchestration artifacts
+      - evidence_writer   # record gate evidence
+    uses_governance_profiles:
+      - research_source_governance      # acceptable-source / reliability rules (pipeline umbrella)
+      - research_team_governance        # team-scope: producer-role != validator-role inside research_team
+      - citation_required_gate          # no uncited load-bearing claim in synthesis
+      - no_self_approval                # producer != sole validator ; alias: no_self_approval_policy
+      - evidence_required               # every claim mapped to evidence ; alias: evidence_required_policy
+    uses_audit_schemas:
+      - source_evidence_schema
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    uses_context_memory_profiles:
+      - research_run_context
+      - source_corpus_context_pack
+      - claim_evidence_context_pack
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_let_a_producing_researcher_be_the_sole_validator_of_their_own_source  # validator_role_distinct_from_producer
+      - cannot_finalize_synthesis_with_an_uncited_load_bearing_claim                  # citation_required_gate
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_complete_research_without_cross_validation_by_a_separate_role
+      - cannot_complete_research_with_an_unscored_source_used_in_synthesis
+
+  # ===========================================================================
+  # 3. ACTIVATION TEAM LEAD
+  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md §2 (per-stage owner_agent).
+  # ===========================================================================
+  - team_lead_id: activation_team_lead
+    team_id: activation_team
+    pipeline_id: activation_pipeline
+    mission: >-
+      Orchestrate the staged Activation Pipeline (preview -> pilot -> public) for an
+      already release-candidate artifact: assign stage owners, enforce that the
+      pilot-evidence reviewer and the owner-decision recorder are distinct from the
+      pilot owner (no self-approval), and require a validated rollback plan and a
+      recorded owner decision before any public activation completes — without owning a
+      stage, writing the activation artifact, or bypassing a gate.
+    responsibilities:
+      - Confirm the target is an SDLC release candidate (or higher) with required evidence before activation.
+      - Assign each activation stage to its owner Agent and select staged scope (preview/pilot/public).
+      - Enforce the preview -> pilot -> public ordering gates and the rollback-readiness gate.
+      - Ensure the public activation decision is recorded by the owner-decision Agent and is not self-approved.
+      - Route rework along allowed routes (e.g. pilot_activation, rollback_readiness) and assemble completion evidence.
+    # 5 activation Agents (every owner_agent across activation-pipeline.md §2.1–§2.7;
+    # activation_manager_agent owns intake/preview/completion).
+    may_assign_agents:
+      - activation_manager_agent          # activation_intake, superadmin_preview, activation_completion
+      - pilot_activation_agent            # pilot_activation
+      - activation_reviewer_agent         # pilot_evidence_review (distinct reviewer — no self-approval)
+      - activation_owner_decision_agent   # public_activation_decision (RECORDS the human/owner decision; not an autonomous approver)
+      - rollback_readiness_agent          # rollback_readiness
+    may_call_direct_sub_agents: []        # activation pipeline defines no sub-agents
+    may_use_core_abilities:
+      - Supervisor    # routing/orchestration support (capability only — not this lead)
+      - Memory        # activation run context, pilot evidence recall
+      - OS            # activation flag / environment context during orchestration
+    may_use_skills:
+      - sentinel          # premortem / blind-spot check before each activation gate
+      - calibrate         # confidence on pilot evidence
+      - gap-audit         # readiness coverage gaps (especially rollback)
+    may_call_tools:
+      - evidence_reader   # inspect preview/pilot/rollback evidence at gates
+      - policy_query      # check activation governance/policy state
+      - artifact_writer   # activation request / orchestration artifacts
+      - evidence_writer   # record gate evidence
+    uses_governance_profiles:
+      - activation_pipeline_governance    # pipeline umbrella
+      - preview_required_gate             # no pilot without a passing preview
+      - pilot_evidence_gate               # no public activation without sufficient pilot evidence
+      - rollback_required_gate            # validated rollback plan mandatory before public completion
+      - owner_activation_decision_gate    # public activation requires a recorded owner decision
+      - no_self_approval                  # reviewer/decision owner != pilot owner ; alias: no_self_approval_policy
+      - evidence_required                 # alias: evidence_required_policy
+    uses_audit_schemas:
+      - activation_evidence_schema
+      - activation_decision_evidence_schema
+      - rollback_readiness_evidence_schema
+      - activation_transition_trace_schema
+      - stage_gate_trace_schema
+    uses_context_memory_profiles:
+      - activation_run_context
+      - preview_context_pack
+      - pilot_evidence_context_pack
+      - activation_decision_context_pack
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_self_approve_an_activation_decision               # owner_activation_decision_gate + no_self_approval
+      - cannot_authorize_public_activation_without_a_validated_rollback_plan  # rollback_required_gate
+      - cannot_authorize_public_activation_without_a_recorded_owner_decision  # human/owner gate, not autonomous
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_begin_pilot_without_a_passing_superadmin_preview
+      - cannot_complete_public_activation_without_pilot_evidence_and_validated_rollback
+
+  # ===========================================================================
+  # 4. OPERATIONS TEAM LEAD
+  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md §2 (per-stage owner_agent).
+  # ===========================================================================
+  - team_lead_id: operations_team_lead
+    team_id: operations_team
+    pipeline_id: operations_pipeline
+    mission: >-
+      Orchestrate the live-operations incident lifecycle (intake -> severity ->
+      mitigation -> rollback/fix -> postmortem -> learning) for released capabilities:
+      assign stage owners, enforce that severity is classified before mitigation and
+      that a postmortem is completed for qualifying incidents, and ensure no actor
+      approves its own mitigation/postmortem — without executing the rollback/fix itself
+      or bypassing any gate.
+    responsibilities:
+      - Intake/normalize the incident signal and assign each stage to its owner Agent.
+      - Enforce mandatory severity classification before any mitigation work begins.
+      - Require a mitigation plan for an active incident and runbook/rollback evidence for any rollback-or-fix.
+      - Ensure a postmortem is completed for major/critical incidents (lightweight record otherwise) with no self-approval.
+      - Route rework (e.g. mitigation_plan -> severity_classification) and confirm operational learning is recorded.
+    # 6 operations Agents (every owner_agent across operations-pipeline.md §2.1–§2.6).
+    may_assign_agents:
+      - incident_intake_agent             # incident_intake
+      - severity_classification_agent     # severity_classification
+      - mitigation_planning_agent         # mitigation_plan
+      - incident_response_agent           # rollback_or_fix
+      - postmortem_agent                  # postmortem
+      - operational_learning_agent        # learning_update
+    may_call_direct_sub_agents: []        # operations pipeline defines no sub-agents
+    may_use_core_abilities:
+      - Supervisor    # routing/orchestration support (capability only — not this lead)
+      - OS            # monitoring/runbook environment context during orchestration
+      - Memory        # incident context, prior-incident recall
+    may_use_skills:
+      - sentinel          # premortem the mitigation/rollback plan
+      - fmea              # failure-mode analysis on recurring incidents / severity reasoning
+      - gap-audit         # completeness of incident record / mitigation plan
+    may_call_tools:
+      - evidence_reader   # read SDLC RUNBOOK / ROLLBACK_PLAN and incident evidence
+      - policy_query      # check operations governance/policy state
+      - artifact_writer   # orchestration artifacts
+      - evidence_writer   # record gate evidence
+    uses_governance_profiles:
+      - operations_pipeline_governance    # pipeline umbrella
+      - incident_severity_required_gate   # severity mandatory before mitigation
+      - mitigation_plan_required_gate     # active incident must have a mitigation plan
+      - rollback_runbook_evidence_gate    # rollback-or-fix must carry runbook/rollback evidence
+      - postmortem_required_gate          # postmortem mandatory for qualifying severities
+      - no_self_approval                  # actor != approver of its own mitigation/postmortem ; alias: no_self_approval_policy
+      - evidence_required                 # alias: evidence_required_policy
+    uses_audit_schemas:
+      - incident_evidence_schema
+      - severity_classification_evidence_schema
+      - mitigation_plan_evidence_schema
+      - rollback_fix_evidence_schema
+      - postmortem_evidence_schema
+      - operational_learning_evidence_schema
+      - stage_gate_trace_schema
+    uses_context_memory_profiles:
+      - operations_run_context
+      - incident_context_pack
+      - operations_context_pack
+      - postmortem_context_pack
+      - learning_context_pack
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_execute_a_rollback_or_fix_itself                  # that is owned by incident_response_agent (operations §3.1)
+      - cannot_self_approve_a_mitigation_or_postmortem           # self_approved_resolution blocking condition
+      - cannot_close_a_major_incident_without_a_postmortem       # postmortem_required_gate
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_begin_mitigation_before_severity_is_classified
+      - cannot_record_resolution_without_runbook_or_rollback_evidence
+
+  # ===========================================================================
+  # 5. SKILL GOVERNANCE TEAM LEAD
+  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md §2/§3.1.
+  # ===========================================================================
+  - team_lead_id: skill_governance_team_lead
+    team_id: skill_governance_team
+    pipeline_id: skill_governance_pipeline
+    mission: >-
+      Orchestrate the Skill Governance Pipeline (intake -> mandatory semantic
+      extraction -> script/reference audit -> misuse warnings -> binding proposal ->
+      activation decision -> deprecation/update): enforce that no skill is bound or
+      activated before semantic extraction and misuse warnings exist, that locked skill
+      semantics (prism = brainstorming, verification-loop = bug-finding) are recorded
+      not altered, and that the activation decision is made by an Agent distinct from the
+      binding proposer (no self-approval).
+    responsibilities:
+      - Inventory the candidate skill and assign each stage to its owner Agent/sub-agent.
+      - Enforce the anti-pattern guard: binding never precedes semantic extraction + misuse warnings.
+      - Enforce locked_semantics_enforcement (prism/verification-loop semantics may be recorded, never changed).
+      - Ensure the activation decision (skill_runtime_safety_agent) is independent of the binding proposer (skill_librarian_agent).
+      - Route rework (e.g. skill_binding_proposal -> skill_semantic_extraction) and confirm evidence/trace completeness.
+    # Skill-governance Agents (skill-governance-pipeline.md §3.1): skill_librarian_agent
+    # (intake/binding/deprecation) and skill_runtime_safety_agent (audit/misuse/activation).
+    may_assign_agents:
+      - skill_librarian_agent         # skill_intake, skill_binding_proposal, skill_deprecation_update (also an SDLC agent — shared role)
+      - skill_runtime_safety_agent    # script_reference_audit, misuse_warning_generation, skill_activation_decision (independent approver)
+    # The skill_semantic_extraction stage owner is skill_semantic_extractor_subagent
+    # (parent: skill_librarian_agent). Its parent owns it; the lead does not call it directly.
+    may_call_direct_sub_agents: []
+    may_use_core_abilities:
+      - Supervisor    # routing/orchestration support (capability only — not this lead)
+      - Memory        # skill registry / semantic context recall
+      - OS            # script/reference inspection environment context during orchestration
+    may_use_skills:
+      - gap-audit         # coverage / reference gaps in a skill
+      - sentinel          # premortem misuse and activation risk
+      - prompt-fidelity   # check skill instructions match intended behavior
+      - llm-council       # multi-model review of binding/activation decisions
+    may_call_tools:
+      - evidence_reader   # inspect semantic-extract / audit / misuse evidence at gates
+      - policy_query      # check skill-governance policy state
+      - artifact_writer   # orchestration artifacts
+      - evidence_writer   # record gate evidence
+    uses_governance_profiles:
+      - skill_governance_pipeline_governance   # pipeline umbrella
+      - skill_semantic_required_gate           # no progress without semantic extraction
+      - script_reference_audit_gate            # unsafe script cannot pass unmitigated
+      - misuse_warning_required_gate           # no binding/activation without misuse warnings
+      - skill_binding_proposal_gate            # binding-without-semantics blocked
+      - skill_activation_decision_gate         # evidence-backed, non-self-approved decision
+      - locked_semantics_enforcement_policy    # prism/verification-loop semantics recorded, never altered
+      - no_self_approval                       # proposer != decision owner ; alias: no_self_approval_policy
+      - evidence_required                      # alias: evidence_required_policy
+    uses_audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_semantic_extract_schema
+      - script_audit_evidence_schema
+      - skill_misuse_warning_schema
+      - skill_binding_decision_schema
+      - skill_governance_trace_schema
+    uses_context_memory_profiles:
+      - skill_governance_run_context
+      - skill_semantic_context_pack
+      - skill_registry_context_pack
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_allow_a_binding_proposal_before_semantic_extraction_and_misuse_warnings  # binding_proposed_without_semantics
+      - cannot_alter_locked_skill_semantics                      # locked_semantics_enforcement_policy (prism/verification-loop)
+      - cannot_let_the_binding_proposer_self_approve_the_activation_decision  # no_self_approval (proposer != approver)
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_activate_a_skill_with_unknown_semantics
+      - cannot_activate_a_skill_with_an_unmitigated_unsafe_script
+
+  # ===========================================================================
+  # 6. KNOWLEDGE TEAM LEAD
+  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md §2/§3.1
+  #    (markdown uses knowledge_team / knowledge_team_lead — authoritative over the catalog YAML's
+  #     knowledge_memory_team / knowledge_memory_team_lead; see open_questions).
+  # ===========================================================================
+  - team_lead_id: knowledge_team_lead
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Orchestrate the Knowledge / Memory lifecycle pipeline (intake -> source
+      classification -> summary -> validity window -> retrieval-profile update ->
+      expiration review): assign stage owners, enforce that sensitive content is
+      redacted before storage/exposure, that every retained memory carries a validity
+      window, and that retrieval exposure never exceeds the classified sensitivity —
+      without turning the Memory Core Ability into an agent and without exposing memory
+      that fails a blocking gate. Memory is a used capability, never a stage owner.
+    responsibilities:
+      - Intake the candidate memory item with its provenance and assign each stage to its owner Agent.
+      - Enforce source classification + redaction-required before summarization or storage.
+      - Require a validity window for every retained memory and bind retrieval-profile updates to it.
+      - Ensure retrieval exposure is consistent with classified sensitivity.
+      - Route rework (e.g. retrieval_profile_update -> validity_window_assignment) and confirm expiration outcomes are recorded.
+    # 6 knowledge Agents (every owner_agent across knowledge-memory-pipeline.md §2.1–§2.6).
+    may_assign_agents:
+      - knowledge_intake_agent          # memory_intake
+      - source_classification_agent     # source_classification
+      - memory_summarization_agent      # summary_generation
+      - validity_window_agent           # validity_window_assignment
+      - retrieval_profile_agent         # retrieval_profile_update
+      - memory_expiration_agent         # memory_expiration_review
+    may_call_direct_sub_agents: []      # knowledge pipeline defines no sub-agents
+    may_use_core_abilities:
+      - Memory        # the lifecycle subject; USED by the lead/agents, never an owner (locked)
+      - Supervisor    # routing/orchestration support (capability only — not this lead)
+      - Web           # source-origin lookups during orchestration
+    may_use_skills:
+      - gap-audit         # coverage gaps in ingested knowledge / retrieval conflicts
+      - calibrate         # confidence / validity scoring on memory items
+      - refraction        # lifecycle/learning reflection on expiration
+      - bayesian-update   # revise validity/staleness expectations as evidence arrives
+    may_call_tools:
+      - evidence_reader   # inspect provenance/classification/validity evidence at gates
+      - artifact_writer   # orchestration artifacts
+      - evidence_writer   # record gate evidence
+    uses_governance_profiles:
+      - memory_source_governance        # source admissibility / trust tiers / sensitivity (pipeline umbrella)
+      - validity_window_required_gate   # every retained memory carries a validity window; updates bound to it
+      - redaction_required_gate         # sensitive content redacted before summary/storage/exposure
+      - no_self_approval                # alias: no_self_approval_policy (cross-cutting)
+      - evidence_required               # alias: evidence_required_policy (cross-cutting)
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_context_memory_profiles:
+      - knowledge_run_context
+      - memory_candidate_context_pack
+      - retrieval_profile_context_pack
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_treat_the_memory_core_ability_as_an_agent_or_stage_owner   # Memory stays a Core Ability (D-003/D-004)
+      - cannot_expose_unredacted_sensitive_content                        # redaction_required_gate
+      - cannot_write_a_retrieval_profile_update_for_a_memory_with_no_validity_window  # retrieval_profile_update_without_validity_window
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_retain_a_memory_without_a_validity_window
+      - cannot_expose_memory_at_a_sensitivity_above_its_classification
+
+# =============================================================================
+# OPEN QUESTIONS (registry mismatches + unresolved naming — to reconcile in
+# agent_roles.yaml / team_templates.yaml and Phase E governance readiness).
+# =============================================================================
+open_questions:
+  - id: OQ-TL-1
+    topic: knowledge team naming mismatch (YAML vs markdown)
+    status: RESOLVED
+    detail: >-
+      RESOLVED: pipeline_catalog.yaml now names the 6th team `knowledge_team` with lead
+      `knowledge_team_lead`, matching knowledge-memory-pipeline.md (§1 contract + §3.1) and this
+      file (zero remaining `knowledge_memory_team` / `knowledge_memory_team_lead` occurrences in
+      pipeline_catalog.yaml). team_templates.yaml also uses knowledge_team / knowledge_team_lead.
+      The earlier `knowledge_memory_*` spelling has been reconciled to the markdown-authoritative
+      names across the catalog; no alias is needed.
+  - id: OQ-TL-2
+    topic: no team-scope governance profile for 4 of 6 teams
+    detail: >-
+      governance_profiles.yaml defines team-scope (scope: team) profiles ONLY for
+      sdlc_team_governance and research_team_governance. There is no activation_team_governance,
+      operations_team_governance, skill_governance_team_governance, or knowledge_team_governance.
+      For those four leads, uses_governance_profiles binds the pipeline-level umbrella
+      (activation_pipeline_governance / operations_pipeline_governance /
+      skill_governance_pipeline_governance / memory_source_governance) plus the cross-cutting
+      no_self_approval + evidence_required. Phase E should decide whether dedicated team-scope
+      governance profiles are added for these four teams.
+  - id: OQ-TL-3
+    topic: shared agent across teams (skill_librarian_agent)
+    status: RESOLVED
+    detail: >-
+      RESOLVED (agent_roles.yaml R12 / one_canonical_id_per_logical_agent): skill_librarian_agent
+      is modeled as exactly ONE canonical role with primary team_id sdlc_team (owns
+      skill_semantic_extraction, SDLC stage #3); its skill_governance_team binding
+      (skill_intake / skill_binding_proposal / skill_deprecation_update) is recorded inline on
+      the same role via `also_serves`, with the legacy per-team spelling
+      skill_librarian_agent_skill_governance kept only as an `aliases` entry — not a second role.
+      skill_semantic_extractor_subagent is resolved the same way: a single sub-agent parented to
+      skill_librarian_agent that owns semantic extraction in both the SDLC stage (#3) and the
+      skill_governance pipeline (#2). It therefore still appears in both leads' may_assign_agents,
+      but resolves to one shared role each.
+  - id: OQ-TL-4
+    topic: owner-decision agent is a recorder, not an autonomous approver
+    detail: >-
+      activation_owner_decision_agent (public_activation_decision) RECORDS a human/owner
+      decision; the authorizing actor is the human owner, not the agent. The activation lead's
+      gate (owner_activation_decision_gate) treats the recorded human decision as the authority.
+      agent_roles.yaml should encode this agent as a decision-recorder (not a self-approving
+      autonomous role) so no_self_approval is not misread as agent self-authorization.
+  - id: OQ-TL-5
+    topic: core ability name-casing vs registry id
+    detail: >-
+      may_use_core_abilities uses the capitalized registry `name` (Supervisor, Memory, Web, OS,
+      Coder) to match every SDLC stage contract's uses_core_abilities convention. The
+      core_abilities.yaml `id` form is lowercase (supervisor, memory, web, os, coder). A loader
+      must case-fold to resolve. Confirm the canonical reference form for role files in Phase E.
+  - id: OQ-TL-6
+    topic: sdlc_team_lead as review-gate owner_agent (not an agent_roles entry)
+    detail: >-
+      SDLC stages #5 (requirements_review) and #7 (architecture_review) set
+      owner_agent: sdlc_team_lead as the no-self-approval fallback (no dedicated reviewer Agent
+      exists). This is recorded here under owns_review_gate_stages but is intentionally NOT an
+      agent_roles.yaml entry. Phase D agent_roles.yaml must either (a) keep the team-lead fallback
+      and exclude sdlc_team_lead from agent_roles, or (b) introduce dedicated
+      requirements_reviewer_agent / architecture_reviewer_agent roles. Until decided, the
+      validation rule "every SDLC stage has an owner_agent in agent_roles.yaml" has two
+      stages whose owner is the team lead, not an agent.

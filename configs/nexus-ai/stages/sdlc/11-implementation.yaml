@@ -1,0 +1,123 @@
+# SDLC Pipeline — Stage #11 Contract: implementation
+# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (Pipeline Stage Contract, §4)
+#               configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields)
+# Pipeline: sdlc_pipeline. Always-on stage (not conditional) — see 06-sdlc-coverage-gap-audit.md
+#   (Implementation = Required) and configs/nexus-ai/sdlc_pipeline.yaml (stage 11 of 31).
+# Reconciled against:
+#   docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md (§1 implementation — canonical prose)
+#   docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md (§4 — adds 7 conditional outputs)
+#   docs/ai-sdlc-factory/05-pipeline-model.md (§4.12 — legacy detail; owner `tech_lead_agent` / `engineering_team`
+#     superseded by canonical `engineering_agent` + `sdlc_team`; do NOT carry the stale 23-stage assumption)
+#   docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (routing: on_pass=code_review; mandatory gate
+#     `implementation_scope_clean`)
+#   configs/nexus-ai/artifact_registry.yaml (canonical UPPER_SNAKE artifact names incl. implementation_review group)
+# Boundary notes:
+#   - Core Abilities (Coder, Memory, OS) are capabilities, NOT agents and NOT team members.
+#   - owner_agent is a pipeline Agent ROLE; this is an authoring stage. No-self-approval is enforced
+#     downstream by the separate code_review stage (owner_agent: code_reviewer_agent), not here.
+
+stage_id: implementation
+name: Implementation
+purpose: >-
+  Produce the code and engineering artifacts for the planned scope and perform baseline local
+  verification (build/compile/lint and smoke checks), strictly within the boundaries set by the
+  IMPLEMENTATION_PLAN, TASK_BREAKDOWN, and HANDOFF_PACKETS. The stage must keep the changeset
+  in scope (no unplanned changes), emit a reviewable change summary plus implementation notes,
+  and surface the downstream-required artifacts (data-model/migration/API/UI deltas, resource-usage
+  data, tool-permission map, context policy) so that code_review and the later validation gates
+  receive complete, traceable inputs. No merge, no deploy.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: engineering_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Coder
+  - Memory
+  - OS
+
+uses_skills:
+  - context-pack-builder   # NON-CANONICAL vs locked registry; named by legacy doc 05 §4.12 / canonical prose 03 §1
+                           #   (assembles the implementation context pack before authoring). Flagged for formalization.
+  - gap-audit              # canonical: verify the changeset covers the planned scope and surface implementation gaps
+
+uses_tools:
+  - repo_reader            # read existing code / plan context before authoring (read-only)
+  - repo_writer            # author the code changeset (side-effect tool -> governance + trace required)
+  - test_runner            # baseline local build / smoke verification (side-effect tool -> governance + trace required)
+  - artifact_writer        # write CODE_CHANGESET_SUMMARY / IMPLEMENTATION_NOTES (side-effect -> governance + trace)
+  - evidence_writer        # persist build/changeset evidence (side-effect tool -> governance + trace required)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - evidence_required_policy
+  - implementation_governance        # stage-specific gate profile (authoring/build governance)
+  - no_out_of_scope_change_gate      # stage-specific gate profile (scope-containment / implementation_scope_clean)
+
+uses_audit_schemas:
+  - implementation_evidence_schema   # evidence schema (artifacts produced by this stage)
+  - code_change_trace_schema         # trace schema (changeset provenance — distinct from evidence)
+  - stage_gate_trace_schema          # trace schema (gate evaluation provenance)
+
+uses_model_provider_profiles:
+  - coder_engineering_model
+
+uses_context_memory_profiles:
+  - implementation_context_pack
+
+inputs:
+  - IMPLEMENTATION_PLAN
+  - TASK_BREAKDOWN
+  - HANDOFF_PACKETS
+
+outputs:
+  # Base implementation artifacts (prose 03 §1)
+  - CODE_CHANGESET_SUMMARY
+  - IMPLEMENTATION_NOTES
+  - LOCAL_BUILD_RESULT
+  # Conditional downstream-feeding artifacts (canonical corrections 06 §4 — emitted only when applicable;
+  #   names carry the canonical _IF_APPLICABLE suffix per artifact_registry.yaml)
+  - DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE   # -> data_migration_validation_if_applicable
+  - MIGRATION_FILES_IF_APPLICABLE            # -> data_migration_validation_if_applicable
+  - API_CONTRACTS_IF_APPLICABLE              # -> api_contract_compatibility_validation
+  - UI_CHANGESET_SUMMARY_IF_APPLICABLE       # -> accessibility_ux_validation_if_applicable
+  - RESOURCE_USAGE_DATA_IF_APPLICABLE        # -> cost_resource_governance
+  - TOOL_PERMISSION_MAP                      # -> ai_agent_safety_evaluation
+  - CONTEXT_POLICY                           # -> ai_agent_safety_evaluation
+
+evidence:
+  - CODE_CHANGESET_SUMMARY
+  - LOCAL_BUILD_RESULT
+  - IMPLEMENTATION_NOTES
+
+trace:
+  - code_change_trace
+  - implementation_agent_trace
+  - local_build_tool_trace
+  - implementation_gate_evaluation_trace
+
+gates:
+  - code_changes_present
+  - implementation_scope_clean
+  - no_out_of_scope_changes
+  - local_build_pass
+
+on_pass: code_review
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - no_code_changes_present
+  - out_of_scope_change
+  - local_build_failure
+
+optional_conditions:
+  - data_model_changed              # emits DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE / MIGRATION_FILES_IF_APPLICABLE
+  - api_or_public_interface_changed # emits API_CONTRACTS_IF_APPLICABLE
+  - product_has_ui                  # emits UI_CHANGESET_SUMMARY_IF_APPLICABLE
+  - resource_sensitive_change       # emits RESOURCE_USAGE_DATA_IF_APPLICABLE
+
+conditional_required_gates: []
+
+max_iterations: 3

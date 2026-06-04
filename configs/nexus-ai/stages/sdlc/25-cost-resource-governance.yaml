@@ -1,0 +1,180 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #25 of 31: cost_resource_governance (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   position #25, between performance_resilience (#24) and
+#   backup_restore_dr_validation_if_applicable (#26)).
+# Reconciled against:
+#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §9 (legacy stage prose & detail),
+#   - docs/ai-sdlc-factory/06b-sdlc-agentic-safety-and-remaining-gates.md §6
+#       (conditional_required status + required_when expression + uses/evidence detail),
+#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§8
+#       (applicability_decision standard -> COST_RESOURCE_APPLICABILITY_DECISION;
+#        RESOURCE_USAGE_DATA -> RESOURCE_USAGE_DATA_IF_APPLICABLE; union usage mapping),
+#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Performance/Resource coverage context),
+#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale 23-stage assumption NOT carried),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
+#       COST_ESTIMATE_REPORT, RESOURCE_BUDGET_REPORT, QUOTA_POLICY_REPORT, RESOURCE_GATE_RESULT,
+#       RESOURCE_USAGE_DATA_IF_APPLICABLE, COST_RESOURCE_APPLICABILITY_DECISION, PERFORMANCE_REPORT).
+#
+# Reconciliation notes (legacy doc 04 §9 / 06b §6 -> Phase A canonical registry):
+#   - owner_agent kept as canonical `cost_resource_agent` (suggested + canonical role).
+#   - No-self-approval: this is an author/scan-style stage. It PRODUCES cost / resource-budget /
+#     quota findings and gates ON ITS OWN analysis output; it does not review another author's
+#     artifact (same pattern as performance_resilience / supply_chain_sbom_license /
+#     security_validation). So owner_agent = cost_resource_agent does NOT violate no_self_approval.
+#   - Tools: legacy `resource_budget_checker`, `cost_estimator`, `benchmark_runner`,
+#     `quota_policy_checker`, `artifact_writer`, `evidence_writer` are ALL canonical shared Tools.
+#     Added canonical `evidence_reader` (read upstream PERFORMANCE_REPORT / RESOURCE_USAGE_DATA_IF_APPLICABLE)
+#     and `policy_query` (query resource-budget / quota / cost-cap policy-as-data, side-effect-free).
+#     No non-canonical tools required.
+#   - Model profile reconciled from legacy `cost_resource_analysis_model` (NON-canonical) to canonical
+#     `sdlc_reasoning_profile` (cost/Fermi/budget estimation is general SDLC reasoning, not a
+#     security/architecture/release-specialised task). Flagged in open_questions.
+#   - Context profile reconciled from legacy `cost_resource_context_pack` (NON-canonical) to canonical
+#     `operations_context_pack` + `sdlc_run_context` (cost/resource governance is an operations-domain
+#     readiness concern). Flagged in open_questions.
+#   - Audit: legacy `cost_evidence_schema` + `resource_budget_report_schema` are stage-appropriate
+#     EVIDENCE schemas (carried per the template's "stage-appropriate evidence schemas" allowance);
+#     canonical base `sdlc_pipeline_evidence_schema` added; canonical `stage_gate_trace_schema` used for
+#     TRACE. Evidence and trace schemas kept distinct. The two cost/resource evidence schemas are NOT in
+#     the Phase A canonical audit-schema set — flagged in open_questions for registry formalization.
+#   - Governance `cost_resource_governance` / `resource_budget_gate` / `quota_governance` are
+#     canonical-permitted stage-specific gate profiles; base profiles sdlc_pipeline_governance /
+#     no_self_approval_policy / evidence_required_policy added per the standard stage pattern.
+#   - Routing: on_fail/rework_route reconciled from legacy `architecture` to `planning`. Cost / resource
+#     overruns are most directly remediated by re-planning resource budgets, quotas, retry-loop and
+#     parallel-execution choices (planning owns IMPLEMENTATION_PLAN). Legacy `architecture` divergence
+#     flagged in open_questions.
+
+stage_id: cost_resource_governance
+name: Cost / Resource Governance
+purpose: >-
+  Govern the projected runtime cost and resource footprint of the implemented changeset — token /
+  model / inference spend, GPU / CPU / RAM / storage budget, CI time, and retry-loop / parallel-
+  execution amplification — by estimating cost, checking it against resource budgets and quota
+  policy, and deciding the cost/resource gate under no-human governance so that no release candidate
+  carries an unbounded-cost risk or a resource-budget breach before backup/restore/DR validation.
+
+# CONDITIONAL stage: applicability_decision (with required_when) appears right after purpose.
+applicability_decision:
+  decision: COST_RESOURCE_APPLICABILITY_DECISION
+  required_when: >-
+    ai_or_compute_heavy_feature == true or gpu_cpu_memory_budget_relevant == true or
+    external_provider_cost_relevant == true or retry_loop_or_parallel_execution_present == true
+  produced_by: cost_resource_agent
+  on_not_applicable:
+    route: backup_restore_dr_validation_if_applicable
+    record_evidence: COST_RESOURCE_APPLICABILITY_DECISION
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: cost_resource_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Supervisor   # arbitrate model/provider routing cost trade-offs across the changeset
+  - Coder        # inspect retry-loops, parallel execution, model calls and resource usage in code
+  - Memory       # recall NFR cost/resource budgets, prior cost baselines and quota policy
+  - OS           # run benchmark / resource-budget / quota tooling against the build environment
+
+uses_skills:
+  - fermi-decompose   # decompose projected cost/resource footprint into estimable components
+  - calibrate         # calibrate cost / budget-breach severity before gating
+  - gap-audit         # find uncovered cost drivers / unbudgeted resources / missing quota limits
+
+uses_tools:
+  - evidence_reader          # read upstream PERFORMANCE_REPORT / RESOURCE_USAGE_DATA_IF_APPLICABLE (side-effect-free)
+  - resource_budget_checker  # check resource footprint against budgets (side-effect: governance + trace)
+  - cost_estimator           # estimate token/model/inference/compute cost (side-effect: governance + trace)
+  - benchmark_runner         # measure resource consumption / throughput baselines (side-effect: governance + trace)
+  - quota_policy_checker     # verify quota / rate-limit / cost-cap policy compliance (side-effect: governance + trace)
+  - policy_query             # query resource-budget / quota / cost-cap policy-as-data (side-effect-free)
+  - artifact_writer          # write cost / budget / quota reports (side-effect: governance + trace)
+  - evidence_writer          # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - cost_resource_governance   # stage-specific gate profile
+  - resource_budget_gate       # stage-specific gate profile
+  - quota_governance           # stage-specific gate profile
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema    # canonical base evidence schema (distinct from trace)
+  - cost_evidence_schema             # stage-appropriate evidence schema (cost estimate / cost-cap)
+  - resource_budget_report_schema    # stage-appropriate evidence schema (resource budget / quota)
+  - stage_gate_trace_schema          # canonical trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile   # canonical reconciliation of legacy `cost_resource_analysis_model`
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - operations_context_pack   # canonical reconciliation of legacy `cost_resource_context_pack`
+
+inputs:
+  - PERFORMANCE_REPORT                  # from performance_resilience (#24): latency/throughput/resource baselines
+  - RESOURCE_USAGE_DATA_IF_APPLICABLE   # from implementation: measured/declared resource usage
+  - NFR_CATALOG                         # cost/resource budgets and quota NFRs to gate against
+  - DOMAIN_PROFILE_DECISION             # determines AI/compute-heavy & external-provider-cost applicability
+
+outputs:
+  - COST_RESOURCE_APPLICABILITY_DECISION
+  - COST_ESTIMATE_REPORT
+  - RESOURCE_BUDGET_REPORT
+  - QUOTA_POLICY_REPORT
+  - RESOURCE_GATE_RESULT
+
+evidence:
+  - COST_RESOURCE_APPLICABILITY_DECISION
+  - COST_ESTIMATE_REPORT
+  - RESOURCE_BUDGET_REPORT
+  - QUOTA_POLICY_REPORT
+  - RESOURCE_GATE_RESULT
+
+trace:
+  - cost_resource_governance_stage_trace
+  - cost_estimator_tool_trace
+  - resource_budget_checker_tool_trace
+  - quota_policy_checker_tool_trace
+  - benchmark_runner_tool_trace
+  - policy_query_tool_trace
+
+gates:
+  - cost_estimate_within_budget
+  - resource_budget_pass
+  - quota_policy_pass
+
+on_pass: backup_restore_dr_validation_if_applicable
+on_fail: planning
+rework_route: planning
+
+blocking_conditions:
+  - unbounded_cost_risk
+  - resource_budget_failure
+  - quota_policy_violation
+
+optional_conditions:
+  - ai_or_compute_heavy_feature
+  - gpu_cpu_memory_budget_relevant
+  - external_provider_cost_relevant
+  - retry_loop_or_parallel_execution_present
+
+conditional_required_gates:
+  - gate_id: cost_estimate_within_budget
+    required_when: >-
+      ai_or_compute_heavy_feature == true or external_provider_cost_relevant == true or
+      retry_loop_or_parallel_execution_present == true
+  - gate_id: resource_budget_pass
+    required_when: >-
+      gpu_cpu_memory_budget_relevant == true or ai_or_compute_heavy_feature == true
+  - gate_id: quota_policy_pass
+    required_when: >-
+      external_provider_cost_relevant == true or retry_loop_or_parallel_execution_present == true
+
+max_iterations: 3

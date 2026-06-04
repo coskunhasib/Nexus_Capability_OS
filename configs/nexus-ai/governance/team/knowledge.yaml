@@ -1,0 +1,251 @@
+# =============================================================================
+# Nexus AI — Team-Scope Governance (APPLICABLE LAYER): knowledge_team
+# =============================================================================
+# Phase E / doc 19. DEDICATED team-scope governance profile CREATED here — the
+# Phase C registry had team-scope profiles ONLY for sdlc_team and research_team;
+# knowledge_team lacked one (doc 19 reconciliation input c). NOTE the
+# AUTHORITATIVE team name is knowledge_team (NOT knowledge_memory_team) per
+# reconciliation input b. This profile expresses the knowledge_team's
+# role-separation rules per §4/§5 so the knowledge/memory pipeline's required
+# gates can be evaluated from config.
+#
+# Documentation / blueprint ONLY. NO runtime code. NO merge. NO deploy.
+#
+# LOCKED DECISIONS honored: plugin cancelled (no plugin field); Governance !=
+# Audit; Evidence != Trace (required_evidence vs required_trace never merged);
+# Core Abilities are not agents — Memory is a Core Ability USED by these agents
+# and is NEVER promoted to an agent/owner; Supervisor != knowledge_team_lead; a
+# Team is a passive boundary, the team_lead orchestrates and never owns a stage /
+# bypasses a gate.
+#
+# NAMING RECONCILIATION: no_self_approval / evidence_required are first-class ids;
+# *_policy spellings are aliases. The knowledge_memory pipeline catalog binds only
+# memory_source_governance / validity_window_required_gate / redaction_required_gate
+# at pipeline level; evidence/no-self-approval are honored via the shared registry
+# and are re-shown here for the team scope (see open_questions / notes).
+#
+# AUTHORITATIVE SOURCES (read from disk)
+#   - configs/nexus-ai/governance_profiles.yaml  # memory_source_governance; validity_window_required_gate; redaction_required_gate; global no_self_approval / no_policy_bypass / evidence_required / trace_required / raw_credential_redaction
+#   - configs/nexus-ai/team_templates.yaml       # knowledge_team roster (6 agents) + team_lead + forbidden_actions (memory_core_ability_promoted_to_agent, retrieval_profile_update_without_validity_window, unredacted_sensitive_content_exposed)
+#   - configs/nexus-ai/team_lead_roles.yaml      # knowledge_team_lead forbidden_actions / blocking_limits
+#   - configs/nexus-ai/audit_schemas.yaml        # memory_provenance_schema; memory_update_trace_schema; stage_gate_trace_schema
+#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §5/§7  # team role rules + Memory governance (ability, not agent)
+# =============================================================================
+
+version: draft-0.1
+config_kind: team_scope_governance_profile
+status: candidate                      # NEW dedicated team-scope profile (reconciliation input c)
+no_plugin: true
+registry_ref: null
+composes_pipeline_profile: memory_source_governance
+
+governance_id_aliases:
+  no_self_approval: [no_self_approval_policy]
+  evidence_required: [evidence_required_policy]
+
+# =============================================================================
+# GOVERNANCE PROFILE (doc 19 §4)
+# =============================================================================
+governance_profile_id: knowledge_team_governance
+scope: team
+purpose: >-
+  Intra-team role-separation governance for the knowledge_team (authoritative name;
+  NOT knowledge_memory_team): a retrieval-profile update (retrieval_profile_agent)
+  may not be written for a memory with no validity window assigned
+  (validity_window_agent); sensitive content may not be exposed unredacted; the
+  Memory Core Ability stays a USED capability and is never promoted to an agent or
+  stage owner; no agent self-approves its own classification/summary; and the
+  knowledge_team_lead orchestrates but is not the Supervisor Core Ability and may
+  never bypass a gate. Makes the intake -> classification -> validity -> retrieval
+  separation evaluable from config.
+applies_to:
+  team: knowledge_team
+  team_lead: knowledge_team_lead
+  pipeline: knowledge_memory_pipeline
+  agents:
+    - knowledge_intake_agent          # memory_intake
+    - source_classification_agent     # source_classification (trust tier, sensitivity, redaction need)
+    - memory_summarization_agent      # summary_generation
+    - validity_window_agent           # validity_window_assignment
+    - retrieval_profile_agent         # retrieval_profile_update (bound by validity + sensitivity)
+    - memory_expiration_agent         # memory_expiration_review
+  core_abilities_used_not_members:    # Memory is USED, never an agent/owner (D-003/D-004)
+    - Memory                          # registry id: memory
+  stages:
+    - source_classification
+    - summary_generation
+    - validity_window_assignment
+    - retrieval_profile_update
+    - memory_expiration_review
+severity_default: blocker
+owner: knowledge_team_lead             # orchestrator/escalation owner; NOT a stage owner, NOT Supervisor
+escalation:
+  on_blocker: halt_pipeline_and_record_gate_failure
+  notify: knowledge_team_lead
+  forbidden_resolution:
+    - team_lead_override_of_failed_gate
+    - supervisor_core_ability_acts_as_team_lead
+    - memory_core_ability_promoted_to_agent
+    - retrieval_profile_update_without_validity_window
+
+required_evidence:                     # EVIDENCE family — audit/evidence_schemas/
+  - memory_provenance_schema
+required_trace:                        # TRACE family — audit/trace_schemas/
+  - memory_update_trace_schema
+  - stage_gate_trace_schema
+
+composes_governance_profiles:
+  - no_self_approval                   # re-shown in team scope (registry honors it cross-cuttingly; see notes)
+  - no_policy_bypass
+  - evidence_required                  # re-shown in team scope (catalog binds at pipeline via memory_provenance completeness; see notes)
+  - trace_required
+  - raw_credential_redaction
+  - memory_source_governance           # pipeline-scope umbrella re-shown in team context
+  - validity_window_required_gate
+  - redaction_required_gate
+
+# =============================================================================
+# RULES (doc 19 §5)
+# =============================================================================
+rules:
+
+  - rule_id: knowledge_retrieval_update_requires_validity_window
+    description: >-
+      A retrieval-profile update (retrieval_profile_agent) may not be written for a
+      memory that has no validity window assigned (validity_window_required_gate);
+      the validity window owner (validity_window_agent) is a distinct stage owner
+      from the retrieval-profile owner. Direct expression of knowledge
+      forbidden_action retrieval_profile_update_without_validity_window.
+    severity: blocker
+    required_when: stage == retrieval_profile_update
+    pass_condition: >-
+      validity_window_assigned == true AND
+      validity_window_assignment.owner_agent == validity_window_agent AND
+      retrieval_profile_update.owner_agent == retrieval_profile_agent
+    fail_condition: validity_window_assigned == false
+    on_fail: block_retrieval_profile_update
+    rework_route: validity_window_assignment
+    evidence_required:
+      - memory_provenance_schema
+    trace_required:
+      - memory_update_trace_schema
+
+  - rule_id: knowledge_no_unredacted_sensitive_content
+    description: >-
+      Sensitive content classified as requiring redaction may not be summarized,
+      stored, or exposed unredacted (redaction_required_gate), and memory may not
+      be exposed at a sensitivity above its classification. Complemented by the
+      global raw_credential_redaction. Direct expression of knowledge
+      forbidden_action unredacted_sensitive_content_exposed.
+    severity: blocker
+    required_when: stage in [summary_generation, retrieval_profile_update]
+    pass_condition: >-
+      sensitive_content_redacted_per_classification == true AND
+      exposed_sensitivity <= classified_sensitivity
+    fail_condition: >-
+      sensitive_content_exposed_unredacted == true OR
+      exposed_sensitivity > classified_sensitivity
+    on_fail: block_stage_and_require_redaction
+    rework_route: source_classification
+    evidence_required:
+      - memory_provenance_schema
+    trace_required:
+      - memory_update_trace_schema
+
+  - rule_id: knowledge_memory_is_ability_not_agent
+    description: >-
+      The Memory Core Ability (registry id: memory) is USED by the knowledge_team
+      agents but is never an agent, stage owner, or team member; no stage may list
+      Memory as owner_agent. Direct expression of knowledge forbidden_action
+      memory_core_ability_promoted_to_agent and the core_ability_as_owner_or_agent
+      anti-pattern.
+    severity: blocker
+    required_when: any_stage_owner_or_agent_assignment_is_made
+    pass_condition: no_stage_owner_or_agent == memory_core_ability
+    fail_condition: any_stage_owner_or_agent == memory_core_ability
+    on_fail: reject_assignment_of_core_ability_as_agent
+    rework_route: reassign_stage_to_a_valid_agent_role
+    evidence_required:
+      - memory_provenance_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: knowledge_no_self_approval_author_ne_approver
+    description: >-
+      No knowledge_team agent may be the sole approver of an artifact it authored:
+      for any classification/summary/expiration decision gate, approver_agent_id !=
+      produced_artifact.producer_agent_id (global no_self_approval re-shown in the
+      knowledge_team context).
+    severity: blocker
+    required_when: a_classification_summary_or_expiration_gate_is_evaluated
+    pass_condition: gate.approver_agent_id != produced_artifact.producer_agent_id
+    fail_condition: gate.approver_agent_id == produced_artifact.producer_agent_id
+    on_fail: block_gate_and_reassign_to_independent_approver
+    rework_route: source_classification
+    evidence_required:
+      - memory_provenance_schema
+    trace_required:
+      - memory_update_trace_schema
+
+  - rule_id: knowledge_no_failed_gate_bypass
+    description: >-
+      No actor in the knowledge_team — including the knowledge_team_lead — may
+      override, skip, or pass a blocking governance gate (global no_policy_bypass
+      re-shown in team context).
+    severity: blocker
+    required_when: any_blocking_gate_is_evaluated
+    pass_condition: blocking_gate_satisfied_before_progression == true
+    fail_condition: blocking_gate_overridden_without_satisfaction == true
+    on_fail: halt_pipeline_and_record_policy_bypass_attempt
+    rework_route: return_to_blocking_gate_owner_stage
+    evidence_required:
+      - memory_provenance_schema
+    trace_required:
+      - memory_update_trace_schema
+
+  - rule_id: knowledge_team_lead_role_separation
+    description: >-
+      The knowledge_team_lead orchestrates only: it never owns a stage, never
+      treats the Memory Core Ability as an agent/owner, never authors then approves
+      the same artifact, is never the Supervisor Core Ability, and never bypasses a
+      gate (supervisor_as_team_lead and team_as_stage_owner anti-patterns).
+    severity: blocker
+    required_when: knowledge_team_lead_acts_on_a_gate_or_stage
+    pass_condition: >-
+      knowledge_team_lead != supervisor_core_ability AND
+      knowledge_team_lead_owns_no_stage == true AND
+      knowledge_team_lead_did_not_treat_memory_as_agent == true AND
+      knowledge_team_lead_did_not_author_then_approve_same_artifact == true AND
+      knowledge_team_lead_did_not_bypass_any_gate == true
+    fail_condition: >-
+      knowledge_team_lead_is_supervisor_core_ability == true OR
+      knowledge_team_lead_owns_a_stage == true OR
+      knowledge_team_lead_treated_memory_as_agent == true OR
+      knowledge_team_lead_authored_then_approved_same_artifact == true OR
+      knowledge_team_lead_bypassed_a_gate == true
+    on_fail: reject_team_lead_action_and_reassign
+    rework_route: reassign_to_compliant_owner_or_independent_approver
+    evidence_required:
+      - memory_provenance_schema
+    trace_required:
+      - memory_update_trace_schema
+
+# =============================================================================
+# VALIDATION SELF-CHECK (doc 19 §14)
+# =============================================================================
+validation_self_check:
+  scope_is_known: true
+  every_rule_has_severity: true
+  every_blocker_rule_has_on_fail: true
+  evidence_and_trace_kept_distinct: true
+  no_plugin_governance_introduced: true
+  core_ability_is_not_an_agent: true                # Memory & Supervisor are abilities, never agents/leads
+notes: >-
+  NEW dedicated team-scope governance for knowledge_team (reconciliation inputs b
+  and c; authoritative name knowledge_team, not knowledge_memory_team). Layered
+  over the pipeline-scope memory_source_governance and the gate profiles
+  validity_window_required_gate / redaction_required_gate. The knowledge/memory
+  pipeline catalog binds only those three at pipeline level; no_self_approval and
+  evidence_required are honored cross-cuttingly via the shared registry and are
+  re-shown here for the team scope — flagged for Phase E confirmation in
+  open_questions.

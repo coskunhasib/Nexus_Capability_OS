@@ -1,0 +1,138 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #13 of 31: test_generation (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Format: docs/ai-sdlc-factory/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract).
+# Canonical pipeline & ordering: configs/nexus-ai/sdlc_pipeline.yaml (31-stage set; index 13).
+# Required / always-on per docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md
+#   ("Test Generation | Evet | ... | Required") -> no applicability_decision.
+# Canonical artifact names: configs/nexus-ai/artifact_registry.yaml (group test_bugfinding).
+# Primary stage prose: docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md §3.
+#
+# Reconciliation notes (legacy detail -> Phase A canonical registry):
+#   - owner_agent: legacy docs/ai-sdlc-factory/05-pipeline-model.md §4.14 named `qa_lead_agent`
+#     (stale 23-stage assumption); remapped to canonical `qa_agent`. qa_agent also owns the
+#     downstream test_execution (#14) and verification_loop_bug_finding (#15) stages.
+#   - sub_agent: prose said `test_generation_sub_agent`; canonical sub-agent catalog name is
+#     `test_generation_subagent` (used here).
+#   - uses_skills: legacy prose listed `verification-loop`, but the LOCKED skill semantics bind
+#     verification-loop to bug/defect FINDING only (its home is code_review / stage #15
+#     verification_loop_bug_finding) and explicitly forbid using it as a readiness/coverage
+#     activity or a replacement for test_execution. Deriving test COVERAGE from requirements /
+#     risk / changed behavior is divergent-by-coverage analysis, not defect-hunting, so
+#     verification-loop is intentionally NOT bound here. Retained `gap-audit` (coverage-gap
+#     detection: "do all critical paths / changed behaviors have tests?"). Flagged in
+#     open_questions.
+#   - uses_tools: prose listed test_writer + coverage_parser + writers; added canonical
+#     `repo_diff_reader` because changed-behavior test derivation must read the changeset
+#     (inputs CODE_CHANGESET_SUMMARY / CODE_REVIEW_REPORT). All tools canonical.
+#   - governance/model/context: legacy `test_generation_governance`, `test_generation_model`,
+#     `test_generation_context_pack` are NON-CANONICAL; anchored to canonical base profiles
+#     (`sdlc_pipeline_governance`, `evidence_required_policy`, `coder_engineering_model`,
+#     `implementation_context_pack`, `verification_context_pack`) plus canonical-permitted
+#     snake_case stage-specific gate profiles (`test_coverage_completeness_gate`,
+#     `regression_scope_gate`).
+#   - audit: `test_plan_evidence_schema` is a stage-appropriate evidence schema (NON-CANONICAL
+#     vs the locked base list); kept distinct from the trace schema (`stage_gate_trace_schema`).
+#     Evidence != Trace honored. Flagged in open_questions.
+#
+# No-self-approval: test_generation is an AUTHORING stage (it produces TEST_PLAN /
+#   GENERATED_TESTS_SUMMARY); it does not review another author's artifact, so owner_agent =
+#   qa_agent is compliant. Independent execution of the produced tests is the separate
+#   test_execution stage (#14); defect-hunting is the separate verification_loop_bug_finding
+#   stage (#15).
+
+version: draft-0.1
+stage_id: test_generation
+name: Test Generation
+purpose: >-
+  Gereksinim, NFR, risk register, kod değişikliği ve önceki bug history'yi girdi alarak
+  ürün için test kapsamını üretmek: kritik yolları, değişen davranışları ve regresyon
+  yüzeyini kapsayan bir test planı ile üretilen/planlanan testlerin özetini çıkarmak.
+  Amaç, downstream test_execution stage'inin çalıştıracağı, gereksinime izlenebilir ve
+  kapsam-boşluğu olmayan bir test seti tanımlamaktır (bu stage test ÇALIŞTIRMAZ ve
+  defect AVI yapmaz).
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: qa_agent
+sub_agents:
+  - test_generation_subagent
+
+uses_core_abilities:
+  - Coder    # author/synthesize test code and test scaffolding
+  - Memory   # read prior requirements, risk register, bug history and the changeset
+
+uses_skills:
+  - gap-audit   # coverage-gap detection: surface critical paths / changed behavior lacking tests
+                # (verification-loop intentionally NOT bound here — LOCKED: bug-finding only)
+
+uses_tools:
+  - repo_diff_reader   # read the code changeset to derive changed-behavior tests
+  - test_writer        # author/generate test cases (side-effect: governance + trace)
+  - coverage_parser    # map planned/generated tests against critical-path & regression scope
+  - artifact_writer    # write TEST_PLAN / GENERATED_TESTS_SUMMARY (side-effect: governance + trace)
+  - evidence_writer    # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - evidence_required_policy
+  - test_coverage_completeness_gate   # stage-specific gate profile (snake_case)
+  - regression_scope_gate             # stage-specific gate profile (snake_case)
+
+uses_audit_schemas:
+  - test_plan_evidence_schema   # stage-appropriate evidence schema (distinct from trace)
+  - stage_gate_trace_schema     # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - coder_engineering_model
+
+uses_context_memory_profiles:
+  - implementation_context_pack   # consumed: changeset / implementation context
+  - verification_context_pack     # produced/seeded for test_execution + bug-finding stages
+
+inputs:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ACCEPTANCE_CRITERIA
+  - FMEA_RISK_REGISTER
+  - CODE_CHANGESET_SUMMARY
+  - CODE_REVIEW_REPORT
+
+outputs:
+  - TEST_PLAN
+  - GENERATED_TESTS_SUMMARY
+  - TEST_GENERATION_GATE_RESULT
+
+evidence:
+  - TEST_PLAN
+  - GENERATED_TESTS_SUMMARY
+  - TEST_GENERATION_GATE_RESULT
+
+trace:
+  - test_generation_stage_trace
+  - test_writer_tool_trace
+  - coverage_parser_tool_trace
+  - test_generation_gate_evaluation_trace
+
+gates:
+  - critical_paths_have_tests
+  - changed_behavior_has_tests
+  - regression_scope_defined
+  - tests_trace_to_requirements
+
+on_pass: test_execution
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - missing_critical_path_tests
+  - changed_behavior_without_tests
+  - undefined_regression_scope
+  - untraceable_test_to_requirement
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

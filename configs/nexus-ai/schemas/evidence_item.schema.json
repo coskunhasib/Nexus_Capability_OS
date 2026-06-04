@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-ai/configs/nexus-ai/schemas/evidence_item.schema.json",
+  "title": "Nexus AI Evidence Item Contract",
+  "description": "Machine-readable JSON Schema for a single Evidence item in any Nexus AI pipeline. Field set is taken verbatim from docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 11 (Evidence Contract). Audit family rule (locked K-008): Evidence = decision proof; Trace = process history. These are kept distinct: this schema describes an evidence item only and intentionally does NOT model trace fields (trace_id, actor, action, related_skill, related_tool, related_core_ability, input_refs, output_refs, timestamp) from section 12. The embedded $defs/stage_contract guard enforces the locked stage-contract invariants (no plugin field, owner_agent is a pipeline Agent role string and never a Core Ability, all 7 usage-mapping arrays required).",
+  "type": "object",
+
+  "$comment": "LOCKED DECISIONS honored: plugin is cancelled (the property name `plugin` is explicitly disallowed via the false subschema { \"plugin\": false }, and additionalProperties:false bans every other undeclared property too); Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are never agents and may never appear as owner_agent, related_agent, related_sub_agent or produced_by; owner_agent is always a snake_case pipeline Agent role; Evidence (this schema) is kept distinct from Trace (07 section 12). Source of field names: 07 section 11.",
+
+  "properties": {
+    "plugin": false,
+    "evidence_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable unique identifier for this evidence item."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Kind of evidence (e.g. artifact, gate_result, report, decision_record). Evidence type, not a trace type."
+    },
+    "produced_by": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "not": {
+        "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+      },
+      "description": "snake_case role/agent/sub-agent id that produced the evidence (e.g. qa_agent, bug_hunter_subagent, sdlc_team_lead). MUST NOT be a Core Ability (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS) — Core Abilities are not agents and never own/produce stage artifacts."
+    },
+    "related_pipeline": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "snake_case pipeline_id this evidence belongs to (e.g. sdlc_pipeline)."
+    },
+    "related_run": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run_id of the pipeline run that produced this evidence."
+    },
+    "related_stage": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "snake_case stage_id that produced this evidence (e.g. verification_loop_bug_finding)."
+    },
+    "related_agent": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "not": {
+        "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+      },
+      "description": "snake_case pipeline Agent role linked to this evidence (e.g. qa_agent), or null when not agent-scoped. MUST NOT be a Core Ability — Core Abilities are never agents."
+    },
+    "related_sub_agent": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "not": {
+        "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+      },
+      "description": "snake_case sub-agent id linked to this evidence (e.g. bug_hunter_subagent), or null when none. MUST NOT be a Core Ability."
+    },
+    "related_gate": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "snake_case gate_id this evidence supports a decision for (e.g. verification_loop_bug_gate), or null when the evidence is not gate-scoped."
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Canonical artifact ids (UPPER_SNAKE_CASE, e.g. BUG_FINDING_REPORT) that this evidence is derived from or attests to."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable summary of what this evidence asserts."
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Evidence status (e.g. present, pass, fail, blocked, pending)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this evidence item was created."
+    }
+  },
+
+  "required": [
+    "evidence_id",
+    "type",
+    "produced_by",
+    "related_pipeline",
+    "related_run",
+    "related_stage",
+    "related_agent",
+    "related_sub_agent",
+    "related_gate",
+    "source_artifacts",
+    "summary",
+    "status",
+    "created_at"
+  ],
+
+  "additionalProperties": false,
+
+  "$defs": {
+    "core_ability": {
+      "$comment": "Canonical Core Abilities. They are NOT agents and NOT team members; they may never be used as owner_agent, related_agent, related_sub_agent, or produced_by.",
+      "type": "string",
+      "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+    },
+
+    "agent_role": {
+      "$comment": "A pipeline Agent ROLE is always a snake_case string and is NEVER a Core Ability.",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "not": {
+        "enum": ["Supervisor", "Coder", "Vision", "Audio", "Creative", "Memory", "Web", "OS"]
+      }
+    },
+
+    "usage_mapping_array": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+
+    "stage_contract": {
+      "$comment": "Guard schema for a single pipeline stage contract. Enforces the locked invariants required by this task: (1) no plugin property anywhere; (2) owner_agent is a pipeline Agent role string and never a Core Ability; (3) all 7 usage-mapping arrays are present even if empty []. owner_team is always sdlc_team and team_lead is always sdlc_team_lead for SDLC stages; Supervisor is never the team_lead. Field set/order follows 07 section 4. CONDITIONAL stages additionally carry applicability_decision (with required_when) right after purpose.",
+      "type": "object",
+      "properties": {
+        "plugin": false,
+        "stage_id": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "applicability_decision": {
+          "$comment": "Required only for CONDITIONAL stages; placed right after purpose. Must carry a required_when expression.",
+          "type": "object",
+          "properties": {
+            "required_when": { "type": "string", "minLength": 1 }
+          },
+          "required": ["required_when"]
+        },
+        "owner_team": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9_]*$" },
+        "team_lead": {
+          "$comment": "Never a Core Ability (Supervisor != sdlc_team_lead).",
+          "allOf": [{ "$ref": "#/$defs/agent_role" }]
+        },
+        "owner_agent": {
+          "$comment": "Always a pipeline Agent ROLE (snake_case); never a Core Ability.",
+          "allOf": [{ "$ref": "#/$defs/agent_role" }]
+        },
+        "sub_agents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/agent_role" },
+          "uniqueItems": true
+        },
+        "uses_core_abilities": {
+          "$comment": "The ONLY place Core Abilities may legitimately appear in a stage contract: as capabilities the stage USES — never as owner/agent.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/core_ability" },
+          "uniqueItems": true
+        },
+        "uses_skills": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_tools": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_governance_profiles": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_audit_schemas": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_model_provider_profiles": { "$ref": "#/$defs/usage_mapping_array" },
+        "uses_context_memory_profiles": { "$ref": "#/$defs/usage_mapping_array" },
+        "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "outputs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "trace": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "gates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "on_pass": { "type": "string", "minLength": 1 },
+        "on_fail": { "type": "string", "minLength": 1 },
+        "rework_route": { "type": "string", "minLength": 1 },
+        "blocking_conditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "optional_conditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "conditional_required_gates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "max_iterations": { "type": "integer", "minimum": 1, "default": 3 }
+      },
+      "required": [
+        "stage_id",
+        "name",
+        "purpose",
+        "owner_team",
+        "team_lead",
+        "owner_agent",
+        "sub_agents",
+        "uses_core_abilities",
+        "uses_skills",
+        "uses_tools",
+        "uses_governance_profiles",
+        "uses_audit_schemas",
+        "uses_model_provider_profiles",
+        "uses_context_memory_profiles",
+        "inputs",
+        "outputs",
+        "evidence",
+        "trace",
+        "gates",
+        "on_pass",
+        "on_fail",
+        "rework_route",
+        "blocking_conditions"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

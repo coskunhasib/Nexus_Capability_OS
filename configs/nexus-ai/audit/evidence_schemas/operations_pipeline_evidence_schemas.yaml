@@ -1,0 +1,196 @@
+# =============================================================================
+# Nexus AI — Audit / EVIDENCE Schemas — Operations Pipeline
+# =============================================================================
+# Phase E / doc 19 §12 output. Documentation/blueprint ONLY — NO runtime code,
+# NO merge, NO deploy.
+#
+# Materializes the `type: evidence_schema` items with owner_domain
+# `operations_reliability` from configs/nexus-ai/audit_schemas.yaml into the
+# applicable per-scope audit-schema config layer (doc 19 §13).
+#
+# LOCKED DECISIONS honored:
+#   - Plugin CANCELLED (no plugin concept anywhere).
+#   - Audit != Governance (this is an AUDIT file).
+#   - Evidence != Trace: EVIDENCE ONLY here; trace schemas live in the SEPARATE
+#     dir configs/nexus-ai/audit/trace_schemas/ and are never merged in.
+#   - Core Abilities are NOT agents: never producer/consumer.
+#   - verification-loop = bug/defect finding (rollback_fix forward-fix is
+#     confirmed via a verification-loop defect sweep; recorded for consistency).
+#
+# NOTE — distinct-rollback-schemas invariant: rollback_fix_evidence_schema below
+# is OPERATIONS-scoped and is intentionally distinct from the SDLC
+# rollback_validation_schema and the activation rollback_readiness_evidence_schema
+# (three different pipelines, three different schemas — never conflated).
+#
+# AUDIT SCHEMA CONTRACT (doc 19 §12): audit_schema_id, type, applies_to,
+# required_fields, producer, consumer, retention, redaction_rules.
+# Values transcribed verbatim from the catalog. registry_id/name kept as labels.
+#
+# STATUS: candidate (NEW, non-SDLC pipeline). Preserved per item.
+# =============================================================================
+
+version: draft-0.1
+layer_id: nexus_ai_audit_evidence_schemas_operations
+family: audit
+audit_kind: evidence
+scope: pipeline
+applies_to_pipeline: operations_pipeline
+source_registry: configs/nexus-ai/audit_schemas.yaml
+contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+purpose: >-
+  Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
+  operations pipeline (incident intake, severity, mitigation, rollback/fix,
+  postmortem, operational learning). Trace items are excluded by design.
+
+evidence_schemas:
+
+  - audit_schema_id: incident_evidence_schema
+    registry_id: incident_evidence_schema
+    name: Incident Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - operations_pipeline
+      - operations_stage:incident_intake
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - signal_sources
+      - initial_scope
+      - source_artifacts
+      - status
+      - created_at
+    producer: incident_intake_agent
+    consumer: severity_classification_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_incident_signals
+
+  - audit_schema_id: severity_classification_evidence_schema
+    registry_id: severity_classification_evidence_schema
+    name: Severity Classification Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - operations_pipeline
+      - operations_stage:severity_classification
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - severity_level
+      - severity_rationale
+      - status
+      - created_at
+    producer: severity_classification_agent
+    consumer: mitigation_planning_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: mitigation_plan_evidence_schema
+    registry_id: mitigation_plan_evidence_schema
+    name: Mitigation Plan Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - operations_pipeline
+      - operations_stage:mitigation_plan
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - mitigation_steps
+      - source_artifacts
+      - status
+      - created_at
+    producer: mitigation_planning_agent
+    consumer: incident_response_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: rollback_fix_evidence_schema
+    registry_id: rollback_fix_evidence_schema
+    name: Rollback or Fix Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - operations_pipeline
+      - operations_stage:rollback_or_fix
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - action_taken
+      - rollback_or_fix
+      - confirmation_status
+      - source_artifacts
+      - status
+      - created_at
+    producer: incident_response_agent
+    consumer: postmortem_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+
+  - audit_schema_id: postmortem_evidence_schema
+    registry_id: postmortem_evidence_schema
+    name: Postmortem Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - operations_pipeline
+      - operations_stage:postmortem
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - root_cause
+      - timeline
+      - corrective_actions
+      - source_artifacts
+      - status
+      - created_at
+    producer: postmortem_agent
+    consumer: operational_learning_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_timeline
+
+  - audit_schema_id: operational_learning_evidence_schema
+    registry_id: operational_learning_evidence_schema
+    name: Operational Learning Evidence Schema
+    type: evidence_schema
+    status: candidate
+    applies_to:
+      - operations_pipeline
+      - operations_stage:learning_update
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - learning_items
+      - follow_up_backlog
+      - status
+      - created_at
+    producer: operational_learning_agent
+    consumer: policy_and_evidence_engine
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure

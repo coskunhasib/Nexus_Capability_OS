@@ -1,0 +1,113 @@
+# =============================================================================
+# Nexus AI — Trace Schema (Audit / Trace family) — TRACE ONLY
+# =============================================================================
+# Phase E / doc 19 §12 materialization of ONE `type: trace_schema` item from the
+# Phase C registry (configs/nexus-ai/audit_schemas.yaml). Documentation/blueprint
+# only — NO runtime code, NO merge, NO deploy.
+#
+# LOCKED DECISIONS honored here:
+#   - Audit != Governance. This file is an AUDIT schema; governance profiles live
+#     in configs/nexus-ai/governance_profiles.yaml (a SEPARATE file).
+#   - Evidence != Trace (K-008 / doc 03 §10–§12; doc 19 §11). This is a TRACE
+#     schema = operation/process history (islem gecmisi). It proves the PRODUCTION
+#     PATH of evidence but is NEVER itself evidence and is NEVER merged with any
+#     evidence_schema. Evidence schemas live in the SEPARATE sibling directory
+#     configs/nexus-ai/audit/evidence_schemas/ — this directory holds traces only.
+#   - Plugin cancelled: no plugin* key appears anywhere.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents/team members; they never appear as producer or consumer.
+#
+# This per-schema file MUST agree with the single catalog entry of the same
+# audit_schema_id in configs/nexus-ai/audit_schemas.yaml (cross_file_notes §2).
+# The §12 contract fields (doc 19 §12) are the authoritative section below; the
+# registry-context block preserves the §3 registry contract for traceability.
+# =============================================================================
+
+version: draft-0.1
+schema_family: trace            # Trace family ONLY (never evidence) — Evidence != Trace
+source_registry: configs/nexus-ai/audit_schemas.yaml
+materializes: stage_gate_trace_schema
+
+# ----- doc 19 §12 audit schema contract (authoritative) ----------------------
+audit_schema_id: stage_gate_trace_schema
+type: trace_schema                # one of: evidence_schema | trace_schema |
+                                  # decision_record_schema | gate_result_schema
+applies_to:
+  - all_pipelines
+  - gate_evaluation
+required_fields:
+  - trace_id
+  - type
+  - actor
+  - action
+  - related_pipeline
+  - related_run
+  - related_stage
+  - related_skill
+  - related_tool
+  - related_core_ability        # capability-layer reference only; never actor/owner authorship
+  - input_refs
+  - output_refs
+  - status
+  - timestamp
+producer: stage_owner_agent       # snake_case Agent role of the emitting stage; never a Core Ability
+consumer: evidence_graph_agent    # consumed downstream into EVIDENCE_GRAPH (stage 28)
+retention: retain_with_release_evidence
+redaction_rules:
+  - no_raw_secret_exposure
+  - raw_credential_redaction
+  - redact_tool_call_arguments_containing_secrets
+
+# ----- registry context (doc 17 §3 contract — preserved for traceability) ----
+registry_context:
+  name: Stage Gate Trace Schema
+  status: canonical
+  owner_domain: sdlc
+  purpose: >-
+    Canonical Trace record shape for gate-evaluation provenance — the operation
+    history of how a stage gate was evaluated. Process history, never decision
+    proof.
+  allowed_usage:
+    - Record the operation history of a stage gate evaluation (who/what ran,
+      inputs, outputs, status, timestamp).
+    - Reused cross-pipeline by every pipeline for gate-decision traces.
+  forbidden_usage:
+    - Used as the decision proof itself (that is a gate_result_schema /
+      evidence_schema).
+    - Merged with any evidence_schema record (Evidence != Trace).
+  notes: >-
+    Field set mirrors configs/nexus-ai/schemas/trace_item.schema.json (07 §12).
+    The single most widely reused schema in the system: every SDLC stage and all
+    5 non-SDLC pipelines reuse it for gate-decision traces.
+
+# ----- governance binding (Governance != Audit; ids live in the SEPARATE file) -
+# The source registry binds this schema under the `global_trace_required_policy`
+# spelling. Per the Phase E naming-reconciliation rule, the FIRST-CLASS canonical
+# governance_profile_id is `trace_required` (scope: global) in
+# configs/nexus-ai/governance_profiles.yaml; the `_policy` spelling is recorded as
+# an alias. This block is a cross-reference only — it does NOT define governance.
+governance_profiles:
+  - trace_required                # canonical id (governance_profiles.yaml)
+governance_profile_aliases:
+  trace_required:
+    - global_trace_required_policy  # spelling used in audit_schemas.yaml
+
+# ----- co-emitted audit schemas (SELF-CATEGORY cross-reference, doc 17 §8) -----
+# The evidence whose production path this trace records. Kept STRICTLY distinct;
+# listed for traceability, never merged. (Lives in audit/evidence_schemas/.)
+companion_evidence_schemas:
+  - sdlc_pipeline_evidence_schema
+
+# ----- usage mapping (doc 17 §13 — enforceable from registry data) ------------
+used_by:
+  pipelines:
+    - sdlc_pipeline
+    - research_pipeline
+    - activation_pipeline
+    - operations_pipeline
+    - skill_governance_pipeline
+    - knowledge_memory_pipeline
+  stages:
+    - ALL_SDLC_STAGES             # all 31 stage contracts list stage_gate_trace_schema
+  agents:
+    - all_stage_owner_agents

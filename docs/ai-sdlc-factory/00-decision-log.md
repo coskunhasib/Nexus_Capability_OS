@@ -112,6 +112,7 @@ Global Governance
 Pipeline Governance
 Team Governance
 Stage Governance
+Core Ability Governance
 Skill Governance
 Tool Governance
 ```

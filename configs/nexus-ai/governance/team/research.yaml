@@ -1,0 +1,215 @@
+# =============================================================================
+# Nexus AI — Team-Scope Governance (APPLICABLE LAYER): research_team
+# =============================================================================
+# Phase E / doc 19. Applicable expression (per §4 governance_profile + §5 rule
+# contracts) of the team-scope governance that the Phase C registry only
+# catalogs (governance_profiles.yaml, scope: team, id: research_team_governance).
+#
+# Documentation / blueprint ONLY. NO runtime code. NO merge. NO deploy.
+#
+# LOCKED DECISIONS honored: plugin cancelled (no plugin field); Governance !=
+# Audit; Evidence != Trace (required_evidence vs required_trace never merged);
+# Core Abilities are not agents (Supervisor != research_team_lead); a Team is a
+# passive boundary, the team_lead orchestrates and never owns a stage / bypasses
+# a gate. prism = brainstorming/divergence (used only in scope_and_questions).
+#
+# NAMING RECONCILIATION: no_self_approval / evidence_required are first-class ids;
+# *_policy spellings are aliases. Authoritative team name: research_team.
+#
+# AUTHORITATIVE SOURCES (read from disk)
+#   - configs/nexus-ai/governance_profiles.yaml  # scope: team research_team_governance (catalog); research_source_governance; citation_required_gate; global no_self_approval / evidence_required
+#   - configs/nexus-ai/team_templates.yaml       # research_team roster (10 agents) + team_lead + forbidden_actions
+#   - configs/nexus-ai/team_lead_roles.yaml      # research_team_lead forbidden_actions / blocking_limits
+#   - configs/nexus-ai/audit_schemas.yaml        # source_evidence_schema / claim_evidence_schema / stage_gate_trace_schema
+#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §5  # research team rule: producer != sole validator of own source
+# =============================================================================
+
+version: draft-0.1
+config_kind: team_scope_governance_profile
+status: candidate
+no_plugin: true
+registry_ref: research_team_governance
+
+governance_id_aliases:
+  no_self_approval: [no_self_approval_policy]
+  evidence_required: [evidence_required_policy]
+
+# =============================================================================
+# GOVERNANCE PROFILE (doc 19 §4)
+# =============================================================================
+governance_profile_id: research_team_governance
+scope: team
+purpose: >-
+  Intra-team role-separation governance for the research_team (03 §5): a producing
+  researcher cannot be the sole validator of their own source — cross-validation is
+  performed by a distinct role (cross_validation_agent), not by the source's
+  producer; load-bearing claims may not be finalized uncited; unscored sources may
+  not be used in synthesis; and the research_team_lead orchestrates but is not the
+  Supervisor Core Ability and may never bypass a blocking gate. Makes the research
+  pipeline's producer!=validator separation evaluable from config.
+applies_to:
+  team: research_team
+  team_lead: research_team_lead
+  pipeline: research_pipeline
+  agents:
+    - source_discovery_agent          # produces candidate sources
+    - source_reliability_agent        # scores source reliability
+    - claim_extraction_agent          # extracts atomic claims
+    - claim_evidence_agent            # maps claims to evidence (producer of claim-evidence)
+    - cross_validation_agent          # DISTINCT validator role (no self-approval)
+    - research_synthesis_agent        # owns synthesis (citation_required_gate)
+    - research_completion_agent       # final evidence-graph gate
+  stages:
+    - source_reliability_assessment
+    - claim_evidence_mapping
+    - cross_validation
+    - synthesis
+    - research_completion
+severity_default: blocker
+owner: research_team_lead              # orchestrator/escalation owner; NOT a stage owner, NOT Supervisor
+escalation:
+  on_blocker: halt_pipeline_and_record_gate_failure
+  notify: research_team_lead
+  forbidden_resolution:
+    - team_lead_override_of_failed_gate
+    - supervisor_core_ability_acts_as_team_lead
+    - producer_self_validates_own_source
+
+required_evidence:                     # EVIDENCE family — audit/evidence_schemas/
+  - source_evidence_schema
+  - claim_evidence_schema
+required_trace:                        # TRACE family — audit/trace_schemas/
+  - stage_gate_trace_schema
+
+composes_governance_profiles:
+  - no_self_approval
+  - no_policy_bypass
+  - evidence_required
+  - trace_required
+  - research_source_governance         # pipeline-scope source admissibility/reliability (re-shown)
+  - citation_required_gate             # synthesis citation gate (re-shown)
+
+# =============================================================================
+# RULES (doc 19 §5)
+# =============================================================================
+rules:
+
+  - rule_id: research_producer_not_sole_validator_of_own_source
+    description: >-
+      A producing researcher cannot be the sole validator of their own source:
+      cross_validation (the source/claim validation gate) must be owned by
+      cross_validation_agent, distinct from the agent that produced the source or
+      the claim-evidence mapping. Direct expression of 03 §5 "researcher kendi
+      kaynağını tek başına doğrulayamaz; source validation ayrı yapılır".
+    severity: blocker
+    required_when: stage == cross_validation
+    pass_condition: >-
+      cross_validation.owner_agent == cross_validation_agent AND
+      cross_validation.owner_agent != source.producer_agent_id AND
+      cross_validation.owner_agent != claim_evidence.producer_agent_id
+    fail_condition: >-
+      cross_validation.owner_agent == source.producer_agent_id OR
+      cross_validation.owner_agent == claim_evidence.producer_agent_id
+    on_fail: block_cross_validation_and_reassign_to_distinct_validator
+    rework_route: claim_evidence_mapping
+    evidence_required:
+      - source_evidence_schema
+      - claim_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: research_no_self_approval_author_ne_approver
+    description: >-
+      Generalized no-self-approval inside the research_team: for any validation or
+      completion gate, approver_agent_id != produced_artifact.producer_agent_id
+      (global no_self_approval re-shown in the research_team context).
+    severity: blocker
+    required_when: a_validation_or_completion_gate_is_evaluated
+    pass_condition: gate.approver_agent_id != produced_artifact.producer_agent_id
+    fail_condition: gate.approver_agent_id == produced_artifact.producer_agent_id
+    on_fail: block_gate_and_reassign_to_independent_validator
+    rework_route: reassign_to_non_author_agent
+    evidence_required:
+      - claim_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: research_no_uncited_load_bearing_claim
+    description: >-
+      research_synthesis_agent cannot finalize synthesis containing an uncited
+      load-bearing claim (citation_required_gate), and unscored sources may not be
+      used in synthesis (research_source_governance). Reliability scoring is
+      mandatory; uncertainty must be explicit.
+    severity: blocker
+    required_when: stage == synthesis
+    pass_condition: >-
+      every_load_bearing_claim_has_citation == true AND
+      every_source_used_has_reliability_score == true AND
+      uncertainty_reported == true
+    fail_condition: >-
+      any_load_bearing_claim_uncited == true OR
+      any_unscored_source_used_in_synthesis == true
+    on_fail: block_synthesis_gate
+    rework_route: claim_evidence_mapping
+    evidence_required:
+      - claim_evidence_schema
+      - source_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: research_no_failed_gate_bypass
+    description: >-
+      No actor in the research_team — including the research_team_lead — may
+      override, skip, or pass a blocking governance gate (global no_policy_bypass
+      re-shown in team context).
+    severity: blocker
+    required_when: any_blocking_gate_is_evaluated
+    pass_condition: blocking_gate_satisfied_before_progression == true
+    fail_condition: blocking_gate_overridden_without_satisfaction == true
+    on_fail: halt_pipeline_and_record_policy_bypass_attempt
+    rework_route: return_to_blocking_gate_owner_stage
+    evidence_required:
+      - claim_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+  - rule_id: research_team_lead_role_separation
+    description: >-
+      The research_team_lead orchestrates only: it never owns a stage, never
+      authors then validates the same artifact, is never the Supervisor Core
+      Ability, and never bypasses a gate (supervisor_as_team_lead and
+      team_as_stage_owner anti-patterns).
+    severity: blocker
+    required_when: research_team_lead_acts_on_a_gate_or_stage
+    pass_condition: >-
+      research_team_lead != supervisor_core_ability AND
+      research_team_lead_owns_no_stage == true AND
+      research_team_lead_did_not_author_then_validate_same_artifact == true AND
+      research_team_lead_did_not_bypass_any_gate == true
+    fail_condition: >-
+      research_team_lead_is_supervisor_core_ability == true OR
+      research_team_lead_owns_a_stage == true OR
+      research_team_lead_authored_then_validated_same_artifact == true OR
+      research_team_lead_bypassed_a_gate == true
+    on_fail: reject_team_lead_action_and_reassign
+    rework_route: reassign_to_compliant_owner_or_distinct_validator
+    evidence_required:
+      - claim_evidence_schema
+    trace_required:
+      - stage_gate_trace_schema
+
+# =============================================================================
+# VALIDATION SELF-CHECK (doc 19 §14)
+# =============================================================================
+validation_self_check:
+  scope_is_known: true
+  every_rule_has_severity: true
+  every_blocker_rule_has_on_fail: true
+  evidence_and_trace_kept_distinct: true
+  no_plugin_governance_introduced: true
+  core_ability_is_not_an_agent: true                # Supervisor != research_team_lead
+notes: >-
+  Implements the registry CANDIDATE research_team_governance as an applicable
+  team-scope layer. Rules trace to 03 §5 (producer != sole validator of own
+  source), citation_required_gate / research_source_governance, and the global
+  no_self_approval / no_policy_bypass / evidence_required / trace_required.

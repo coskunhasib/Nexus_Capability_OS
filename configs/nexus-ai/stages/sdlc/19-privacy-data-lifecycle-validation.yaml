@@ -1,0 +1,162 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #19 of 31: privacy_data_lifecycle_validation (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   position #19, between ai_agent_safety_evaluation (#18) and api_contract_compatibility_validation (#20)).
+# Reconciled against:
+#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §4 (stage prose),
+#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§7
+#       (applicability_decision standard -> PRIVACY_LIFECYCLE_APPLICABILITY_DECISION),
+#   - docs/ai-sdlc-factory/06b-sdlc-agentic-safety-and-remaining-gates.md §3
+#       (conditional_required status + required_when expression + uses/evidence detail),
+#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Privacy / Data Lifecycle coverage),
+#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale names superseded below),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names).
+#
+# Reconciliation notes (legacy -> Phase A canonical registry):
+#   - owner_agent: canonical `privacy_agent` (suggested + canonical role). The artifacts this stage
+#     reviews (DATA_INVENTORY, PRIVACY_RISK_REGISTER) are AUTHORED upstream by `security_privacy_agent`
+#     in security_privacy_design, so privacy_agent reviewing them does NOT violate no_self_approval.
+#   - tools `data_inventory_checker`, `retention_policy_checker`, `deletion_flow_checker`,
+#     `tenant_isolation_checker` are NOT in the Phase A canonical shared Tools registry. They are
+#     load-bearing for this stage's retention/deletion/anonymization/tenant-isolation checks and are
+#     carried from legacy prose (also union-listed in 06-canonical-corrections §8). Flagged in
+#     open_questions for registry formalization. Canonical `policy_query` is added to query
+#     retention/deletion policy-as-data, and `evidence_reader` to read upstream privacy evidence.
+#   - model profile reconciled from legacy `privacy_analysis_model` (non-canonical) to canonical
+#     `security_analysis_model` (privacy-lifecycle validation is a security-domain reasoning task).
+#   - context profile reconciled from legacy `privacy_context_pack` (non-canonical) to canonical
+#     `security_context_pack` + `sdlc_run_context`.
+#   - governance `data_retention_gate` + `tenant_isolation_gate` are canonical-permitted
+#     stage-specific gate profiles; base profiles sdlc_pipeline_governance / evidence_required_policy /
+#     no_self_approval_policy added per the standard stage pattern.
+#   - audit: privacy_evidence_schema / data_lifecycle_report_schema / tenant_isolation_report_schema
+#     are EVIDENCE schemas; stage_gate_trace_schema is the TRACE schema (evidence vs trace kept distinct).
+
+stage_id: privacy_data_lifecycle_validation
+name: Privacy / Data Lifecycle Validation
+purpose: >-
+  Validate the implementation's handling of personal, sensitive and tenant data across its full
+  lifecycle — data minimization, retention, deletion/erasure, anonymization, export, audit-log
+  content and tenant isolation — against the data inventory and privacy risk register, and decide
+  the privacy gate under no-human governance before contract/compatibility validation.
+
+# CONDITIONAL stage: applicability_decision (with required_when) appears right after purpose.
+applicability_decision:
+  decision: PRIVACY_LIFECYCLE_APPLICABILITY_DECISION
+  required_when: >-
+    personal_data_processed == true or sensitive_data_processed == true or
+    tenant_data_processed == true or audit_log_contains_user_data == true
+  produced_by: privacy_agent
+  on_not_applicable:
+    route: api_contract_compatibility_validation
+    record_evidence: PRIVACY_LIFECYCLE_APPLICABILITY_DECISION
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: privacy_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Memory   # recall data inventory, privacy risk register and prior privacy decisions
+  - Coder    # inspect retention/deletion/anonymization/export logic in the changeset
+  - OS       # exercise deletion/export flows and tenant-isolation checks in the build environment
+
+uses_skills:
+  - gap-audit   # find uncovered data-lifecycle requirements (retention, deletion, export gaps)
+  - fmea        # reason about data-leak / cross-tenant / un-erasable-data failure modes
+  - sentinel    # premortem the privacy gate decision before committing to pass
+
+uses_tools:
+  - data_inventory_checker    # NON-CANONICAL (legacy): reconcile code data-flows vs DATA_INVENTORY
+  - retention_policy_checker  # NON-CANONICAL (legacy): verify retention windows / TTL enforcement
+  - deletion_flow_checker     # NON-CANONICAL (legacy): verify deletion/erasure + export flows
+  - tenant_isolation_checker  # NON-CANONICAL (legacy): verify per-tenant data isolation
+  - policy_query              # query retention/deletion policy-as-data (side-effect-free)
+  - evidence_reader           # read upstream privacy evidence (DATA_INVENTORY, PRIVACY_RISK_REGISTER)
+  - artifact_writer           # write lifecycle/retention/tenant reports (side-effect: governance + trace)
+  - evidence_writer           # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - privacy_lifecycle_governance
+  - data_retention_gate        # stage-specific gate profile
+  - tenant_isolation_gate      # stage-specific gate profile
+
+uses_audit_schemas:
+  - privacy_evidence_schema          # evidence schema
+  - data_lifecycle_report_schema     # evidence schema
+  - tenant_isolation_report_schema   # evidence schema
+  - stage_gate_trace_schema          # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - security_analysis_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - security_context_pack
+
+inputs:
+  - DATA_INVENTORY            # from security_privacy_design (author: security_privacy_agent)
+  - PRIVACY_RISK_REGISTER     # from security_privacy_design (author: security_privacy_agent)
+  - CODE_CHANGESET_SUMMARY    # from implementation: what data-handling code changed
+  - DOMAIN_PROFILE_DECISION   # determines personal/sensitive/tenant-data applicability
+
+outputs:
+  - PRIVACY_LIFECYCLE_APPLICABILITY_DECISION
+  - DATA_LIFECYCLE_REPORT
+  - RETENTION_POLICY_REPORT
+  - TENANT_ISOLATION_REPORT
+  - PRIVACY_GATE_RESULT
+
+evidence:
+  - PRIVACY_LIFECYCLE_APPLICABILITY_DECISION
+  - DATA_LIFECYCLE_REPORT
+  - RETENTION_POLICY_REPORT
+  - TENANT_ISOLATION_REPORT
+  - PRIVACY_GATE_RESULT
+
+trace:
+  - privacy_validation_trace
+  - retention_policy_check_tool_trace
+  - deletion_flow_check_tool_trace
+  - tenant_isolation_check_tool_trace
+  - policy_query_tool_trace
+
+gates:
+  - privacy_lifecycle_pass_if_applicable
+  - data_retention_pass_if_applicable
+  - tenant_isolation_pass_if_applicable
+
+on_pass: api_contract_compatibility_validation
+on_fail: security_privacy_design
+rework_route: security_privacy_design
+
+blocking_conditions:
+  - unmitigated_personal_data_risk
+  - missing_or_unenforced_retention_policy
+  - missing_deletion_or_export_flow
+  - tenant_isolation_gap
+
+optional_conditions:
+  - personal_data_processed
+  - sensitive_data_processed
+  - tenant_data_processed
+  - audit_log_contains_user_data
+
+conditional_required_gates:
+  - gate_id: privacy_lifecycle_pass_if_applicable
+    required_when: >-
+      personal_data_processed == true or sensitive_data_processed == true or
+      audit_log_contains_user_data == true
+  - gate_id: data_retention_pass_if_applicable
+    required_when: personal_data_processed == true or sensitive_data_processed == true
+  - gate_id: tenant_isolation_pass_if_applicable
+    required_when: tenant_data_processed == true
+
+max_iterations: 3

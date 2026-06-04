@@ -1,0 +1,3651 @@
+# =============================================================================
+# Nexus AI — Audit Schemas Registry
+# =============================================================================
+# Phase C / doc 17 §8 output. Documentation/blueprint only — NO runtime code,
+# NO merge, NO deploy.
+#
+# This file is the single Shared-Registry source of truth for the AUDIT family
+# (doc 03 §10, doc 05 §10, doc 06 §7/§10). It answers "what audit schemas exist
+# in the system?". Per the usage-mapping rule (doc 05 §1, doc 17 §13) every item
+# also carries `used_by` so the "shown again under each pipeline/stage/agent that
+# uses it" relationship is enforceable from registry data alone — without parsing
+# prose.
+#
+# -----------------------------------------------------------------------------
+# LOCKED DECISIONS honored in this registry
+# -----------------------------------------------------------------------------
+#   - Plugin cancelled: no plugin registry, ever. No `plugin*` key appears.
+#   - Audit != Governance. This file holds ONLY audit schemas (Evidence + Trace +
+#     decision-record + gate-result). Governance profiles live in
+#     configs/nexus-ai/governance_profiles.yaml (a SEPARATE file).
+#   - Evidence != Trace (locked K-008 / doc 03 §10–§12; doc 19 §11). The two are
+#     grouped under "Audit" but kept STRICTLY distinct and are NEVER merged:
+#       * Evidence  = decision proof (karar kanıtı). type: evidence_schema.
+#                     Also: decision_record_schema (a decision-proof record) and
+#                     gate_result_schema (a gate decision-proof record) are
+#                     evidence-family records — they are decision proofs, NOT
+#                     process history.
+#       * Trace     = operation/process history (işlem geçmişi). type:
+#                     trace_schema. A trace proves the PRODUCTION PATH of evidence
+#                     but is not itself evidence.
+#     Decision proofs are type: evidence_schema (or decision_record_schema /
+#     gate_result_schema). Trace records are type: trace_schema. See the
+#     `type` field on every item.
+#   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS]
+#     are NOT agents and NOT team members. They never appear as a `producer` or
+#     `consumer` here (those are always snake_case Agent roles, gates, or the
+#     policy/evidence engine). Supervisor != any *_team_lead.
+#   - Skill != Tool.  Governance != Audit.  Evidence != Trace.
+#
+# -----------------------------------------------------------------------------
+# REGISTRY ITEM CONTRACT (doc 17 §3) — every item carries:
+#   id, name, type, status, purpose, owner_domain, allowed_usage,
+#   forbidden_usage, governance_profiles, audit_schemas, notes
+# PLUS category-specific fields (doc 17 §8 / doc 19 §12):
+#   type (evidence_schema | trace_schema | decision_record_schema |
+#         gate_result_schema), applies_to, required_fields, producer, consumer,
+#   retention, redaction_rules
+# PLUS:
+#   used_by  — list of pipelines/stages/agents that reference this schema
+#              (doc 17 §13: usage-mapping enforceable from registry data)
+#   aliases  — (optional) variant names reconciled to this canonical id
+#
+# NOTE on `audit_schemas` contract field: for an *audit schema* item this field is
+# the SELF-CATEGORY cross-reference (companion audit schemas it is co-emitted
+# with). It does not introduce a new category; it keeps the §3 contract shape
+# uniform across all registry files.
+#
+# -----------------------------------------------------------------------------
+# STATUS vocabulary (doc 17 §3):
+#   canonical   — locked / established (defined by SDLC or a locked concept doc)
+#   candidate   — referenced by a pipeline but not yet ratified (NEW items)
+#   deprecated  — retained for traceability; do not bind in new work
+# Every item MUST have a status and at least one `used_by` entry (or status:
+# candidate). NEW pipeline-introduced items are marked `candidate`.
+# =============================================================================
+
+version: draft-0.1
+registry_id: nexus_ai_audit_schemas_registry
+category: audit_schema
+purpose: >-
+  Canonical Shared-Registry catalog of all Nexus AI audit schemas (Evidence and
+  Trace, kept strictly distinct), with usage mapping (used_by) so the
+  shared-registry usage rule is enforceable from registry data. Documentation /
+  blueprint only.
+
+# ----- closed type vocabulary for this registry (doc 17 §8) -------------------
+type_vocabulary:
+  - evidence_schema          # decision proof (karar kanıtı) — Evidence family
+  - trace_schema             # operation/process history (işlem geçmişi) — Trace family
+  - decision_record_schema   # a recorded decision proof (Evidence family; not Trace)
+  - gate_result_schema       # a gate decision proof (Evidence family; not Trace) — INTENTIONALLY UNUSED type (R14); see gate_result_schema_disposition
+
+status_vocabulary:
+  - canonical
+  - candidate
+  - deprecated
+
+# ----- enforceable invariants (doc 17 §11/§13, doc 19 §14) -------------------
+registry_rules:
+  - Evidence and Trace are never merged; the `type` field on every item makes the
+    distinction machine-checkable (evidence_schema/decision_record_schema/
+    gate_result_schema are Evidence-family; trace_schema is Trace-family).
+  - No plugin schema, plugin registry, or plugin concept exists anywhere.
+  - producer and consumer are snake_case Agent roles, gate ids, or the
+    policy/evidence engine — NEVER a Core Ability (Supervisor, Coder, Vision,
+    Audio, Creative, Memory, Web, OS) and never a *_team_lead acting as approver
+    of its own stage.
+  - Every item has a status and at least one used_by entry (or status: candidate).
+  - This file contains audit schemas only; governance profiles are a separate
+    registry (Governance != Audit).
+  - Every audit-schema id referenced anywhere in configs/nexus-ai resolves to a
+    first-class item here OR to a recorded alias (audit_schema_aliases block); an
+    alias always maps to a canonical id of the SAME family (Evidence != Trace is
+    never crossed). gate_result_schema is an intentionally-unused type with no
+    first-class item and no id references (gate_result_schema_disposition, R14).
+
+# =============================================================================
+# CANONICAL SCHEMAS
+# =============================================================================
+# These are locked/established. They are defined and produced by the existing
+# SDLC pipeline (31 stage contracts in configs/nexus-ai/stages/sdlc/*.yaml and
+# configs/nexus-ai/sdlc_pipeline.yaml) or by a locked concept doc.
+# =============================================================================
+
+audit_schemas:
+
+  # ---------------------------------------------------------------------------
+  # Cross-cutting canonical base schemas (the two pillars: 1 evidence, 1 trace)
+  # ---------------------------------------------------------------------------
+
+  - id: sdlc_pipeline_evidence_schema
+    name: SDLC Pipeline Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: >-
+      Canonical base Evidence record shape for the SDLC pipeline — the
+      decision-proof record that binds an artifact to a stage/agent/gate
+      decision. Decision proof, never process history.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for any SDLC stage that has no more
+        specific stage evidence schema.
+      - Serve as the base shape every stage-specific SDLC evidence schema extends.
+    forbidden_usage:
+      - Used to record operation/process history (that is a trace_schema).
+      - Merged with stage_gate_trace_schema or any trace record.
+    governance_profiles:
+      - evidence_required
+      - sdlc_development_completion_governance
+    audit_schemas:
+      - stage_gate_trace_schema   # co-emitted trace companion (kept distinct)
+    notes: >-
+      Field set is taken verbatim from configs/nexus-ai/schemas/
+      evidence_item.schema.json (07 §11). Base evidence schema reused by the
+      most SDLC stages.
+    aliases:
+      - requirements_evidence_schema   # requirements_run_context (context_memory_profiles.yaml) headline evidence for intake/requirements/planning
+    # ---- category-specific fields (doc 17 §8 / doc 19 §12) ----
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage_evidence
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_pipeline
+      - related_run
+      - related_stage
+      - related_agent
+      - related_sub_agent
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: stage_owner_agent          # the snake_case owner_agent of the emitting stage
+    consumer: evidence_graph_agent        # consumed downstream into EVIDENCE_GRAPH (stage 28)
+    retention: retain_with_release_evidence   # lifetime of the release package
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+      - redact_pii_in_source_artifacts
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+      stages:
+        - intake
+        - requirements
+        - planning
+        - supply_chain_sbom_license
+        - cost_resource_governance
+        - evidence_graph_build
+        - development_completion
+        - refraction_learning
+      agents:
+        - product_requirements_agent
+        - release_manager_agent
+        - evidence_graph_agent
+
+  - id: stage_gate_trace_schema
+    name: Stage Gate Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: >-
+      Canonical Trace record shape for gate-evaluation provenance — the
+      operation history of how a stage gate was evaluated. Process history,
+      never decision proof.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the operation history of a stage gate evaluation (who/what ran,
+        inputs, outputs, status, timestamp).
+      - Reused cross-pipeline by every pipeline for gate-decision traces.
+    forbidden_usage:
+      - Used as the decision proof itself (that is a gate_result_schema /
+        evidence_schema).
+      - Merged with any evidence_schema record.
+    governance_profiles:
+      - global_trace_required_policy
+    audit_schemas:
+      - sdlc_pipeline_evidence_schema   # the evidence whose production path it traces
+    notes: >-
+      Field set from configs/nexus-ai/schemas/trace_item.schema.json (07 §12).
+      The single most widely reused schema in the system: every SDLC stage and
+      all 5 non-SDLC pipelines reuse it for gate-decision traces.
+    aliases:
+      # Variant spellings reconciled to this canonical id (reconciliation sweep
+      # R2 + catalog/context naming variants). See audit_schema_aliases block.
+      - stage_gate_decision_trace   # R2: gate-decision flavor used in review-gate stage `trace` lists
+      - decision_trace_schema       # context_memory_profiles.yaml / skills_registry.yaml decision-history trace
+      - research_trace_schema       # pipeline_catalog.yaml research row headline trace
+      - operations_trace_schema     # pipeline_catalog.yaml operations row headline trace
+      - memory_trace_schema         # pipeline_catalog.yaml knowledge/memory row headline trace
+    applies_to:
+      - all_pipelines
+      - gate_evaluation
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_pipeline
+      - related_run
+      - related_stage
+      - related_skill
+      - related_tool
+      - related_core_ability
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: stage_owner_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+      - redact_tool_call_arguments_containing_secrets
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      stages:
+        - ALL_SDLC_STAGES   # all 31 stage contracts list stage_gate_trace_schema
+      agents:
+        - all_stage_owner_agents
+
+  # ---------------------------------------------------------------------------
+  # Canonical SDLC stage-specific EVIDENCE schemas
+  # ---------------------------------------------------------------------------
+
+  - id: domain_risk_evidence_schema
+    name: Domain & Risk Profile Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the domain/risk profiling decision (DOMAIN_PROFILE_DECISION, RISK_PROFILE).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the domain classification and risk-profile decision evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: Stage 02 evidence schema.
+    applies_to:
+      - sdlc_stage:domain_risk_profile
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: domain_classifier_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [domain_risk_profile]
+      agents: [domain_classifier_agent]
+
+  - id: skill_semantic_evidence_schema
+    name: Skill Semantic Extraction Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for skill semantic extraction (SKILL_SEMANTIC_CATALOG, SKILL_MISUSE_WARNINGS, SKILL_STAGE_BINDING_PROPOSAL).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the semantic extraction result that must precede any skill binding.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - no_unread_skill_binding
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: Stage 03 evidence schema. Enforces no_unread_skill_binding (skill must have semantic extraction before binding).
+    applies_to:
+      - sdlc_stage:skill_semantic_extraction
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: skill_librarian_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [skill_semantic_extraction]
+      agents: [skill_librarian_agent]
+
+  - id: requirements_review_evidence_schema
+    name: Requirements Review Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the requirements review gate (REQUIREMENTS_REVIEW_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record cross-author review evidence over REQUIREMENTS_SPEC.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Produced by the same agent that authored REQUIREMENTS_SPEC (no self-approval).
+    governance_profiles:
+      - evidence_required
+      - no_self_approval
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: >-
+      Stage 05 evidence schema. Owner is sdlc_team_lead as the locked review-gate
+      fallback (no dedicated reviewer role); author of REQUIREMENTS_SPEC is
+      product_requirements_agent, so reviewer != author.
+    applies_to:
+      - sdlc_stage:requirements_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: sdlc_team_lead
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [requirements_review]
+      agents: [sdlc_team_lead]
+
+  - id: architecture_evidence_schema
+    name: Architecture Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for architecture artifacts (ARCHITECTURE_DOC, ADR_INDEX, SYSTEM_CONTEXT_DIAGRAM).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for architecture design artifacts.
+    forbidden_usage:
+      - Used to record ADR decision provenance (that is architecture_decision_trace_schema).
+    governance_profiles:
+      - evidence_required
+      - architecture_governance_profile
+    audit_schemas:
+      - architecture_decision_trace_schema
+      - stage_gate_trace_schema
+    notes: Stage 06 evidence schema. Distinct from the ADR provenance trace.
+    applies_to:
+      - sdlc_stage:architecture
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: architecture_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [architecture]
+      agents: [architecture_agent]
+
+  - id: architecture_review_evidence_schema
+    name: Architecture Review Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the architecture review gate (ARCHITECTURE_REVIEW_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record cross-author review evidence over ARCHITECTURE_DOC.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Produced by architecture_agent (no self-approval).
+    governance_profiles:
+      - evidence_required
+      - no_self_approval
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: >-
+      Stage 07 evidence schema. Owner is sdlc_team_lead (locked review-gate
+      fallback); reviews ARCHITECTURE_DOC authored by architecture_agent, so
+      reviewer != author.
+    applies_to:
+      - sdlc_stage:architecture_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: sdlc_team_lead
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [architecture_review]
+      agents: [sdlc_team_lead]
+
+  - id: threat_model_evidence_schema
+    name: Threat Model Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the threat model and security requirements (THREAT_MODEL, SECURITY_REQUIREMENTS).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for threat modeling outputs.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - security_privacy_design_governance
+    audit_schemas:
+      - privacy_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 08 evidence schema.
+    applies_to:
+      - sdlc_stage:security_privacy_design
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: security_privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_threat_detail_secrets
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [security_privacy_design]
+      agents: [security_privacy_agent]
+
+  - id: privacy_evidence_schema
+    name: Privacy Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for privacy artifacts (DATA_INVENTORY, PRIVACY_RISK_REGISTER) and privacy/data-lifecycle validation.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for privacy design (stage 08) and privacy/
+        data-lifecycle validation (stage 19).
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - privacy_governance_profile
+    audit_schemas:
+      - data_lifecycle_report_schema
+      - tenant_isolation_report_schema
+      - stage_gate_trace_schema
+    notes: Shared by stage 08 (design) and stage 19 (validation).
+    applies_to:
+      - sdlc_stage:security_privacy_design
+      - sdlc_stage:privacy_data_lifecycle_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_data_inventory
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [security_privacy_design, privacy_data_lifecycle_validation]
+      agents: [security_privacy_agent, privacy_agent]
+
+  - id: premortem_evidence_schema
+    name: Premortem Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for premortem outputs (SENTINEL_PREMORTEM).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for the premortem failure-mode analysis.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - risk_register_schema
+      - stage_gate_trace_schema
+    notes: Stage 09 evidence schema (paired with risk_register_schema for FMEA_RISK_REGISTER).
+    applies_to:
+      - sdlc_stage:premortem_fmea
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: risk_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [premortem_fmea]
+      agents: [risk_agent]
+
+  - id: risk_register_schema
+    name: Risk Register Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the FMEA risk register (FMEA_RISK_REGISTER) — structured failure modes with severity/likelihood/detectability.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the structured FMEA risk register as decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - premortem_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 09 evidence schema. Holds residual-risk records referenced by release evidence.
+    applies_to:
+      - sdlc_stage:premortem_fmea
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - risk_id
+      - severity
+      - likelihood
+      - detectability
+      - mitigation
+      - status
+      - created_at
+    producer: risk_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [premortem_fmea]
+      agents: [risk_agent]
+
+  - id: implementation_evidence_schema
+    name: Implementation Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for implementation artifacts (CODE_CHANGESET_SUMMARY, IMPLEMENTATION_NOTES, LOCAL_BUILD_RESULT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for implementation outputs.
+    forbidden_usage:
+      - Used to record changeset provenance (that is code_change_trace_schema).
+    governance_profiles:
+      - evidence_required
+      - no_silent_mutation
+    audit_schemas:
+      - code_change_trace_schema
+      - stage_gate_trace_schema
+    notes: Stage 11 evidence schema. Distinct from the changeset provenance trace.
+    applies_to:
+      - sdlc_stage:implementation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: engineering_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_changeset
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [implementation]
+      agents: [engineering_agent]
+
+  - id: code_review_evidence_schema
+    name: Code Review Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the code review gate (CODE_REVIEW_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record cross-author code-review evidence over CODE_CHANGESET_SUMMARY.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Produced by engineering_agent (no self-approval).
+    governance_profiles:
+      - evidence_required
+      - no_self_approval
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: Stage 12 evidence schema. Owner code_reviewer_agent reviews engineering_agent's changeset (reviewer != author).
+    applies_to:
+      - sdlc_stage:code_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: code_reviewer_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [code_review]
+      agents: [code_reviewer_agent]
+
+  - id: test_plan_evidence_schema
+    name: Test Plan Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for test generation artifacts (TEST_PLAN, GENERATED_TESTS_SUMMARY).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for generated test plans/suites.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: Stage 13 evidence schema.
+    applies_to:
+      - sdlc_stage:test_generation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: qa_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [test_generation]
+      agents: [qa_agent]
+
+  - id: test_execution_evidence_schema
+    name: Test Execution Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for test execution artifacts (TEST_EXECUTION_REPORT, COVERAGE_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record decision-proof evidence for test execution results and coverage.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Used as a substitute for verification-loop bug-finding evidence.
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: Stage 14 evidence schema. Distinct from bug_finding_evidence_schema (test execution != bug finding).
+    aliases:
+      - test_result_evidence_schema   # test_execution_context (context_memory_profiles.yaml) headline test-result evidence
+    applies_to:
+      - sdlc_stage:test_execution
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: qa_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [test_execution]
+      agents: [qa_agent]
+
+  - id: bug_finding_evidence_schema
+    name: Bug Finding Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: >-
+      Decision-proof record for the verification-loop bug-finding gate
+      (BUG_FINDING_REPORT, BUG_FINDING_GATE_RESULT). Blocker-bug-zero evidence.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record defect-finding evidence over the changeset + test results.
+      - Support the verification_loop_bug_gate (open blocker bug count == 0).
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Used as a general readiness checklist or test-execution replacement.
+    governance_profiles:
+      - evidence_required
+      - verification_loop_bug_gate
+      - blocker_bug_zero
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: >-
+      Stage 15 evidence schema. Owner qa_agent (sub_agent bug_hunter_subagent)
+      hunts defects in engineering_agent's changeset (reviewer != author).
+    applies_to:
+      - sdlc_stage:verification_loop_bug_finding
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - blocker_bug_count
+      - major_bug_count
+      - summary
+      - status
+      - created_at
+    producer: qa_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_repro_steps
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [verification_loop_bug_finding]
+      agents: [qa_agent]
+
+  - id: security_scan_evidence_schema
+    name: Security Scan Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: >-
+      Decision-proof record for the security validation gate (SECURITY_SCAN_REPORT,
+      SECURITY_FINDINGS_NORMALIZED). Critical-security-zero evidence.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record normalized security findings as decision-proof evidence.
+      - Support critical_security_zero (critical security finding count == 0).
+    forbidden_usage:
+      - Used to record per-finding lineage (that is security_finding_trace_schema).
+    governance_profiles:
+      - evidence_required
+      - critical_security_zero
+    audit_schemas:
+      - security_finding_trace_schema
+      - stage_gate_trace_schema
+    notes: Stage 16 evidence schema. Distinct from the per-finding lineage trace.
+    aliases:
+      - security_evidence_schema   # security_validation_context (context_memory_profiles.yaml) headline security evidence
+    applies_to:
+      - sdlc_stage:security_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - critical_finding_count
+      - high_finding_count
+      - summary
+      - status
+      - created_at
+    producer: security_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_exploit_detail_secrets
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [security_validation]
+      agents: [security_validation_agent]
+
+  - id: supply_chain_evidence_schema
+    name: Supply Chain Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for supply-chain artifacts (SBOM, LICENSE_REPORT, DEPENDENCY_RISK_REPORT, SUPPLY_CHAIN_GATE_RESULT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record SBOM / license / dependency-risk decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 17 evidence schema.
+    applies_to:
+      - sdlc_stage:supply_chain_sbom_license
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: supply_chain_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [supply_chain_sbom_license]
+      agents: [supply_chain_agent]
+
+  - id: agentic_eval_evidence_schema
+    name: Agentic Safety Evaluation Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for AI-agent safety evaluation (AGENTIC_SAFETY_EVAL_REPORT, TOOL_MISUSE_TEST_REPORT, CONTEXT_POISONING_TEST_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record agentic-safety evaluation decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - tool_misuse_governance
+      - context_safety_governance
+    audit_schemas:
+      - prompt_injection_test_schema
+      - evidence_integrity_report_schema
+      - stage_gate_trace_schema
+    notes: Stage 18 evidence schema.
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: ai_safety_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_injection_payload_secrets
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [ai_agent_safety_evaluation]
+      agents: [ai_safety_agent]
+
+  - id: prompt_injection_test_schema
+    name: Prompt Injection Test Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the prompt-injection adversarial test (PROMPT_INJECTION_TEST_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record prompt-injection / tool-misuse / poisoning defect-sweep evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - agentic_eval_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 18 evidence schema (companion to agentic_eval_evidence_schema).
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: ai_safety_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_injection_payload_secrets
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [ai_agent_safety_evaluation]
+      agents: [ai_safety_agent]
+
+  - id: evidence_integrity_report_schema
+    name: Evidence Integrity Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record attesting evidence integrity / non-tampering (EVIDENCE_INTEGRITY_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record an attestation that the evidence chain is intact and untampered.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - evidence_integrity_gate
+    audit_schemas:
+      - agentic_eval_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 18 evidence schema. Backs the evidence_integrity_gate governance profile.
+    applies_to:
+      - sdlc_stage:ai_agent_safety_evaluation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - integrity_status
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: ai_safety_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [ai_agent_safety_evaluation]
+      agents: [ai_safety_agent]
+
+  - id: data_lifecycle_report_schema
+    name: Data Lifecycle Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for data-lifecycle / retention validation (DATA_LIFECYCLE_REPORT, RETENTION_POLICY_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record data-lifecycle and retention-policy decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - privacy_governance_profile
+    audit_schemas:
+      - privacy_evidence_schema
+      - tenant_isolation_report_schema
+      - stage_gate_trace_schema
+    notes: Stage 19 evidence schema (conditional stage).
+    applies_to:
+      - sdlc_stage:privacy_data_lifecycle_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [privacy_data_lifecycle_validation]
+      agents: [privacy_agent]
+
+  - id: tenant_isolation_report_schema
+    name: Tenant Isolation Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for tenant-isolation validation (TENANT_ISOLATION_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record tenant-isolation decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - privacy_governance_profile
+    audit_schemas:
+      - privacy_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 19 evidence schema (conditional stage).
+    applies_to:
+      - sdlc_stage:privacy_data_lifecycle_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: privacy_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_tenant_identifiers
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [privacy_data_lifecycle_validation]
+      agents: [privacy_agent]
+
+  - id: api_contract_evidence_schema
+    name: API Contract Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for API contract/compatibility validation (API_CONTRACT_REPORT, CONTRACT_TEST_REPORT, COMPATIBILITY_GATE_RESULT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record API contract and compatibility decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - compatibility_report_schema
+      - stage_gate_trace_schema
+    notes: Stage 20 evidence schema (conditional stage). Owner contract_validation_agent reviews engineering_agent's API_CONTRACTS (reviewer != author).
+    applies_to:
+      - sdlc_stage:api_contract_compatibility_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: contract_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [api_contract_compatibility_validation]
+      agents: [contract_validation_agent]
+
+  - id: compatibility_report_schema
+    name: Compatibility Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for breaking-change / compatibility analysis (BREAKING_CHANGE_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record breaking-change / backward-compatibility decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - api_contract_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 20 evidence/report schema (conditional stage).
+    applies_to:
+      - sdlc_stage:api_contract_compatibility_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - breaking_change_count
+      - summary
+      - status
+      - created_at
+    producer: contract_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [api_contract_compatibility_validation]
+      agents: [contract_validation_agent]
+
+  - id: compliance_matrix_schema
+    name: Compliance Matrix Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the regulatory compliance matrix (COMPLIANCE_MATRIX_IF_APPLICABLE, COMPLIANCE_GATE_RESULT_IF_APPLICABLE).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record requirement→control compliance-matrix decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - regulatory_evidence_schema
+      - stage_gate_trace_schema
+    notes: >-
+      Stage 21 evidence schema (conditional stage). Also declared at SDLC
+      pipeline level (sdlc_pipeline.yaml uses_audit_schemas).
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage:domain_regulatory_compliance_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - control_id
+      - requirement_ref
+      - compliance_status
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: compliance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [domain_regulatory_compliance_validation_if_applicable]
+      agents: [compliance_agent]
+
+  - id: regulatory_evidence_schema
+    name: Regulatory Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for regulatory traceability (REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record regulatory-traceability decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - compliance_matrix_schema
+      - stage_gate_trace_schema
+    notes: >-
+      Stage 21 evidence schema (conditional stage). Also declared at SDLC
+      pipeline level (sdlc_pipeline.yaml uses_audit_schemas).
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage:domain_regulatory_compliance_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - regulation_ref
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: compliance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [domain_regulatory_compliance_validation_if_applicable]
+      agents: [compliance_agent]
+
+  - id: migration_evidence_schema
+    name: Data Migration Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for data-migration validation (MIGRATION_VALIDATION_REPORT, ROLLBACK_VALIDATION_REPORT, DATA_INTEGRITY_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record data-migration validation decision-proof evidence (lossy/
+        irreversible/ordering/idempotency defects found).
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: Stage 22 evidence schema (conditional stage). Owner data_migration_agent reviews engineering_agent's migration files (reviewer != author).
+    applies_to:
+      - sdlc_stage:data_migration_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: data_migration_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_migration_samples
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [data_migration_validation_if_applicable]
+      agents: [data_migration_agent]
+
+  - id: accessibility_evidence_schema
+    name: Accessibility Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for accessibility validation (ACCESSIBILITY_REPORT, UI_RELEASE_GATE_RESULT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record accessibility decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - ux_validation_report_schema
+      - stage_gate_trace_schema
+    notes: Stage 23 evidence schema (conditional stage).
+    applies_to:
+      - sdlc_stage:accessibility_ux_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: accessibility_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [accessibility_ux_validation_if_applicable]
+      agents: [accessibility_agent]
+
+  - id: ux_validation_report_schema
+    name: UX Validation Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for UX validation (UX_VALIDATION_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record UX validation decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - accessibility_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 23 evidence schema (conditional stage).
+    applies_to:
+      - sdlc_stage:accessibility_ux_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: accessibility_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [accessibility_ux_validation_if_applicable]
+      agents: [accessibility_agent]
+
+  - id: performance_evidence_schema
+    name: Performance Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for performance validation (PERFORMANCE_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record performance decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - resilience_report_schema
+      - stage_gate_trace_schema
+    notes: Stage 24 evidence schema.
+    applies_to:
+      - sdlc_stage:performance_resilience
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: performance_resilience_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [performance_resilience]
+      agents: [performance_resilience_agent]
+
+  - id: resilience_report_schema
+    name: Resilience Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for resilience validation (RESILIENCE_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record resilience / fault-tolerance decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - performance_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 24 evidence schema.
+    applies_to:
+      - sdlc_stage:performance_resilience
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: performance_resilience_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [performance_resilience]
+      agents: [performance_resilience_agent]
+
+  - id: cost_evidence_schema
+    name: Cost Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for cost governance (COST_ESTIMATE_REPORT, QUOTA_POLICY_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record cost-estimate / cost-cap decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - resource_budget_report_schema
+      - stage_gate_trace_schema
+    notes: Stage 25 evidence schema.
+    applies_to:
+      - sdlc_stage:cost_resource_governance
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: cost_governance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [cost_resource_governance]
+      agents: [cost_governance_agent]
+
+  - id: resource_budget_report_schema
+    name: Resource Budget Report Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for resource budget/quota governance (RESOURCE_BUDGET_REPORT, RESOURCE_GATE_RESULT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record resource-budget / quota decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - cost_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 25 evidence schema.
+    applies_to:
+      - sdlc_stage:cost_resource_governance
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: cost_governance_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [cost_resource_governance]
+      agents: [cost_governance_agent]
+
+  - id: backup_restore_evidence_schema
+    name: Backup Restore Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for backup/restore validation (BACKUP_PLAN, RESTORE_TEST_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record backup/restore decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - dr_validation_schema
+      - rollback_validation_schema
+      - stage_gate_trace_schema
+    notes: Stage 26 evidence schema (conditional stage).
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: operations_readiness_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [backup_restore_dr_validation_if_applicable]
+      agents: [operations_readiness_agent]
+
+  - id: dr_validation_schema
+    name: Disaster Recovery Validation Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for DR validation (DR_READINESS_REPORT).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record disaster-recovery readiness decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - backup_restore_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 26 evidence schema (conditional stage).
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: operations_readiness_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [backup_restore_dr_validation_if_applicable]
+      agents: [operations_readiness_agent]
+
+  - id: rollback_validation_schema
+    name: Rollback Validation Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for rollback validation (ROLLBACK_VALIDATION_REPORT) in the backup/restore/DR stage.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record rollback-validation decision-proof evidence (SDLC pre-release).
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Confused with rollback_readiness_evidence_schema (Activation) or
+        rollback_fix_evidence_schema (Operations) — those are different pipelines.
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - backup_restore_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 26 evidence schema (conditional stage). SDLC-scoped rollback validation; distinct from the activation/operations rollback schemas.
+    applies_to:
+      - sdlc_stage:backup_restore_dr_validation_if_applicable
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: operations_readiness_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [backup_restore_dr_validation_if_applicable]
+      agents: [operations_readiness_agent]
+
+  - id: evidence_graph_evidence_schema
+    name: Evidence Graph Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the assembled evidence graph (EVIDENCE_GRAPH).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the assembled requirement→…→release evidence DAG as decision proof.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+      - evidence_integrity_gate
+    audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - traceability_matrix_schema
+      - stage_gate_trace_schema
+    notes: Stage 28 evidence schema. Owner evidence_graph_agent (sub_agent evidence_trace_subagent).
+    applies_to:
+      - sdlc_stage:evidence_graph_build
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - graph_node_count
+      - graph_edge_count
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: evidence_graph_agent
+    consumer: release_manager_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [evidence_graph_build]
+      agents: [evidence_graph_agent]
+
+  - id: traceability_matrix_schema
+    name: Traceability Matrix Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the requirement→artifact traceability matrix (TRACEABILITY_MATRIX).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the requirement→artifact coverage matrix as decision proof.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - evidence_graph_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 28 evidence schema.
+    applies_to:
+      - sdlc_stage:evidence_graph_build
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - requirement_ref
+      - artifact_ref
+      - coverage_status
+      - status
+      - created_at
+    producer: evidence_graph_agent
+    consumer: release_manager_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [evidence_graph_build]
+      agents: [evidence_graph_agent]
+
+  - id: release_evidence_schema
+    name: Release Evidence Schema
+    type: evidence_schema
+    status: canonical
+    purpose: >-
+      LOCKED canonical Evidence record for the sealed release package
+      (RELEASE_EVIDENCE) and the development-completion / operations-readiness
+      decision proofs. The top-level release decision proof.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the sealed release-candidate evidence package (stage 30).
+      - Record operations-readiness (stage 27) and development-completion
+        (stage 29) decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Sealed without development_completion_pass (release_after_development_completion).
+    governance_profiles:
+      - evidence_required
+      - release_candidate_governance
+      - release_after_development_completion
+      - residual_risk_recorded
+    audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - gate_decision_trace_schema
+      - release_decision_trace_schema
+      - stage_gate_trace_schema
+    notes: >-
+      Reused by stages 27, 29, 30 and declared at SDLC pipeline level
+      (sdlc_pipeline.yaml uses_audit_schemas). The release decision proof; the
+      go/no-go process history lives in release_decision_trace_schema (kept
+      distinct).
+    aliases:
+      - operations_evidence_schema             # operations_readiness_run_context (context_memory_profiles.yaml) headline evidence for SDLC stage 27/25/26 (NOT the operations_pipeline)
+      - operations_readiness_evidence_schema   # legacy stage-27 spelling reconciled to release_evidence_schema (see stages/sdlc/27-operations-readiness.yaml); bound by operations_readiness_governance in governance_profiles.yaml
+    applies_to:
+      - sdlc_pipeline
+      - sdlc_stage:operations_readiness
+      - sdlc_stage:development_completion
+      - sdlc_stage:release_candidate
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_pipeline
+      - related_run
+      - related_stage
+      - related_gate
+      - source_artifacts
+      - residual_risks
+      - rollback_plan_present
+      - runbook_present
+      - summary
+      - status
+      - created_at
+    producer: release_manager_agent
+    consumer: policy_and_evidence_engine
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [operations_readiness, development_completion, release_candidate]
+      agents: [release_manager_agent]
+
+  - id: learning_record_schema
+    name: Learning Record Schema
+    type: evidence_schema
+    status: canonical
+    purpose: Decision-proof record for the curated learning record (LESSONS_LEARNED, FUTURE_IMPROVEMENT_BACKLOG).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the curated post-run learning record as decision-proof evidence.
+    forbidden_usage:
+      - Used to record the memory-update proposal lineage (that is memory_update_trace_schema).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - sdlc_pipeline_evidence_schema
+      - memory_update_trace_schema
+      - stage_gate_trace_schema
+    notes: Stage 31 evidence schema. Distinct from the memory-update proposal trace.
+    applies_to:
+      - sdlc_stage:refraction_learning
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: refraction_learning_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [refraction_learning]
+      agents: [refraction_learning_agent]
+
+  # ---------------------------------------------------------------------------
+  # Canonical SDLC stage-specific TRACE schemas (Trace family — process history)
+  # ---------------------------------------------------------------------------
+
+  - id: architecture_decision_trace_schema
+    name: Architecture Decision Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: Trace record for ADR decision provenance — the operation history of how an architecture decision was reached.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the provenance/lineage of an architecture decision (ADR) record.
+    forbidden_usage:
+      - Used as the architecture decision proof itself (that is architecture_evidence_schema).
+    governance_profiles:
+      - global_trace_required_policy
+    audit_schemas:
+      - architecture_evidence_schema
+    notes: Stage 06 trace schema. Process history for ADRs; distinct from the evidence it traces.
+    applies_to:
+      - sdlc_stage:architecture
+      - adr_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: architecture_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [architecture]
+      agents: [architecture_agent]
+
+  - id: code_change_trace_schema
+    name: Code Change Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: Trace record for changeset provenance — the operation history of how a code change was produced.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record changeset provenance/lineage for the implementation stage.
+    forbidden_usage:
+      - Used as the implementation decision proof itself (that is implementation_evidence_schema).
+    governance_profiles:
+      - global_trace_required_policy
+      - no_silent_mutation
+    audit_schemas:
+      - implementation_evidence_schema
+    notes: Stage 11 trace schema. Process history for the changeset; distinct from the evidence it traces.
+    applies_to:
+      - sdlc_stage:implementation
+      - changeset_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: engineering_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_diff
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [implementation]
+      agents: [engineering_agent]
+
+  - id: security_finding_trace_schema
+    name: Security Finding Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: Trace record for per-finding lineage — the operation history of how each security finding was detected/normalized.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record per-security-finding detection/normalization lineage.
+    forbidden_usage:
+      - Used as the security decision proof itself (that is security_scan_evidence_schema).
+    governance_profiles:
+      - global_trace_required_policy
+    audit_schemas:
+      - security_scan_evidence_schema
+    notes: Stage 16 trace schema. Per-finding process history; distinct from the evidence it traces.
+    applies_to:
+      - sdlc_stage:security_validation
+      - security_finding_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - finding_id
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: security_validation_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_exploit_detail_secrets
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [security_validation]
+      agents: [security_validation_agent]
+
+  - id: gate_decision_trace_schema
+    name: Gate Decision Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: Trace record for aggregate go/no-go decision lineage — the operation history of how a development-completion gate decision was aggregated.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the aggregate go/no-go decision lineage (which gate results fed the decision).
+    forbidden_usage:
+      - Used as the go/no-go decision proof itself (that is release_evidence_schema / a gate_result_schema).
+    governance_profiles:
+      - global_trace_required_policy
+    audit_schemas:
+      - release_evidence_schema
+      - stage_gate_trace_schema
+    notes: >-
+      Stage 29 trace schema. Aggregate decision process history. Distinct from
+      stage_gate_trace_schema (single gate) and from the decision proof itself.
+    applies_to:
+      - sdlc_stage:development_completion
+      - aggregate_gate_decision_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: release_manager_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [development_completion]
+      agents: [release_manager_agent]
+
+  - id: release_decision_trace_schema
+    name: Release Decision Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: Trace record for the release go/no-go decision provenance — the operation history of the release-candidate decision.
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the release-candidate go/no-go decision lineage.
+    forbidden_usage:
+      - Used as the release decision proof itself (that is release_evidence_schema).
+    governance_profiles:
+      - global_trace_required_policy
+    audit_schemas:
+      - release_evidence_schema
+      - stage_gate_trace_schema
+    notes: Stage 30 trace schema. Stage-specific go/no-go process history; distinct from the sealed release evidence.
+    applies_to:
+      - sdlc_stage:release_candidate
+      - release_decision_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: release_manager_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [release_candidate]
+      agents: [release_manager_agent]
+
+  - id: memory_update_trace_schema
+    name: Memory Update Trace Schema
+    type: trace_schema
+    status: canonical
+    purpose: Trace record for the memory-update proposal lineage — the operation history of a proposed update to long-term memory (MEMORY_UPDATE_PROPOSAL).
+    owner_domain: sdlc
+    allowed_usage:
+      - Record the lineage of a memory-update proposal emitted by the learning stage.
+    forbidden_usage:
+      - Used as the learning decision proof itself (that is learning_record_schema).
+    governance_profiles:
+      - global_trace_required_policy
+      - memory_access_governance
+    audit_schemas:
+      - learning_record_schema
+    notes: Stage 31 trace schema. Memory-update proposal process history; distinct from the learning record evidence.
+    applies_to:
+      - sdlc_stage:refraction_learning
+      - memory_update_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - related_core_ability   # Memory may legitimately appear here as a capability layer, never as actor/owner
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: refraction_learning_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_memory_proposal
+    used_by:
+      pipelines: [sdlc_pipeline]
+      stages: [refraction_learning]
+      agents: [refraction_learning_agent]
+
+  # ===========================================================================
+  # CROSS-CUTTING (candidate) INFRASTRUCTURE SCHEMAS
+  # ---------------------------------------------------------------------------
+  # Registered here (reconciliation sweep R1) so every audit-id bound by the
+  # capability/binding registries resolves to a first-class item:
+  #   - tool_call_trace_schema           bound by configs/nexus-ai/tools_registry.yaml
+  #     (EVERY tool) + governance/tool/tools.yaml + context_memory_profiles.yaml.
+  #   - evidence_item_schema             bound by side-effecting tools that emit a
+  #     gate-relevant result (tools_registry.yaml) + governance/tool/tools.yaml;
+  #     field shape in configs/nexus-ai/artifact_registry.yaml.
+  #   - model_invocation_trace_schema    bound by ALL 22 model profiles
+  #     (configs/nexus-ai/model_provider_profiles.yaml).
+  #   - skill_activation_trace_schema    bound by EVERY skill
+  #     (configs/nexus-ai/skills_registry.yaml) + governance/skill/skills.yaml.
+  #   - context_usage_trace_schema       bound by the context-memory profiles
+  #     (configs/nexus-ai/context_memory_profiles.yaml).
+  #   - core_ability_invocation_trace_schema and source_fetch_trace_schema are
+  #     already declared `owned_by: configs/nexus-ai/audit_schemas.yaml`
+  #     (status: candidate) by configs/nexus-ai/core_abilities.yaml; this is their
+  #     defining home.
+  # These are the generic Evidence/Trace base shapes; their field sets bind to the
+  # locked JSON Schemas configs/nexus-ai/schemas/{trace_item,evidence_item}.schema.json.
+  # Evidence != Trace is preserved: evidence_item_schema is the ONLY evidence-family
+  # item here; the other six are trace_schema.
+  # ===========================================================================
+
+  - id: tool_call_trace_schema
+    name: Tool Call Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Generic Trace record shape for a single tool call — the operation history of
+      who called which tool, with what inputs/outputs and decision (doc 03 §12
+      "tool call trace"). Process history, never decision proof. The trace
+      requirement bound by EVERY tool in the Tools Registry.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record tool-call provenance (caller, tool, inputs, outputs, status, time)
+        for any tool invocation across any pipeline.
+      - Serve as the trace requirement attached by every tool registry item.
+    forbidden_usage:
+      - Used as the decision proof of a gate (that is an evidence_schema /
+        gate-relevant evidence_item_schema record).
+      - Merged with any evidence_schema record (Evidence != Trace).
+    governance_profiles:
+      - global_trace_required_policy   # alias of trace_required (governance_profiles.yaml)
+      - tool_call_governance
+    audit_schemas:
+      - evidence_item_schema           # co-emitted by side-effecting tools that attach gate evidence (kept distinct)
+    notes: >-
+      Field set binds to configs/nexus-ai/schemas/trace_item.schema.json (related_tool
+      populated). The single most widely bound trace requirement: every item in
+      configs/nexus-ai/tools_registry.yaml lists it under audit_schemas. Bound as a
+      capability-layer trace name, never owned/produced by a Core Ability.
+    applies_to:
+      - all_pipelines
+      - tool_call_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_tool
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: invoking_agent          # the snake_case Agent role that called the tool
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_tool_call_arguments_containing_secrets
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      registries:
+        - tools_registry              # EVERY tool item binds tool_call_trace_schema
+        - context_memory_profiles     # os_command_context binds it
+        - core_abilities              # OS/Web tool-backed abilities bind it
+      agents:
+        - all_tool_invoking_agents
+
+  - id: evidence_item_schema
+    name: Evidence Item Schema
+    type: evidence_schema
+    status: candidate
+    purpose: >-
+      Generic Evidence record shape for a stage evidence item / gate result
+      emitted directly by a side-effecting tool (e.g. evidence_writer). The
+      base decision-proof shape; field set is the locked Evidence Contract.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record a generic stage evidence item / gate result attached by a
+        side-effecting tool that emits gate-relevant evidence.
+      - Serve as the evidence-record shape referenced by configs/nexus-ai/
+        artifact_registry.yaml.
+    forbidden_usage:
+      - Used to record operation/process history (that is tool_call_trace_schema).
+      - Merged with tool_call_trace_schema (Decision-Evidence != Tool-Trace).
+    governance_profiles:
+      - evidence_required
+    audit_schemas:
+      - tool_call_trace_schema         # the production-path trace it is co-emitted with (kept distinct)
+    notes: >-
+      Field set is the locked Evidence Contract — configs/nexus-ai/schemas/
+      evidence_item.schema.json (07 §11) and the evidence_item_schema field block
+      in configs/nexus-ai/artifact_registry.yaml. Generic base; specific SDLC/
+      pipeline stages use their stage-specific evidence schemas above.
+    applies_to:
+      - all_pipelines
+      - generic_tool_emitted_evidence
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_pipeline
+      - related_run
+      - related_stage
+      - related_agent
+      - related_sub_agent
+      - related_gate
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: evidence_writer_invoking_agent   # snake_case Agent role driving the evidence_writer tool
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      registries:
+        - tools_registry              # side-effecting tools that emit gate evidence bind it
+        - artifact_registry           # evidence_item_schema field-shape definition
+      agents:
+        - all_evidence_emitting_agents
+
+  - id: model_invocation_trace_schema
+    name: Model Invocation Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record shape for a model invocation — the operation history of which
+      model/provider profile was invoked, with token/cost/latency outcome (doc 03
+      §12). Process history, never decision proof.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record model-invocation provenance for any model_provider_profile call.
+      - Serve as the trace requirement attached by every model provider profile.
+    forbidden_usage:
+      - Used as a decision proof (that is an evidence_schema record).
+      - Merged with any evidence_schema record (Evidence != Trace).
+    governance_profiles:
+      - global_trace_required_policy
+      - model_provider_governance
+    audit_schemas:
+      - stage_gate_trace_schema        # companion gate trace (kept distinct)
+    notes: >-
+      Field set binds to configs/nexus-ai/schemas/trace_item.schema.json. Bound by
+      all 22 profiles in configs/nexus-ai/model_provider_profiles.yaml under
+      audit_schemas (that file asserts evidence_not_trace: true for exactly this id).
+    applies_to:
+      - all_pipelines
+      - model_invocation_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: invoking_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_prompt_completion_secrets
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      registries:
+        - model_provider_profiles      # ALL 22 profiles bind model_invocation_trace_schema
+      agents:
+        - all_model_invoking_agents
+
+  - id: skill_activation_trace_schema
+    name: Skill Activation Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record shape for a skill activation — the operation history of which
+      Skill was activated, by whom, with what inputs/outputs (doc 03 §12 "skill
+      activation trace"). Process history, never decision proof. Skill != Tool.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record skill-activation provenance for any Skill activation across any
+        pipeline.
+      - Serve as the trace requirement attached by every skill registry item
+        (skill_class_defaults bind it so EVERY skill activation emits this).
+    forbidden_usage:
+      - Used as a decision proof (that is an evidence_schema record).
+      - Merged with any evidence_schema record (Evidence != Trace).
+      - Treated as a tool_call_trace_schema (Skill != Tool).
+    governance_profiles:
+      - global_trace_required_policy
+      - skill_activation_governance
+    audit_schemas:
+      - stage_gate_trace_schema        # companion gate trace (kept distinct)
+    notes: >-
+      Field set binds to configs/nexus-ai/schemas/trace_item.schema.json
+      (related_skill populated). Bound by EVERY item in configs/nexus-ai/
+      skills_registry.yaml and governance/skill/skills.yaml. Skill != Tool is
+      preserved: this is distinct from tool_call_trace_schema.
+    applies_to:
+      - all_pipelines
+      - skill_activation_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_skill
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: activating_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      registries:
+        - skills_registry              # EVERY skill binds skill_activation_trace_schema
+      agents:
+        - all_skill_activating_agents
+
+  - id: context_usage_trace_schema
+    name: Context Usage Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record shape for context-memory usage — the operation history of which
+      stage read/wrote which context slice (doc 03 §12). Process history, never
+      decision proof.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record context read/write provenance for any context_memory_profile.
+      - Serve as the trace requirement attached by every context-memory profile.
+    forbidden_usage:
+      - Used as a decision proof (that is an evidence_schema record).
+      - Merged with any evidence_schema record (Evidence != Trace).
+    governance_profiles:
+      - global_trace_required_policy
+      - context_access_governance
+    audit_schemas:
+      - stage_gate_trace_schema        # companion gate trace (kept distinct)
+    notes: >-
+      Field set binds to configs/nexus-ai/schemas/trace_item.schema.json. Bound by
+      the context packs in configs/nexus-ai/context_memory_profiles.yaml under
+      audit_schemas. Memory is a Core Ability (capability layer) and is never the
+      producer/consumer here.
+    applies_to:
+      - all_pipelines
+      - context_usage_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: context_consuming_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_context_slice
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      registries:
+        - context_memory_profiles      # context packs bind context_usage_trace_schema
+      agents:
+        - all_context_consuming_agents
+
+  - id: core_ability_invocation_trace_schema
+    name: Core Ability Invocation Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record shape for a Core Ability invocation — the operation history of
+      when a Core Ability (Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS)
+      was invoked as a capability layer (doc 03 §12). Process history, never
+      decision proof.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record Core-Ability invocation provenance as a capability-layer trace.
+      - Serve as the trace requirement attached by Core Ability registry items.
+    forbidden_usage:
+      - Used as a decision proof (that is an evidence_schema record).
+      - Merged with any evidence_schema record (Evidence != Trace).
+      - Read as evidence that a Core Ability is an agent — it is NOT; the Core
+        Ability appears only in related_core_ability (capability layer), never as
+        producer/consumer/owner.
+    governance_profiles:
+      - global_trace_required_policy
+    audit_schemas:
+      - tool_call_trace_schema         # co-emitted when the ability is tool-backed (kept distinct)
+    notes: >-
+      Field set binds to configs/nexus-ai/schemas/trace_item.schema.json
+      (related_core_ability populated from the locked closed set). Declared
+      `owned_by: configs/nexus-ai/audit_schemas.yaml` by configs/nexus-ai/
+      core_abilities.yaml; this is its defining home. producer/consumer are
+      snake_case Agent roles, NEVER a Core Ability.
+    applies_to:
+      - all_pipelines
+      - core_ability_invocation_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_core_ability
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: invoking_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_release_evidence
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines:
+        - sdlc_pipeline
+        - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
+        - knowledge_memory_pipeline
+      registries:
+        - core_abilities               # declares owned_by this registry; binds the trace
+      agents:
+        - all_core_ability_invoking_agents
+
+  - id: source_fetch_trace_schema
+    name: Source Fetch Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record shape for an external source fetch — the operation history of a
+      Web-backed external fetch and its provenance (research pipeline source-fetch
+      trace; doc 03 §12). Process history, never decision proof.
+    owner_domain: nexus_global_governance
+    allowed_usage:
+      - Record external-fetch provenance (URL/source, fetch outcome, provenance)
+        for Web-backed fetches, primarily in the research pipeline.
+    forbidden_usage:
+      - Used as a decision proof (that is source_evidence_schema, an evidence_schema).
+      - Merged with any evidence_schema record (Evidence != Trace).
+      - Treating fetched content as trusted without an attached provenance trace.
+    governance_profiles:
+      - global_trace_required_policy
+      - web_access_governance
+    audit_schemas:
+      - source_evidence_schema         # the source decision proof whose fetch path it traces (kept distinct)
+      - tool_call_trace_schema
+    notes: >-
+      Field set binds to configs/nexus-ai/schemas/trace_item.schema.json
+      (related_core_ability may be Web). Declared `owned_by: configs/nexus-ai/
+      audit_schemas.yaml` by configs/nexus-ai/core_abilities.yaml; this is its
+      defining home. Distinct from source_evidence_schema (Evidence != Trace).
+    applies_to:
+      - research_pipeline
+      - source_fetch_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_tool
+      - related_core_ability
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: source_reliability_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_research_report
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_paywalled_source_content
+    used_by:
+      pipelines:
+        - research_pipeline
+      registries:
+        - core_abilities               # Web ability declares owned_by this registry; binds the trace
+      agents:
+        - source_reliability_agent
+
+  # ===========================================================================
+  # NEW (candidate) SCHEMAS — introduced by the 5 non-SDLC pipelines
+  # (doc 16 / pipeline-catalog-review §4.2). Referenced but not yet ratified;
+  # to be confirmed in Phase E (doc 19). NEW = status: candidate.
+  # ===========================================================================
+
+  # ----- Research pipeline ---------------------------------------------------
+
+  - id: source_evidence_schema
+    name: Source Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: >-
+      Decision-proof record for a scored research source (provenance, reliability
+      score + rationale, related claims).
+    owner_domain: research_and_knowledge
+    allowed_usage:
+      - Record source-reliability decision-proof evidence in the research pipeline.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy   # canonical id evidence_required; bound under its _policy variant in the research pipeline
+      - research_source_governance
+      - citation_required_gate
+    audit_schemas:
+      - claim_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (research). Reliability score must carry a rationale (advisory confidence_calibrated).
+    applies_to:
+      - research_pipeline
+      - research_stage:source_reliability_assessment
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - source_id
+      - provenance
+      - reliability_score
+      - reliability_rationale
+      - related_claims
+      - status
+      - created_at
+    producer: source_reliability_agent
+    consumer: cross_validation_agent
+    retention: retain_with_research_report
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_paywalled_source_content
+    used_by:
+      pipelines: [research_pipeline]
+      stages: [source_reliability_assessment]
+      agents: [source_reliability_agent]
+
+  - id: claim_evidence_schema
+    name: Claim Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: >-
+      Decision-proof record for a claim→evidence mapping (claim, supporting/
+      contradicting evidence, support strength, confidence).
+    owner_domain: research_and_knowledge
+    allowed_usage:
+      - Record claim→evidence mapping decision proofs in the research pipeline.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - research_source_governance
+      - citation_required_gate
+    audit_schemas:
+      - source_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (research). Each claim must map to supporting/contradicting evidence with a confidence value.
+    applies_to:
+      - research_pipeline
+      - research_stage:claim_evidence_mapping
+      - research_stage:cross_validation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - claim_id
+      - supporting_evidence
+      - contradicting_evidence
+      - support_strength
+      - confidence
+      - status
+      - created_at
+    producer: claim_evidence_agent
+    consumer: research_synthesis_agent
+    retention: retain_with_research_report
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [research_pipeline]
+      stages: [claim_evidence_mapping, cross_validation]
+      agents: [claim_evidence_agent, cross_validation_agent]
+
+  # ----- Activation pipeline -------------------------------------------------
+
+  - id: activation_evidence_schema
+    name: Activation Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: >-
+      Decision-proof record for activation lifecycle artifacts (PREVIEW_RESULT,
+      PILOT_RESULT, ACTIVATION_DECISION, ROLLBACK_PLAN). (doc 03 §13)
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - Record preview/pilot/activation decision-proof evidence.
+    forbidden_usage:
+      - Used to record activation stage-transition history (that is activation_transition_trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - activation_pipeline_governance
+      - preview_required_gate
+      - pilot_evidence_gate
+    audit_schemas:
+      - activation_decision_evidence_schema
+      - rollback_readiness_evidence_schema
+      - activation_transition_trace_schema
+      - stage_gate_trace_schema
+    notes: NEW (activation). Base activation evidence; superadmin preview required before pilot, pilot evidence required before public activation.
+    aliases:
+      - pilot_evidence_schema   # pipeline_catalog.yaml activation row headline evidence (preview/pilot ride on this base)
+    applies_to:
+      - activation_pipeline
+      - activation_stage:superadmin_preview
+      - activation_stage:pilot_activation
+      - activation_stage:pilot_evidence_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - activation_phase
+      - source_artifacts
+      - summary
+      - status
+      - created_at
+    producer: activation_manager_agent
+    consumer: activation_owner_decision_agent
+    retention: retain_with_activation_record
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_cohort_user_identifiers
+    used_by:
+      pipelines: [activation_pipeline]
+      stages: [superadmin_preview, pilot_activation, pilot_evidence_review]
+      agents: [activation_manager_agent, pilot_activation_agent, activation_reviewer_agent]
+
+  - id: activation_decision_evidence_schema
+    name: Activation Decision Evidence Schema
+    type: decision_record_schema
+    status: candidate
+    purpose: >-
+      Decision-record (decision proof) for the public-activation go/no-go
+      decision (ACTIVATION_DECISION). Evidence family, NOT trace.
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - Record the public-activation owner decision as a decision-proof record.
+    forbidden_usage:
+      - Used to record stage-transition history (that is activation_transition_trace_schema).
+      - Self-approved by the proposing agent (the authorizing actor is the human owner; no_self_approval).
+    governance_profiles:
+      - evidence_required_policy
+      - no_self_approval_policy
+      - owner_activation_decision_gate
+    audit_schemas:
+      - activation_evidence_schema
+      - activation_transition_trace_schema
+      - stage_gate_trace_schema
+    notes: >-
+      NEW (activation). type decision_record_schema = a recorded decision PROOF
+      (Evidence family), kept strictly distinct from the transition trace. The
+      authorizing actor is the human owner (recorded/routed by
+      activation_owner_decision_agent), not an autonomous agent.
+    applies_to:
+      - activation_pipeline
+      - activation_stage:public_activation_decision
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - decision
+      - decision_rationale
+      - authorizing_actor
+      - source_artifacts
+      - status
+      - created_at
+    producer: activation_owner_decision_agent
+    consumer: policy_and_evidence_engine
+    retention: retain_with_activation_record
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [activation_pipeline]
+      stages: [public_activation_decision]
+      agents: [activation_owner_decision_agent]
+
+  - id: rollback_readiness_evidence_schema
+    name: Rollback Readiness Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for activation rollback readiness (ROLLBACK_PLAN present and drilled).
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - Record activation rollback-readiness decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Confused with the SDLC rollback_validation_schema or the operations rollback_fix_evidence_schema.
+    governance_profiles:
+      - evidence_required_policy
+      - activation_pipeline_governance
+      - rollback_required_gate
+    audit_schemas:
+      - activation_evidence_schema
+      - activation_transition_trace_schema
+      - stage_gate_trace_schema
+    notes: NEW (activation). Rollback plan must be present and drilled before public activation; distinct from SDLC/operations rollback schemas.
+    applies_to:
+      - activation_pipeline
+      - activation_stage:rollback_readiness
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - rollback_plan_present
+      - rollback_drilled
+      - source_artifacts
+      - status
+      - created_at
+    producer: rollback_readiness_agent
+    consumer: activation_owner_decision_agent
+    retention: retain_with_activation_record
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [activation_pipeline]
+      stages: [rollback_readiness]
+      agents: [rollback_readiness_agent]
+
+  - id: activation_transition_trace_schema
+    name: Activation Transition Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record for activation stage transitions — the operation history of
+      moving between activation phases (e.g. owner_decision_trace,
+      rollback_drill_trace).
+    owner_domain: activation_and_release_operations
+    allowed_usage:
+      - Record activation stage-transition / phase-change lineage.
+    forbidden_usage:
+      - Used as an activation decision proof itself (that is activation_decision_evidence_schema).
+    governance_profiles:
+      - global_trace_required_policy
+      - activation_pipeline_governance
+    audit_schemas:
+      - activation_evidence_schema
+      - activation_decision_evidence_schema
+    notes: NEW (activation). The single NEW trace schema for activation; process history that supports — but is distinct from — activation evidence.
+    aliases:
+      - activation_trace_schema   # pipeline_catalog.yaml activation row headline trace
+    applies_to:
+      - activation_pipeline
+      - activation_transition_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - from_phase
+      - to_phase
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: activation_manager_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_activation_record
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_cohort_user_identifiers
+    used_by:
+      pipelines: [activation_pipeline]
+      stages: [activation_intake, superadmin_preview, pilot_activation, pilot_evidence_review, public_activation_decision, rollback_readiness, activation_completion]
+      agents: [activation_manager_agent]
+
+  # ----- Operations pipeline -------------------------------------------------
+
+  - id: incident_evidence_schema
+    name: Incident Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for an incident intake (incident record, signal sources, initial scope).
+    owner_domain: operations_reliability
+    allowed_usage:
+      - Record incident-intake decision-proof evidence in the operations pipeline.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - operations_pipeline_governance
+    audit_schemas:
+      - severity_classification_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (operations). Stage incident_intake.
+    applies_to:
+      - operations_pipeline
+      - operations_stage:incident_intake
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - signal_sources
+      - initial_scope
+      - source_artifacts
+      - status
+      - created_at
+    producer: incident_intake_agent
+    consumer: severity_classification_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_incident_signals
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [incident_intake]
+      agents: [incident_intake_agent]
+
+  - id: severity_classification_evidence_schema
+    name: Severity Classification Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for incident severity classification (severity level + rationale).
+    owner_domain: operations_reliability
+    allowed_usage:
+      - Record incident severity-classification decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - incident_severity_required_gate
+    audit_schemas:
+      - incident_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (operations). Stage severity_classification. Severity classification is mandatory (incident_severity_required_gate).
+    applies_to:
+      - operations_pipeline
+      - operations_stage:severity_classification
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - severity_level
+      - severity_rationale
+      - status
+      - created_at
+    producer: severity_classification_agent
+    consumer: mitigation_planning_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [severity_classification]
+      agents: [severity_classification_agent]
+
+  - id: mitigation_plan_evidence_schema
+    name: Mitigation Plan Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for the incident mitigation plan.
+    owner_domain: operations_reliability
+    allowed_usage:
+      - Record incident mitigation-plan decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - mitigation_plan_required_gate
+    audit_schemas:
+      - rollback_fix_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (operations). Stage mitigation_plan.
+    applies_to:
+      - operations_pipeline
+      - operations_stage:mitigation_plan
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - mitigation_steps
+      - source_artifacts
+      - status
+      - created_at
+    producer: mitigation_planning_agent
+    consumer: incident_response_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [mitigation_plan]
+      agents: [mitigation_planning_agent]
+
+  - id: rollback_fix_evidence_schema
+    name: Rollback or Fix Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for the rollback-or-forward-fix action and its confirmation.
+    owner_domain: operations_reliability
+    allowed_usage:
+      - Record the rollback/forward-fix decision-proof evidence (forward-fix
+        confirmed via verification-loop defect sweep).
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Confused with SDLC rollback_validation_schema or activation rollback_readiness_evidence_schema.
+    governance_profiles:
+      - evidence_required_policy
+      - no_self_approval_policy
+      - rollback_runbook_evidence_gate
+    audit_schemas:
+      - mitigation_plan_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (operations). Stage rollback_or_fix; owner incident_response_agent. Operations-scoped rollback; distinct from SDLC/activation rollback schemas.
+    applies_to:
+      - operations_pipeline
+      - operations_stage:rollback_or_fix
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - action_taken
+      - rollback_or_fix
+      - confirmation_status
+      - source_artifacts
+      - status
+      - created_at
+    producer: incident_response_agent
+    consumer: postmortem_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [rollback_or_fix]
+      agents: [incident_response_agent]
+
+  - id: postmortem_evidence_schema
+    name: Postmortem Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for the incident postmortem (root cause, timeline, corrective actions).
+    owner_domain: operations_reliability
+    allowed_usage:
+      - Record postmortem decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - postmortem_required_gate
+    audit_schemas:
+      - operational_learning_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (operations). Stage postmortem. Postmortem is mandatory (postmortem_required_gate).
+    applies_to:
+      - operations_pipeline
+      - operations_stage:postmortem
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - root_cause
+      - timeline
+      - corrective_actions
+      - source_artifacts
+      - status
+      - created_at
+    producer: postmortem_agent
+    consumer: operational_learning_agent
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_pii_in_timeline
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [postmortem]
+      agents: [postmortem_agent]
+
+  - id: operational_learning_evidence_schema
+    name: Operational Learning Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for operational learnings derived from an incident (learning update, follow-up backlog).
+    owner_domain: operations_reliability
+    allowed_usage:
+      - Record operational-learning decision-proof evidence (operations pipeline).
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+      - Confused with the SDLC learning_record_schema (different pipeline/lifecycle).
+    governance_profiles:
+      - evidence_required_policy
+      - operations_pipeline_governance
+    audit_schemas:
+      - postmortem_evidence_schema
+      - stage_gate_trace_schema
+    notes: NEW (operations). Stage learning_update. Operations-scoped learning; distinct from SDLC refraction learning_record_schema.
+    applies_to:
+      - operations_pipeline
+      - operations_stage:learning_update
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - incident_id
+      - learning_items
+      - follow_up_backlog
+      - status
+      - created_at
+    producer: operational_learning_agent
+    consumer: policy_and_evidence_engine
+    retention: retain_with_postmortem
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [operations_pipeline]
+      stages: [learning_update]
+      agents: [operational_learning_agent]
+
+  # ----- Skill Governance pipeline -------------------------------------------
+
+  - id: skill_governance_evidence_schema
+    name: Skill Governance Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for the skill-governance pipeline (skill intake and overall governance evidence).
+    owner_domain: skill_governance
+    allowed_usage:
+      - Record skill-governance decision-proof evidence (base/intake).
+    forbidden_usage:
+      - Used to record process history (that is skill_governance_trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - skill_governance_pipeline_governance
+    audit_schemas:
+      - skill_semantic_extract_schema
+      - script_audit_evidence_schema
+      - skill_misuse_warning_schema
+      - skill_binding_decision_schema
+      - skill_governance_trace_schema
+    notes: NEW (skill governance). Stage skill_intake; owner skill_librarian_agent.
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:skill_intake
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - source_artifacts
+      - status
+      - created_at
+    producer: skill_librarian_agent
+    consumer: skill_runtime_safety_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [skill_intake]
+      agents: [skill_librarian_agent]
+
+  - id: skill_semantic_extract_schema
+    name: Skill Semantic Extract Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for skill semantic extraction (semantic category, primary purpose, allowed/forbidden usage).
+    owner_domain: skill_governance
+    allowed_usage:
+      - Record skill semantic-extraction decision-proof evidence in the skill-governance pipeline.
+    forbidden_usage:
+      - Used to record process history (that is skill_governance_trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - skill_semantic_required_gate
+      - no_unread_skill_binding
+    audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_governance_trace_schema
+    notes: >-
+      NEW (skill governance). Stage skill_semantic_extraction; owner
+      skill_semantic_extractor_subagent (parent skill_librarian_agent). Pipeline
+      analogue of the SDLC skill_semantic_evidence_schema (kept distinct: SDLC
+      stage-scoped vs skill-governance-pipeline-scoped).
+    aliases:
+      - skill_extraction_evidence_schema   # pipeline_catalog.yaml skill-governance row headline extraction evidence
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:skill_semantic_extraction
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - semantic_category
+      - primary_purpose
+      - allowed_usage
+      - forbidden_usage
+      - status
+      - created_at
+    producer: skill_semantic_extractor_subagent
+    consumer: skill_runtime_safety_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [skill_semantic_extraction]
+      agents: [skill_librarian_agent]
+      sub_agents: [skill_semantic_extractor_subagent]
+
+  - id: script_audit_evidence_schema
+    name: Script Audit Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for the skill script/reference static-safety audit.
+    owner_domain: skill_governance
+    allowed_usage:
+      - Record script/reference static-analysis decision-proof evidence (verification-loop defect sweep over scripts).
+    forbidden_usage:
+      - Used to record process history (that is skill_governance_trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - script_reference_audit_gate
+    audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_governance_trace_schema
+    notes: NEW (skill governance). Stage script_reference_audit; owner skill_runtime_safety_agent.
+    aliases:
+      - skill_safety_evidence_schema   # pipeline_catalog.yaml skill-governance row headline safety/script-audit evidence
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:script_reference_audit
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - script_findings
+      - source_artifacts
+      - status
+      - created_at
+    producer: skill_runtime_safety_agent
+    consumer: skill_librarian_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_script_snippets
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [script_reference_audit]
+      agents: [skill_runtime_safety_agent]
+
+  - id: skill_misuse_warning_schema
+    name: Skill Misuse Warning Schema
+    type: evidence_schema
+    status: candidate
+    purpose: Decision-proof record for generated skill misuse warnings (SKILL_MISUSE_WARNINGS).
+    owner_domain: skill_governance
+    allowed_usage:
+      - Record skill misuse-warning decision-proof evidence.
+    forbidden_usage:
+      - Used to record process history (that is skill_governance_trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - misuse_warning_required_gate
+      - locked_semantics_enforcement_policy
+    audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_governance_trace_schema
+    notes: NEW (skill governance). Stage misuse_warning_generation; owner skill_runtime_safety_agent. Enforces locked semantics (e.g. prism brainstorming-only, verification-loop bug-finding-only).
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:misuse_warning_generation
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - skill_id
+      - misuse_warnings
+      - status
+      - created_at
+    producer: skill_runtime_safety_agent
+    consumer: skill_librarian_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [misuse_warning_generation]
+      agents: [skill_runtime_safety_agent]
+
+  - id: skill_binding_decision_schema
+    name: Skill Binding Decision Schema
+    type: decision_record_schema
+    status: candidate
+    purpose: >-
+      Decision-record (decision proof) for the skill stage-binding proposal and
+      the skill activation decision (SKILL_STAGE_BINDING_PROPOSAL → activation).
+      Evidence family, NOT trace.
+    owner_domain: skill_governance
+    allowed_usage:
+      - Record the skill binding proposal and the activation decision as a decision-proof record.
+    forbidden_usage:
+      - Used to record process history (that is skill_governance_trace_schema).
+      - Self-approved by the proposer (review independence; no_self_approval).
+    governance_profiles:
+      - evidence_required_policy
+      - no_self_approval_policy
+      - skill_binding_proposal_gate
+      - skill_activation_decision_gate
+    audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_governance_trace_schema
+    notes: >-
+      NEW (skill governance). type decision_record_schema = a recorded decision
+      PROOF (Evidence family), distinct from the trace. Proposal owned by
+      skill_librarian_agent (stage skill_binding_proposal); activation decision
+      adjudicated by skill_runtime_safety_agent (stage skill_activation_decision)
+      — reviewer != proposer.
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_stage:skill_binding_proposal
+      - skill_governance_stage:skill_activation_decision
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - related_gate
+      - skill_id
+      - proposed_bindings
+      - decision
+      - decision_rationale
+      - status
+      - created_at
+    producer: skill_runtime_safety_agent
+    consumer: skill_governance_team_lead
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [skill_binding_proposal, skill_activation_decision]
+      agents: [skill_librarian_agent, skill_runtime_safety_agent]
+
+  - id: skill_governance_trace_schema
+    name: Skill Governance Trace Schema
+    type: trace_schema
+    status: candidate
+    purpose: >-
+      Trace record for skill-governance operation history (skill_package_read,
+      semantic_extraction, script_static_analysis, misuse_warning,
+      binding_proposal, activation_decision, gate_evaluation traces).
+    owner_domain: skill_governance
+    allowed_usage:
+      - Record the operation history of every skill-governance stage step.
+    forbidden_usage:
+      - Used as a skill-governance decision proof itself (those are the evidence/decision schemas above).
+    governance_profiles:
+      - global_trace_required_policy
+      - skill_governance_pipeline_governance
+    audit_schemas:
+      - skill_governance_evidence_schema
+      - skill_binding_decision_schema
+    notes: NEW (skill governance). The single NEW trace schema for the skill-governance pipeline; spans all 7 stages.
+    applies_to:
+      - skill_governance_pipeline
+      - skill_governance_provenance
+    required_fields:
+      - trace_id
+      - type
+      - actor
+      - action
+      - related_stage
+      - related_skill
+      - input_refs
+      - output_refs
+      - status
+      - timestamp
+    producer: skill_librarian_agent
+    consumer: evidence_graph_agent
+    retention: retain_with_skill_registry_entry
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_secrets_in_script_snippets
+    used_by:
+      pipelines: [skill_governance_pipeline]
+      stages: [skill_intake, skill_semantic_extraction, script_reference_audit, misuse_warning_generation, skill_binding_proposal, skill_activation_decision, skill_deprecation_update]
+      agents: [skill_librarian_agent, skill_runtime_safety_agent]
+
+  # ----- Knowledge / Memory pipeline -----------------------------------------
+
+  - id: memory_provenance_schema
+    name: Memory Provenance Schema
+    type: evidence_schema
+    status: candidate
+    purpose: >-
+      Decision-proof record for a memory item's provenance, validity window, and
+      retrieval/redaction outcome across the knowledge/memory lifecycle.
+    owner_domain: knowledge_management
+    allowed_usage:
+      - Record per-memory-item provenance + validity + redaction decision-proof
+        evidence across all knowledge/memory stages.
+    forbidden_usage:
+      - Used to record gate-evaluation process history (that is stage_gate_trace_schema).
+    governance_profiles:
+      - evidence_required_policy
+      - memory_source_governance
+      - validity_window_required_gate
+      - redaction_required_gate
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: >-
+      NEW (knowledge/memory). The single NEW evidence schema for the
+      knowledge_memory pipeline; reused across intake, source_classification,
+      summary_generation, validity_window_assignment, retrieval_profile_update,
+      memory_expiration_review. Memory is a Core Ability (capability layer) — it
+      is never the producer/consumer here.
+    aliases:
+      - memory_ingestion_evidence_schema   # pipeline_catalog.yaml knowledge/memory row headline evidence (intake)
+      - memory_validity_evidence_schema    # pipeline_catalog.yaml knowledge/memory row validity-window evidence (validity_window field/stage)
+    applies_to:
+      - knowledge_memory_pipeline
+      - knowledge_memory_stage:memory_intake
+      - knowledge_memory_stage:source_classification
+      - knowledge_memory_stage:summary_generation
+      - knowledge_memory_stage:validity_window_assignment
+      - knowledge_memory_stage:retrieval_profile_update
+      - knowledge_memory_stage:memory_expiration_review
+    required_fields:
+      - evidence_id
+      - type
+      - produced_by
+      - related_stage
+      - memory_item_id
+      - source_provenance
+      - validity_window
+      - retrieval_profile_ref
+      - redaction_applied
+      - status
+      - created_at
+    producer: knowledge_intake_agent
+    consumer: retrieval_profile_agent
+    retention: bounded_by_validity_window
+    redaction_rules:
+      - no_raw_secret_exposure
+      - raw_credential_redaction
+      - redact_pii_before_memory_write
+    used_by:
+      pipelines: [knowledge_memory_pipeline]
+      stages: [memory_intake, source_classification, summary_generation, validity_window_assignment, retrieval_profile_update, memory_expiration_review]
+      agents: [knowledge_intake_agent, source_classification_agent, memory_summarization_agent, validity_window_agent, retrieval_profile_agent, memory_expiration_agent]
+
+# =============================================================================
+# NAMING RECONCILIATION — *_policy variants
+# =============================================================================
+# The 5 non-SDLC pipelines bind two canonical policy families under a *_policy
+# variant name. Per the task's naming-reconciliation rule these are recorded as
+# aliases of the canonical governance ids (which live in governance_profiles.yaml,
+# NOT here — those are governance, not audit). This block documents the mapping so
+# the audit-schema `governance_profiles` references above remain traceable to a
+# single canonical id during Phase E.
+governance_profile_aliases:
+  no_self_approval:
+    canonical_id: no_self_approval        # doc 06 §3 (blocker)
+    aliases: [no_self_approval_policy]
+    used_by_pipelines: [activation_pipeline, operations_pipeline, skill_governance_pipeline]
+  evidence_required:
+    canonical_id: evidence_required       # doc 06 §3 (blocker)
+    aliases: [evidence_required_policy]
+    used_by_pipelines: [research_pipeline, activation_pipeline, operations_pipeline, skill_governance_pipeline, knowledge_memory_pipeline]
+
+# =============================================================================
+# AUDIT-SCHEMA-ID NAMING RECONCILIATION — variant spellings → canonical id
+# =============================================================================
+# Reconciliation sweep (R2 + catalog/context naming variants). Several files refer
+# to an audit schema by a summary/variant spelling rather than the canonical
+# registry id. Per the sweep's naming rule we RECORD AN ALIAS rather than mass-
+# renaming the referring files. Every entry below is also mirrored on the canonical
+# item's `aliases:` field, so the mapping is discoverable from either direction and
+# the audit-id edge resolves to a first-class item. Evidence != Trace is preserved:
+# each variant maps to a canonical id of the SAME family (an evidence variant never
+# maps to a trace id and vice-versa).
+audit_schema_aliases:
+
+  # ----- R2: gate-decision trace -------------------------------------------
+  stage_gate_decision_trace:
+    canonical_id: stage_gate_trace_schema        # type: trace_schema
+    family: trace
+    note: >-
+      The gate-DECISION flavor of the canonical gate-evaluation trace. Used in the
+      `trace` list of the review-gate stage contracts (07 architecture_review,
+      12 code_review, 20 api_contract_compatibility_validation,
+      21 domain_regulatory_compliance_validation_if_applicable),
+      configs/nexus-ai/sdlc_pipeline.yaml, and bound (alongside
+      stage_gate_trace_schema) by the global_trace_required_policy in
+      configs/nexus-ai/governance_profiles.yaml. It is the same Trace record shape;
+      the gate outcome it traces is the decision proof (Evidence), kept distinct.
+    referenced_in:
+      - configs/nexus-ai/sdlc_pipeline.yaml
+      - configs/nexus-ai/stages/sdlc/07-architecture-review.yaml
+      - configs/nexus-ai/stages/sdlc/12-code-review.yaml
+      - configs/nexus-ai/stages/sdlc/20-api-contract-compatibility-validation.yaml
+      - configs/nexus-ai/stages/sdlc/21-domain-regulatory-compliance-validation-if-applicable.yaml
+      - configs/nexus-ai/governance_profiles.yaml
+      - configs/nexus-ai/governance/pipeline/sdlc.yaml
+      - configs/nexus-ai/governance/pipeline/operations.yaml
+
+  # ----- catalog/context summary-name variants → canonical ids --------------
+  decision_trace_schema:
+    canonical_id: stage_gate_trace_schema        # type: trace_schema
+    family: trace
+    note: Multi-perspective / release decision-history trace; the canonical gate trace.
+    referenced_in:
+      - configs/nexus-ai/context_memory_profiles.yaml
+      - configs/nexus-ai/skills_registry.yaml
+  research_trace_schema:
+    canonical_id: stage_gate_trace_schema        # type: trace_schema
+    family: trace
+    note: Research pipeline catalog-row headline trace; reuses the canonical gate trace.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  operations_trace_schema:
+    canonical_id: stage_gate_trace_schema        # type: trace_schema
+    family: trace
+    note: Operations pipeline catalog-row headline trace; reuses the canonical gate trace.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  memory_trace_schema:
+    canonical_id: stage_gate_trace_schema        # type: trace_schema
+    family: trace
+    note: >-
+      Knowledge/memory pipeline catalog-row headline trace; memory_provenance_schema
+      binds stage_gate_trace_schema as its only trace, so the canonical gate trace.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  activation_trace_schema:
+    canonical_id: activation_transition_trace_schema   # type: trace_schema
+    family: trace
+    note: Activation pipeline catalog-row headline trace.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  pilot_evidence_schema:
+    canonical_id: activation_evidence_schema      # type: evidence_schema
+    family: evidence
+    note: Preview/pilot evidence rides on the base activation evidence schema.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  memory_ingestion_evidence_schema:
+    canonical_id: memory_provenance_schema        # type: evidence_schema
+    family: evidence
+    note: Knowledge/memory intake evidence; the single knowledge/memory evidence schema.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  memory_validity_evidence_schema:
+    canonical_id: memory_provenance_schema        # type: evidence_schema
+    family: evidence
+    note: Validity-window evidence; carried as the validity_window field/stage of memory_provenance_schema.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  skill_extraction_evidence_schema:
+    canonical_id: skill_semantic_extract_schema   # type: evidence_schema
+    family: evidence
+    note: Skill-governance catalog-row headline extraction evidence.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  skill_safety_evidence_schema:
+    canonical_id: script_audit_evidence_schema    # type: evidence_schema
+    family: evidence
+    note: Skill-governance catalog-row headline safety/script-audit evidence.
+    referenced_in: [configs/nexus-ai/pipeline_catalog.yaml]
+  requirements_evidence_schema:
+    canonical_id: sdlc_pipeline_evidence_schema   # type: evidence_schema
+    family: evidence
+    note: >-
+      requirements_run_context headline evidence for intake/requirements/planning;
+      the base SDLC evidence schema (intake/requirements/planning are in its used_by).
+    referenced_in: [configs/nexus-ai/context_memory_profiles.yaml]
+  operations_evidence_schema:
+    canonical_id: release_evidence_schema         # type: evidence_schema
+    family: evidence
+    note: >-
+      operations_readiness_run_context headline evidence for the SDLC
+      operations_readiness / cost_resource_governance / backup_restore stages —
+      release_evidence_schema covers SDLC stage 27. NOTE: this is the SDLC
+      operations-readiness context, NOT the operations_pipeline incident evidence
+      (incident_evidence_schema); the two are kept distinct.
+    referenced_in: [configs/nexus-ai/context_memory_profiles.yaml]
+  operations_readiness_evidence_schema:
+    canonical_id: release_evidence_schema         # type: evidence_schema
+    family: evidence
+    note: >-
+      Legacy stage-27 evidence spelling. configs/nexus-ai/stages/sdlc/
+      27-operations-readiness.yaml already documents this reconciliation to the
+      canonical release_evidence_schema (Evidence); stage_gate_trace_schema is the
+      canonical TRACE (kept distinct). Still bound under the legacy spelling by the
+      operations_readiness_governance profile in configs/nexus-ai/governance_profiles.yaml.
+    referenced_in:
+      - configs/nexus-ai/governance_profiles.yaml
+      - configs/nexus-ai/stages/sdlc/27-operations-readiness.yaml
+  security_evidence_schema:
+    canonical_id: security_scan_evidence_schema   # type: evidence_schema
+    family: evidence
+    note: security_validation_context headline security evidence.
+    referenced_in: [configs/nexus-ai/context_memory_profiles.yaml]
+  test_result_evidence_schema:
+    canonical_id: test_execution_evidence_schema  # type: evidence_schema
+    family: evidence
+    note: test_execution_context headline test-result evidence.
+    referenced_in: [configs/nexus-ai/context_memory_profiles.yaml]
+
+# =============================================================================
+# UNUSED TYPE — gate_result_schema (reconciliation sweep R14)
+# =============================================================================
+# The §12 / type_vocabulary list includes `gate_result_schema` (an Evidence-family
+# type: a gate decision proof). DECISION (R14): keep it as an INTENTIONALLY-UNUSED
+# type — the catalog defines NO first-class item of this type today, and NO file in
+# configs/nexus-ai references a `gate_result_schema` *id* (verified: every
+# occurrence is a type-vocabulary word or prose mention, never a `- gate_result_schema`
+# id binding). Gate outcomes ride on the `related_gate` + count fields of the
+# evidence_schema items and on release_evidence_schema, so introducing a standalone
+# item would add an unreferenced (dangling-from-the-other-direction) registry entry.
+# The type is retained in the vocabulary for forward-compatibility and to keep the
+# Evidence-family taxonomy (evidence_schema | decision_record_schema |
+# gate_result_schema) complete. This supersedes the open question in
+# configs/nexus-ai/audit/evidence_schemas/_index.yaml (gate_result_schema): the
+# embedded-on-evidence approach is the chosen one; no first-class item is added.
+gate_result_schema_disposition:
+  type: gate_result_schema
+  family: evidence              # Evidence != Trace — a gate decision proof, never process history
+  status: intentionally_unused
+  first_class_item: false
+  id_references_in_corpus: 0    # only type-vocabulary / prose mentions exist
+  rationale: >-
+    Gate outcomes are carried on related_gate + count fields of evidence_schema
+    items and on release_evidence_schema; no standalone gate_result_schema item is
+    referenced, so none is registered (avoids an unreferenced registry entry).
+
+# =============================================================================
+# MATERIALIZATION COVERAGE — catalog ↔ audit/ layer round-trip (R5)
+# =============================================================================
+# Reconciliation sweep R5 (the original 66-vs-64 gap):
+#   The Phase C catalog's PIPELINE-MATERIALIZED set is 66 items (55 type:
+#   evidence_schema + 9 type: trace_schema + 2 type: decision_record_schema). The
+#   applicable layer under configs/nexus-ai/audit/ previously covered only 64 (the
+#   55 evidence_schema in audit/evidence_schemas/ + the 9 trace_schema in
+#   audit/trace_schemas/), leaving the 2 decision_record_schema items unplaced — the
+#   66-vs-64 gap. PLACEMENT DECISION: the 2 decision-record items are Evidence
+#   FAMILY (decision proofs) but a DISTINCT type, so they belong in a dedicated
+#   configs/nexus-ai/audit/decision_records/ directory (the option recommended in
+#   audit/evidence_schemas/_index.yaml open_questions) — NEVER under
+#   audit/trace_schemas/ (Evidence != Trace). With that placement the pipeline-
+#   materialized set round-trips 1:1: 66 = 55 + 9 + 2. (Materializing the
+#   decision_records/*.yaml files is a Phase E step; this block records the binding
+#   so the catalog is the single source the applicable layer must agree with.)
+#
+# Sweep R1 added 7 CROSS-CUTTING infrastructure schemas (tool_call_trace_schema,
+# evidence_item_schema, model_invocation_trace_schema, skill_activation_trace_schema,
+# context_usage_trace_schema, core_ability_invocation_trace_schema,
+# source_fetch_trace_schema). These are generic base shapes bound at the
+# capability/binding-registry level (tools/models/skills/context/core-abilities),
+# NOT per-pipeline-stage, so they are a SEPARATE materialization class: their field
+# sets bind directly to the locked JSON Schemas
+# configs/nexus-ai/schemas/{trace_item,evidence_item}.schema.json rather than to a
+# per-pipeline audit/ file. Grand catalog total is therefore 73 = 66 pipeline-
+# materialized + 7 cross-cutting.
+materialization_coverage:
+  catalog_total: 73                  # all first-class items in this registry
+  pipeline_materialized_total: 66    # R5 1:1 scope (55 evidence + 9 trace + 2 decision_record)
+  cross_cutting_total: 7             # R1 infra schemas, bound to the locked JSON Schemas
+  by_type:
+    evidence_schema:
+      count: 56                      # 55 pipeline-materialized + 1 cross-cutting (evidence_item_schema)
+      pipeline_materialized: 55
+      cross_cutting: 1               # evidence_item_schema
+      materialized_in: configs/nexus-ai/audit/evidence_schemas/
+      status: materialized
+    trace_schema:
+      count: 15                      # 9 pipeline-materialized + 6 cross-cutting
+      pipeline_materialized: 9
+      cross_cutting: 6               # tool_call / model_invocation / skill_activation / context_usage / core_ability_invocation / source_fetch
+      materialized_in: configs/nexus-ai/audit/trace_schemas/
+      status: materialized
+    decision_record_schema:
+      count: 2
+      materialized_in: configs/nexus-ai/audit/decision_records/   # dedicated dir; NOT trace_schemas/ (Evidence != Trace)
+      status: placement_decided_pending_phase_e
+      items:
+        - activation_decision_evidence_schema
+        - skill_binding_decision_schema
+    gate_result_schema:
+      count: 0
+      materialized_in: null
+      status: intentionally_unused   # see gate_result_schema_disposition (R14)
+  cross_cutting_schemas:
+    bound_to_json_schema: true       # field sets bind to schemas/{trace_item,evidence_item}.schema.json
+    items:
+      - {id: evidence_item_schema, type: evidence_schema, binds: configs/nexus-ai/schemas/evidence_item.schema.json}
+      - {id: tool_call_trace_schema, type: trace_schema, binds: configs/nexus-ai/schemas/trace_item.schema.json}
+      - {id: model_invocation_trace_schema, type: trace_schema, binds: configs/nexus-ai/schemas/trace_item.schema.json}
+      - {id: skill_activation_trace_schema, type: trace_schema, binds: configs/nexus-ai/schemas/trace_item.schema.json}
+      - {id: context_usage_trace_schema, type: trace_schema, binds: configs/nexus-ai/schemas/trace_item.schema.json}
+      - {id: core_ability_invocation_trace_schema, type: trace_schema, binds: configs/nexus-ai/schemas/trace_item.schema.json}
+      - {id: source_fetch_trace_schema, type: trace_schema, binds: configs/nexus-ai/schemas/trace_item.schema.json}
+  round_trip_1to1: true              # pipeline-materialized: 55 + 9 + 2 + 0 == 66; grand total 66 + 7 == 73
+  evidence_family_total: 58          # 56 evidence_schema + 2 decision_record_schema (gate_result_schema unused)
+  trace_family_total: 15
+  note: >-
+    Evidence family (58: 56 evidence_schema + 2 decision_record_schema) and Trace
+    family (15 trace_schema) are kept strictly distinct; the pipeline-materialized
+    halves live in physically separate directories and are NEVER merged. The 7
+    cross-cutting items bind to the locked JSON Schemas. The decision_records/
+    placement preserves Evidence != Trace.
+
+# =============================================================================
+# CROSS-FILE NOTES
+# =============================================================================
+cross_file_notes:
+  - The base evidence/trace field sets mirror configs/nexus-ai/schemas/
+    evidence_item.schema.json and configs/nexus-ai/schemas/trace_item.schema.json
+    (the locked JSON Schemas). Stage-specific required_fields lists add only the
+    domain-specific fields on top of the base contract.
+  - Phase E (doc 19) will materialize per-schema files under
+    configs/nexus-ai/audit/evidence_schemas/*.yaml and
+    configs/nexus-ai/audit/trace_schemas/*.yaml. This registry is the single
+    catalog those per-schema files must agree with.
+  - Governance profile ids referenced in `governance_profiles` are defined in the
+    SEPARATE configs/nexus-ai/governance_profiles.yaml (Governance != Audit).
+  - producer/consumer agent roles are cataloged in Phase D
+    (docs/ai-sdlc-factory/18-* / configs team-agent catalogs); none is a Core
+    Ability.

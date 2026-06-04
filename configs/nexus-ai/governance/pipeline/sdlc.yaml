@@ -1,0 +1,392 @@
+# =============================================================================
+# Nexus AI — Pipeline-Scope Governance Profile: SDLC Pipeline
+# =============================================================================
+# Phase E / doc 19 (19-governance-audit-readiness-plan.md). Documentation /
+# blueprint ONLY — NO runtime code, NO merge, NO deploy.
+#
+# WHAT THIS FILE IS
+#   This is the APPLICABLE, granular pipeline-scope governance LAYER for the
+#   SDLC pipeline. It implements (makes evaluable from config) the SDLC pipeline
+#   governance umbrella that the Phase C registry
+#   (configs/nexus-ai/governance_profiles.yaml -> pipeline.sdlc_pipeline_governance)
+#   only CATALOGS. The registry says WHAT exists; this file says, per the doc-19
+#   §4 governance-profile contract and §5 rule contract, exactly which rules a
+#   run must satisfy so that "SDLC required gates can be evaluated from configs"
+#   (doc 19 §15 exit criterion).
+#
+# SOURCE OF THE RULES (doc 19 §4 "derive rules from uses_governance_profiles +
+#   the SDLC §7 minimums"):
+#   - configs/nexus-ai/sdlc_pipeline.yaml uses_governance_profiles + required_gates
+#     (always + conditional) + blocking_conditions.
+#   - SDLC §7 minimums (doc 19 §7):
+#       development_completion_requires_all_required_gates
+#       release_candidate_requires_development_completion
+#       blocker_bug_zero
+#       critical_security_zero
+#       supply_chain_required
+#       agentic_safety_required
+#       applicable_conditional_gates_required
+#   - the 31 SDLC stage contracts (configs/nexus-ai/stages/sdlc/*.yaml) for the
+#     stage gate ids / on_fail / rework_route each rule routes to.
+#
+# LOCKED DECISIONS honored here:
+#   - Plugin is CANCELLED and never reintroduced (no plugin rule/field anywhere).
+#   - Governance != Audit: this file holds governance rules; the evidence/trace
+#     records they REQUIRE live in SEPARATE registries/dirs
+#     (configs/nexus-ai/audit_schemas.yaml; audit/evidence_schemas/ vs
+#     audit/trace_schemas/). required_evidence / required_trace below NAME audit
+#     schemas; they do not define them.
+#   - Evidence != Trace: evidence_required and trace_required are distinct rule
+#     fields and point at distinct schema families; never merged.
+#   - Core Abilities are NOT agents; sdlc_team_lead != Supervisor. owner/escalation
+#     below are Agent roles / *_team_lead, never a Core Ability.
+#
+# NAMING RECONCILIATION (doc 19 reconciliation input (a)):
+#   no_self_approval and evidence_required are FIRST-CLASS governance_profile_ids;
+#   the *_policy spellings used by the pipeline/stage files are recorded as aliases.
+#
+# RULE SEVERITY vocabulary (doc 19 §5): blocker | major | advisory | informational.
+# Every blocker rule carries on_fail (doc 19 §14).
+# =============================================================================
+
+governance_profile_id: sdlc_pipeline_governance
+scope: pipeline
+purpose: >-
+  Pipeline-wide governance for the 31-stage SDLC pipeline, made evaluable from
+  config: no development completion without ALL required gates; no release
+  candidate before development completion passes; zero open blocker bugs; zero
+  critical security findings; supply-chain and agentic-safety evidence required;
+  and every APPLICABLE conditional gate must pass. This is the umbrella under
+  which every SDLC stage-scope gate sits (re-shown under each stage via usage
+  mapping).
+
+applies_to:
+  pipeline: sdlc_pipeline
+  stages:
+    - intake
+    - domain_risk_profile
+    - skill_semantic_extraction
+    - requirements
+    - requirements_review
+    - architecture
+    - architecture_review
+    - security_privacy_design
+    - premortem_fmea
+    - planning
+    - implementation
+    - code_review
+    - test_generation
+    - test_execution
+    - verification_loop_bug_finding
+    - security_validation
+    - supply_chain_sbom_license
+    - ai_agent_safety_evaluation
+    - privacy_data_lifecycle_validation
+    - api_contract_compatibility_validation
+    - domain_regulatory_compliance_validation_if_applicable
+    - data_migration_validation_if_applicable
+    - accessibility_ux_validation_if_applicable
+    - performance_resilience
+    - cost_resource_governance
+    - backup_restore_dr_validation_if_applicable
+    - operations_readiness
+    - evidence_graph_build
+    - development_completion
+    - release_candidate
+    - refraction_learning
+
+severity_default: blocker
+
+# Registry profiles this pipeline binds (re-shown from the Phase C registry; the
+# rules below operationalize them). Canonical bare ids; *_policy = registry alias.
+binds_governance_profiles:
+  - sdlc_pipeline_governance        # registry umbrella (self)
+  - no_self_approval                # alias: no_self_approval_policy
+  - evidence_required               # alias: evidence_required_policy
+  - release_candidate_governance
+  - agentic_safety_governance
+  - supply_chain_governance
+  - privacy_lifecycle_governance
+  - data_migration_governance
+  - domain_compliance_governance
+
+# -----------------------------------------------------------------------------
+# RULES — each per doc 19 §5 (rule_id, description, severity, required_when,
+# pass_condition, fail_condition, on_fail, rework_route, evidence_required,
+# trace_required). Derived from sdlc_pipeline.yaml + SDLC §7 minimums.
+# -----------------------------------------------------------------------------
+rules:
+
+  # ---- SDLC §7 minimum #1: development_completion_requires_all_required_gates --
+  - rule_id: sdlc_development_completion_requires_all_required_gates
+    description: >-
+      Development completion (stage development_completion) may pass only when
+      ALL always-required gates have passed AND every applicable conditional gate
+      has passed or carries an owned, documented acceptance. Aggregate readiness
+      gate for the whole pipeline (SDLC §7; doc 08 §6).
+    severity: blocker
+    required_when: stage == development_completion
+    pass_condition: >-
+      all_always_required_gates_pass == true AND
+      all_applicable_conditional_gates_pass_or_accepted == true AND
+      no_blocking_policy_failure == true
+    fail_condition: >-
+      any_always_required_gate_failed_or_unevaluated == true OR
+      applicable_conditional_gate_failed == true OR
+      accepted_risk_without_owner == true
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - DEVELOPMENT_COMPLETION_REPORT
+      - DEVELOPMENT_COMPLETION_GATE_RESULT
+      - EVIDENCE_GRAPH
+    trace_required:
+      - stage_gate_trace_schema
+      - gate_aggregation_decision_trace
+
+  # ---- SDLC §7 minimum #2: release_candidate_requires_development_completion ---
+  - rule_id: sdlc_release_candidate_requires_development_completion
+    description: >-
+      A release candidate (stage release_candidate) may not be produced before
+      development_completion passes. development_completion_pass is independently
+      re-attested by sdlc_team_lead (no-self-approval: release_manager_agent
+      authored stage #29) before the RC is sealed (SDLC §7; doc 08 §7).
+    severity: blocker
+    required_when: stage == release_candidate
+    pass_condition: >-
+      development_completion_pass == true AND
+      development_completion_pass_attested_by == sdlc_team_lead
+    fail_condition: development_completion_not_passed == true
+    on_fail: route_to_development_completion
+    rework_route: development_completion
+    evidence_required:
+      - DEVELOPMENT_COMPLETION_GATE_RESULT
+      - RELEASE_CANDIDATE_REPORT
+      - RELEASE_EVIDENCE
+    trace_required:
+      - stage_gate_trace_schema
+      - release_candidate_gate_decision_trace
+
+  # ---- SDLC §7 minimum #3: blocker_bug_zero -----------------------------------
+  - rule_id: sdlc_blocker_bug_zero
+    description: >-
+      The verification-loop bug-finding gate must show zero open blocker bugs
+      before the pipeline may progress past stage verification_loop_bug_finding.
+      verification-loop = bug/defect finding (LOCKED semantics); this is NOT a
+      test-execution re-run and NOT a readiness checklist.
+    severity: blocker
+    required_when: stage == verification_loop_bug_finding
+    pass_condition: open_blocker_bug_count == 0 AND found_defects_triaged == true
+    fail_condition: open_blocker_bug_count > 0 OR untriaged_blocker_defect == true
+    on_fail: route_to_implementation
+    rework_route: implementation
+    evidence_required:
+      - BUG_FINDING_REPORT
+      - BUG_FINDING_GATE_RESULT
+    trace_required:
+      - stage_gate_trace_schema
+      - bug_finding_gate_decision_trace
+
+  # ---- SDLC §7 minimum #4: critical_security_zero -----------------------------
+  - rule_id: sdlc_critical_security_zero
+    description: >-
+      The security validation gate must show zero critical security findings
+      before the pipeline may progress past stage security_validation. High/
+      critical findings block progression (03 §4).
+    severity: blocker
+    required_when: stage == security_validation
+    pass_condition: critical_finding_count == 0
+    fail_condition: critical_finding_count > 0
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - SECURITY_SCAN_REPORT
+      - SECURITY_FINDINGS_NORMALIZED
+    trace_required:
+      - stage_gate_trace_schema
+      - security_finding_trace_schema
+
+  # ---- SDLC §7 minimum #5: supply_chain_required ------------------------------
+  - rule_id: sdlc_supply_chain_required
+    description: >-
+      Supply-chain evidence (SBOM present, license check pass, dependency-risk
+      assessed) is mandatory: the supply_chain_sbom_license gate must pass before
+      development completion. supply_chain_pass / license_pass / sbom_present are
+      always-required SDLC gates.
+    severity: blocker
+    required_when: stage == supply_chain_sbom_license
+    pass_condition: >-
+      sbom_present == true AND license_pass == true AND supply_chain_pass == true
+    fail_condition: >-
+      sbom_present == false OR license_pass == false OR supply_chain_pass == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - SBOM
+      - LICENSE_REPORT
+      - DEPENDENCY_RISK_REPORT
+      - SUPPLY_CHAIN_GATE_RESULT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- SDLC §7 minimum #6: agentic_safety_required ----------------------------
+  - rule_id: sdlc_agentic_safety_required
+    description: >-
+      Agentic safety evaluation (prompt-injection / tool-misuse / context-
+      poisoning adversarial sweep) is mandatory: the ai_agent_safety_evaluation
+      gate must pass before development completion. agentic_safety_eval_pass is an
+      always-required SDLC gate.
+    severity: blocker
+    required_when: stage == ai_agent_safety_evaluation
+    pass_condition: agentic_safety_eval_pass == true
+    fail_condition: agentic_safety_eval_pass == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - AGENTIC_SAFETY_EVAL_REPORT
+      - TOOL_MISUSE_TEST_REPORT
+      - CONTEXT_POISONING_TEST_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- SDLC §7 minimum #7: applicable_conditional_gates_required --------------
+  - rule_id: sdlc_applicable_conditional_gates_required
+    description: >-
+      Every conditional gate whose upstream applicability decision is true must be
+      evaluated and pass (or carry owned acceptance) before development completion.
+      Conditional gates: accessibility, data_migration, privacy_lifecycle,
+      api_contract_compatibility, backup_restore_dr, compliance,
+      cost_resource_governance — each *_if_applicable.
+    severity: blocker
+    required_when: any_conditional_gate_applicability_decision == true
+    pass_condition: every_applicable_conditional_gate_pass_or_owned_acceptance == true
+    fail_condition: any_applicable_conditional_gate_failed_or_unevaluated == true
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - COMPLIANCE_GATE_RESULT_IF_APPLICABLE
+      - DATA_LIFECYCLE_REPORT
+      - API_CONTRACT_REPORT
+      - MIGRATION_VALIDATION_REPORT
+      - ACCESSIBILITY_REPORT
+      - RESTORE_TEST_REPORT
+      - COST_ESTIMATE_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- cross-cutting: no_self_approval (first-class; alias no_self_approval_policy)
+  - rule_id: sdlc_no_self_approval
+    description: >-
+      For every review / validation / decision gate, the gate owner must differ
+      from the author of the artifact it adjudicates (producer_agent_id !=
+      approver_agent_id). Where no dedicated reviewer role exists, the gate falls
+      back to sdlc_team_lead (Supervisor != sdlc_team_lead). Binds the canonical
+      no_self_approval (alias: no_self_approval_policy).
+    severity: blocker
+    required_when: stage_has_review_or_validation_or_decision_gate == true
+    pass_condition: gate_owner_agent_id != reviewed_artifact_author_agent_id
+    fail_condition: gate_owner_agent_id == reviewed_artifact_author_agent_id
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - CODE_REVIEW_REPORT
+      - REQUIREMENTS_REVIEW_REPORT
+      - ARCHITECTURE_REVIEW_REPORT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- cross-cutting: evidence_required (first-class; alias evidence_required_policy)
+  - rule_id: sdlc_evidence_required
+    description: >-
+      No gate may pass/approve/release without a machine-readable evidence
+      record. Binds the canonical evidence_required (alias: evidence_required_policy);
+      bound by all 31 SDLC stages. Evidence != Trace — this requires evidence, not
+      a trace record.
+    severity: blocker
+    required_when: any_gate_decision == true
+    pass_condition: gate_decision_has_evidence_record == true
+    fail_condition: gate_decision_has_evidence_record == false
+    on_fail: route_to_relevant_failed_stage
+    rework_route: relevant_failed_stage
+    evidence_required:
+      - DEVELOPMENT_COMPLETION_GATE_RESULT
+    trace_required:
+      - stage_gate_trace_schema
+
+  # ---- cross-cutting: no_blocking_policy_failure ------------------------------
+  - rule_id: sdlc_no_blocking_policy_failure
+    description: >-
+      No actor — including sdlc_team_lead, an LLM council, or a prompt — may
+      override, skip, or "pass" a blocking governance gate. An unresolved blocking
+      policy failure blocks progression and release (no_blocking_policy_failure is
+      an always-required SDLC gate).
+    severity: blocker
+    required_when: always
+    pass_condition: unresolved_blocking_policy_failure == false
+    fail_condition: unresolved_blocking_policy_failure == true
+    on_fail: block_and_report
+    rework_route: block_and_report
+    evidence_required:
+      - DEVELOPMENT_COMPLETION_GATE_RESULT
+      - RELEASE_CANDIDATE_GATE_RESULT
+    trace_required:
+      - stage_gate_trace_schema
+      - governance_gate_evaluation_trace
+
+# -----------------------------------------------------------------------------
+# Pipeline-level required evidence / trace (doc 19 §4 governance-profile fields).
+# These NAME audit schemas owned by the SEPARATE audit registry (Governance !=
+# Audit; Evidence != Trace) — evidence schemas vs trace schemas kept distinct.
+# -----------------------------------------------------------------------------
+required_evidence:
+  evidence_schemas:
+    - sdlc_pipeline_evidence_schema
+    - bug_finding_evidence_schema
+    - security_scan_evidence_schema
+    - supply_chain_evidence_schema
+    - agentic_eval_evidence_schema
+    - release_evidence_schema
+  evidence_artifacts:
+    - DEVELOPMENT_COMPLETION_REPORT
+    - DEVELOPMENT_COMPLETION_GATE_RESULT
+    - RELEASE_CANDIDATE_REPORT
+    - RELEASE_EVIDENCE
+    - BUG_FINDING_REPORT
+    - SECURITY_SCAN_REPORT
+    - SBOM
+    - LICENSE_REPORT
+    - AGENTIC_SAFETY_EVAL_REPORT
+
+required_trace:
+  trace_schemas:
+    - stage_gate_trace_schema
+  trace_records:
+    - stage_gate_decision_trace
+    - gate_aggregation_decision_trace
+    - rework_routing_trace
+    - iteration_count_trace
+    - governance_gate_evaluation_trace
+
+# -----------------------------------------------------------------------------
+# owner / escalation (doc 19 §4). Agent role / team-lead only — NEVER a Core
+# Ability. sdlc_team_lead orchestrates and CANNOT bypass a gate (no_policy_bypass).
+# -----------------------------------------------------------------------------
+owner: software_delivery
+escalation:
+  on_blocker: sdlc_team_lead
+  on_unresolved_blocking_policy_failure: block_and_report
+  cannot_override_gate: true        # sdlc_team_lead != Supervisor; no gate bypass
+
+# -----------------------------------------------------------------------------
+# Provenance + locked-decision assertions.
+# -----------------------------------------------------------------------------
+provenance:
+  registry_profile: governance_profiles.yaml#pipeline.sdlc_pipeline_governance
+  derived_from:
+    - configs/nexus-ai/sdlc_pipeline.yaml
+    - configs/nexus-ai/stages/sdlc/*.yaml
+    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md   # §4, §5, §7
+    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md     # §4 SDLC pipeline governance
+no_plugin: true
+governance_not_audit: true
+evidence_not_trace: true
