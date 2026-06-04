@@ -175,12 +175,20 @@ evidence_graph_complete
 no_blocking_policy_failure
 ```
 
-> Reconciliation vs doc 06 §8: this always-required set =
-> (doc 06 §8 always gates) + `agentic_safety_eval_pass`. The two always-on BLOCKER gates
-> `risk_register_reviewed` (produced by stage 9 premortem_fmea) and
-> `performance_resilience_pass_or_accepted` (produced by stage 24 performance_resilience)
-> are members of both sets, so doc 08 §4 and doc 06 §8 agree. (`agentic_safety_eval_pass`
-> is the one always gate doc 08 §4 adds beyond doc 06 §8, for the AI-agent safety stage.)
+> Reconciliation vs doc 06 §8 (locked in decision log D-016): this always-required set is
+> **identical** to doc 06 §8's always-required gate set and to
+> `configs/nexus-ai/sdlc_pipeline.yaml` → `required_gates.always` — the same 19 gates in the
+> same order. The canonical machine-readable source is `sdlc_pipeline.yaml required_gates.always`;
+> doc 06 §8 and doc 08 §4 are its human-readable mirrors. The set is the union of three
+> decisions in the doc-06 family: doc 06 §8 (base) + doc 06a (`supply_chain_pass`,
+> `license_pass`, `sbom_present`) + doc 06b (`agentic_safety_eval_pass`, "Development Completion
+> impact"). Three gates are called out: the two always-on BLOCKER gates `risk_register_reviewed`
+> (produced by stage 9 premortem_fmea) and `performance_resilience_pass_or_accepted` (produced by
+> stage 24 performance_resilience), plus `agentic_safety_eval_pass` (produced by stage 18
+> ai_agent_safety_evaluation). All three are governed severity: blocker / required_when: always
+> and are members of the stage-29 development_completion rollup. (An earlier doc 06 §8 omitted
+> `agentic_safety_eval_pass` and an earlier doc 08 §4 draft omitted the two blocker gates; D-016
+> resolves both so the two sections list the identical set.)
 
 Conditional required:
 

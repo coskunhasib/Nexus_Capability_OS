@@ -31,8 +31,9 @@ entry_criteria:
   - sdlc_team_and_sdlc_team_lead_assigned
   - required_skills_available_for_semantic_extraction
 
-# Conditions that mark the pipeline complete (doc 06 §8 gate set + the canonical
-# forward path ending at the `done` terminal after refraction_learning; doc 08 §7:
+# Conditions that mark the pipeline complete (doc 06 §8 = doc 08 §4 reconciled
+# always-required gate set, locked in decision log D-016; + the canonical forward
+# path ending at the `done` terminal after refraction_learning; doc 08 §7:
 # release_candidate cannot be produced before development_completion passes).
 exit_criteria:
   - development_completion_pass
@@ -216,6 +217,12 @@ uses_context_memory_profiles:
   - implementation_context_pack
   - release_context_pack
 
+# Canonical, single authoritative always-required SDLC gate set (19 gates), locked in
+# decision log D-016. This block is the machine-readable source; doc 06 §8 and doc 08 §4
+# are its human-readable mirrors (same 19 gates, same order). Set = doc 06 §8 base
+# + doc 06a (supply_chain_pass/license_pass/sbom_present) + doc 06b (agentic_safety_eval_pass).
+# The `conditional` set (7) is applicability-gated. See sdlc_pipeline_runtime_rules.yaml
+# `required_gate_producers` for the gate -> producing-stage map.
 required_gates:
   always:
     - requirements_complete

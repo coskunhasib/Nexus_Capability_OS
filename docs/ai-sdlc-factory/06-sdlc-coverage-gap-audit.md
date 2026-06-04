@@ -139,7 +139,8 @@ rework route defined
 
 ## 8. Development Completion için minimum gate seti
 
-Development Completion pass olabilmesi için en az şu gate’ler pass olmalıdır:
+Development Completion pass olabilmesi için aşağıdaki her zaman gerekli
+(always-required) gate’lerin tamamı pass olmalıdır:
 
 ```text
 requirements_complete
@@ -157,12 +158,44 @@ supply_chain_pass
 license_pass
 sbom_present
 performance_resilience_pass_or_accepted
-accessibility_pass_if_applicable
-data_migration_pass_if_applicable
+agentic_safety_eval_pass
 operations_readiness_pass
 evidence_graph_complete
 no_blocking_policy_failure
 ```
+
+Ayrıca, ilgili upstream applicability kararı `true` olduğunda şu koşullu
+(conditional-required) gate’ler de değerlendirilip pass (ya da sahipli/dokümante
+kabul) olmalıdır:
+
+```text
+accessibility_pass_if_applicable
+data_migration_pass_if_applicable
+privacy_lifecycle_pass_if_applicable
+api_contract_compatibility_pass_if_applicable
+backup_restore_dr_pass_if_applicable
+compliance_pass_if_applicable
+cost_resource_governance_pass_if_applicable
+```
+
+> **Reconciliation (karar günlüğü D-016).** Yukarıdaki always-required set (19 gate),
+> doc 08 §4 “Mandatory gates” (always) listesi ve
+> `configs/nexus-ai/sdlc_pipeline.yaml` → `required_gates.always` ile **birebir
+> aynıdır** (aynı sıra). Canonical, makine-okunabilir kaynak budur; doc 06 §8 ve
+> doc 08 §4 onun insan-okunabilir yansımalarıdır. Set, bu doküman ailesindeki üç
+> kararın birleşimidir: doc 06 §8 tabanı + doc 06a (`supply_chain_pass`,
+> `license_pass`, `sbom_present`) + doc 06b (`agentic_safety_eval_pass`, “Development
+> Completion impact”). Bu §8 listesi önceden 06b’nin eklediği
+> `agentic_safety_eval_pass`’i içermiyordu; D-016 bu boşluğu kapatır. Üç gate
+> özellikle vurgulanır — iki always-on BLOCKER gate `risk_register_reviewed` (stage 9
+> premortem_fmea) ve `performance_resilience_pass_or_accepted` (stage 24
+> performance_resilience), ve `agentic_safety_eval_pass` (stage 18
+> ai_agent_safety_evaluation); üçü de severity: blocker / required_when: always olarak
+> yönetilir (`configs/nexus-ai/governance/stage/sdlc-stages.yaml`) ve stage-29
+> development_completion rollup’ında
+> (`configs/nexus-ai/stages/sdlc/29-development-completion.yaml`) yer alır. Yukarıdaki
+> conditional set de doc 08 §4 “Conditional required” / `required_gates.conditional`
+> ile aynıdır (06a + 06b’den türetilmiştir).
 
 ## 9. Release Candidate için minimum evidence seti
 

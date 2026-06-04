@@ -19,7 +19,7 @@ Ability · Team Lead != Supervisor · Skill != Tool · Governance != Audit · Ev
 
 Canonical reading order (from [`README.md`](README.md)):
 
-1. [`00-decision-log.md`](00-decision-log.md) — locked decisions D-001..D-010
+1. [`00-decision-log.md`](00-decision-log.md) — locked decisions D-001..D-010 + D-016
 2. [`00a-shared-registry-decisions.md`](00a-shared-registry-decisions.md) — locked decisions D-011..D-015
 3. [`01-nexus-ai-operating-model.md`](01-nexus-ai-operating-model.md)
 4. [`02-concept-boundaries.md`](02-concept-boundaries.md)
@@ -51,7 +51,7 @@ Canonical reading order (from [`README.md`](README.md)):
 
 | Doc | Title | Holds |
 |-----|-------|-------|
-| [`00-decision-log.md`](00-decision-log.md) | Decision Log | D-001 .. D-010 |
+| [`00-decision-log.md`](00-decision-log.md) | Decision Log | D-001 .. D-010, D-016 |
 | [`00a-shared-registry-decisions.md`](00a-shared-registry-decisions.md) | Shared Registry Decision Addendum | D-011 .. D-015 |
 | [`README.md`](README.md) | Discussion & design package overview | Locked-decision summary, concept families, reading order |
 
@@ -291,9 +291,9 @@ Mermaid (`.mmd`) source diagrams for the blueprint.
 
 ---
 
-## 11. Decision map — D-001 .. D-015 → source doc
+## 11. Decision map — D-001 .. D-016 → source doc
 
-Every locked decision and where it is defined. D-001..D-010 are defined in the Decision Log;
+Every locked decision and where it is defined. D-001..D-010 and D-016 are defined in the Decision Log;
 D-011..D-015 in the Shared Registry addendum. The blueprint [`README.md`](README.md) also
 summarizes the full set.
 
@@ -314,6 +314,7 @@ summarizes the full set.
 | D-013 | In the main hierarchy a **Skill appears by name only**; skill package contents live in the skill inventory/audit doc. | [`00a-shared-registry-decisions.md`](00a-shared-registry-decisions.md) |
 | D-014 | **Core Ability sub-operations appear separately as Tools** (Skill != Tool); the Core Ability name is in the registry, its callable ops are in the Tool registry + usage mapping. | [`00a-shared-registry-decisions.md`](00a-shared-registry-decisions.md) |
 | D-015 | **Model/Provider and Context/Memory profiles must be visible** in both the Shared Registry and the usage context. | [`00a-shared-registry-decisions.md`](00a-shared-registry-decisions.md) |
+| D-016 | **Canonical always-required SDLC gate set** — 19 always gates = doc 06 §8 base ∪ 06a ∪ 06b (incl. `risk_register_reviewed`, `performance_resilience_pass_or_accepted`, `agentic_safety_eval_pass`); doc 06 §8 = doc 08 §4 = `sdlc_pipeline.yaml` `required_gates.always`. | [`00-decision-log.md`](00-decision-log.md) |
 
 ---
 
