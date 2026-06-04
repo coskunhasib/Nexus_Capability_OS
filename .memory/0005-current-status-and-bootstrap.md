@@ -1,24 +1,23 @@
 # 0005 — Current Status and Bootstrap
 
-Bu dosya, sohbet bağlamını azaltmak için kullanılacak güncel bootstrap hafızasıdır.
+Bu dosya, yeni oturumda veya context azaltıldığında hızlı yön bulmak için güncel bootstrap
+hafızasıdır. Repo-safe karar/durum özetidir (birebir transkript değildir).
+
+```text
+Son güncelleme: 2026-06-05
+nexus HEAD: 45babcc
+```
 
 ## Repo ve branch
 
-Ana çalışma alanı:
-
 ```text
-coskunhasib/Nexus_Capability_OS:nexus
-```
-
-Referans repo:
-
-```text
-coskunhasib/LLM_Calismalari
+Ana çalışma alanı: coskunhasib/Nexus_Capability_OS:nexus   (izole; main'e merge edilmez)
+Referans repo   : coskunhasib/LLM_Calismalari
 ```
 
 ## Kısa bağlam yükleme talimatı
 
-Yeni oturumda veya context azaltıldığında önce şunları oku:
+Yeni oturumda önce şunları oku:
 
 ```text
 .memory/README.md
@@ -30,117 +29,96 @@ Yeni oturumda veya context azaltıldığında önce şunları oku:
 
 docs/ai-sdlc-factory/README.md
 docs/ai-sdlc-factory/BLUEPRINT_INDEX.md
-docs/ai-sdlc-factory/reviews/chatgpt-wp05-review.md
+docs/ai-sdlc-factory/00-decision-log.md                              (D-001..D-016)
+docs/ai-sdlc-factory/reviews/final-readiness-gate.md                 (owner kararı)
+docs/ai-sdlc-factory/reviews/claude-code-sdlc-completion-summary.md  (WP-05 kapanış)
 ```
 
 ## Kilitli kararlar
 
 ```text
 Plugin kesin iptal.
-Üst yapı Nexus AI Orchestration Model.
-SDLC sadece Nexus AI altındaki pipeline’lardan biri.
+Üst yapı Nexus AI Orchestration Model. SDLC sadece bir pipeline.
 Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS = Core Abilities.
-Core Abilities agent değildir ve team üyesi değildir.
+Core Abilities agent değildir, team üyesi değildir.
 Team hiyerarşisi: Team → Team Lead → Agents → Sub-agents.
 Supervisor, SDLC Team Lead değildir.
-Shared Registry ve Usage Mapping ayrıdır.
-Shared kategoriler hem registry’de hem kullanım yerinde görünür.
+Shared Registry (ne var) ile Usage Mapping (kim kullanıyor) ayrıdır; ortak öğeler iki yerde görünür.
 Skill ana hiyerarşide sadece adıyla görünür.
-Governance != Audit.
-Evidence != Trace.
+Governance != Audit.  Evidence != Trace.
+D-016: always-required SDLC gate seti tek canonical küme (19 gate); doc 06 §8 = doc 08 §4 birebir.
+       Kaynak: configs/nexus-ai/sdlc_pipeline.yaml → required_gates.always.
+       (risk_register_reviewed ve performance_resilience_pass_or_accepted dahil.)
 ```
 
-## SDLC durumu
+## Genel durum — blueprint A→I ÇALIŞTIRILDI ve commit'lendi
 
-SDLC tarafında şu durum geçerlidir:
+ÖNEMLİ: Plan serisi (doc 13–22) yalnızca *oluşturulmadı*; öngördüğü çıktılar **üretildi, bağımsız
+review'lardan geçirildi ve `nexus`'a commit'lendi.**
 
 ```text
-SDLC conceptual coverage: complete
-SDLC documentation baseline: complete
-SDLC stage contracts: machine-readable YAML olarak üretildi
-SDLC contract consistency audit: PASS_WITH_FINDINGS
-Claude Code skill/agent review: PASS_WITH_FINDINGS
-Final cross-review: PASS_WITH_FINDINGS, blocking_findings: []
-ChatGPT WP-05 review: PASS_WITH_FINDINGS, blocking_findings: None
+SDLC completion (doc 13 / WP-05, Phase 0-6): done
+  31 makine-okunabilir stage YAML + 6 JSON schema + sdlc_pipeline_runtime_rules.yaml
+  consistency audit / skill-agent review / blueprint index + 4 diyagram / final cross-review = PASS_WITH_FINDINGS
+Phase B — Pipeline Catalog (doc 16): done — 5 SDLC-dışı pipeline + pipeline_catalog.yaml
+Phase C — Shared Registry (doc 17): done — 7 registry (~317 öğe)
+Phase D — Team/Agent/Sub-agent (doc 18): done — 6 team, 53 agent, 8 sub-agent
+Phase E — Governance & Audit (doc 19): done — 7 katman governance + evidence/trace audit (385 kural)
+Phase F — Executor Standard (doc 20): done — claude-code/codex/antigravity + completion-report schema
+Phase G/H — Readiness + runtime/refactor plans (doc 21): done — readiness review + 11 PLAN dokümanı (kod yok)
+Phase I — Final readiness gate (doc 22): done — owner APPROVE kaydedildi
+Reconciliation sweep: dangling intra-registry edge 108 → 0
+Implementation Planning Handoff (doc 22 §8): done — 10 workpackage spec (WP-01..WP-10) + README (yalnız plan)
+Final adversarial QA: 2 gate-coverage defect düzeltildi → D-016; + kozmetik sweep
+ChatGPT WP-05 review: PASS_WITH_FINDINGS; "Recommended next action" 5/5 kapandı
 ```
 
-Ana review dosyası:
+Owner kararı (doc 22 §7):
 
 ```text
-docs/ai-sdlc-factory/reviews/chatgpt-wp05-review.md
+OWNER_DECISION: APPROVE_IMPLEMENTATION_PLANNING_HANDOFF   (2026-06-04)
 ```
 
-## WP-05 sonrası kalan cleanup işleri
+Bu onay yalnızca *implementation PLANNING handoff*'u açar (workpackage spec'leri hazırlandı).
+Runtime KODU üretmek (workpackage'ları çalıştırmak) **ayrı ve sonraki bir owner kararına** bağlıdır.
 
-Aşağıdaki işler non-blocking cleanup olarak kaldı:
+## Doğrulama durumu (canlı, 2026-06-05)
 
 ```text
-1. Add or alias claude-code-sdlc-completion-summary.md.
-2. Reconcile sdlc_pipeline.yaml with pipeline_definition.schema.json.
-3. Fix diagram owner labels for requirements / requirements_review / architecture_review.
-4. Refresh stale BLUEPRINT_INDEX text.
-5. Correct stale comment in 27-operations-readiness.yaml.
+81/81 YAML parse · sdlc_pipeline.yaml schema 0 hata · 0 dangling intra-registry edge (2641 ref)
+Evidence != Trace dizin-saf · plugin yok · Core-Ability-as-agent yok · Supervisor team-lead değil
 ```
 
-Claude Code’a verilecek kısa talimat:
+## WP-05 cleanup — KAPANDI
 
 ```text
-Read docs/ai-sdlc-factory/reviews/chatgpt-wp05-review.md and fix all items under Recommended next action. Keep scope docs/config only; no runtime/refactor/connector/deploy.
+1. claude-code-sdlc-completion-summary.md ........ DONE (oluşturuldu)
+2. sdlc_pipeline.yaml ↔ pipeline_definition.schema  RESOLVED (0 hata)
+3. diagram owner labels (req / req_review / arch_review)  RESOLVED (canonical)
+4. BLUEPRINT_INDEX stale text .................... RESOLVED
+5. 27-operations-readiness.yaml stale comment .... RESOLVED
 ```
 
-## Plan serisi durumu
+Çözülmüş bulgular review dokümanlarında (final-cross-review-summary.md,
+sdlc-contract-consistency-audit.md) "RESOLVED" diye işaretlendi; bulgular audit izi olarak korundu.
 
-Aşağıdaki planlar oluşturuldu:
+## Uygulama yasağı (HÂLÂ geçerli)
 
 ```text
-13-sdlc-completion-full-execution-plan.md
-14-post-sdlc-continuation-plan.md
-15-master-roadmap-and-dependency-map.md
-16-pipeline-catalog-expansion-plan.md
-17-shared-registry-formalization-plan.md
-18-team-agent-subagent-catalog-plan.md
-19-governance-audit-readiness-plan.md
-20-executor-workflow-standard-plan.md
-21-runtime-refactor-planning-only-plan.md
-22-final-stop-rule-and-readiness-gate.md
+runtime implementation · product refactor · connector integration · Nexus publish
+deploy · main branch merge · plugin registry · production readiness claim
 ```
 
-`22-final-stop-rule-and-readiness-gate.md` planlama serisinin stop rule dokümanıdır.
-
-## Uygulama yasağı
-
-Şu aşamada hâlâ yasak:
+## Sonraki adım
 
 ```text
-runtime implementation
-product refactor
-connector integration
-Nexus publish
-deploy
-main branch merge
-plugin registry
-production readiness claim
-```
-
-## Sonraki mantıklı sıra
-
-Önce WP-05 cleanup bulguları kapatılır.
-
-Sonra sırayla:
-
-```text
-Pipeline Catalog Expansion
-Shared Registry Formalization
-Team / Agent / Sub-agent Catalogs
-Governance and Audit Implementation Readiness
-Executor Workflow Standard
-Implementation Readiness Review
-Runtime / Refactor Planning Only
-Final Stop Rule / Owner Decision
+Planlama A→I tamamlandı. "Sonraki" artık daha fazla planlama DEĞİL.
+Tek bekleyen: workpackage'ları ÇALIŞTIRMA (runtime kodu üretme) için AYRI bir owner kararı (doc 22 §7).
+O karar gelene kadar nexus izole kalır ve main'e merge edilmez.
 ```
 
 ## Context azaltma notu
 
-Bu dosya birebir sohbet transkripti değildir. Repo-safe karar, araştırma ve operasyonel durum özetidir.
-
-Birebir sohbet dökümü tutulmamıştır; gereksiz şişmeyi önlemek için karar ve araştırma hafızası tutulmuştur.
+```text
+Bu dosya birebir sohbet transkripti değildir; repo-safe karar/araştırma/operasyonel durum özetidir.
+```
