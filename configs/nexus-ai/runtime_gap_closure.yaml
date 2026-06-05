@@ -1,0 +1,166 @@
+# Nexus AI Orchestration Model — Runtime Gap Closure Inventory
+#
+# Scope: blueprint/config only. This file tracks runtime-facing missing components and priority.
+# It does not implement runtime behavior and does not authorize runtime execution.
+
+runtime_gap_closure_id: nexus_ai_runtime_gap_closure_inventory
+runtime_gap_closure_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+no_plugin: true
+
+purpose: >-
+  Track the missing runtime components required to turn the completed Nexus AI blueprint into a
+  governed, machine-verifiable, no-human AI software operating system.
+
+priority_tiers:
+  P0:
+    meaning: Required before meaningful runtime execution.
+    components:
+      - component_id: runtime_execution_kernel
+        plain_language: The engine that starts runs, executes stages, invokes agents, checks gates, routes rework, writes evidence and trace, and ends runs.
+        related_workpackages: [WP-08, WP-09]
+      - component_id: shared_registry_loader
+        plain_language: Loads and validates the shared registries.
+        related_workpackages: [WP-01]
+      - component_id: registry_resolver
+        plain_language: Resolves which stage/agent may use which registry items.
+        related_workpackages: [WP-01]
+      - component_id: policy_enforcement_point
+        plain_language: The hard gatekeeper for permissions, transitions, evidence and self-approval.
+        related_workpackages: [WP-03]
+      - component_id: tool_permission_system
+        plain_language: Defines which agents may invoke which tools under which scope.
+        related_workpackages: [WP-05]
+      - component_id: tool_sandbox
+        plain_language: Safe execution boundary for side-effecting tools.
+        related_workpackages: [WP-05]
+      - component_id: secret_credential_boundary
+        plain_language: Ensures agents never see raw secrets; only approved tool runtimes may use credentials.
+        related_workpackages: [WP-05]
+      - component_id: evidence_store
+        plain_language: Tamper-evident store for decision proof.
+        related_workpackages: [WP-04]
+      - component_id: trace_store
+        plain_language: Store for operation history and traceable runtime events.
+        related_workpackages: [WP-04]
+      - component_id: pipeline_run_state_model
+        plain_language: State machine for pipeline runs, stages, gates, rework and terminal states.
+        related_workpackages: [WP-08]
+      - component_id: owner_decision_registry
+        plain_language: Durable record of owner approvals, holds, overrides and risk acceptance decisions.
+        related_workpackages: [WP-10]
+      - component_id: runtime_workpackage_execution_contract
+        plain_language: Contract that scopes and authorizes one runtime workpackage at a time.
+        related_workpackages: [WP-10]
+
+  P1:
+    meaning: Required for the first working SDLC Pipeline Run.
+    components:
+      - component_id: pipeline_runner
+        related_workpackages: [WP-09]
+      - component_id: agent_invocation_contract
+        related_workpackages: [WP-09]
+      - component_id: agent_message_bus
+        related_workpackages: [WP-09]
+      - component_id: coordination_system_enforcement
+        related_workpackages: [WP-09]
+      - component_id: gate_evaluator
+        related_workpackages: [WP-03, WP-09]
+      - component_id: rework_iteration_engine
+        related_workpackages: [WP-08, WP-09]
+      - component_id: model_router
+        related_workpackages: [WP-06]
+      - component_id: context_memory_resolver
+        related_workpackages: [WP-07]
+
+  P2:
+    meaning: Required for professional-grade operation.
+    components:
+      - component_id: decision_arbitration_layer
+      - component_id: prompt_instruction_registry
+      - component_id: agent_evaluation_harness
+      - component_id: memory_validity_conflict_resolver
+      - component_id: resource_budget_manager
+      - component_id: risk_acceptance_contract
+      - component_id: dashboard_control_plane
+
+  P3:
+    meaning: Required for scale and full Nexus integration.
+    components:
+      - component_id: cross_pipeline_orchestration
+      - component_id: tenant_workspace_boundary
+      - component_id: external_nexus_integration_boundary
+      - component_id: contract_versioning_migration_policy
+      - component_id: incident_rollback_automation
+      - component_id: runtime_definition_of_done
+
+runtime_execution_decision_required:
+  required: true
+  reason: >-
+    Existing owner approval only opened the implementation planning handoff. Runtime workpackage
+    execution requires a separate explicit owner decision.
+  required_decision_template: |
+    OWNER_DECISION: APPROVE_RUNTIME_WORKPACKAGE_EXECUTION
+    SCOPE: WP-XX only
+    EXECUTOR: <assigned executor>
+    REVIEWER: ChatGPT
+    BRANCH/WORKSPACE: isolated under nexus; no main merge
+
+forbidden_until_runtime_execution_approval:
+  - runtime_implementation
+  - product_refactor
+  - connector_integration
+  - nexus_publish
+  - deploy
+  - main_branch_merge
+  - plugin_registry
+  - production_readiness_claim
+
+handoff_impact:
+  WP-01:
+    component: Shared Registry Loader
+    must_account_for:
+      - registry_validation
+      - resolver_inputs
+      - ids_status_version
+      - cross_reference_checks
+  WP-03:
+    component: Governance Engine
+    must_account_for:
+      - policy_enforcement_point
+      - gate_evaluator
+      - blocking_failure_propagation
+  WP-04:
+    component: Audit / Evidence Store
+    must_account_for:
+      - evidence_trace_separation
+      - tamper_evident_metadata
+      - source_trace_links
+  WP-05:
+    component: Tool Permission System
+    must_account_for:
+      - tool_sandbox
+      - secret_boundary
+      - deny_by_default_permissions
+  WP-08:
+    component: Pipeline Run State Model
+    must_account_for:
+      - coordination_events
+      - message_broadcast_state
+      - terminal_states
+      - max_iteration_state
+  WP-09:
+    component: Pipeline Runner
+    must_account_for:
+      - coordination_pattern_enforcement
+      - gate_checks
+      - rework_routes
+      - event_publishing
+  WP-10:
+    component: Executor Integration
+    must_account_for:
+      - owner_decision_registry_checks
+      - executor_override_policy
+      - completion_report_contract
