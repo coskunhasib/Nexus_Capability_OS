@@ -1,0 +1,66 @@
+# Nexus AI Orchestration Model — Execution Scheduling Policy
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+execution_scheduling_policy_id: nexus_ai_execution_scheduling_policy
+execution_scheduling_policy_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+policy_name: Serial-first Mission Execution Policy
+user_facing_name: Sıralı Çalışma ve Paralel Yardımcı Çalışma
+
+principle: >-
+  Conflict-prone write work runs serially. Read-only research and independent validation may run in
+  controlled parallel.
+
+why_serial_first:
+  - agents_can_conflict_and_step_on_each_other
+  - duplicate_work_can_create_inconsistent_architecture
+  - coordination_overhead_can_erase_parallel_speed_gains
+  - every_conflict_burns_tokens_and_time
+  - correctness_compounds_in_serial_multi_day_work
+
+serial_by_default:
+  - implementation_work
+  - same_file_writes
+  - same_architecture_area_changes
+  - database_schema_changes
+  - public_api_changes
+  - migration_changes
+  - release_candidate_changes
+  - mission_shared_state_mutations
+  - validation_contract_mutations
+
+parallel_allowed_when_independent:
+  - read_only_codebase_exploration
+  - source_research
+  - api_library_research
+  - documentation_reads
+  - independent_validation_reviews
+  - security_review
+  - performance_review
+  - accessibility_review
+  - compliance_research
+
+scheduler_checks:
+  - write_conflict_detection
+  - shared_state_locking
+  - mission_handoff_required_before_next_worker
+  - validator_parallelism_allowed_after_milestone_completion
+  - maximum_parallel_worker_limit
+  - maximum_parallel_validator_limit
+  - resource_budget_check
+  - tool_permission_check
+
+forbidden_patterns:
+  - unbounded_parallel_writes
+  - parallel_schema_and_api_change_without_orchestrator_approval
+  - validator_modifying_worker_output
+  - direct_state_mutation_without_handoff
+  - parallel_work_without_shared_state_update
+
+user_facing_explanation: >-
+  Nexus AI does not attack every part at once. It performs conflict-prone work in order, while
+  running research and checks in parallel when they cannot conflict.
