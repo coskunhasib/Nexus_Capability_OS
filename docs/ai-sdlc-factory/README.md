@@ -1,6 +1,6 @@
 # Nexus AI Orchestration Model — Tartışma ve Tasarım Paketi
 
-Bu klasör, **Nexus AI** altında kurulacak pipeline / team / agent / sub-agent / core ability / skill / tool / governance / audit modelini tartışmak ve kilitlemek için hazırlanmıştır.
+Bu klasör, **Nexus AI** altında kurulacak pipeline / team / agent / sub-agent / core ability / skill / tool / coordination / governance / audit modelini tartışmak ve kilitlemek için hazırlanmıştır.
 
 Bu branch bilinçli olarak `nexus` adıyla kullanılır ve **merge edilmemek üzere** dokümantasyon/tartışma alanıdır.
 
@@ -48,6 +48,12 @@ SDLC Pipeline için rol adı: SDLC Team Lead.
 Supervisor, SDLC Team Lead değildir.
 ```
 
+```text
+Coordination System ayrı bir kavram ailesidir.
+Team System = kimler var?
+Coordination System = bu roller nasıl birlikte çalışır?
+```
+
 ## Ana kavram aileleri
 
 ```text
@@ -72,7 +78,28 @@ Nexus AI
    - Agent
    - Sub-agent
 
-4. Governance System
+4. Core Abilities Layer
+   - Supervisor
+   - Coder
+   - Vision
+   - Audio
+   - Creative
+   - Memory
+   - Web
+   - OS
+
+5. Skills and Tools Layer
+   - Skills = methods / protocols
+   - Tools = callable operations
+
+6. Coordination System
+   - Delegation
+   - Creator-Verifier
+   - Controlled Direct Communication
+   - Negotiation / Arbitration
+   - Broadcast / Event Bus
+
+7. Governance System
    - Global Governance
    - Pipeline Governance
    - Team Governance
@@ -81,7 +108,7 @@ Nexus AI
    - Skill Governance
    - Tool Governance
 
-5. Audit System
+8. Audit System
    - Evidence
    - Trace
 ```
@@ -129,10 +156,35 @@ SDLC Team
     └── Direct SDLC Sub-agents
 ```
 
+## Coordination System
+
+Coordination System, agent’ların birlikte çalışma desenlerini tanımlar. Team System’in yerine geçmez.
+
+```text
+Team System = kim var?
+Coordination System = bunlar nasıl birlikte çalışıyor?
+Pipeline System = hangi süreç çalışıyor?
+Governance System = neye izin var?
+Audit System = ne kanıtlandı / ne yaşandı?
+```
+
+Zorunlu coordination patterns:
+
+```text
+Delegation
+Creator-Verifier
+Controlled Direct Communication
+Negotiation / Arbitration
+Broadcast / Event Bus
+```
+
+Coordination System runtime davranışını tarif eder ama tek başına runtime implementation onayı değildir.
+
 ## Temel ayrımlar
 
 ```text
 Pipeline != Team
+Pipeline Definition != Pipeline Run
 Team Lead != Supervisor
 Agent != Core Ability
 Skill != Tool
@@ -157,6 +209,8 @@ Plugin yok
 12. [`07-pipeline-contract-standard.md`](07-pipeline-contract-standard.md)
 13. [`08-sdlc-pipeline-contract.md`](08-sdlc-pipeline-contract.md)
 14. [`sdlc-stages/`](sdlc-stages/)
+15. [`23-coordination-system-and-runtime-gap-closure.md`](23-coordination-system-and-runtime-gap-closure.md)
+16. [`AI_STUDIO_HIERARCHY_PROMPT.md`](AI_STUDIO_HIERARCHY_PROMPT.md)
 
 ## SDLC stage contracts
 
@@ -170,6 +224,15 @@ sdlc-stages/04-validation-and-product-gates.md
 sdlc-stages/05-completion-release-and-learning.md
 ```
 
+## Machine-readable extension configs
+
+```text
+configs/nexus-ai/coordination_system.yaml
+configs/nexus-ai/runtime_gap_closure.yaml
+```
+
+Bu iki dosya blueprint/config genişletmesidir; runtime kodu değildir.
+
 ## Uygulama yasağı
 
 Bu doküman seti ve tartışma kararları onaylanmadan:
@@ -181,6 +244,13 @@ Bu doküman seti ve tartışma kararları onaylanmadan:
 - plugin registry kurulmayacak,
 - mevcut agent/core ability/team yapısına doğrudan refactor yapılmayacak.
 
+Runtime workpackage execution ayrıca ve açıkça onaylanmadan:
+
+- runtime implementation başlatılmayacak,
+- product refactor yapılmayacak,
+- main branch merge yapılmayacak,
+- production readiness iddiası kurulmayacak.
+
 ## Şimdiki hedef
 
-Önce kavram seti ve kararlar kilitlenecek. Ardından Codex / Antigravity / Claude Code için iş paketleri hazırlanacak.
+Planlama/handoff tamamlandı. Yeni eklenen Coordination System ve Runtime Gap Closure katmanı, runtime execution başlamadan önce workpackage kapsamına yansıtılması gereken eksik koordinasyon ve runtime bileşenlerini netleştirir.
