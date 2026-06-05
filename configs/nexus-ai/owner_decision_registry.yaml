@@ -1,0 +1,66 @@
+# Nexus AI Orchestration Model — Owner Decision Registry
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+owner_decision_registry_id: nexus_ai_owner_decision_registry
+owner_decision_registry_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Record explicit owner decisions that allow, hold, override, accept risk, or block high-impact
+  Mission / Pipeline / Runtime actions.
+
+required_fields:
+  - decision_id
+  - decision_type
+  - owner
+  - timestamp
+  - scope
+  - reason
+  - affected_mission_id
+  - affected_pipeline_run_id
+  - affected_workpackage
+  - executor
+  - reviewer
+  - constraints
+  - expiration_or_revisit_trigger
+  - evidence_refs
+  - trace_refs
+
+allowed_decision_types:
+  - APPROVE_PLANNING_HANDOFF
+  - APPROVE_RUNTIME_WORKPACKAGE_EXECUTION
+  - APPROVE_EXECUTOR_OVERRIDE
+  - APPROVE_RISK_ACCEPTANCE
+  - APPROVE_MISSION_PLAN
+  - APPROVE_RELEASE_CANDIDATE
+  - HOLD_FOR_REVIEW
+  - BLOCK_EXECUTION
+  - CANCEL_MISSION
+  - SUPERSEDE_DECISION
+
+runtime_workpackage_execution_template: |
+  OWNER_DECISION: APPROVE_RUNTIME_WORKPACKAGE_EXECUTION
+  SCOPE: WP-XX only
+  EXECUTOR: <assigned executor>
+  REVIEWER: ChatGPT
+  BRANCH/WORKSPACE: isolated under nexus; no main merge
+
+rules:
+  - runtime_execution_requires_explicit_owner_decision
+  - owner_decision_scope_must_be_specific
+  - broad_blanket_runtime_approval_is_invalid
+  - executor_override_requires_explicit_decision
+  - risk_acceptance_requires_explicit_decision
+  - main_merge_requires_explicit_decision_and_is_out_of_scope_for_nexus_branch
+  - deploy_or_publish_requires_explicit_decision_and_is_currently_prohibited
+  - superseded_decisions_must_remain_auditable
+
+forbidden_patterns:
+  - implied_approval
+  - approval_from_agent_opinion
+  - unscoped_runtime_execution_approval
+  - retroactive_approval_without_trace
+  - production_readiness_claim_from_planning_docs
