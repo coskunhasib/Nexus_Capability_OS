@@ -1,0 +1,165 @@
+# Nexus AI Orchestration Model — Coordination System
+#
+# Scope: blueprint/config only. This file defines agent coordination patterns.
+# It does not implement runtime behavior and does not authorize runtime execution.
+
+coordination_system_id: nexus_ai_coordination_system
+coordination_system_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+no_plugin: true
+
+purpose: >-
+  Define how Teams, Team Leads, Agents and Sub-agents coordinate during a Pipeline Run without
+  confusing coordination with Pipeline, Team, Governance or Audit ownership.
+
+position_in_model:
+  top_structure: nexus_ai_orchestration_model
+  sits_between:
+    - pipeline_run
+    - team_system
+    - governance_system
+    - audit_system
+  plain_language: >-
+    Team System says who exists. Coordination System says how they work together.
+
+locked_boundaries:
+  - pipeline_is_not_team
+  - agent_is_not_core_ability
+  - team_lead_is_not_supervisor
+  - skill_is_not_tool
+  - governance_is_not_audit
+  - evidence_is_not_trace
+  - plugin_cancelled
+
+patterns:
+  - pattern_id: delegation
+    name: Delegation
+    plain_language: One agent gives a smaller subtask to another agent or sub-agent.
+    allowed: true
+    requires:
+      - delegation_scope
+      - delegatee_role
+      - allowed_tools
+      - expected_output_schema
+      - trace_item
+      - reviewer_or_acceptor
+    forbidden:
+      - bypass_governance
+      - bypass_evidence
+      - bypass_trace
+      - delegate_unbounded_scope
+    example_routes:
+      - sdlc_team_lead -> architecture_agent
+      - architecture_agent -> threat_modeling_subagent
+      - qa_agent -> bug_hunter_subagent
+
+  - pattern_id: creator_verifier
+    name: Creator-Verifier
+    plain_language: One agent creates; a different agent verifies.
+    allowed: true
+    requires:
+      - creator_agent
+      - verifier_agent
+      - creator_agent_not_equal_verifier_agent
+      - review_trace_item
+      - verification_evidence_item
+    forbidden:
+      - self_approval
+      - creator_signs_own_decision_critical_artifact
+    example_routes:
+      - product_requirements_agent creates REQUIREMENTS_SPEC -> sdlc_team_lead verifies
+      - architecture_agent creates ARCHITECTURE_DOC -> sdlc_team_lead verifies
+      - engineering_agent creates code change -> code_reviewer_agent verifies
+
+  - pattern_id: controlled_direct_communication
+    name: Controlled Direct Communication
+    plain_language: Agents may talk directly only through a controlled and traceable message channel.
+    allowed: conditional
+    requires:
+      - agent_message_bus
+      - message_trace
+      - context_sharing_policy
+      - secret_redaction
+      - team_lead_visibility
+    forbidden:
+      - invisible_peer_to_peer_state
+      - untraced_agent_chat
+      - secret_sharing
+      - policy_bypass
+    risk_note: Direct communication is useful but can fragment state if not controlled.
+
+  - pattern_id: negotiation_arbitration
+    name: Negotiation / Arbitration
+    plain_language: Agents may propose trade-offs, but deterministic policy and evidence decide.
+    allowed: true
+    requires:
+      - tradeoff_record
+      - competing_findings
+      - evidence_references
+      - arbitration_rule
+      - final_decision_evidence
+    priority_rules:
+      - blocking_gate_over_agent_opinion
+      - policy_over_preference
+      - evidence_backed_finding_over_unsupported_claim
+      - security_privacy_blocker_over_release_desire
+      - owner_decision_over_runtime_permission
+    example_tradeoffs:
+      - security_vs_ux
+      - performance_vs_cost
+      - release_speed_vs_risk
+      - model_quality_vs_latency
+      - scope_vs_delivery_time
+
+  - pattern_id: broadcast_event_bus
+    name: Broadcast / Event Bus
+    plain_language: Important state changes are announced to relevant agents and systems.
+    allowed: true
+    requires:
+      - event_bus
+      - event_type
+      - producer
+      - subscribers
+      - trace_item
+    forbidden:
+      - unscoped_broadcast
+      - broadcast_without_trace
+      - broadcast_as_free_chat
+    example_events:
+      - pipeline_run_created
+      - stage_started
+      - stage_completed
+      - gate_failed
+      - security_blocker_found
+      - requirements_changed
+      - evidence_written
+      - rework_required
+      - release_blocked
+      - owner_decision_required
+
+required_runtime_support:
+  - agent_message_bus
+  - event_bus
+  - trace_store
+  - evidence_store
+  - policy_enforcement_point
+  - registry_resolver
+  - tool_permission_system
+  - secret_boundary
+
+usage_mapping_required_fields:
+  - uses_core_abilities
+  - uses_skills
+  - uses_tools
+  - uses_governance_profiles
+  - uses_audit_schemas
+  - uses_model_provider_profiles
+  - uses_context_memory_profiles
+
+notes:
+  - Coordination System does not own agents; Team System owns role hierarchy.
+  - Coordination System does not own gates; Governance System owns rules and gate enforcement.
+  - Coordination System does not own evidence/trace; Audit System owns evidence and trace records.
+  - Coordination System defines allowed collaboration patterns for Pipeline Runs.
