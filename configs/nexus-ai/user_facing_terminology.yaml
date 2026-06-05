@@ -1,0 +1,108 @@
+# Nexus AI Orchestration Model — User-facing Terminology Map
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+user_facing_terminology_id: nexus_ai_user_facing_terminology
+user_facing_terminology_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Keep technical internal identifiers out of the default user interface while preserving advanced
+  technical/debug visibility when explicitly requested.
+
+default_mode:
+  name: user_facing
+  show_internal_ids: false
+  show_technical_terms: false
+
+advanced_mode:
+  name: advanced
+  show_internal_ids: true
+  show_technical_terms: true
+  requires_explicit_user_action: true
+
+term_map:
+  mission: Çalışma
+  mission_control: Çalışma Merkezi
+  mission_orchestrator: Süreç Yöneticisi
+  worker: Üreten Uzman
+  validator: Kontrol Uzmanı
+  validation_contract: Başarı Kriterleri
+  structured_handoff: Teslim Raporu
+  mission_shared_state: Ortak Çalışma Durumu
+  serial_execution: Sıralı Çalışma
+  parallel_execution: Paralel Yardımcı Çalışma
+  mission_analytics: Çalışma Özeti
+  continuous_learning: Öğrenme ve İyileştirme
+  pipeline: Yolculuk / İş Akışı
+  pipeline_run: Aktif Çalışma
+  stage: Aşama
+  agent: Uzman
+  subagent: Yardımcı Uzman
+  team: Uzman Ekip
+  team_lead: Süreç Yöneticisi
+  governance: Kurallar ve Kontrol Noktaları
+  gate: Kontrol Noktası
+  evidence: Kanıt
+  trace: İşlem Geçmişi
+  rework: Düzeltme Döngüsü
+  runtime: Çalışma Altyapısı
+  release_candidate: Yayına Hazır Aday
+  owner_decision: Yetkili Onayı
+  policy: Kural
+  permission: İzin
+  risk_acceptance: Risk Kabulü
+  artifact: Çıktı
+  model_router: Model Seçici
+  event_bus: Durum Duyurusu
+
+status_map:
+  waiting: Bekliyor
+  running: Devam Ediyor
+  checking: Kontrol Ediliyor
+  completed: Tamamlandı
+  needs_rework: Düzeltme Gerekiyor
+  blocked: Engellendi
+  not_applicable: Bu İş İçin Gerekli Değil
+  accepted_with_risk: Risk Kabul Edilerek İlerledi
+  waiting_for_owner: Onay Bekliyor
+  cancelled: İptal Edildi
+  superseded: Güncellendi / Yerine Yenisi Geçti
+
+coordination_pattern_map:
+  delegation: İşi Paylaştırma
+  creator_verifier: Çift Kontrol
+  controlled_direct_communication: Kontrollü Uzman Görüşmesi
+  negotiation_arbitration: Dengeleme ve Karar
+  broadcast_event_bus: Durum Duyurusu
+
+forbidden_in_default_ui:
+  - mission_id
+  - pipeline_id
+  - pipeline_run_id
+  - stage_id
+  - agent_id
+  - subagent_id
+  - gate_id
+  - evidence_id
+  - trace_id
+  - governance_profile_id
+  - audit_schema_id
+  - model_provider_profile_id
+  - context_memory_profile_id
+  - plugin
+  - plugin_registry
+  - runtime
+  - internal_id
+  - raw_trace
+  - raw_prompt
+  - raw_secret
+
+rules:
+  - default_ui_must_use_user_facing_terms
+  - technical_terms_allowed_only_in_advanced_mode
+  - internal_ids_must_not_replace_plain_language_status
+  - no_plugin_terms_in_any_user_mode
+  - advanced_mode_must_not_expose_secrets
