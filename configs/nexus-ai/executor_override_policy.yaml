@@ -1,0 +1,50 @@
+# Nexus AI Orchestration Model — Executor Override Policy
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+executor_override_policy_id: nexus_ai_executor_override_policy
+executor_override_policy_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Define how an originally assigned executor can be changed without silently weakening review,
+  ownership or risk controls.
+
+required_fields:
+  - override_id
+  - original_executor
+  - new_executor
+  - affected_workpackage
+  - affected_mission_id
+  - reason
+  - risk_impact
+  - extra_gates
+  - reviewer
+  - owner_decision_ref
+  - expiration_or_revisit_trigger
+  - evidence_refs
+  - trace_refs
+
+allowed_reasons:
+  - executor_unavailable
+  - better_fit_for_scope
+  - owner_requested
+  - emergency_reassignment
+  - dependency_shift
+  - review_specialization_needed
+
+rules:
+  - executor_override_requires_owner_decision
+  - override_must_be_scope_limited
+  - override_must_state_risk_impact
+  - override_must_define_extra_review_if_risk_increases
+  - override_does_not_authorize_main_merge_or_deploy
+  - override_does_not_cancel_no_self_approval
+
+forbidden_patterns:
+  - silent_executor_change
+  - executor_changes_own_assignment_without_owner_decision
+  - broad_override_for_all_future_work
+  - override_to_skip_review
