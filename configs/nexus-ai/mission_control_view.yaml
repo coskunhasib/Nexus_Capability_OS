@@ -1,0 +1,111 @@
+# Nexus AI Orchestration Model — Mission Control View
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+mission_control_view_id: nexus_ai_mission_control_view
+mission_control_view_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+user_facing_name: Çalışma Merkezi
+purpose: >-
+  Provide a user-facing and advanced monitoring surface for multi-hour or multi-day autonomous work.
+
+default_mode: user_facing
+modes:
+  user_facing:
+    show_technical_ids: false
+    preferred_terms:
+      mission: Çalışma
+      pipeline: Yolculuk / İş Akışı
+      pipeline_run: Aktif Çalışma
+      stage: Aşama
+      agent: Uzman
+      subagent: Yardımcı Uzman
+      gate: Kontrol Noktası
+      evidence: Kanıt
+      trace: İşlem Geçmişi
+      rework: Düzeltme Döngüsü
+      runtime: Çalışma Altyapısı
+      release_candidate: Yayına Hazır Aday
+    visible_sections:
+      - mission_summary
+      - current_phase
+      - current_milestone
+      - active_feature
+      - expert_team
+      - progress_timeline
+      - validation_status
+      - handoff_reports
+      - evidence_summary
+      - action_log
+      - open_issues
+      - decisions_needed
+      - readiness_status
+  advanced:
+    show_technical_ids: true
+    visible_sections:
+      - agent_runs
+      - worker_count
+      - validator_count
+      - token_usage_by_role
+      - cache_read
+      - output_tokens
+      - source_test_split
+      - coverage
+      - milestone_waterfall
+      - serial_parallel_utilization
+      - evidence_ids
+      - trace_ids
+      - gate_ids
+      - model_profile_ids
+
+mission_summary_cards:
+  - mission_title
+  - status
+  - current_stage_or_phase
+  - completed_phases
+  - completed_milestones
+  - completed_features
+  - issues_found
+  - rework_loops
+  - owner_decisions_pending
+  - readiness_status
+
+status_labels_user_facing:
+  waiting: Bekliyor
+  running: Devam Ediyor
+  checking: Kontrol Ediliyor
+  completed: Tamamlandı
+  needs_rework: Düzeltme Gerekiyor
+  blocked: Engellendi
+  not_applicable: Bu İş İçin Gerekli Değil
+  accepted_with_risk: Risk Kabul Edilerek İlerledi
+  waiting_for_owner: Onay Bekliyor
+
+required_interaction_controls:
+  - pause_mission
+  - resume_mission
+  - request_summary
+  - inspect_evidence
+  - inspect_handoff
+  - inspect_issue
+  - approve_plan_if_owner
+  - approve_runtime_workpackage_if_owner
+  - hold_for_review_if_owner
+
+forbidden_default_ui_terms:
+  - pipeline_run
+  - agent_id
+  - subagent_id
+  - gate_id
+  - evidence_id
+  - trace_id
+  - runtime
+  - governance
+  - plugin
+
+plain_language_note: >-
+  The default screen should make the user feel that Nexus understood the goal, planned the work,
+  assigned experts, checked the output, fixed issues and reached a proof-backed result.
