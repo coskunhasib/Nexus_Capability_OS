@@ -5,7 +5,7 @@ Use this prompt to generate a hierarchy visualization for the Nexus AI Orchestra
 ```text
 Nexus AI Orchestration Model için üstten en alta kadar tam hiyerarşi görselleştirmesi oluştur.
 
-Bu görsel yalnızca SDLC Pipeline’ı göstermemeli. SDLC, Nexus AI altındaki pipeline türlerinden sadece biridir. Görselin ana amacı, Nexus AI’ın tüm ana hiyerarşik yapısını, paylaşılan registry sistemini, pipeline sistemini, team/agent/sub-agent yapısını, core abilities ayrımını, skills/tools ayrımını, coordination system’i, governance ve audit ayrımını, ayrıca SDLC Pipeline’ı detaylı örnek olarak göstermektir.
+Bu görsel yalnızca SDLC Pipeline’ı göstermemeli. SDLC, Nexus AI altındaki pipeline türlerinden sadece biridir. Görselin ana amacı, Nexus AI’ın tüm ana hiyerarşik yapısını, Mission System’i, paylaşılan registry sistemini, pipeline sistemini, team/agent/sub-agent yapısını, core abilities ayrımını, skills/tools ayrımını, coordination system’i, governance ve audit ayrımını, ayrıca SDLC Pipeline’ı detaylı örnek olarak göstermektir.
 
 Tasarım dili, stil, renk, layout, ikon, yön, yerleşim ve görsel metafor açısından serbestsin. Ancak kavramsal hiyerarşi ve ayrımlar korunmalı.
 
@@ -15,31 +15,108 @@ Nexus AI Orchestration Model
 
 Ana sistem aileleri:
 
-1. Shared Registry System
-2. Pipeline System
-3. Team System
-4. Core Abilities Layer
-5. Skills and Tools Layer
-6. Coordination System
-7. Governance System
-8. Audit System
+1. Mission System
+2. Shared Registry System
+3. Pipeline System
+4. Team System
+5. Core Abilities Layer
+6. Skills and Tools Layer
+7. Coordination System
+8. Governance System
+9. Audit System
 
 ÖNEMLİ AYRIMLAR:
 
 - Nexus AI Orchestration Model en üst yapıdır.
+- Mission, kullanıcı hedefinden doğan yönetilen çalışma kabıdır.
+- Mission, tek uzun agent session değildir.
+- Mission, Pipeline Run değildir.
+- Mission, bir veya birden fazla Pipeline Run içerebilir.
 - SDLC üst yapı değildir; yalnızca bir pipeline türüdür.
 - Plugin yoktur. Plugin registry, plugin marketplace veya plugin lifecycle gösterilmemelidir.
 - Pipeline, Team değildir.
 - Pipeline Definition, Pipeline Run değildir.
 - Agent, Core Ability değildir.
 - Core Abilities hiçbir Team’in üyesi değildir.
-- Supervisor, SDLC Team Lead değildir.
+- Supervisor, SDLC Team Lead veya Mission Orchestrator değildir.
 - Skill, Tool değildir.
 - Governance, Audit değildir.
 - Evidence, Trace değildir.
 - Shared Registry ve Usage Mapping farklı şeylerdir.
+- Shared Registry, Mission Shared State değildir.
 
-1. SHARED REGISTRY SYSTEM
+1. MISSION SYSTEM
+
+Mission System kullanıcıya en yakın üst çalışma katmanıdır.
+
+Kullanıcı teknik olarak pipeline başlatmaz. Kullanıcı hedef verir. Nexus bu hedefi bir Mission’a dönüştürür.
+
+Mission kullanıcıya “Çalışma” olarak gösterilebilir.
+
+Mission System altında göster:
+
+- Mission Intake
+- Mission Scoping
+- Mission Plan
+- Validation Contract
+- Owner Plan Approval
+- Mission Execution
+- Mission Validation Loop
+- Mission Control
+- Mission Analytics
+- Mission Completion Decision
+- Mission Learning
+
+Mission yapısı:
+
+Mission
+├── mission goal
+├── scoped plan
+├── assumptions / constraints / non-goals
+├── milestones
+├── features
+├── selected pipelines
+├── pipeline runs
+├── assigned teams
+├── Mission Orchestrator
+├── Workers
+├── Validators
+├── Validation Contract
+├── Mission Shared State
+├── Structured Handoffs
+├── Mission Control
+├── Mission Analytics
+├── Evidence Index
+├── Trace Timeline
+└── Learning Record
+
+Mission ile Pipeline Run ilişkisi:
+
+Mission
+└── Pipeline Runs
+    ├── Research Pipeline Run
+    ├── SDLC Pipeline Run
+    ├── Activation Pipeline Run
+    ├── Operations Pipeline Run
+    └── Knowledge / Memory Pipeline Run
+
+Mission üç rol mimarisi:
+
+Mission Orchestrator
+├── Workers
+└── Validators
+
+Mission Orchestrator, Supervisor değildir.
+Workers, işi üreten uzmanlardır.
+Validators, bağımsız kontrol uzmanlarıdır.
+
+Validation Contract kullanıcıya “Başarı Kriterleri” olarak gösterilir.
+Structured Handoff kullanıcıya “Teslim Raporu” olarak gösterilir.
+Mission Shared State kullanıcıya “Ortak Çalışma Durumu” olarak gösterilir.
+Mission Control kullanıcıya “Çalışma Merkezi” olarak gösterilir.
+Mission Analytics kullanıcıya “Çalışma Özeti” olarak gösterilir.
+
+2. SHARED REGISTRY SYSTEM
 
 Shared Registry = sistemde ne var?
 
@@ -106,17 +183,7 @@ Usage Mapping ayrı gösterilmeli:
 
 Usage Mapping = hangi pipeline / stage / team / agent hangi registry öğelerini kullanıyor?
 
-Usage Mapping alanları:
-
-- uses_core_abilities
-- uses_skills
-- uses_tools
-- uses_governance_profiles
-- uses_audit_schemas
-- uses_model_provider_profiles
-- uses_context_memory_profiles
-
-2. PIPELINE SYSTEM
+3. PIPELINE SYSTEM
 
 Pipeline System:
 
@@ -133,7 +200,7 @@ Pipeline Catalog içinde birden fazla pipeline göster:
 - Skill Governance Pipeline — 7 stage — skill_governance_team — skill_governance_team_lead
 - Knowledge / Memory Pipeline — 6 stage — knowledge_team — knowledge_team_lead
 
-Candidate pipelines ayrı gösterilebilir:
+Candidate pipelines:
 
 - Content Pipeline
 - Data Processing Pipeline
@@ -144,20 +211,7 @@ Candidate pipelines ayrı gösterilebilir:
 Pipeline Definition = süreç şablonu.
 Pipeline Run = bu şablonun gerçek çalıştırılan örneği.
 
-Pipeline Run şunları içerir:
-
-- selected_pipeline
-- assigned_team
-- active_stage
-- run_context
-- governance_state
-- evidence_state
-- trace_state
-- stage_results
-- rework_history
-- final_decision
-
-3. TEAM SYSTEM
+4. TEAM SYSTEM
 
 Genel team hiyerarşisi:
 
@@ -176,20 +230,11 @@ Team türleri:
 - Skill Governance Team
 - Knowledge Team
 
-Team Lead rolleri:
-
-- sdlc_team_lead
-- research_team_lead
-- activation_team_lead
-- operations_team_lead
-- skill_governance_team_lead
-- knowledge_team_lead
-
 Supervisor ≠ Team Lead.
 Supervisor bir Core Ability’dir.
 Team Lead bir Team rolüdür.
 
-4. COORDINATION SYSTEM
+5. COORDINATION SYSTEM
 
 Team System = kim var?
 Coordination System = bunlar nasıl birlikte çalışıyor?
@@ -197,30 +242,20 @@ Coordination System = bunlar nasıl birlikte çalışıyor?
 Coordination System altında beş pattern göster:
 
 1. Delegation
-   - Bir agent alt görevi başka agent’a veya sub-agent’a verir.
-   - Örnek: SDLC Team Lead → Architecture Agent → Threat Modeling Sub-agent.
-
 2. Creator-Verifier
-   - Bir agent üretir, farklı agent kontrol eder.
-   - Örnek: Engineering Agent kod yazar, Code Reviewer Agent kontrol eder.
-   - Kendi işini onaylama yasaktır.
-
 3. Controlled Direct Communication
-   - Agent’lar doğrudan konuşabilir ama sadece kontrollü ve trace edilen message bus üzerinden.
-   - Görünmez peer-to-peer state yok.
-   - Secret paylaşımı yok.
-   - Policy bypass yok.
-
 4. Negotiation / Arbitration
-   - Agent’lar trade-off önerir.
-   - Son karar policy + evidence + gate ile verilir.
-   - Blocking gate, agent görüşünden üstündür.
-
 5. Broadcast / Event Bus
-   - Önemli state değişiklikleri ilgili sistemlere duyurulur.
-   - Örnek event’ler: stage_started, gate_failed, evidence_written, security_blocker_found, rework_required, release_blocked, owner_decision_required.
 
-5. GOVERNANCE SYSTEM
+Mission içinde bunlar şöyle birleşir:
+
+- Delegation: Orchestrator workers ve validators görevlendirir.
+- Creator-Verifier: Worker üretir, Validator kontrol eder.
+- Broadcast: Validation Contract ve Mission Shared State ilgili herkese duyurulur.
+- Negotiation / Arbitration: Orchestrator handoff’ları inceler, kabul eder, reddeder veya yeniden scope eder.
+- Controlled Direct Communication: Agent görüşmeleri sadece trace edilen message bus üzerinden olur.
+
+6. GOVERNANCE SYSTEM
 
 Governance = policy, gates, permissions, risk rules.
 
@@ -233,10 +268,11 @@ Katmanlar:
 - Core Ability Governance
 - Skill Governance
 - Tool Governance
+- Mission Governance
 
-Governance tool çağrılarını, stage geçişlerini, gate sonuçlarını, self-approval yasağını, risk acceptance kararlarını ve release hareketlerini kontrol eder.
+Governance tool çağrılarını, stage geçişlerini, gate sonuçlarını, self-approval yasağını, validation contract zorunluluğunu, owner decision gereksinimlerini, serial-first scheduling’i ve release hareketlerini kontrol eder.
 
-6. AUDIT SYSTEM
+7. AUDIT SYSTEM
 
 Audit System iki parçadır:
 
@@ -246,42 +282,19 @@ Audit System iki parçadır:
 Evidence = karar kanıtı.
 Trace = işlem geçmişi.
 
-Evidence örnekleri:
+Mission içindeki audit unsurları:
 
-- REQUIREMENTS_SPEC
-- NFR_COVERAGE_REPORT
-- ARCHITECTURE_DECISION
-- ADR_RECORD
-- THREAT_MODEL
-- RISK_REGISTER
-- TEST_REPORT
-- BUG_FINDING_REPORT
-- SECURITY_SCAN_REPORT
-- SBOM_REPORT
-- LICENSE_REPORT
-- PERFORMANCE_REPORT
-- OPERATIONS_READINESS_REPORT
-- RELEASE_EVIDENCE
-- DEVELOPMENT_COMPLETION_REPORT
+- Validation Contract evidence
+- Structured Handoff reports
+- Mission progress evidence
+- Worker traces
+- Validator traces
+- Gate decisions
+- Mission completion evidence
 
-Trace örnekleri:
+8. SDLC PIPELINE — DETAYLI ÖRNEK
 
-- agent invocation
-- sub-agent invocation
-- skill activation
-- tool call
-- core ability invocation
-- model invocation
-- policy evaluation
-- pipeline transition
-- stage transition
-- rework route
-- iteration event
-- broadcast event
-
-7. SDLC PIPELINE — DETAYLI ÖRNEK
-
-SDLC Pipeline, Nexus AI içindeki pipeline türlerinden yalnızca biridir.
+SDLC Pipeline, Nexus AI içindeki pipeline türlerinden yalnızca biridir. Mission içinde bir Pipeline Run olarak çalışabilir.
 
 SDLC Pipeline amacı:
 Sıfırdan ürün seviyesine yazılım geliştirme sürecini no-human governance ile yürütmek.
@@ -320,63 +333,16 @@ SDLC Pipeline 31 canonical stage’den oluşur:
 30. release_candidate — release_manager_agent
 31. refraction_learning — memory_curator_agent
 
-SDLC always-required gates:
-
-1. requirements_complete
-2. nfr_coverage_complete
-3. architecture_complete
-4. adr_coverage_complete
-5. security_privacy_design_complete
-6. risk_register_reviewed
-7. implementation_scope_clean
-8. code_review_pass
-9. tests_pass
-10. verification_loop_bug_finding_pass
-11. security_validation_pass
-12. supply_chain_pass
-13. license_pass
-14. sbom_present
-15. performance_resilience_pass_or_accepted
-16. agentic_safety_eval_pass
-17. operations_readiness_pass
-18. evidence_graph_complete
-19. no_blocking_policy_failure
-
-SDLC conditional-required gates:
-
-1. accessibility_pass_if_applicable
-2. data_migration_pass_if_applicable
-3. privacy_lifecycle_pass_if_applicable
-4. api_contract_compatibility_pass_if_applicable
-5. backup_restore_dr_pass_if_applicable
-6. compliance_pass_if_applicable
-7. cost_resource_governance_pass_if_applicable
-
-SDLC karar formülü:
-
-agent output
-+ deterministic gates
-+ evidence
-+ trace
-+ policy
-= machine-verifiable stage decision
-
-SDLC release hattı:
-
-operations_readiness
-→ evidence_graph_build
-→ development_completion
-→ release_candidate
-→ refraction_learning
-
-Release Candidate, Development Completion’dan önce gelmemelidir.
-
-8. RUNTIME GAP LAYER
+9. RUNTIME GAP LAYER
 
 Görselde ayrı bir runtime-readiness / gap layer olarak göster:
 
 P0 zorunlu runtime bileşenleri:
 
+- Mission System
+- Validation Contract
+- Structured Handoff Contract
+- Mission Shared State
 - Runtime Execution Kernel
 - Shared Registry Loader
 - Registry Resolver
@@ -390,19 +356,23 @@ P0 zorunlu runtime bileşenleri:
 - Owner Decision Registry
 - Runtime Workpackage Execution Contract
 
-P1 ilk çalışan SDLC run için:
+P1 ilk çalışan Mission + SDLC run için:
 
 - Pipeline Runner
 - Agent Invocation Contract
 - Agent Message Bus
 - Coordination System Enforcement
+- Execution Scheduling Policy
 - Gate Evaluator
 - Rework / Iteration Engine
 - Model Router
 - Context / Memory Resolver
+- Fresh Validator Context
 
 P2 profesyonel seviye için:
 
+- Mission Control View
+- Mission Analytics
 - Decision Arbitration Layer
 - Prompt / Instruction Registry
 - Agent Evaluation Harness
@@ -419,28 +389,32 @@ P3 ölçek ve entegrasyon için:
 - Contract Versioning / Migration Policy
 - Incident / Rollback Automation
 - Runtime Definition of Done
+- Mission Template Catalog
+- Mission History Search
 
-9. HARD NEGATIVE CONSTRAINTS
+10. HARD NEGATIVE CONSTRAINTS
 
 Görselde şunlar yapılmamalı:
 
 - Plugin gösterme.
 - Plugin Registry gösterme.
+- Mission’ı tek agent session gibi gösterme.
 - SDLC’yi tüm sistem gibi gösterme.
-- Supervisor’ı Team Lead gibi gösterme.
+- Supervisor’ı Mission Orchestrator veya Team Lead gibi gösterme.
 - Core Abilities’i Team içine koyma.
 - Agent’ı Core Ability gibi gösterme.
 - Skill ve Tool’u birleştirme.
 - Governance ve Audit’i birleştirme.
 - Evidence ve Trace’i birleştirme.
 - Pipeline ve Team’i aynı şey gibi gösterme.
-- Pipeline Definition ve Pipeline Run’ı aynı şey gibi gösterme.
+- Mission Shared State ile Shared Registry’yi aynı şey gibi gösterme.
 
 Final görsel şunu açıkça göstermeli:
 
 Nexus AI Orchestration Model üst yapıdır.
+Mission kullanıcı hedefinden doğan ana çalışma kabıdır.
+Mission birden fazla Pipeline Run içerebilir.
 SDLC yalnızca bir pipeline’dır.
-Birden fazla pipeline vardır.
 Team sistemi pipeline run’a atanır.
 Core Abilities ortak kabiliyet katmanıdır.
 Skills yöntemdir; Tools operasyonlardır.
