@@ -295,8 +295,9 @@ Plugin yok
 14. [`sdlc-stages/`](sdlc-stages/)
 15. [`23-coordination-system-and-runtime-gap-closure.md`](23-coordination-system-and-runtime-gap-closure.md)
 16. [`24-mission-system-and-user-facing-runtime-model.md`](24-mission-system-and-user-facing-runtime-model.md)
-17. [`AI_STUDIO_HIERARCHY_PROMPT.md`](AI_STUDIO_HIERARCHY_PROMPT.md)
-18. [`AI_STUDIO_USER_SIMULATION_PROMPT.md`](AI_STUDIO_USER_SIMULATION_PROMPT.md)
+17. [`25-mission-runtime-gap-closure-audit.md`](25-mission-runtime-gap-closure-audit.md)
+18. [`AI_STUDIO_HIERARCHY_PROMPT.md`](AI_STUDIO_HIERARCHY_PROMPT.md)
+19. [`AI_STUDIO_USER_SIMULATION_PROMPT.md`](AI_STUDIO_USER_SIMULATION_PROMPT.md)
 
 ## SDLC stage contracts
 
@@ -330,6 +331,14 @@ configs/nexus-ai/user_facing_terminology.yaml
 ```
 
 Bu dosyalar blueprint/config genişletmesidir; runtime kodu değildir.
+
+## Kapanış audit’i
+
+Mission / coordination / runtime boşluklarının hangi dosya ile kapatıldığı ve hangi bileşenlerin hâlâ runtime execution’a bağlı olduğu şurada izlenir:
+
+```text
+docs/ai-sdlc-factory/25-mission-runtime-gap-closure-audit.md
+```
 
 ## Uygulama yasağı
 
