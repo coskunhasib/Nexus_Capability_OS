@@ -1,0 +1,179 @@
+# Nexus AI Orchestration Model — Mission System
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+mission_system_id: nexus_ai_mission_system
+mission_system_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+no_plugin: true
+
+purpose: >-
+  Define Mission as the user-facing managed work container that can own one or more Pipeline Runs,
+  teams, shared state, validation contracts, handoffs, Mission Control and analytics.
+
+position_in_model:
+  top_structure: nexus_ai_orchestration_model
+  concept_family: mission_system
+  mission_is_not_pipeline_run: true
+  mission_is_not_single_agent_session: true
+  plain_language: >-
+    A Mission is the managed work created from a user goal. Pipeline Runs execute inside it.
+
+user_facing_names:
+  mission: Çalışma
+  mission_control: Çalışma Merkezi
+  mission_orchestrator: Süreç Yöneticisi
+  worker: Üreten Uzman
+  validator: Kontrol Uzmanı
+  validation_contract: Başarı Kriterleri
+  structured_handoff: Teslim Raporu
+  mission_shared_state: Ortak Çalışma Durumu
+  serial_execution: Sıralı Çalışma
+  parallel_execution: Paralel Yardımcı Çalışma
+  mission_analytics: Çalışma Özeti
+  continuous_learning: Öğrenme ve İyileştirme
+
+mission_lifecycle:
+  - mission_intake
+  - mission_scoping
+  - mission_plan
+  - validation_contract_authoring
+  - owner_plan_approval
+  - mission_execution
+  - mission_validation_loop
+  - mission_control_monitoring
+  - mission_completion_decision
+  - mission_learning
+
+mission_user_flow:
+  - describe_goal
+  - scope_through_conversation
+  - approve_plan
+  - mission_handles_execution
+
+mission_required_fields:
+  - mission_id
+  - mission_goal
+  - user_visible_title
+  - mission_scope
+  - assumptions
+  - constraints
+  - owner_decisions
+  - mission_plan
+  - milestones
+  - features
+  - selected_pipelines
+  - pipeline_runs
+  - assigned_teams
+  - mission_orchestrator
+  - workers
+  - validators
+  - validation_contract
+  - mission_shared_state
+  - structured_handoffs
+  - mission_control_view
+  - mission_analytics
+  - evidence_index
+  - trace_timeline
+  - risk_register
+  - open_issues
+  - completion_decision
+  - learning_record
+
+three_role_architecture:
+  orchestrator:
+    technical_role: mission_orchestrator
+    user_facing_name: Süreç Yöneticisi
+    not_core_ability_supervisor: true
+    responsibilities:
+      - scope_goal
+      - create_plan
+      - maintain_validation_contract
+      - spawn_workers_and_validators
+      - review_handoffs
+      - accept_reject_or_rescope_work
+      - update_shared_state
+      - request_owner_decisions
+      - protect_serial_first_scheduling
+      - summarize_progress
+  workers:
+    user_facing_name: Üreten Uzmanlar
+    responsibilities:
+      - implement_features
+      - produce_artifacts
+      - perform_scoped_research
+      - write_handoff_reports
+      - avoid_self_approval
+  validators:
+    user_facing_name: Kontrol Uzmanları
+    adversarial_by_design: true
+    fresh_context_where_practical: true
+    responsibilities:
+      - validate_against_validation_contract
+      - run_checks
+      - perform_adversarial_review
+      - simulate_user_flows
+      - report_findings
+      - return_findings_to_orchestrator
+
+mission_shared_state:
+  not_shared_registry: true
+  plain_language: Mission Shared State is what is happening in this Mission; Shared Registry is what exists in the system.
+  candidate_files:
+    - mission.json
+    - mission-plan.md
+    - features.json
+    - milestones.json
+    - handoffs.jsonl
+    - validation-contract.md
+    - progress-log.jsonl
+    - issues.jsonl
+    - decisions.md
+    - evidence-index.json
+    - trace-index.json
+    - agent-skills.json
+    - model-role-map.json
+
+mission_completion_states:
+  - completed
+  - completed_with_accepted_risk
+  - blocked
+  - needs_owner_decision
+  - needs_rework
+  - cancelled
+  - superseded
+
+completion_requires:
+  - validation_contract_status
+  - required_gate_rollup
+  - handoff_summary
+  - evidence_index
+  - trace_timeline
+  - open_risks
+  - owner_decisions
+  - learning_record
+
+pipeline_relationship:
+  mission_can_own_multiple_pipeline_runs: true
+  examples:
+    - mission: Build AI-assisted decision-tracking SaaS
+      pipeline_runs:
+        - research_pipeline_run
+        - sdlc_pipeline_run
+        - activation_pipeline_run
+        - operations_pipeline_run
+        - knowledge_memory_pipeline_run
+
+stop_rule:
+  runtime_implementation_requires_separate_owner_approval: true
+  forbidden_without_approval:
+    - runtime_implementation
+    - product_refactor
+    - connector_integration
+    - nexus_publish
+    - deploy
+    - main_branch_merge
+    - plugin_registry
+    - production_readiness_claim
