@@ -1,0 +1,82 @@
+# Nexus AI Orchestration Model — Role-based Model Policy
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+role_based_model_policy_id: nexus_ai_role_based_model_policy
+role_based_model_policy_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+principle: >-
+  No single model is best at planning, implementation and validation. Model selection should be
+  role-based, task-aware and provider-agnostic where practical.
+
+role_model_profiles:
+  planning_model:
+    user_facing_role: Süreç Yöneticisi / Planlama Uzmanı
+    desired_traits:
+      - slow_careful_reasoning
+      - strategic_constraint_analysis
+      - decomposition_quality
+      - risk_awareness
+  implementation_model:
+    user_facing_role: Üreten Uzman / Geliştirme Uzmanı
+    desired_traits:
+      - code_fluency
+      - tool_use
+      - fast_generation
+      - repository_navigation
+  validation_model:
+    user_facing_role: Kontrol Uzmanı
+    desired_traits:
+      - strict_instruction_following
+      - adversarial_review
+      - fresh_context_handling
+      - low_tolerance_for_unsupported_claims
+    independence_rule: validator_model_should_be_independent_from_implementation_model_where_practical
+  research_model:
+    user_facing_role: Araştırma Uzmanı
+    desired_traits:
+      - source_handling
+      - uncertainty_reporting
+      - claim_evidence_mapping
+      - citation_discipline
+  fast_classification_model:
+    user_facing_role: Yönlendirme Uzmanı
+    desired_traits:
+      - low_latency
+      - low_cost
+      - intent_classification
+      - routing_accuracy
+  multimodal_models:
+    user_facing_role: Görsel / Ses / Yaratıcı Uzman
+    desired_traits:
+      - modality_fit
+      - bounded_output
+      - safety_profile_match
+
+routing_inputs:
+  - task_type
+  - risk_level
+  - required_modality
+  - context_length
+  - latency_budget
+  - cost_budget
+  - validation_independence_required
+  - tool_use_required
+  - privacy_sensitivity
+
+forbidden_patterns:
+  - same_model_for_all_roles_by_default
+  - validator_reuses_worker_private_reasoning_as_truth
+  - model_selection_without_cost_or_risk_awareness
+  - provider_lock_in_when_independence_is_required
+
+advanced_requirements:
+  - model_provider_profile_versioning
+  - fallback_model_policy
+  - latency_budget_policy
+  - cost_budget_policy
+  - validation_independence_policy
+  - model_eval_results_reference
