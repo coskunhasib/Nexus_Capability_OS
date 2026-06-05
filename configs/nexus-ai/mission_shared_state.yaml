@@ -1,0 +1,109 @@
+# Nexus AI Orchestration Model — Mission Shared State Contract
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+mission_shared_state_id: nexus_ai_mission_shared_state
+mission_shared_state_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Define the shared state for a single Mission so agents stay coherent over multi-hour or multi-day
+  work without inventing private, conflicting mission state.
+
+user_facing_name: Ortak Çalışma Durumu
+not_shared_registry: true
+plain_language: >-
+  Shared Registry says what the system can use. Mission Shared State says what is happening in this
+  specific work.
+
+required_state_groups:
+  mission_identity:
+    - mission_id
+    - mission_title
+    - mission_goal
+    - owner
+    - created_at
+    - status
+  scope_and_plan:
+    - mission_scope
+    - assumptions
+    - constraints
+    - non_goals
+    - mission_plan
+    - milestones
+    - features
+  execution_state:
+    - selected_pipelines
+    - pipeline_runs
+    - active_pipeline_run
+    - active_stage
+    - active_worker
+    - active_validator
+    - serial_parallel_state
+    - rework_history
+  validation_state:
+    - validation_contract_ref
+    - validation_status
+    - validator_findings
+    - accepted_risks
+    - blocking_findings
+  handoff_state:
+    - handoffs_index
+    - latest_handoff_by_work_unit
+    - pending_handoffs
+  audit_state:
+    - evidence_index
+    - trace_index
+    - decision_index
+  issue_state:
+    - open_issues
+    - resolved_issues
+    - known_risks
+  learning_state:
+    - reusable_patterns
+    - defects_found
+    - superseded_assumptions
+    - next_run_improvements
+
+candidate_files:
+  - mission.json
+  - mission-plan.md
+  - features.json
+  - milestones.json
+  - handoffs.jsonl
+  - validation-contract.md
+  - progress-log.jsonl
+  - issues.jsonl
+  - decisions.md
+  - evidence-index.json
+  - trace-index.json
+  - agent-skills.json
+  - model-role-map.json
+  - analytics.json
+  - learning-record.md
+
+state_update_rules:
+  - only_orchestrator_or_policy_authorized_writer_can_update_decision_state
+  - workers_must_update_through_structured_handoff
+  - validators_must_update_through_validation_findings
+  - evidence_index_updates_require_evidence_store_write
+  - trace_index_updates_require_trace_store_write
+  - no_private_mission_truth
+  - superseded_state_must_remain_auditable
+
+forbidden_patterns:
+  - agent_keeps_unshared_private_mission_status
+  - worker_marks_feature_done_without_handoff
+  - validator_marks_pass_without_validation_contract_reference
+  - shared_registry_used_as_mission_state
+  - mission_shared_state_used_as_global_registry
+
+runtime_dependency:
+  - evidence_store
+  - trace_store
+  - owner_decision_registry
+  - structured_handoff_contract
+  - validation_contract
+  - mission_control_view
