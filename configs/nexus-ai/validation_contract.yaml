@@ -1,0 +1,77 @@
+# Nexus AI Orchestration Model — Validation Contract
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+validation_contract_id: nexus_ai_validation_contract
+validation_contract_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Define what done means before implementation begins, so validators can test work against an
+  independent contract instead of merely confirming implementation choices after the fact.
+
+user_facing_name: Başarı Kriterleri
+plain_language: >-
+  The validation contract says how Nexus knows the work is actually done.
+
+must_be_authored_before:
+  - implementation
+  - feature_execution
+  - milestone_execution
+
+required_sections:
+  - expected_behaviors
+  - acceptance_criteria
+  - must_fail_conditions
+  - test_scenarios
+  - user_flows
+  - security_expectations
+  - performance_expectations
+  - compatibility_expectations
+  - accessibility_expectations_if_applicable
+  - regression_controls
+  - non_goals
+  - owner_approval_requirements
+
+validator_usage_rules:
+  - validators_must_validate_against_contract
+  - validators_should_use_fresh_context_where_practical
+  - validators_must_report_findings_to_orchestrator
+  - validators_must_not_self_approve_worker_output
+  - validators_must_record_evidence_and_trace
+
+mission_binding:
+  contract_belongs_to: mission
+  can_reference:
+    - mission_goal
+    - mission_scope
+    - milestones
+    - features
+    - pipeline_runs
+    - governance_profiles
+    - audit_schemas
+
+validation_contract_outcomes:
+  - pass
+  - fail
+  - rework_required
+  - accepted_with_risk
+  - not_applicable
+  - blocked_missing_evidence
+
+required_evidence:
+  - validation_contract_document
+  - validator_findings
+  - test_report_if_applicable
+  - user_flow_validation_if_applicable
+  - security_validation_if_applicable
+  - performance_validation_if_applicable
+  - final_validation_rollup
+
+forbidden_patterns:
+  - writing_tests_only_after_implementation_to_confirm_existing_decisions
+  - validator_using_worker_private_state_as_truth
+  - validator_accepting_output_without_evidence
+  - self_approval
