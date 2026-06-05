@@ -1,0 +1,82 @@
+# Nexus AI Orchestration Model — Mission Analytics
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+mission_analytics_id: nexus_ai_mission_analytics
+mission_analytics_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Define user-facing and advanced metrics for understanding how a Mission progressed over time.
+
+user_facing_name: Çalışma Özeti
+
+user_facing_metrics:
+  - total_elapsed_time
+  - completed_phases
+  - completed_milestones
+  - completed_features
+  - issues_found
+  - defects_fixed
+  - validation_passes
+  - handoff_count
+  - open_risks
+  - readiness_percentage
+  - estimated_cost
+  - owner_decisions_pending
+  - rework_loops
+  - current_status
+
+advanced_metrics:
+  - agent_runs
+  - subagent_runs
+  - worker_runs
+  - validator_runs
+  - token_usage_by_role
+  - cache_read_tokens
+  - input_tokens
+  - output_tokens
+  - source_lines
+  - test_lines
+  - coverage_percent
+  - serial_vs_parallel_utilization
+  - milestone_waterfall
+  - worker_validator_ratio
+  - validation_time_ratio
+  - orchestration_time_ratio
+  - implementation_time_ratio
+  - blocked_time
+  - retry_count
+  - tool_call_count
+  - model_profile_usage
+
+metric_sources:
+  - trace_store
+  - evidence_store
+  - mission_shared_state
+  - structured_handoffs
+  - validation_contract_results
+  - gate_rollups
+  - owner_decision_registry
+
+user_facing_rules:
+  - do_not_show_technical_ids_by_default
+  - explain_metrics_in_plain_language
+  - separate_estimate_from_measured_value
+  - show_readiness_as_a_status_not_as_false_certification
+  - never_claim_production_readiness_without_owner_and_policy_approval
+
+advanced_view_rules:
+  - technical_ids_allowed
+  - token_and_cost_breakdown_allowed
+  - agent_worker_validator_counts_allowed
+  - coverage_and_code_split_allowed
+  - serial_parallel_utilization_allowed
+
+forbidden_patterns:
+  - vanity_metrics_without_decision_value
+  - readiness_percentage_as_release_approval
+  - hiding_blocked_time
+  - merging_user_facing_and_debug_views
