@@ -1,0 +1,60 @@
+# Nexus AI Orchestration Model — Structured Handoff Contract
+#
+# Scope: blueprint/config only. No runtime implementation is authorized by this file.
+
+structured_handoff_contract_id: nexus_ai_structured_handoff_contract
+structured_handoff_contract_version: draft-0.1
+status: draft
+scope: blueprint_only
+no_runtime_code_authorized: true
+
+purpose: >-
+  Keep multi-hour and multi-day autonomous work coherent by requiring every worker/validator to
+  hand off with a structured report instead of silent context transfer.
+
+user_facing_name: Teslim Raporu
+plain_language: >-
+  Every expert leaves a clear report: what was done, what remains, what was run, what failed, what
+  was found, and what should happen next.
+
+required_fields:
+  - handoff_id
+  - mission_id
+  - source_role
+  - target_role
+  - work_unit_id
+  - what_was_implemented
+  - what_was_left_undone
+  - commands_run_with_exit_codes
+  - issues_discovered
+  - procedures_followed
+  - evidence_produced
+  - trace_references
+  - files_or_artifacts_changed
+  - known_risks
+  - recommended_next_step
+
+handoff_types:
+  - worker_to_orchestrator
+  - validator_to_orchestrator
+  - orchestrator_to_worker
+  - orchestrator_to_validator
+  - worker_to_validator
+  - pipeline_run_to_mission
+  - mission_to_memory
+
+minimum_quality_rules:
+  - no_silent_handoff
+  - no_unbounded_next_step
+  - evidence_required_for_done_claims
+  - trace_required_for_tool_or_model_actions
+  - undone_work_must_be_explicit
+  - discovered_issues_must_be_listed_or_none_declared
+  - procedure_compliance_must_be_stated
+
+forbidden_patterns:
+  - handoff_without_scope
+  - handoff_without_evidence_for_completion_claim
+  - handoff_without_trace_for_actions
+  - hiding_known_failures
+  - claiming_done_with_undone_items
