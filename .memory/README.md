@@ -22,7 +22,9 @@ Dosya şişerse yeni parça açılır.
 0002-locked-decisions.md
 0003-sdlc-research-baseline.md
 0004-next-actions.md
-0005-...
+0005-current-status-and-bootstrap.md
+0006-coordination-runtime-gap-extension.md
+0007-...
 ```
 
 ## Yazım kuralları
@@ -40,4 +42,6 @@ Dosya şişerse yeni parça açılır.
 0002-locked-decisions.md
 0003-sdlc-research-baseline.md
 0004-next-actions.md
+0005-current-status-and-bootstrap.md
+0006-coordination-runtime-gap-extension.md
 ```
