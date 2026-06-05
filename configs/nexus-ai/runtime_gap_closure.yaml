@@ -4,7 +4,7 @@
 # It does not implement runtime behavior and does not authorize runtime execution.
 
 runtime_gap_closure_id: nexus_ai_runtime_gap_closure_inventory
-runtime_gap_closure_version: draft-0.1
+runtime_gap_closure_version: draft-0.2
 status: draft
 scope: blueprint_only
 no_runtime_code_authorized: true
@@ -12,12 +12,25 @@ no_plugin: true
 
 purpose: >-
   Track the missing runtime components required to turn the completed Nexus AI blueprint into a
-  governed, machine-verifiable, no-human AI software operating system.
+  governed, machine-verifiable, no-human AI software operating system with a user-facing Mission
+  layer.
 
 priority_tiers:
   P0:
     meaning: Required before meaningful runtime execution.
     components:
+      - component_id: mission_system
+        plain_language: User-facing managed work container created from a goal; owns one or more Pipeline Runs.
+        related_configs: [mission_system.yaml]
+      - component_id: validation_contract
+        plain_language: Defines what done means before implementation begins.
+        related_configs: [validation_contract.yaml]
+      - component_id: structured_handoff_contract
+        plain_language: Requires every worker/validator to report what was done, what remains, what ran, what failed and what was found.
+        related_configs: [structured_handoff_contract.yaml]
+      - component_id: mission_shared_state
+        plain_language: Shared state for a single Mission; separate from Shared Registry.
+        related_configs: [mission_shared_state.yaml]
       - component_id: runtime_execution_kernel
         plain_language: The engine that starts runs, executes stages, invokes agents, checks gates, routes rework, writes evidence and trace, and ends runs.
         related_workpackages: [WP-08, WP-09]
@@ -51,12 +64,14 @@ priority_tiers:
       - component_id: owner_decision_registry
         plain_language: Durable record of owner approvals, holds, overrides and risk acceptance decisions.
         related_workpackages: [WP-10]
+        related_configs: [owner_decision_registry.yaml]
       - component_id: runtime_workpackage_execution_contract
         plain_language: Contract that scopes and authorizes one runtime workpackage at a time.
         related_workpackages: [WP-10]
+        related_configs: [runtime_workpackage_execution_contract.yaml]
 
   P1:
-    meaning: Required for the first working SDLC Pipeline Run.
+    meaning: Required for the first working SDLC Pipeline Run inside a Mission.
     components:
       - component_id: pipeline_runner
         related_workpackages: [WP-09]
@@ -66,18 +81,30 @@ priority_tiers:
         related_workpackages: [WP-09]
       - component_id: coordination_system_enforcement
         related_workpackages: [WP-09]
+        related_configs: [coordination_system.yaml]
+      - component_id: execution_scheduling_policy
+        plain_language: Serial-first scheduler with controlled parallelism for research/validation.
+        related_configs: [execution_scheduling_policy.yaml]
       - component_id: gate_evaluator
         related_workpackages: [WP-03, WP-09]
       - component_id: rework_iteration_engine
         related_workpackages: [WP-08, WP-09]
       - component_id: model_router
         related_workpackages: [WP-06]
+        related_configs: [role_based_model_policy.yaml]
       - component_id: context_memory_resolver
         related_workpackages: [WP-07]
+      - component_id: fresh_validator_context
+        plain_language: Validators start with independent context where practical and validate against the contract, not the implementer's private assumptions.
+        related_configs: [validation_contract.yaml, role_based_model_policy.yaml]
 
   P2:
     meaning: Required for professional-grade operation.
     components:
+      - component_id: mission_control_view
+        related_configs: [mission_control_view.yaml]
+      - component_id: mission_analytics
+        related_configs: [mission_analytics.yaml]
       - component_id: decision_arbitration_layer
       - component_id: prompt_instruction_registry
       - component_id: agent_evaluation_harness
@@ -95,6 +122,8 @@ priority_tiers:
       - component_id: contract_versioning_migration_policy
       - component_id: incident_rollback_automation
       - component_id: runtime_definition_of_done
+      - component_id: mission_template_catalog
+      - component_id: mission_history_search
 
 runtime_execution_decision_required:
   required: true
@@ -126,27 +155,48 @@ handoff_impact:
       - resolver_inputs
       - ids_status_version
       - cross_reference_checks
+      - must_not_confuse_shared_registry_with_mission_shared_state
   WP-03:
     component: Governance Engine
     must_account_for:
       - policy_enforcement_point
       - gate_evaluator
       - blocking_failure_propagation
+      - mission_plan_approval_gate
+      - validation_contract_required_before_implementation
+      - serial_first_scheduling_policy
   WP-04:
     component: Audit / Evidence Store
     must_account_for:
       - evidence_trace_separation
       - tamper_evident_metadata
       - source_trace_links
+      - validation_contract_evidence
+      - structured_handoff_evidence
+      - mission_progress_evidence
   WP-05:
     component: Tool Permission System
     must_account_for:
       - tool_sandbox
       - secret_boundary
       - deny_by_default_permissions
+      - worker_validator_tool_boundaries
+      - secret_safe_handoffs
+  WP-06:
+    component: Model / Provider Profile Resolver
+    must_account_for:
+      - role_based_model_selection
+      - validator_model_independence_where_practical
+  WP-07:
+    component: Context / Memory Profile Resolver
+    must_account_for:
+      - mission_shared_state
+      - fresh_validator_context
+      - memory_validity_conflict_resolution
   WP-08:
     component: Pipeline Run State Model
     must_account_for:
+      - mission_state_vs_pipeline_run_state
       - coordination_events
       - message_broadcast_state
       - terminal_states
@@ -154,13 +204,18 @@ handoff_impact:
   WP-09:
     component: Pipeline Runner
     must_account_for:
+      - runs_inside_mission
       - coordination_pattern_enforcement
       - gate_checks
       - rework_routes
       - event_publishing
+      - validation_contract_checks
+      - structured_handoff_required
   WP-10:
     component: Executor Integration
     must_account_for:
       - owner_decision_registry_checks
       - executor_override_policy
       - completion_report_contract
+      - mission_completion_report
+      - mission_control_summary
