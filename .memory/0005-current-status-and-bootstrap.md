@@ -4,8 +4,8 @@ Bu dosya, yeni oturumda veya context azaltıldığında hızlı yön bulmak içi
 hafızasıdır. Repo-safe karar/durum özetidir (birebir transkript değildir).
 
 ```text
-Son güncelleme: 2026-06-05
-nexus HEAD: 45babcc
+Son güncelleme: 2026-06-06
+Çalışma alanı: coskunhasib/Nexus_Capability_OS:nexus
 ```
 
 ## Repo ve branch
@@ -26,10 +26,15 @@ Yeni oturumda önce şunları oku:
 .memory/0003-sdlc-research-baseline.md
 .memory/0004-next-actions.md
 .memory/0005-current-status-and-bootstrap.md
+.memory/0006-coordination-runtime-gap-extension.md
+.memory/0007-mission-system-extension.md
 
 docs/ai-sdlc-factory/README.md
 docs/ai-sdlc-factory/BLUEPRINT_INDEX.md
 docs/ai-sdlc-factory/00-decision-log.md                              (D-001..D-016)
+docs/ai-sdlc-factory/23-coordination-system-and-runtime-gap-closure.md
+docs/ai-sdlc-factory/24-mission-system-and-user-facing-runtime-model.md
+docs/ai-sdlc-factory/25-mission-runtime-gap-closure-audit.md
 docs/ai-sdlc-factory/reviews/final-readiness-gate.md                 (owner kararı)
 docs/ai-sdlc-factory/reviews/claude-code-sdlc-completion-summary.md  (WP-05 kapanış)
 ```
@@ -49,6 +54,34 @@ Governance != Audit.  Evidence != Trace.
 D-016: always-required SDLC gate seti tek canonical küme (19 gate); doc 06 §8 = doc 08 §4 birebir.
        Kaynak: configs/nexus-ai/sdlc_pipeline.yaml → required_gates.always.
        (risk_register_reviewed ve performance_resilience_pass_or_accepted dahil.)
+```
+
+## Yeni ek kararlar — Coordination + Mission System
+
+```text
+Coordination System ayrı kavram ailesidir:
+  Delegation
+  Creator-Verifier
+  Controlled Direct Communication
+  Negotiation / Arbitration
+  Broadcast / Event Bus
+
+Mission System ayrı ve üst kullanıcı-iş kavramıdır:
+  Mission = kullanıcı hedefinden doğan yönetilen çalışma kabı.
+  Mission tek uzun agent session değildir.
+  Mission, Pipeline Run değildir; bir veya daha fazla Pipeline Run içerebilir.
+  Mission Orchestrator / Süreç Yöneticisi, Supervisor değildir.
+
+Mission-level ilkeler:
+  Validation Contract üretimden önce yazılır.
+  Validators adversarial by design çalışır.
+  Validators mümkünse fresh context ile kontrol yapar.
+  Her worker/validator Structured Handoff üretir.
+  Mission Shared State, Shared Registry değildir.
+  Conflict-prone write işleri serial-first ilerler.
+  Read-only research ve independent validation kontrollü paralel olabilir.
+  Model seçimi role-based yapılır.
+  Mission Control kullanıcıya sade isimler gösterir; teknik ID’ler advanced/debug modundadır.
 ```
 
 ## Genel durum — blueprint A→I ÇALIŞTIRILDI ve commit'lendi
@@ -71,6 +104,9 @@ Reconciliation sweep: dangling intra-registry edge 108 → 0
 Implementation Planning Handoff (doc 22 §8): done — 10 workpackage spec (WP-01..WP-10) + README (yalnız plan)
 Final adversarial QA: 2 gate-coverage defect düzeltildi → D-016; + kozmetik sweep
 ChatGPT WP-05 review: PASS_WITH_FINDINGS; "Recommended next action" 5/5 kapandı
+Coordination System extension: done — doc 23 + coordination_system.yaml + runtime_gap_closure.yaml
+Mission System extension: done — doc 24 + Mission/Validation/Handoff/Scheduling/Model/Mission Control/Analytics configs
+Mission runtime gap closure audit: done — doc 25 verdict PASS_WITH_RUNTIME_EXECUTION_GATED
 ```
 
 Owner kararı (doc 22 §7):
@@ -82,11 +118,14 @@ OWNER_DECISION: APPROVE_IMPLEMENTATION_PLANNING_HANDOFF   (2026-06-04)
 Bu onay yalnızca *implementation PLANNING handoff*'u açar (workpackage spec'leri hazırlandı).
 Runtime KODU üretmek (workpackage'ları çalıştırmak) **ayrı ve sonraki bir owner kararına** bağlıdır.
 
-## Doğrulama durumu (canlı, 2026-06-05)
+## Doğrulama durumu
 
 ```text
-81/81 YAML parse · sdlc_pipeline.yaml schema 0 hata · 0 dangling intra-registry edge (2641 ref)
-Evidence != Trace dizin-saf · plugin yok · Core-Ability-as-agent yok · Supervisor team-lead değil
+Planlama/sözleşme/registry/governance/audit/executor standardı tamamlandı.
+Coordination + Mission System boşlukları blueprint/config olarak kapatıldı.
+Runtime implementation hâlâ başlamadı.
+Production readiness iddiası yok.
+nexus izole; main'e merge yok.
 ```
 
 ## WP-05 cleanup — KAPANDI
@@ -112,9 +151,12 @@ deploy · main branch merge · plugin registry · production readiness claim
 ## Sonraki adım
 
 ```text
-Planlama A→I tamamlandı. "Sonraki" artık daha fazla planlama DEĞİL.
-Tek bekleyen: workpackage'ları ÇALIŞTIRMA (runtime kodu üretme) için AYRI bir owner kararı (doc 22 §7).
-O karar gelene kadar nexus izole kalır ve main'e merge edilmez.
+Blueprint/config boşlukları kapandı. "Sonraki" artık runtime workpackage execution karar paketidir.
+İlk executable WP: WP-01 Shared Registry Loader.
+Assigned executor: Codex.
+Reviewer: ChatGPT.
+Tek bekleyen: WP-01 için AYRI ve scope'lu owner kararı.
+O karar gelene kadar runtime kodu üretilmez, nexus izole kalır ve main'e merge edilmez.
 ```
 
 ## Context azaltma notu
