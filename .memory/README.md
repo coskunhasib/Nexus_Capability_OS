@@ -24,7 +24,8 @@ Dosya şişerse yeni parça açılır.
 0004-next-actions.md
 0005-current-status-and-bootstrap.md
 0006-coordination-runtime-gap-extension.md
-0007-...
+0007-mission-system-extension.md
+0008-...
 ```
 
 ## Yazım kuralları
@@ -44,4 +45,5 @@ Dosya şişerse yeni parça açılır.
 0004-next-actions.md
 0005-current-status-and-bootstrap.md
 0006-coordination-runtime-gap-extension.md
+0007-mission-system-extension.md
 ```
