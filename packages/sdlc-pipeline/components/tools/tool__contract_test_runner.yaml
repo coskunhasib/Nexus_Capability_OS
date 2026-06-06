@@ -1,0 +1,40 @@
+id: contract_test_runner
+name: Contract Test Runner
+type: tool
+category: tool
+status: canonical
+purpose: Run consumer/provider + backward-compatibility contract tests and detect
+  breaking changes / invariant violations.
+owner_domain: api_contracts
+provided_by_core_ability: OS
+input_schema:
+  contracts: object
+  change_set: object
+output_schema:
+  contract_test_results: object
+  breaking_changes:
+  - object
+side_effects: executes_tests_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- contract_validation_agent
+- data_migration_agent
+allowed_usage:
+- Run contract/compat tests for stages 20 and 22 inside the sandbox.
+forbidden_usage:
+- Approving an unapproved breaking change (no_unapproved_breaking_change gate).
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - api_contract_compatibility_validation
+  - data_migration_validation_if_applicable
+notes: Shared by API-contract (20) and data-migration (22) validation.

@@ -1,0 +1,37 @@
+id: license_checker
+name: License Checker
+type: tool
+category: tool
+status: canonical
+purpose: Resolve and evaluate component licenses against forbidden/allowed-license
+  policy.
+owner_domain: security
+provided_by_core_ability: null
+input_schema:
+  components:
+  - object
+  license_policy: object
+output_schema:
+  license_findings:
+  - object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- supply_chain_agent
+allowed_usage:
+- Evaluate licenses and emit LICENSE_REPORT against policy.
+forbidden_usage:
+- Approving a forbidden license without policy basis.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - supply_chain_sbom_license
+notes: Policy basis comes from policy_query; this tool resolves and evaluates licenses.

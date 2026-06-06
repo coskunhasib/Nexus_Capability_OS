@@ -1,0 +1,36 @@
+id: context_poisoning_tester
+name: Context Poisoning Tester
+type: tool
+category: tool
+status: canonical
+purpose: Test resistance to context/memory poisoning; emit CONTEXT_POISONING_TEST_REPORT.
+owner_domain: ai_safety
+provided_by_core_ability: null
+input_schema:
+  context_policy: object
+  poisoning_suite: object
+output_schema:
+  poisoning_findings:
+  - object
+side_effects: executes_adversarial_probes_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- agentic_safety_agent
+allowed_usage:
+- Run context-poisoning probes inside the sandbox.
+forbidden_usage:
+- Injecting poisoned context into production memory stores.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - ai_agent_safety_evaluation
+notes: Consumes the CONTEXT_POLICY emitted by implementation (stage 11).

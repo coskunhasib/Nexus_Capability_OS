@@ -1,0 +1,129 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #14 of 31: test_execution (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract format)
+#              configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields + shared_usage_fields)
+# Pipeline: sdlc_pipeline. Always-on stage (no applicability_decision).
+#
+# Reconciliation notes (legacy docs -> Phase A canonical registry):
+#   - Source prose: docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/03-build-review-and-test.md §4 (canonical stage block),
+#     docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.15 (legacy 23-stage draft; stale owner/profile names
+#     superseded — the stale 23-stage assumption is NOT carried), docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md
+#     (Test Execution = Required / always-on), docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (routing),
+#     configs/nexus-ai/sdlc_pipeline.yaml (position 14; mandatory gate tests_pass),
+#     configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names: TEST_EXECUTION_REPORT, COVERAGE_REPORT).
+#   - owner_agent reconciled from legacy `qa_lead_agent` (doc 05 §4.15) to canonical `qa_agent` (matches the
+#     sdlc-stages/03 canonical block and the suggested owner). qa_agent is a pipeline Agent ROLE, not a Core Ability.
+#   - model profile reconciled from legacy NON-CANONICAL `test_analysis_model` to canonical `coder_engineering_model`
+#     (no test-specific model profile exists in the locked registry). Flagged in open_questions.
+#   - context/memory reconciled from legacy NON-CANONICAL `test_execution_context_pack` to canonical
+#     `verification_context_pack` + `implementation_context_pack` + `sdlc_run_context`. Flagged in open_questions.
+#   - governance `test_execution_governance` + `coverage_policy_gate` + `flaky_test_quarantine_gate` are
+#     stage-specific gate profiles (canonical pattern permits snake_case stage-specific gate profiles).
+#   - audit `test_execution_evidence_schema` is a stage-appropriate EVIDENCE schema; `stage_gate_trace_schema`
+#     is the TRACE schema. Evidence and trace are kept distinct.
+#
+# LOCKED-SEMANTIC GUARDRAIL: verification-loop is NOT used here. verification-loop = bug/defect finding and
+#   is owned by the next stage (verification_loop_bug_finding). Per docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §7,
+#   using verification-loop in place of test_execution is an explicit anti-pattern. This stage RUNS and EVIDENCES
+#   the already-generated test suite; it does not perform a defect sweep and does not replace test_execution.
+#
+# No-self-approval: test_execution is an EXECUTION stage. It authors only its own artifacts
+#   (TEST_EXECUTION_REPORT, COVERAGE_REPORT, TEST_EXECUTION_GATE_RESULT) and approves no OTHER author's
+#   artifact, so owner_agent = qa_agent is compliant. no_self_approval_policy is attached as a standing guard.
+#   (Note: qa_agent also authored the test suite upstream in test_generation; running one's own suite is not a
+#   foreign-artifact approval, so no cross-author conflict arises. Flagged in open_questions for governance review.)
+
+stage_id: test_execution
+name: Test Execution
+purpose: >-
+  Execute the generated/planned test suite (unit, integration, contract, end-to-end and any
+  domain-specific tests) against the implemented changeset, parse coverage, classify and handle
+  flaky tests, and produce auditable pass/fail and coverage evidence. This stage proves whether the
+  declared test plan actually passes on the built artifact — it does NOT hunt for new defects
+  (that is the next stage, verification_loop_bug_finding, via the verification-loop skill).
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: qa_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Coder    # interpret test/coverage results and triage failures
+  - OS       # run the test suites and the coverage tooling in the execution environment
+  - Memory   # recall the test plan, generated-tests summary and changeset under test
+
+uses_skills:
+  - gap-audit   # verify executed tests cover the planned/critical paths; surface coverage gaps
+  # NOTE: verification-loop is intentionally EXCLUDED here (locked semantic: bug/defect finding =
+  #       next stage). Using it here would violate the locked skill semantics and the §7 anti-pattern.
+
+uses_tools:
+  - repo_reader        # read the generated test files / changeset under test
+  - test_runner        # execute the test suites (side-effect: governance + trace)
+  - coverage_parser    # parse coverage output for the coverage_policy_pass gate
+  - artifact_writer    # write TEST_EXECUTION_REPORT / COVERAGE_REPORT (side-effect: governance + trace)
+  - evidence_writer    # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - evidence_required_policy
+  - no_self_approval_policy        # standing guard (execution stage authors only its own artifacts)
+  - test_execution_governance      # stage-specific gate profile
+  - coverage_policy_gate           # stage-specific gate profile (coverage thresholds)
+  - flaky_test_quarantine_gate     # stage-specific gate profile (flaky-test handling policy)
+
+uses_audit_schemas:
+  - test_execution_evidence_schema   # stage-appropriate EVIDENCE schema (distinct from trace)
+  - stage_gate_trace_schema          # TRACE schema (gate evaluation provenance)
+
+uses_model_provider_profiles:
+  - coder_engineering_model   # reconciled from legacy NON-CANONICAL test_analysis_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - implementation_context_pack   # changeset / generated-tests context under test
+  - verification_context_pack     # results/verification context shared with the downstream bug-finding stage
+
+inputs:
+  - TEST_PLAN
+  - GENERATED_TESTS_SUMMARY
+  - CODE_CHANGESET_SUMMARY
+  - LOCAL_BUILD_RESULT
+
+outputs:
+  - TEST_EXECUTION_REPORT
+  - COVERAGE_REPORT
+  - TEST_EXECUTION_GATE_RESULT
+
+evidence:
+  - TEST_EXECUTION_REPORT
+  - COVERAGE_REPORT
+  - TEST_EXECUTION_GATE_RESULT
+
+trace:
+  - test_execution_stage_trace
+  - test_runner_tool_trace
+  - coverage_parser_tool_trace
+  - test_execution_gate_trace
+
+gates:
+  - tests_pass
+  - coverage_policy_pass
+  - flaky_tests_handled
+
+on_pass: verification_loop_bug_finding
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - test_failure
+  - coverage_policy_failure
+  - unhandled_flaky_tests
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

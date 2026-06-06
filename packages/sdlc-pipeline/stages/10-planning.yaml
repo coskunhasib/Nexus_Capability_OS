@@ -1,0 +1,119 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #10 of 31: planning (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Reconciliation notes (legacy docs 05 / sdlc-stages/02 -> Phase A canonical registry):
+#   - owner_agent reconciled from legacy `tech_lead_agent` (doc 05) to canonical `planning_agent`.
+#   - skills `handoff-designer` and `context-pack-builder` are NOT in the canonical shared
+#     skills registry; they are load-bearing for this stage's handoff/context-pack outputs and
+#     are carried from legacy doc 05. Flagged in open_questions for registry formalization.
+#   - governance `planning_governance` + `handoff_completeness_gate` and audit
+#     `planning_evidence_schema` + `handoff_trace_schema` and model `planning_reasoning_model`
+#     and context `planning_context_pack` (all legacy, non-canonical) reconciled to canonical
+#     base profiles + a canonical-permitted stage-specific gate profile
+#     (`planning_handoff_completeness_gate`).
+#   - outputs include OPERATIONAL_READINESS_DRAFTS / RUNBOOK_DRAFT / ROLLBACK_PLAN_DRAFT per
+#     sdlc-stages/06-canonical-corrections-and-overrides.md §3 (consumed downstream by
+#     backup_restore_dr_validation_if_applicable and operations_readiness).
+# No-self-approval: planning authors its own artifacts and reviews no other author's artifact,
+# so owner_agent = planning_agent is compliant (not a review/gate stage).
+
+stage_id: planning
+name: Planning
+purpose: >-
+  Produce the implementation plan, requirement-traceable task breakdown, executor handoff
+  packets and executor work-package drafts (plus operational-readiness, runbook and rollback
+  drafts) that bound implementation scope and hand the build off to executors deterministically.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: planning_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Supervisor   # composes handoff packets / executor routing plan
+  - Memory       # reads prior requirements, architecture, threat and risk artifacts
+  - Coder        # technical decomposition of implementation tasks
+
+uses_skills:
+  - fermi-decompose   # decompose and size implementation work into a task breakdown
+  - prism             # diverge over sequencing / handoff-partitioning options
+  - gap-audit         # verify every task traces to a requirement; find planning coverage gaps
+  - handoff-designer      # NON-CANONICAL (legacy doc 05): design executor HANDOFF_PACKETS
+  - context-pack-builder  # NON-CANONICAL (legacy doc 05): build EXECUTOR_WORKPACKAGE_DRAFTS context
+
+uses_tools:
+  - evidence_reader            # read upstream evidence (requirements, architecture, risk) to plan
+  - requirements_trace_checker # support the tasks_trace_to_requirements gate
+  - artifact_writer            # write plan / breakdown / handoff artifacts (side-effect: governance + trace)
+  - evidence_writer            # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - evidence_required_policy
+  - planning_handoff_completeness_gate   # stage-specific gate profile
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema   # evidence schema (distinct from trace)
+  - stage_gate_trace_schema         # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - requirements_context_pack       # consumed: requirements/NFR context
+  - architecture_context_pack       # consumed: architecture/ADR context
+  - implementation_context_pack     # produced/seeded for the implementation stage
+
+inputs:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ACCEPTANCE_CRITERIA
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - THREAT_MODEL
+  - SECURITY_REQUIREMENTS
+  - SENTINEL_PREMORTEM
+  - FMEA_RISK_REGISTER
+
+outputs:
+  - IMPLEMENTATION_PLAN
+  - TASK_BREAKDOWN
+  - HANDOFF_PACKETS
+  - EXECUTOR_WORKPACKAGE_DRAFTS
+  - OPERATIONAL_READINESS_DRAFTS
+  - RUNBOOK_DRAFT
+  - ROLLBACK_PLAN_DRAFT
+  - PLANNING_GATE_RESULT
+
+evidence:
+  - IMPLEMENTATION_PLAN
+  - TASK_BREAKDOWN
+  - HANDOFF_PACKETS
+  - EXECUTOR_WORKPACKAGE_DRAFTS
+  - PLANNING_GATE_RESULT
+
+trace:
+  - planning_agent_trace
+  - requirements_trace_check_tool_trace
+  - artifact_writer_tool_trace
+
+gates:
+  - tasks_trace_to_requirements
+  - handoff_packets_complete
+  - implementation_scope_bounded
+
+on_pass: implementation
+on_fail: planning
+rework_route: planning
+
+blocking_conditions:
+  - untraceable_task
+  - missing_handoff_packet
+  - unbounded_implementation_scope
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

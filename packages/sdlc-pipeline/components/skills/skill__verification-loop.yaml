@@ -1,0 +1,53 @@
+id: verification-loop
+name: Verification-loop
+type: skill
+status: canonical
+semantic_category: verification_defect_discovery
+primary_purpose: bug / defect finding and verification sweep
+purpose: Rigorous multi-lens defect sweep (invariant / mutation / regression red-teaming)
+  over a changeset and its test results to surface real defects beyond what the executed
+  suite caught, triaged by severity. Produces a defect report + a blocking gate result;
+  emits residual risk, never a bug-free guarantee.
+owner_domain: reasoning_methods
+allowed_usage:
+- bug_finding
+- defect_finding
+- verification_sweep
+- adversarial_defect_discovery
+- migration_defect_finding
+- script_defect_sweep
+- post_fix_regression_review
+forbidden_usage:
+- general_readiness_checklist
+- replacing_test_execution
+- ideation
+- architecture_brainstorming
+- bug_free_guarantee
+governance_profiles:
+- defect_finding_skill_governance
+- locked_semantics_enforcement_policy
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+- bug_finding_evidence_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  stages:
+  - sdlc:15-verification-loop-bug-finding
+  - sdlc:18-ai-agent-safety-evaluation
+  - sdlc:22-data-migration-validation-if-applicable
+  - operations:forward_fix_confirmation
+  - skill_governance:script_reference_audit
+  agents:
+  - qa_agent
+  - bug_hunter_subagent
+  - code_reviewer_agent
+aliases: []
+notes: Enforced by sdlc_pipeline_runtime_rules anti-patterns `verification_loop_replaces_test_execution`
+  and (boundary) `concept_boundary_collapse`. DELIBERATELY EXCLUDED from 12 code_review,
+  13 test_generation, 14 test_execution, 16 security_validation, 20, 21, 23, 24, 26,
+  27, 28, 29, 30 (most carry an explicit exclusion comment). Stage 29 explicitly refuses
+  to reuse it as a general readiness checklist.

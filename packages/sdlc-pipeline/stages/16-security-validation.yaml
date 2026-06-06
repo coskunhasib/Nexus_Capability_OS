@@ -1,0 +1,146 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #16 of 31: security_validation (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   an always-on mandatory gate — produces required gate `security_validation_pass`).
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §1 (stage prose),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.17 (legacy detail; stale owner/skill/tool/
+#     context names superseded — do NOT carry the legacy 23-stage assumption),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Required / always-on; SAST/SCA/secret/
+#     container/IaC/API scanner result interpretation),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract format),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (routing: on_pass=supply_chain_sbom_license),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
+#     SECURITY_SCAN_REPORT, SECURITY_FINDINGS_NORMALIZED).
+#
+# Reconciliation notes (legacy docs 04 / 05 -> Phase A canonical registry):
+#   - owner_agent reconciled to canonical `security_validation_agent` (task-suggested). Legacy
+#     doc 05 used `security_architect_agent` and prose doc 04 used `security_agent`; both
+#     superseded by the canonical agent-role registry. NOTE: security_privacy_design (stage 8)
+#     is owned by `security_privacy_agent`; this stage is owned by the distinct
+#     `security_validation_agent`, so design and validation are not self-reviewed by one role.
+#   - sub_agent reconciled to canonical `security_scan_interpreter_subagent` (prose used the
+#     `_sub_agent` spelling).
+#   - skill `scanner-result-normalizer` is NON-CANONICAL: it is not in the canonical shared
+#     skills registry but is named by legacy doc 05 and is load-bearing for normalizing raw
+#     SAST/SCA/secret/IaC scanner output into SECURITY_FINDINGS_NORMALIZED. Carried and flagged
+#     in open_questions for registry formalization. `prism` and `verification-loop` are
+#     deliberately NOT used here: this stage interprets scanner findings, it is neither
+#     divergent brainstorming (prism) nor a bug/defect sweep (verification-loop, stage 15).
+#   - tools reconciled to canonical names: legacy `scanner_report_reader` -> `evidence_reader`,
+#     legacy `secret_scanner` folded into `scanner_runner` (secret scanning is one scanner mode);
+#     `dependency_scanner` retained for dependency/SCA findings (deep supply-chain/SBOM/license
+#     verdict is the next stage, supply_chain_sbom_license). Dropped non-canonical tools flagged
+#     in open_questions.
+#   - governance reconciled to canonical base profiles + canonical-permitted stage-specific gate
+#     profiles (`security_validation_gate`, `no_secret_leak_gate`); legacy
+#     `security_validation_governance` / `no_critical_security_findings_gate` map onto these.
+#   - audit schemas: evidence schema (`security_scan_evidence_schema`) kept DISTINCT from trace
+#     schema (`stage_gate_trace_schema` + `security_finding_trace_schema`).
+#   - context reconciled to canonical `security_context_pack` (legacy
+#     `security_validation_context_pack` non-canonical) + `sdlc_run_context`.
+# No-self-approval: the artifact this gate evaluates (normalized scanner findings) is produced
+#   from machine scanner output, not authored by a sibling pipeline agent, so owner_agent =
+#   security_validation_agent is compliant. no_self_approval_policy is carried for the pipeline
+#   invariant; no sdlc_team_lead override is required here.
+
+stage_id: security_validation
+name: Security Validation
+purpose: >-
+  Run and interpret the application security scanner suite (SAST/SCA, secret, container and IaC
+  scans) against the implemented changeset, normalize raw findings into a deduplicated,
+  severity-classified SECURITY_FINDINGS_NORMALIZED set, and decide — under no-human governance —
+  whether the build clears the security gate: zero unaccepted critical findings, no high findings
+  without an owned acceptance, and no leaked secrets.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: security_validation_agent
+sub_agents:
+  - security_scan_interpreter_subagent
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Coder     # reason over code/dependency findings and map them to changed code
+  - Memory    # recall threat model, security requirements and prior accepted findings
+  - OS        # invoke scanner tooling over the repository/build
+
+uses_skills:
+  - calibrate                # calibrate severity / true-positive confidence of raw findings
+  - gap-audit                # find scan-coverage gaps (unscanned paths, missing scanner classes)
+  - scanner-result-normalizer  # NON-CANONICAL (legacy doc 05): normalize/dedupe raw scanner output
+
+uses_tools:
+  - scanner_runner       # run SAST/SCA/secret/container/IaC scans (side-effect: governance + trace)
+  - dependency_scanner   # dependency/SCA vulnerability findings (side-effect: governance + trace)
+  - evidence_reader      # read upstream evidence (changeset, threat model, test report)
+  - artifact_writer      # write SECURITY_SCAN_REPORT / findings (side-effect: governance + trace)
+  - evidence_writer      # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - security_validation_gate   # stage-specific gate profile
+  - no_secret_leak_gate        # stage-specific gate profile
+
+uses_audit_schemas:
+  - security_scan_evidence_schema   # evidence schema (distinct from trace)
+  - stage_gate_trace_schema         # trace schema (distinct from evidence)
+  - security_finding_trace_schema   # trace schema: per-finding lineage (distinct from evidence)
+
+uses_model_provider_profiles:
+  - security_analysis_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - security_context_pack
+
+inputs:
+  - CODE_CHANGESET_SUMMARY
+  - IMPLEMENTATION_NOTES
+  - TEST_EXECUTION_REPORT
+  - THREAT_MODEL
+  - SECURITY_REQUIREMENTS
+
+outputs:
+  - SECURITY_SCAN_REPORT
+  - SECURITY_FINDINGS_NORMALIZED
+  - SECURITY_VALIDATION_GATE_RESULT
+
+evidence:
+  - SECURITY_SCAN_REPORT
+  - SECURITY_FINDINGS_NORMALIZED
+  - SECURITY_VALIDATION_GATE_RESULT
+
+trace:
+  - security_validation_stage_trace
+  - scanner_runner_tool_trace
+  - dependency_scanner_tool_trace
+  - security_finding_normalization_trace
+  - scanner_result_normalizer_skill_activation_trace
+
+gates:
+  - security_scan_coverage_complete
+  - no_critical_security_finding
+  - no_high_security_finding_without_acceptance
+  - no_secret_leak
+  - security_validation_pass
+
+on_pass: supply_chain_sbom_license
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - critical_security_finding_present
+  - high_security_finding_without_owned_acceptance
+  - secret_leak_detected
+  - security_scan_coverage_incomplete
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

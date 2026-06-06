@@ -1,0 +1,32 @@
+id: adr-builder
+name: ADR Builder
+type: skill
+status: canonical
+semantic_category: architecture_decision
+primary_purpose: author architecture decision records (ADRs)
+purpose: Capture architecture/contract decisions as structured ADRs (context, decision,
+  consequences, alternatives) for the ADR index and for API-contract decision rationale.
+owner_domain: reasoning_methods
+allowed_usage:
+- architecture_decision_recording
+- adr_authoring
+- api_contract_decision_recording
+forbidden_usage:
+- making_the_decision_unilaterally
+- bug_finding
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+- decision_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - sdlc:06-architecture
+  - sdlc:20-api-contract-compatibility-validation
+  agents:
+  - architecture_agent
+aliases: []
+notes: 2 SDLC stages; produces ADR_INDEX-class evidence.

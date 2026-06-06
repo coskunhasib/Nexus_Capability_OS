@@ -1,0 +1,34 @@
+id: fermi-decompose
+name: Fermi Decompose
+type: skill
+status: canonical
+semantic_category: problem_decomposition
+primary_purpose: estimation / problem decomposition into tractable parts
+purpose: Decompose an estimation or sizing problem into tractable parts (risk sizing,
+  planning estimation, cost/resource estimation) using Fermi-style structured approximation.
+owner_domain: reasoning_methods
+allowed_usage:
+- problem_decomposition
+- estimation
+- sizing
+- cost_resource_estimation
+forbidden_usage:
+- bug_finding
+- precise_measurement_substitute
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - sdlc:02-domain-risk-profile
+  - sdlc:10-planning
+  - sdlc:25-cost-resource-governance
+  agents:
+  - domain_risk_agent
+  - planning_agent
+aliases: []
+notes: 3 SDLC stages (risk sizing, planning, cost/resource).

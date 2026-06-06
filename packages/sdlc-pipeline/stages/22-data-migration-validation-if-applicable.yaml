@@ -1,0 +1,203 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #22 of 31: data_migration_validation_if_applicable (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Top structure: Nexus AI Orchestration Model. The SDLC Pipeline is ONE pipeline within it,
+#   not the top of the model. Core Abilities (Supervisor, Coder, Vision, Audio, Creative,
+#   Memory, Web, OS) are capabilities, NOT agents and NOT team members; none appears as
+#   owner_agent or as an Agent here. owner_agent is a pipeline Agent ROLE (data_migration_agent).
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; stage #22 =
+#   data_migration_validation_if_applicable; conditional gate data_migration_pass_if_applicable;
+#   on_pass -> accessibility_ux_validation_if_applicable).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract field set/order),
+#              configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields + shared_usage_fields).
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §6 (legacy per-stage draft:
+#     owner/skills/gates/blocking conditions),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §5 (canonical inputs =
+#     *_IF_APPLICABLE), §6/§7 (applicability_decision = DATA_MIGRATION_APPLICABILITY_DECISION),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §3 (status: Conditional Required; needed when
+#     data model / migration / rollback / data-loss risk exists),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy 23-stage draft has NO dedicated data-migration
+#     stage — this stage is a gap-audit addition; the stale 23-stage assumption is NOT carried),
+#   - docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md (data_model_subagent = data model/retention/
+#     migration RISK extraction, lives in the architecture stage; engineering_agent owns migration
+#     IMPLEMENTATION incl. the unsafe_migration blocking condition),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names; product_gates group:
+#     MIGRATION_VALIDATION_REPORT, ROLLBACK_VALIDATION_REPORT, DATA_INTEGRITY_REPORT; inputs
+#     DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE / MIGRATION_FILES_IF_APPLICABLE).
+#
+# Reconciliation notes (legacy drafts -> Phase A canonical registry):
+#   - inputs: standardized to DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE and MIGRATION_FILES_IF_APPLICABLE
+#     per override §5 (legacy §6 used the un-suffixed DATA_MODEL_CHANGE_REPORT / MIGRATION_FILES).
+#   - applicability_decision = DATA_MIGRATION_APPLICABILITY_DECISION (override §6/§7); this stage both
+#     EMITS the decision (so downstream evidence can prove it ran/short-circuited) and gates on it.
+#   - NON-CANONICAL tools in legacy §6 reconciled to the LOCKED canonical tool set:
+#       schema_diff_checker  -> dropped; schema-diff coverage folded into migration_checker.
+#       rollback_validator   -> dropped; rollback-replay coverage folded into migration_checker + test_runner.
+#       data_integrity_checker -> dropped; integrity assertions executed via test_runner + evidence_consistency_checker.
+#     Canonical tools used: migration_checker, contract_test_runner, test_runner, evidence_consistency_checker,
+#     artifact_writer, evidence_writer. The three dropped names are flagged in open_questions for registry
+#     formalization (they also appear in override §8's pipeline-union list but are NOT in the locked Tools list).
+#   - model profile: legacy NON-CANONICAL data_migration_analysis_model -> canonical coder_engineering_model
+#     (no migration-specific model exists in the locked registry). Flagged in open_questions.
+#   - context/memory: legacy NON-CANONICAL data_migration_context_pack -> canonical sdlc_run_context +
+#     implementation_context_pack + verification_context_pack. Flagged in open_questions.
+#   - governance: data_migration_governance is canonical (LOCKED); rollback_required_gate + data_integrity_gate
+#     are stage-specific snake_case gate profiles (canonical pattern permits these). no_self_approval_policy +
+#     evidence_required_policy + sdlc_pipeline_governance added to match the base-governance pattern used by
+#     every other stage contract.
+#   - audit: migration_evidence_schema is a stage-appropriate EVIDENCE schema; stage_gate_trace_schema is the
+#     TRACE schema. Evidence and trace are kept distinct (data_integrity_report_schema + rollback_validation_schema
+#     from legacy §6 are evidence-side report schemas; flagged in open_questions as not-yet-in the locked schema set).
+#
+# No-self-approval (LOCKED): the artifacts this stage reviews (DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE,
+#   MIGRATION_FILES_IF_APPLICABLE) are authored by the implementation stage (owner_agent: engineering_agent).
+#   This stage's owner_agent (data_migration_agent) is a DIFFERENT, dedicated reviewer role, so the
+#   no_self_approval_policy is satisfied without falling back to sdlc_team_lead. data_migration_agent is a
+#   pipeline Agent ROLE — not a Core Ability and not the team lead (Supervisor != sdlc_team_lead).
+#
+# Skill semantics (LOCKED): verification-loop is used here ONLY for bug/defect finding over the migration
+#   (unsafe transforms, lossy/irreversible steps, ordering/idempotency defects) — NOT as a general readiness
+#   checklist and NOT as a replacement for test_execution. fmea = structured failure-mode analysis of the
+#   migration; gap-audit = coverage of data-model deltas vs migration steps and rollback paths.
+#
+# CONDITIONAL stage: includes applicability_decision (required_when) immediately after purpose, plus
+#   conditional_required_gates. When not applicable, the stage short-circuits PASS (emitting the
+#   applicability decision as evidence) and routes on_pass to accessibility_ux_validation_if_applicable.
+
+stage_id: data_migration_validation_if_applicable
+name: Data / Migration Validation (If Applicable)
+purpose: >-
+  When the change touches the data model or ships schema/data migrations, validate that every
+  migration is safe, ordered, idempotent and reversible: confirm the migration steps fully cover
+  the declared data-model deltas, run a forward-migrate + rollback replay, assert post-migration
+  data integrity (no loss, corruption, constraint or referential violation, no tenant-isolation
+  break), and produce auditable migration / rollback / integrity evidence plus a conditional gate
+  result. This stage finds data-migration defects and blocks progression on unsafe migrations,
+  missing/failed rollback, or integrity failures; it is NOT a generic readiness checklist and does
+  not re-run the full functional test suite (that is test_execution, stage #14).
+
+applicability_decision:
+  decision: DATA_MIGRATION_APPLICABILITY_DECISION
+  required_when: data_model_changed == true or migration_changed == true
+  evaluated_from:
+    - DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE   # present => data model changed
+    - MIGRATION_FILES_IF_APPLICABLE            # present => migration changed
+    - DOMAIN_PROFILE_DECISION                  # persistent-data / regulated-data risk signal
+  on_not_applicable:
+    result: pass
+    emit_evidence:
+      - DATA_MIGRATION_APPLICABILITY_DECISION
+    route: accessibility_ux_validation_if_applicable
+    note: >-
+      No data-model change and no migration change detected; stage short-circuits to PASS and
+      records the applicability decision as evidence so the conditional gate is provably evaluated.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: data_migration_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Coder    # reason over schema deltas, migration scripts and rollback logic; classify defects
+  - OS       # drive migration_checker / test_runner to forward-migrate, rollback-replay and assert integrity
+  - Memory   # recall the data model, prior migrations and privacy/tenant-isolation constraints
+
+uses_skills:
+  - fmea              # structured failure-mode analysis of the migration (lossy/irreversible/ordering risks)
+  - gap-audit         # verify migration steps cover the data-model deltas and that a rollback path exists
+  - verification-loop # LOCKED semantics: defect FINDING over the migration (not a readiness checklist, not a test_execution replacement)
+
+uses_tools:
+  - migration_checker            # validate/forward-migrate + rollback-replay; schema-diff coverage (side-effect: governance + trace)
+  - test_runner                  # execute data-integrity / migration assertions (side-effect: governance + trace)
+  - contract_test_runner         # verify data contracts / invariants survive the migration (side-effect: governance + trace)
+  - evidence_consistency_checker # cross-check integrity assertions against produced evidence (side-effect: governance + trace)
+  - artifact_writer              # write MIGRATION/ROLLBACK/INTEGRITY reports + gate result (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy   # data_migration_agent != engineering_agent (author of the reviewed migration artifacts)
+  - evidence_required_policy
+  - data_migration_governance # LOCKED canonical governance profile for this stage
+  - rollback_required_gate    # stage-specific gate profile: a tested rollback path is mandatory
+  - data_integrity_gate       # stage-specific gate profile: post-migration integrity must hold
+
+uses_audit_schemas:
+  - migration_evidence_schema   # stage-appropriate EVIDENCE schema (distinct from trace)
+  - stage_gate_trace_schema     # TRACE schema (gate evaluation provenance; distinct from evidence)
+
+uses_model_provider_profiles:
+  - coder_engineering_model   # reconciled from legacy NON-CANONICAL data_migration_analysis_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - implementation_context_pack   # the data-model change + migration files under validation
+  - verification_context_pack     # defect/verification context shared with the bug-finding lineage
+
+inputs:
+  - DATA_MODEL_CHANGE_REPORT_IF_APPLICABLE   # canonical (override §5); authored by implementation
+  - MIGRATION_FILES_IF_APPLICABLE            # canonical (override §5); authored by implementation
+  - DATA_INVENTORY                           # data ownership/sensitivity baseline for integrity + tenant checks
+  - PRIVACY_RISK_REGISTER                    # tenant-isolation / personal-data constraints to preserve
+  - DOMAIN_PROFILE_DECISION                  # persistent/regulated-data risk signal for applicability + severity
+
+outputs:
+  - DATA_MIGRATION_APPLICABILITY_DECISION
+  - MIGRATION_VALIDATION_REPORT
+  - ROLLBACK_VALIDATION_REPORT
+  - DATA_INTEGRITY_REPORT
+  - DATA_MIGRATION_GATE_RESULT
+
+evidence:
+  - DATA_MIGRATION_APPLICABILITY_DECISION
+  - MIGRATION_VALIDATION_REPORT
+  - ROLLBACK_VALIDATION_REPORT
+  - DATA_INTEGRITY_REPORT
+  - DATA_MIGRATION_GATE_RESULT
+
+trace:
+  - data_migration_validation_stage_trace
+  - migration_checker_tool_trace
+  - rollback_replay_tool_trace
+  - data_integrity_assertion_trace
+  - data_migration_gate_decision_trace
+
+gates:
+  - data_migration_pass_if_applicable
+  - rollback_validation_pass_if_applicable
+  - data_integrity_pass_if_applicable
+  - migration_covers_data_model_delta_if_applicable
+
+on_pass: accessibility_ux_validation_if_applicable
+on_fail: architecture
+rework_route: architecture
+
+blocking_conditions:
+  - unsafe_migration              # lossy / irreversible / out-of-order / non-idempotent migration step
+  - rollback_missing              # no rollback path, or rollback replay failed
+  - data_integrity_failure        # data loss / corruption / constraint or referential violation post-migrate
+  - tenant_isolation_break        # migration breaks tenant / data-ownership isolation
+  - migration_does_not_cover_data_model_delta  # declared schema delta not fully covered by migration steps
+
+optional_conditions:
+  - stage_not_applicable_when_no_data_model_or_migration_change  # short-circuit PASS via applicability_decision
+
+conditional_required_gates:
+  - gate_id: data_migration_pass_if_applicable
+    required_when: data_model_changed == true or migration_changed == true
+    severity: blocker
+  - gate_id: rollback_validation_pass_if_applicable
+    required_when: migration_changed == true
+    severity: blocker
+  - gate_id: data_integrity_pass_if_applicable
+    required_when: data_model_changed == true or migration_changed == true
+    severity: blocker
+  - gate_id: migration_covers_data_model_delta_if_applicable
+    required_when: data_model_changed == true and migration_changed == true
+    severity: major
+
+max_iterations: 3

@@ -1,0 +1,248 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #30 of 31: release_candidate (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# Top structure: Nexus AI Orchestration Model. The SDLC Pipeline is ONE pipeline within it,
+#   not the top of the model. Core Abilities (Supervisor, Coder, Vision, Audio, Creative, Memory,
+#   Web, OS) are capabilities, NOT agents and NOT team members; none appears as owner_agent or as
+#   an Agent here. owner_agent is a pipeline Agent ROLE (release_manager_agent). Plugin is cancelled —
+#   no plugin concept/field appears anywhere in this contract.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; stage #30 =
+#   release_candidate; always-on; on_pass -> refraction_learning; on_fail -> development_completion;
+#   pipeline-level governance includes release_candidate_governance and audit includes
+#   release_evidence_schema).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract field set/order),
+#              configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields + shared_usage_fields).
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §4 (legacy per-stage draft:
+#     owner/skills/tools/gates/inputs/outputs/routing for release_candidate),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.22 (legacy detail; stale owner/skill names superseded —
+#     the legacy doc numbers this stage 22 under a stale 23-stage assumption; that assumption is NOT
+#     carried — release_candidate is stage #30 of the canonical 31-stage pipeline),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §9 (Release Candidate minimum evidence set) and
+#     the audit table row "Release Candidate | Required",
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §7 (Release Candidate minimum + conditional
+#     evidence; "Release Candidate, Development Completion pass olmadan üretilemez"),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §10 (Release Candidate
+#     conditional evidence override: COMPLIANCE_APPLICABILITY_DECISION, COMPLIANCE_MATRIX_IF_APPLICABLE,
+#     REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE, COMPLIANCE_GATE_RESULT_IF_APPLICABLE),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names; completion_release group:
+#     RELEASE_CANDIDATE_REPORT, RELEASE_EVIDENCE; and the authoritative release_evidence_required
+#     core + conditional sets that define this stage's required input evidence).
+#
+# Reconciliation notes (legacy drafts -> Phase A canonical registry):
+#   - owner_agent = release_manager_agent (canonical, task-suggested; matches legacy doc 05 §4 and
+#     05-pipeline-model §4.22). This stage AUTHORS the release-candidate package (assembles and seals
+#     RELEASE_CANDIDATE_REPORT + RELEASE_EVIDENCE from upstream evidence) — authoring, not reviewing a
+#     sibling's artifact. See the No-self-approval note below for the one re-attestation that is routed
+#     to sdlc_team_lead to avoid release_manager_agent approving its own stage-#29 decision.
+#   - NON-CANONICAL skill `release-readiness-judge` (legacy doc 05 §4 + 05-pipeline-model §4.22) is NOT
+#     in the LOCKED shared skills registry. It is load-bearing for the final release-readiness verdict,
+#     so it is carried (legacy-named) AND flagged in open_questions for registry formalization — same
+#     treatment given to scanner-result-normalizer in stage #16. Canonical companions: prompt-fidelity
+#     (LOCKED; confirm RC artifacts faithfully reflect requirements/prompt intent — no drift), gap-audit
+#     (LOCKED; confirm the required release evidence set is complete with no orphan/missing artifacts),
+#     calibrate (LOCKED; calibrate confidence of the go/no-go release decision).
+#   - Skill semantics (LOCKED) respected: prism (divergent brainstorming) and verification-loop
+#     (bug/defect finding) are deliberately NOT used here. This stage neither brainstorms nor runs a
+#     defect sweep; it assembles and adjudicates an evidence package. release-readiness-judge here is a
+#     readiness ADJUDICATION over already-produced evidence — it is NOT a verification-loop substitute
+#     and does NOT re-open bug finding (that is stage #15) or test execution (that is stage #14).
+#   - tools reconciled to the LOCKED canonical set: evidence_reader (read upstream evidence + gate
+#     results), evidence_consistency_checker (verify the assembled RELEASE_EVIDENCE is internally
+#     consistent and matches the evidence graph / traceability matrix), policy_query (confirm no
+#     blocking policy failure before sealing the RC), artifact_writer + evidence_writer (write the RC
+#     report, sealed release evidence and decision/gate result). Legacy doc 05 §4 listed only
+#     artifact_writer/evidence_reader/evidence_writer; evidence_consistency_checker and policy_query are
+#     added (both LOCKED) to make the no_blocking_policy_failure gate and evidence-completeness gate
+#     enforceable. No diagram/scan/test tools are used — RC produces no new product artifacts.
+#   - governance: release_candidate_governance is LOCKED canonical. release_after_development_completion_gate
+#     is a stage-specific snake_case gate profile (canonical pattern PERMITS stage-specific gate profiles).
+#     sdlc_pipeline_governance + no_self_approval_policy + evidence_required_policy added to match the
+#     base-governance pattern used by every other stage contract.
+#   - audit: release_evidence_schema is the LOCKED canonical EVIDENCE schema for this stage and is kept
+#     DISTINCT from the trace schemas. stage_gate_trace_schema is the canonical TRACE schema;
+#     release_decision_trace_schema (legacy doc 05 §4) is a stage-appropriate TRACE schema (decision
+#     provenance) carried as a stage-specific trace schema. Evidence vs trace separation preserved.
+#   - model profile: release_reasoning_model (LOCKED canonical; matches legacy).
+#   - context/memory: release_context_pack (LOCKED canonical; matches legacy) + sdlc_run_context
+#     (whole-run context needed to confirm all stages/gates were evaluated).
+#
+# No-self-approval (LOCKED): release_candidate is authored by release_manager_agent, which ALSO owns the
+#   immediately-preceding development_completion stage (#29) that produced DEVELOPMENT_COMPLETION_REPORT
+#   and DEVELOPMENT_COMPLETION_GATE_RESULT. Re-attesting development_completion_pass here would be a
+#   self-approval of release_manager_agent's own stage-#29 decision. No dedicated independent reviewer
+#   role exists for this gate, so per the LOCKED rule the development_completion_pass re-attestation
+#   inside this stage is OWNED BY sdlc_team_lead (Supervisor != sdlc_team_lead). This is recorded on the
+#   gate in conditional_required_gates (attested_by: sdlc_team_lead) and flagged in open_questions.
+#   The release_candidate_evidence_complete and no_blocking_policy_failure gates adjudicate the assembled
+#   evidence package itself (not an artifact authored by release_manager_agent as a sibling), so they
+#   remain owned by release_manager_agent under no_self_approval_policy.
+#
+# Always-on stage: NOT conditional. It has NO applicability_decision block. conditional_required_gates is
+#   used ONLY to (a) bind no-self-approval ownership for the development_completion re-attestation and
+#   (b) require the conditional release-evidence items when their producing conditional stage was
+#   applicable; the always-required gates live in `gates`.
+
+stage_id: release_candidate
+name: Release Candidate
+purpose: >-
+  After development_completion (stage #29) passes, assemble, verify and SEAL the release-candidate
+  evidence package and render the final SDLC go/no-go decision — the last decision the pipeline makes
+  before any out-of-pipeline release/activation (which is NOT part of this pipeline: no merge, no
+  deploy). Confirm development_completion_pass holds (independently re-attested by sdlc_team_lead),
+  aggregate the canonical required release evidence (and every conditional evidence item whose
+  producing stage was applicable) into a single RELEASE_EVIDENCE artifact, check that the package is
+  internally consistent against the EVIDENCE_GRAPH and TRACEABILITY_MATRIX, confirm no blocking policy
+  failure remains, and emit RELEASE_CANDIDATE_REPORT plus the release gate result. This stage produces
+  NO new product artifacts and runs NO new tests/scans/bug-sweeps — it adjudicates and packages
+  evidence already produced upstream.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: release_manager_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Supervisor   # render the final go/no-go release-candidate decision under no-human governance
+  - Memory       # recall the full run: every stage, gate result, applicability decision and evidence item
+
+uses_skills:
+  - release-readiness-judge   # NON-CANONICAL (legacy doc 05): final release-readiness adjudication over assembled evidence (NOT a verification-loop substitute)
+  - prompt-fidelity           # LOCKED: confirm RC artifacts faithfully reflect requirements/prompt intent (no drift)
+  - gap-audit                 # LOCKED: confirm the required release-evidence set is complete (no missing/orphan artifacts)
+  - calibrate                 # LOCKED: calibrate confidence of the go/no-go release decision
+
+uses_tools:
+  - evidence_reader              # read upstream evidence + all stage gate results (read-only)
+  - evidence_consistency_checker # verify assembled RELEASE_EVIDENCE is internally consistent vs EVIDENCE_GRAPH / TRACEABILITY_MATRIX (side-effect: governance + trace)
+  - policy_query                 # confirm no blocking policy failure remains before sealing the RC (side-effect: governance + trace)
+  - artifact_writer              # write RELEASE_CANDIDATE_REPORT + gate result (side-effect: governance + trace)
+  - evidence_writer              # write/seal RELEASE_EVIDENCE as stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy                  # development_completion_pass re-attestation routed to sdlc_team_lead (see header)
+  - evidence_required_policy
+  - release_candidate_governance             # LOCKED canonical governance profile for this stage
+  - release_after_development_completion_gate # stage-specific gate profile: RC cannot be produced before development_completion passes
+
+uses_audit_schemas:
+  - release_evidence_schema        # LOCKED canonical EVIDENCE schema for the sealed release package (distinct from trace)
+  - stage_gate_trace_schema        # TRACE schema: gate evaluation provenance (distinct from evidence)
+  - release_decision_trace_schema  # stage-specific TRACE schema: go/no-go decision provenance (distinct from evidence)
+
+uses_model_provider_profiles:
+  - release_reasoning_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context     # whole-run context: confirm all stages/gates were evaluated
+  - release_context_pack # release-decision context
+
+# Inputs = the canonical release_evidence_required set (artifact_registry.yaml: core + conditional)
+#   plus the development_completion outputs that gate this stage. Required gate results from upstream
+#   stages are read via ALL_STAGE_GATE_RESULTS so the no_blocking_policy_failure check is provable.
+inputs:
+  # gating inputs from development_completion (stage #29)
+  - DEVELOPMENT_COMPLETION_REPORT
+  - DEVELOPMENT_COMPLETION_GATE_RESULT
+  # traceability / evidence backbone (stage #28)
+  - EVIDENCE_GRAPH
+  - TRACEABILITY_MATRIX
+  - ALL_STAGE_GATE_RESULTS
+  # core release evidence (artifact_registry.yaml release_evidence_required.core)
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - THREAT_MODEL
+  - FMEA_RISK_REGISTER
+  - CODE_REVIEW_REPORT
+  - TEST_EXECUTION_REPORT
+  - BUG_FINDING_REPORT
+  - SECURITY_SCAN_REPORT
+  - SBOM
+  - LICENSE_REPORT
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+  # conditional release evidence (artifact_registry.yaml release_evidence_required.conditional +
+  #   canonical-corrections §10) — included when its producing conditional stage was applicable
+  - COMPLIANCE_APPLICABILITY_DECISION
+  - COMPLIANCE_MATRIX_IF_APPLICABLE
+  - REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE
+  - COMPLIANCE_GATE_RESULT_IF_APPLICABLE
+  - DATA_LIFECYCLE_REPORT
+  - API_CONTRACT_REPORT
+  - MIGRATION_VALIDATION_REPORT
+  - ACCESSIBILITY_REPORT
+  - COST_ESTIMATE_REPORT
+  - RESTORE_TEST_REPORT
+
+outputs:
+  - RELEASE_CANDIDATE_REPORT
+  - RELEASE_EVIDENCE
+  - RELEASE_CANDIDATE_GATE_RESULT
+
+evidence:
+  - RELEASE_CANDIDATE_REPORT
+  - RELEASE_EVIDENCE
+  - RELEASE_CANDIDATE_GATE_RESULT
+
+trace:
+  - release_candidate_stage_trace
+  - release_evidence_assembly_trace
+  - release_evidence_consistency_check_trace
+  - policy_query_tool_trace
+  - release_candidate_gate_decision_trace
+
+gates:
+  - development_completion_pass          # re-attested by sdlc_team_lead (no-self-approval); RC cannot proceed without it
+  - release_candidate_evidence_complete  # every required (and applicable-conditional) release evidence item present
+  - release_evidence_internally_consistent # sealed package agrees with EVIDENCE_GRAPH / TRACEABILITY_MATRIX
+  - no_blocking_policy_failure           # always-required pipeline policy gate
+
+on_pass: refraction_learning
+on_fail: development_completion
+rework_route: development_completion
+
+blocking_conditions:
+  - development_completion_not_passed     # development_completion_pass is false/absent
+  - incomplete_release_evidence           # a required (or applicable-conditional) release evidence item is missing
+  - release_evidence_inconsistent         # sealed package contradicts the evidence graph / traceability matrix
+  - blocking_policy_failure_present       # an unresolved blocking policy failure remains
+
+optional_conditions:
+  - conditional_release_evidence_required_only_when_producing_stage_applicable  # *_IF_APPLICABLE items required only if their conditional stage ran
+
+conditional_required_gates:
+  - gate: development_completion_pass
+    required_when: always
+    severity: blocker
+    attested_by: sdlc_team_lead   # LOCKED no-self-approval: re-attestation owner differs from stage-#29 author (release_manager_agent)
+  - gate: compliance_pass_if_applicable
+    required_when: regulated_domain == true or contractual_compliance_required == true
+    severity: blocker
+  - gate: privacy_lifecycle_pass_if_applicable
+    required_when: personal_data_processed == true
+    severity: blocker
+  - gate: api_contract_compatibility_pass_if_applicable
+    required_when: api_changed == true or public_interface_changed == true
+    severity: blocker
+  - gate: data_migration_pass_if_applicable
+    required_when: data_model_changed == true or migration_changed == true
+    severity: blocker
+  - gate: accessibility_pass_if_applicable
+    required_when: product_has_ui == true
+    severity: major
+  - gate: backup_restore_dr_pass_if_applicable
+    required_when: persistent_data == true or stateful_service == true
+    severity: blocker
+  - gate: cost_resource_governance_pass_if_applicable
+    required_when: resource_or_cost_budget_defined == true
+    severity: major
+
+max_iterations: 3

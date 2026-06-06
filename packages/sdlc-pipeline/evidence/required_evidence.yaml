@@ -1,0 +1,26 @@
+required_evidence:
+- REQUIREMENTS_SPEC
+- NFR_CATALOG
+- ARCHITECTURE_DOC
+- ADR_INDEX
+- THREAT_MODEL
+- FMEA_RISK_REGISTER
+- CODE_REVIEW_REPORT
+- TEST_EXECUTION_REPORT
+- BUG_FINDING_REPORT
+- SECURITY_SCAN_REPORT
+- SBOM
+- LICENSE_REPORT
+- AGENTIC_SAFETY_EVAL_REPORT
+- RUNBOOK
+- ROLLBACK_PLAN
+- OBSERVABILITY_PLAN
+- EVIDENCE_GRAPH
+- DEVELOPMENT_COMPLETION_REPORT
+- RELEASE_CANDIDATE_REPORT
+required_trace:
+- stage_gate_trace_schema
+- stage_gate_decision_trace
+- rework_routing_trace
+- iteration_count_trace
+- governance_gate_evaluation_trace

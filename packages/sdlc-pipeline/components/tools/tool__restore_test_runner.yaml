@@ -1,0 +1,38 @@
+id: restore_test_runner
+name: Restore Test Runner
+type: tool
+category: tool
+status: canonical
+purpose: Execute a restore test (and rollback/restore readiness check) and capture
+  RESTORE_TEST_REPORT.
+owner_domain: operations_readiness
+provided_by_core_ability: OS
+input_schema:
+  backup_artifact: object
+  restore_target: object
+output_schema:
+  restore_test_report_ref: string
+side_effects: executes_restore_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- operations_readiness_agent
+allowed_usage:
+- Execute restore/rollback-readiness tests inside the sandbox (stages 26
+- 27).
+forbidden_usage:
+- Restoring over production data.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+notes: Shared by stage 26 and stage 27.

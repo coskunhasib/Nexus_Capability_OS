@@ -1,0 +1,25 @@
+id: domain_compliance_governance
+name: Domain Compliance Governance
+type: stage_governance_profile
+status: canonical
+purpose: Stage-21 governance over domain/regulatory compliance (conditional, if applicable).
+owner_domain: compliance
+allowed_usage:
+- Govern the domain_regulatory_compliance_validation stage when applicable.
+forbidden_usage:
+- Used outside the compliance validation stage.
+governance_profiles:
+- sdlc_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- domain_regulatory_compliance_validation_if_applicable
+severity_default: blocker
+used_by:
+- domain_regulatory_compliance_validation_if_applicable
+- sdlc_pipeline
+notes: Conditional stage (if_applicable). Co-listed with regulatory_traceability_gate.

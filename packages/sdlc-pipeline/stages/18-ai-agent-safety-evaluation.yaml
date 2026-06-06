@@ -1,0 +1,155 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #18 of 31: ai_agent_safety_evaluation (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Reconciliation notes (legacy docs sdlc-stages/04 §3, 06b §1, doc 05 -> Phase A canonical registry):
+#   - owner_agent = agentic_safety_agent (canonical). This is a validation/adversarial-test
+#     stage that produces its OWN safety reports and probes the implementation + agent behavior;
+#     it does not sign off another author's artifact, so it is no-self-approval compliant
+#     (not a peer-review gate of another agent's work).
+#   - Core Abilities [Supervisor, Coder, Memory, Web, OS] are abilities only — NONE is used as
+#     owner_agent or as a team member, per locked decision.
+#   - verification-loop is used here in its LOCKED bug/defect-finding sense (adversarial
+#     prompt-injection / tool-misuse defect hunting), NOT as a general readiness checklist and
+#     NOT as a replacement for test_execution.
+#   - Audit schemas keep evidence and trace DISTINCT: evidence schemas
+#     (agentic_eval_evidence_schema, prompt_injection_test_schema, evidence_integrity_report_schema)
+#     vs the canonical trace schema (stage_gate_trace_schema). The legacy `tool_misuse_trace_schema`
+#     is a TRACE concept and is represented in the `trace:` field as tool_misuse_test_trace,
+#     not in uses_audit_schemas.
+#   - model `agentic_safety_eval_model` (legacy, non-canonical) reconciled to canonical
+#     security_analysis_model + defect_analysis_model. Flagged in open_questions.
+#   - context `agentic_safety_context_pack` (legacy, non-canonical) reconciled to canonical
+#     sdlc_run_context + security_context_pack + verification_context_pack +
+#     implementation_context_pack. Flagged in open_questions.
+#   - governance profiles tool_misuse_governance / context_safety_governance / evidence_integrity_gate
+#     are stage-specific gate profiles (snake_case) — permitted by the canonical "+ stage-specific
+#     gate profiles" allowance; added no_self_approval_policy + evidence_required_policy (canonical).
+#   - inputs TOOL_PERMISSION_MAP and CONTEXT_POLICY are produced by implementation per
+#     sdlc-stages/06-canonical-corrections-and-overrides.md §4.
+#   - Always-on stage per 06b ("always_required_for_nexus_ai_sdlc") and gap-audit Required status:
+#     NO applicability_decision block.
+
+stage_id: ai_agent_safety_evaluation
+name: AI / Agent Safety Evaluation
+purpose: >-
+  Agentik/AI sistemlerde klasik appsec'in ötesinde agent davranışını, tool kullanımını,
+  context güvenliğini ve evidence doğruluğunu adversarial olarak test etmek: prompt
+  injection, tool misuse, context poisoning, fazla yetkili tool delegasyonu ve halüsine
+  edilmiş/uyumsuz evidence risklerini bug/defect-finding (verification-loop) disiplini ile
+  ortaya çıkarıp, agentic safety gate'ini no-human governance ile karara bağlamak.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: agentic_safety_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Supervisor   # reason over multi-agent / tool-delegation attack surface and routing
+  - Coder        # drive injection / tool-misuse / poisoning probes against the changeset
+  - Memory       # read prior threat model, permission map and context policy
+  - Web          # source current agentic / prompt-injection attack techniques
+  - OS           # execute eval harness and adversarial test runners
+
+uses_skills:
+  - verification-loop   # LOCKED bug/defect-finding: adversarial injection/tool-misuse defect sweep
+  - sentinel            # premortem the agent against abuse / bypass / privilege-escalation paths
+  - llm-council         # multi-model adjudication of safety findings severity and exploitability
+  - calibrate           # calibrate finding severity / false-positive rate of safety probes
+  - gap-audit           # find untested agentic-safety surface (uncovered tools/contexts)
+
+uses_tools:
+  - prompt_injection_tester        # side-effect: governance + trace
+  - tool_misuse_tester             # side-effect: governance + trace
+  - context_poisoning_tester       # side-effect: governance + trace
+  - evidence_consistency_checker   # detect hallucinated / inconsistent evidence
+  - agent_permission_auditor       # audit tool-permission scope vs least-privilege
+  - eval_runner                    # run the agentic safety eval suite
+  - artifact_writer                # write safety reports (side-effect: governance + trace)
+  - evidence_writer                # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - agentic_safety_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - tool_misuse_governance      # stage-specific gate profile
+  - context_safety_governance   # stage-specific gate profile
+  - evidence_integrity_gate     # stage-specific gate profile
+
+uses_audit_schemas:
+  - agentic_eval_evidence_schema        # evidence schema
+  - prompt_injection_test_schema        # evidence schema
+  - evidence_integrity_report_schema    # evidence schema
+  - stage_gate_trace_schema             # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - security_analysis_model     # adversarial safety reasoning
+  - defect_analysis_model       # injection / tool-misuse defect analysis
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - security_context_pack          # threat model / abuse context
+  - verification_context_pack      # consumed: bug/defect-finding context
+  - implementation_context_pack    # consumed: changeset / tool-permission / context-policy
+
+inputs:
+  - CODE_CHANGESET_SUMMARY
+  - TOOL_PERMISSION_MAP
+  - CONTEXT_POLICY
+  - THREAT_MODEL
+  - SECURITY_REQUIREMENTS
+  - SECURITY_FINDINGS_NORMALIZED
+
+outputs:
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - PROMPT_INJECTION_TEST_REPORT
+  - TOOL_MISUSE_TEST_REPORT
+  - CONTEXT_POISONING_TEST_REPORT
+  - EVIDENCE_INTEGRITY_REPORT
+  - AGENTIC_SAFETY_GATE_RESULT
+
+evidence:
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - PROMPT_INJECTION_TEST_REPORT
+  - TOOL_MISUSE_TEST_REPORT
+  - CONTEXT_POISONING_TEST_REPORT
+  - EVIDENCE_INTEGRITY_REPORT
+  - AGENTIC_SAFETY_GATE_RESULT
+
+trace:
+  - ai_agent_safety_evaluation_stage_trace
+  - verification_loop_skill_activation_trace
+  - prompt_injection_test_trace
+  - tool_misuse_test_trace
+  - context_poisoning_test_trace
+  - agent_permission_audit_trace
+  - evidence_consistency_check_trace
+
+gates:
+  - agentic_safety_eval_pass
+  - prompt_injection_resistance_pass
+  - no_unsafe_tool_delegation
+  - context_safety_pass
+  - evidence_integrity_pass
+
+on_pass: privacy_data_lifecycle_validation
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - prompt_injection_bypass
+  - unsafe_tool_misuse
+  - over_privileged_tool_delegation
+  - context_poisoning_success
+  - hallucinated_evidence
+
+optional_conditions:
+  - feature_uses_agents
+  - feature_uses_tools
+  - feature_uses_llm_context
+
+conditional_required_gates: []
+
+max_iterations: 3

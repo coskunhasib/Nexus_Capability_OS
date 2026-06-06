@@ -1,0 +1,185 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #20 of 31: api_contract_compatibility_validation (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Authored per docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
+# and configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields), reconciled against
+# the Phase A canonical shared registry.
+#
+# Stage class: CONDITIONAL — runs only when an API / event / SDK / public interface changed.
+#   Includes an applicability_decision block (with required_when) and conditional_required_gates,
+#   per docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §6/§7.
+#   Canonical applicability decision artifact: API_CONTRACT_APPLICABILITY_DECISION (06 §6/§7).
+#
+# Routing (canonical):
+#   - on_pass -> domain_regulatory_compliance_validation_if_applicable
+#     (sdlc-stages/06-canonical-corrections-and-overrides.md §2; supersedes the legacy prose
+#      04 §5 value of data_migration_validation_if_applicable).
+#   - on_fail / rework_route -> architecture (a contract/compatibility break is an interface-design
+#     defect; sdlc-stages/04 §5 routes here, consistent with the rework table in 05-pipeline-model.md).
+#   - Reached from privacy_data_lifecycle_validation (stage #19, on_pass).
+#
+# Reconciliation notes (legacy docs 05 / sdlc-stages/04 §5 -> Phase A canonical registry):
+#   - owner_agent kept as canonical `contract_validation_agent` (matches the suggested owner and the
+#     legacy prose). It is NOT a Core Ability and NOT a team. owner_team=sdlc_team, team_lead=sdlc_team_lead.
+#   - No self-approval: the primary artifact under validation is API_CONTRACTS_IF_APPLICABLE, authored by
+#     `engineering_agent` (implementation, stage #11; see 11-implementation.yaml outputs). The reviewer role
+#     `contract_validation_agent` is DISTINCT from the author, so the validation-gate owner differs from the
+#     artifact author and no_self_approval_policy is satisfied WITHOUT falling back to sdlc_team_lead.
+#     Supervisor is a Core Ability and is never used as owner_agent.
+#   - Skills: legacy prose 04 §5 listed `gap-audit`, `verification-loop`, `adr-builder`. Per the LOCKED
+#     skill semantics, `verification-loop` = bug/defect finding and is OWNED by the dedicated stage #15
+#     (verification_loop_bug_finding). This is a contract/compatibility CONFORMANCE gate, not a defect
+#     sweep, so verification-loop is intentionally NOT used here (avoids duplicating stage #15 and respects
+#     single-responsibility). Reconciled to canonical `gap-audit` (contract-coverage gap detection: every
+#     changed public surface mapped to a contract + compatibility verdict), `adr-builder` (record any
+#     intentional breaking change / deprecation / versioning decision as an ADR for the approval trail) and
+#     `calibrate` (consistent severity calibration of compatibility findings: breaking vs non-breaking),
+#     mirroring the calibrate usage in sibling validation stages.
+#   - Tools: legacy prose named `openapi_validator`, `asyncapi_validator`, `breaking_change_detector`, which
+#     are NOT in the locked canonical Tools registry. Their function (schema/contract diff + breaking-change
+#     detection) is folded into the canonical `contract_test_runner`; `breaking_change_detector` is referenced
+#     in the pipeline-level union (06 §8) but is not in the locked Tools list — both are flagged in
+#     open_questions for registry formalization rather than silently invented. Canonical tools used:
+#     `contract_test_runner` (run consumer/provider + backward-compat contract tests and detect breaks),
+#     `repo_diff_reader` (read the contract/interface diff), `repo_reader` (read surrounding interface code
+#     for context), `policy_query` (check the breaking-change approval / deprecation policy for the
+#     no_unapproved_breaking_change gate), `artifact_writer` and `evidence_writer`. Side-effect writers
+#     (artifact_writer, evidence_writer) and the test-executing tool (contract_test_runner) imply
+#     governance + trace.
+#   - Governance: legacy `api_contract_governance`, `breaking_change_gate`, `compatibility_gate` are retained
+#     as canonical-permitted stage-specific gate profiles (registry "+ stage-specific gate profiles" clause;
+#     also enumerated in 06 §8). Base profiles `sdlc_pipeline_governance`, `evidence_required_policy` added;
+#     `no_self_approval_policy` carried explicitly because this is a review/validation gate.
+#   - Audit: legacy `api_contract_evidence_schema` + `compatibility_report_schema` follow the registry's
+#     stage-appropriate evidence/report-schema pattern and are retained as EVIDENCE schemas; the TRACE schema
+#     is kept distinct via canonical `stage_gate_trace_schema`. Evidence and trace schemas are NOT merged.
+#   - Model: legacy `contract_analysis_model` is NOT in the locked model/provider list; reconciled to
+#     canonical `architecture_reasoning_model` (interface/contract design reasoning) + `sdlc_reasoning_profile`.
+#   - Context: legacy `api_contract_context_pack` is NOT in the locked context/memory list; reconciled to
+#     canonical `architecture_context_pack` + `implementation_context_pack` + `sdlc_run_context`.
+
+stage_id: api_contract_compatibility_validation
+name: API / Contract Compatibility Validation
+purpose: >-
+  When an API, event, message, SDK or other public interface has changed, validate the change set
+  against the declared contracts and verify backward/forward compatibility for existing consumers.
+  Run contract tests, detect breaking changes, and confirm that any intentional break is versioned,
+  deprecation-managed and explicitly approved (recorded as an ADR). Block the pipeline on unapproved
+  breaking changes or failing contract tests and route interface-design defects back to architecture.
+  This stage is a contract/compatibility CONFORMANCE gate — it is NOT the defect sweep (that is the
+  dedicated verification_loop_bug_finding stage #15).
+
+applicability_decision:
+  decision: API_CONTRACT_APPLICABILITY_DECISION
+  required_when: >-
+    api_changed == true or public_interface_changed == true or event_or_message_contract_changed == true
+    or sdk_or_client_library_changed == true
+  evaluated_from:
+    - CONDITIONAL_GATE_FLAGS          # initialized in domain_risk_profile (stage #2)
+    - API_CONTRACTS_IF_APPLICABLE     # presence emitted by implementation (stage #11) when interfaces change
+    - CODE_CHANGESET_SUMMARY
+  on_not_applicable: domain_regulatory_compliance_validation_if_applicable   # skip-forward target when inapplicable
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: contract_validation_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Coder     # read and reason over the contract/interface diff and contract test results
+  - Memory    # recall prior contract versions, consumer expectations and architecture/ADR decisions
+  - Web       # check external/published contract specs and downstream consumer interface expectations
+
+uses_skills:
+  - gap-audit     # ensure every changed public surface maps to a contract and has a compatibility verdict
+  - adr-builder   # record intentional breaking change / deprecation / versioning decisions as an ADR
+  - calibrate     # calibrate finding severity (breaking vs non-breaking / consumer impact) consistently
+
+uses_tools:
+  - contract_test_runner   # run consumer/provider + backward-compat contract tests; detect breaks (side-effect -> governance + trace)
+  - repo_diff_reader       # read the contract/interface change set (read-only)
+  - repo_reader            # read surrounding interface/spec code for context (read-only)
+  - policy_query           # check breaking-change approval / deprecation policy (no_unapproved_breaking_change gate)
+  - artifact_writer        # write API_CONTRACT_REPORT / BREAKING_CHANGE_REPORT (side-effect -> governance + trace)
+  - evidence_writer        # persist contract/compatibility evidence (side-effect -> governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy   # validation gate: owner_agent must differ from the API_CONTRACTS author
+  - evidence_required_policy
+  - api_contract_governance   # stage-specific gate profile
+  - breaking_change_gate      # stage-specific gate profile (gates the no_unapproved_breaking_change decision)
+  - compatibility_gate        # stage-specific gate profile (gates the compatibility verdict)
+
+uses_audit_schemas:
+  - api_contract_evidence_schema    # evidence schema (distinct from trace)
+  - compatibility_report_schema     # evidence/report schema (distinct from trace)
+  - stage_gate_trace_schema         # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - architecture_reasoning_model
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - architecture_context_pack      # consumed: contract/interface design context and ADRs
+  - implementation_context_pack    # consumed: changed interface / API change-set context
+
+inputs:
+  - API_CONTRACTS_IF_APPLICABLE     # emitted by implementation (stage #11) when interfaces change
+  - CODE_CHANGESET_SUMMARY
+  - CONDITIONAL_GATE_FLAGS          # drives the applicability decision
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - REQUIREMENTS_SPEC
+
+outputs:
+  - API_CONTRACT_APPLICABILITY_DECISION
+  - API_CONTRACT_REPORT
+  - BREAKING_CHANGE_REPORT
+  - CONTRACT_TEST_REPORT
+  - COMPATIBILITY_GATE_RESULT
+
+evidence:
+  - API_CONTRACT_APPLICABILITY_DECISION
+  - API_CONTRACT_REPORT
+  - CONTRACT_TEST_REPORT
+  - COMPATIBILITY_GATE_RESULT
+
+trace:
+  - contract_validation_trace
+  - contract_test_runner_tool_trace
+  - stage_gate_decision_trace
+
+gates:
+  - api_contract_compatibility_pass_if_applicable
+  - no_unapproved_breaking_change
+  - contract_tests_pass_if_applicable
+
+on_pass: domain_regulatory_compliance_validation_if_applicable
+on_fail: architecture
+rework_route: architecture
+
+blocking_conditions:
+  - unapproved_breaking_change
+  - contract_test_failure
+  - public_surface_without_contract
+  - self_review_detected
+
+optional_conditions:
+  - api_changed
+  - public_interface_changed
+  - event_or_message_contract_changed
+  - sdk_or_client_library_changed
+
+conditional_required_gates:
+  - gate_id: api_contract_compatibility_pass_if_applicable
+    required_when: >-
+      api_changed == true or public_interface_changed == true or event_or_message_contract_changed == true
+      or sdk_or_client_library_changed == true
+  - gate_id: no_unapproved_breaking_change
+    required_when: breaking_change_detected == true
+  - gate_id: contract_tests_pass_if_applicable
+    required_when: api_changed == true or public_interface_changed == true
+
+max_iterations: 3

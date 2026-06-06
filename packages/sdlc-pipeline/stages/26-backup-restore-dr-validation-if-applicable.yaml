@@ -1,0 +1,180 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #26 of 31: backup_restore_dr_validation_if_applicable (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   position #26, between cost_resource_governance (#25) and operations_readiness (#27)).
+#   It is a CONDITIONAL gate — produces the conditional required gate `backup_restore_dr_pass_if_applicable`.
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §10 (stage prose),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§7
+#       (applicability_decision standard -> BACKUP_RESTORE_DR_APPLICABILITY_DECISION) and §3
+#       (planning authors RUNBOOK_DRAFT / ROLLBACK_PLAN_DRAFT / OPERATIONAL_READINESS_DRAFTS — MF-001),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.18–§4.19 (legacy operations/DR detail; stale owner/
+#     tool/model/context names superseded below — do NOT carry the legacy 23-stage assumption),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §1 (downstream
+#     operations_readiness consumes DR_READINESS_REPORT + ROLLBACK_VALIDATION_REPORT -> confirms on_pass chain),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (operations / DR readiness coverage),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template + conditional gate rule),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (canonical tool names backup_plan_checker /
+#     restore_test_runner / dr_runbook_checker; conditional gate backup_restore_dr_pass_if_applicable),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
+#     BACKUP_PLAN, RESTORE_TEST_REPORT, DR_READINESS_REPORT, ROLLBACK_VALIDATION_REPORT, DATA_INTEGRITY_REPORT).
+#
+# Reconciliation notes (legacy docs 04 / 05 -> Phase A canonical registry):
+#   - owner_agent: canonical `operations_readiness_agent` (task-suggested + canonical role). The
+#     downstream operations_readiness stage (#27) is owned by the SAME role. This stage does NOT
+#     review its own output: the artifacts it consumes/validates are authored upstream by OTHER roles
+#     — RUNBOOK_DRAFT / ROLLBACK_PLAN_DRAFT / OPERATIONAL_READINESS_DRAFTS by planning_agent (override §3),
+#     DATA_INTEGRITY_REPORT by data_migration_agent — so no_self_approval is not violated on the inputs.
+#     The same-owner adjacency of #26 and #27 is flagged in open_questions for review-role confirmation.
+#   - tool `rollback_validator` is NON-CANONICAL: it is not in the Phase A canonical shared Tools
+#     registry but is named by legacy docs (04 §10, 05 §4.19) and is load-bearing for validating the
+#     rollback procedure (ROLLBACK_VALIDATION_REPORT). Carried and flagged in open_questions for
+#     registry formalization. The three canonical DR tools (backup_plan_checker, restore_test_runner,
+#     dr_runbook_checker) cover backup-plan adequacy, executable restore test, and DR runbook checks.
+#     Canonical `evidence_reader` added to read upstream drafts/DATA_INTEGRITY_REPORT; canonical
+#     `artifact_writer` + `evidence_writer` write reports/stage evidence (side-effect: governance + trace).
+#   - model profile reconciled from legacy `operations_analysis_model` (non-canonical) to canonical
+#     `release_reasoning_model` (DR/operational-readiness validation is a release-readiness reasoning task).
+#   - context profile reconciled from legacy `backup_restore_context_pack` (non-canonical) to canonical
+#     `operations_context_pack` + `sdlc_run_context`.
+#   - governance: `backup_restore_governance` / `disaster_recovery_gate` / `rollback_required_gate` are
+#     canonical-permitted stage-specific gate profiles; base profiles sdlc_pipeline_governance /
+#     no_self_approval_policy / evidence_required_policy added per the standard stage pattern.
+#   - audit: backup_restore_evidence_schema / dr_validation_schema / rollback_validation_schema are
+#     EVIDENCE/report schemas; stage_gate_trace_schema is the TRACE schema (evidence vs trace kept distinct).
+#   - skills: sentinel (premortem the DR-readiness gate decision), fmea (data-loss / failed-restore /
+#     unrecoverable-region failure modes), gap-audit (find uncovered backup/restore/DR/RTO/RPO gaps).
+#     prism is deliberately NOT used (this is not divergent brainstorming); verification-loop is
+#     deliberately NOT used (this is a DR-readiness validation, not a code bug/defect sweep — that is stage 15).
+
+stage_id: backup_restore_dr_validation_if_applicable
+name: Backup / Restore / DR Validation (If Applicable)
+purpose: >-
+  Validate that the product's backup, restore, disaster-recovery and rollback posture is
+  production-ready when it manages production or persistent data — verifying backup-plan adequacy,
+  an executable restore test, DR runbook coverage and RTO/RPO targets, plus rollback-procedure
+  validity — and decide the backup/restore/DR gate under no-human governance before operations readiness.
+
+# CONDITIONAL stage: applicability_decision (with required_when) appears right after purpose.
+applicability_decision:
+  decision: BACKUP_RESTORE_DR_APPLICABILITY_DECISION
+  required_when: >-
+    persistent_data_present == true or production_data_present == true or
+    stateful_service == true or recovery_objectives_defined == true or
+    rto_rpo_targets_present == true
+  produced_by: operations_readiness_agent
+  on_not_applicable:
+    route: operations_readiness
+    record_evidence: BACKUP_RESTORE_DR_APPLICABILITY_DECISION
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: operations_readiness_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - OS       # exercise backup/restore + DR runbook steps in the build/recovery environment
+  - Memory   # recall recovery objectives (RTO/RPO), DR drafts and prior operational decisions
+  - Coder    # inspect backup/restore/rollback scripts and migration-aware recovery logic
+
+uses_skills:
+  - sentinel    # premortem the DR-readiness gate decision before committing to pass
+  - fmea        # reason about data-loss / failed-restore / unrecoverable-region failure modes
+  - gap-audit   # find uncovered backup/restore/DR/RTO/RPO and rollback coverage gaps
+
+uses_tools:
+  - backup_plan_checker   # verify backup scope/frequency/retention adequacy vs recovery objectives
+  - restore_test_runner   # execute a restore test and capture RESTORE_TEST_REPORT (side-effect: governance + trace)
+  - dr_runbook_checker    # verify DR runbook completeness, RTO/RPO coverage and failover steps
+  - rollback_validator    # NON-CANONICAL (legacy): validate the rollback procedure -> ROLLBACK_VALIDATION_REPORT
+  - evidence_reader       # read upstream drafts (RUNBOOK_DRAFT, ROLLBACK_PLAN_DRAFT) + DATA_INTEGRITY_REPORT
+  - artifact_writer       # write backup/restore/DR reports (side-effect: governance + trace)
+  - evidence_writer       # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - backup_restore_governance     # stage-specific gate profile
+  - disaster_recovery_gate        # stage-specific gate profile
+  - rollback_required_gate        # stage-specific gate profile
+
+uses_audit_schemas:
+  - backup_restore_evidence_schema   # evidence schema
+  - dr_validation_schema             # evidence schema
+  - rollback_validation_schema       # evidence schema
+  - stage_gate_trace_schema          # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - release_reasoning_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - operations_context_pack
+
+inputs:
+  - BACKUP_RESTORE_DR_APPLICABILITY_DECISION       # this stage's own applicability gate
+  - DATA_INTEGRITY_REPORT                          # from data_migration_validation (author: data_migration_agent)
+  - RUNBOOK_DRAFT                                  # from planning (author: planning_agent, override §3)
+  - ROLLBACK_PLAN_DRAFT                            # from planning (author: planning_agent, override §3)
+  - OPERATIONAL_READINESS_DRAFTS                   # from planning (author: planning_agent, override §3)
+  - NFR_CATALOG                                    # recovery objectives / RTO / RPO requirements
+  - DOMAIN_PROFILE_DECISION                        # determines persistent/production-data applicability
+
+outputs:
+  - BACKUP_RESTORE_DR_APPLICABILITY_DECISION
+  - BACKUP_PLAN
+  - RESTORE_TEST_REPORT
+  - DR_READINESS_REPORT
+  - ROLLBACK_VALIDATION_REPORT
+
+evidence:
+  - BACKUP_RESTORE_DR_APPLICABILITY_DECISION
+  - BACKUP_PLAN
+  - RESTORE_TEST_REPORT
+  - DR_READINESS_REPORT
+  - ROLLBACK_VALIDATION_REPORT
+
+trace:
+  - backup_restore_validation_trace
+  - restore_test_runner_tool_trace
+  - dr_runbook_check_tool_trace
+  - rollback_validation_tool_trace
+
+gates:
+  - backup_restore_dr_pass_if_applicable
+  - restore_test_pass_if_applicable
+  - rollback_validation_pass_if_applicable
+
+on_pass: operations_readiness
+on_fail: planning
+rework_route: planning
+
+blocking_conditions:
+  - missing_restore_evidence
+  - failed_restore_test
+  - missing_rollback_validation
+  - rto_rpo_target_unmet
+  - missing_dr_runbook
+
+optional_conditions:
+  - persistent_data_present
+  - production_data_present
+  - stateful_service
+  - recovery_objectives_defined
+  - rto_rpo_targets_present
+
+conditional_required_gates:
+  - gate_id: backup_restore_dr_pass_if_applicable
+    required_when: >-
+      persistent_data_present == true or production_data_present == true or
+      stateful_service == true
+  - gate_id: restore_test_pass_if_applicable
+    required_when: persistent_data_present == true or production_data_present == true
+  - gate_id: rollback_validation_pass_if_applicable
+    required_when: stateful_service == true or recovery_objectives_defined == true
+
+max_iterations: 3

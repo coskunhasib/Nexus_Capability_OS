@@ -1,0 +1,37 @@
+id: compliance_matrix_builder
+name: Compliance Matrix Builder
+type: tool
+category: tool
+status: canonical
+purpose: Build the obligation->requirement->control COMPLIANCE_MATRIX for applicable
+  regulatory obligations.
+owner_domain: compliance
+provided_by_core_ability: null
+input_schema:
+  obligations:
+  - object
+  requirements: object
+  controls: object
+output_schema:
+  compliance_matrix_ref: string
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- compliance_agent
+allowed_usage:
+- Assemble the COMPLIANCE_MATRIX from policy obligations and trace coverage.
+forbidden_usage:
+- Asserting coverage for an obligation lacking a traced control.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - domain_regulatory_compliance_validation_if_applicable
+notes: Conditional (if-applicable) stage 21.

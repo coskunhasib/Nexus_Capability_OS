@@ -1,0 +1,146 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #24 of 31: performance_resilience (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   position #24, between accessibility_ux_validation_if_applicable (#23) and
+#   cost_resource_governance (#25)). Always-on stage — NO applicability_decision block.
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §8 (canonical stage block:
+#       owner_agent=performance_resilience_agent, on_pass=cost_resource_governance, on_fail=architecture),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Performance / Resilience = Required / always-on;
+#       latency, resource, capacity, failure behavior, resiliency checks),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.18 (legacy 23-stage draft; stale owner
+#       `tech_lead_agent` and the 23-stage assumption are NOT carried),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (always-on ordering; nfr_coverage_complete origin),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names: PERFORMANCE_REPORT,
+#       RESILIENCE_REPORT, RESOURCE_USAGE_DATA_IF_APPLICABLE, NFR_CATALOG).
+#
+# Reconciliation notes (legacy docs 04 §8 / 05 §4.18 -> Phase A canonical registry):
+#   - owner_agent = performance_resilience_agent (canonical + task-suggested + matches sdlc-stages/04 §8).
+#     Legacy doc 05 §4.18 used `tech_lead_agent` (non-canonical) — superseded by the canonical agent-role
+#     registry. Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are abilities
+#     only — NONE is used as owner_agent or as a team member, per locked decision.
+#   - NO-SELF-APPROVAL: this is a validation stage that AUTHORS its own artifacts (PERFORMANCE_REPORT,
+#     RESILIENCE_REPORT, PERFORMANCE_RESILIENCE_GATE_RESULT) from benchmark/resource measurements; it does
+#     not sign off another author's artifact. owner_agent = performance_resilience_agent is therefore
+#     compliant and no sdlc_team_lead review-gate override is required. no_self_approval_policy is carried
+#     as a standing pipeline guard.
+#   - LOCKED SKILL SEMANTICS: prism (divergent brainstorming) and verification-loop (bug/defect finding)
+#     are intentionally EXCLUDED. This stage measures latency/throughput/resource/capacity and reasons over
+#     failure behavior; it is neither divergent ideation (prism) nor a defect sweep (verification-loop,
+#     stage 15) and does NOT replace test_execution's performance smoke (stage 14).
+#   - model profile reconciled from legacy NON-CANONICAL `performance_analysis_model` to canonical
+#     `sdlc_reasoning_profile` (general performance/resilience reasoning; no perf-specific model exists in
+#     the locked registry) + `coder_engineering_model` (reason over code-level hotspots/budgets).
+#     Flagged in open_questions.
+#   - context profile reconciled from legacy NON-CANONICAL `performance_context_pack` to canonical
+#     `sdlc_run_context` + `architecture_context_pack` (NFRs / capacity / failure-mode design context) +
+#     `implementation_context_pack` (changeset + RESOURCE_USAGE_DATA). Flagged in open_questions.
+#   - governance `performance_governance` + `resilience_governance` are stage-specific gate profiles
+#     (canonical pattern permits snake_case stage-specific gate profiles); base sdlc_pipeline_governance /
+#     no_self_approval_policy / evidence_required_policy added per the standard stage pattern.
+#   - audit: `performance_evidence_schema` + `resilience_report_schema` are stage-appropriate EVIDENCE
+#     schemas; `stage_gate_trace_schema` is the TRACE schema (evidence vs trace kept distinct).
+#   - tools `benchmark_runner` + `resource_budget_checker` are canonical (side-effect tools -> imply
+#     governance + trace). `repo_reader` (read changeset hotspots) and `evidence_reader` (read NFR_CATALOG /
+#     architecture / RESOURCE_USAGE_DATA) are canonical side-effect-free readers.
+
+stage_id: performance_resilience
+name: Performance / Resilience
+purpose: >-
+  Validate the implemented changeset against its non-functional requirements — latency,
+  throughput, resource budgets, capacity/scalability and failure behavior — by running
+  benchmarks and resource-budget checks, reasoning over resilience failure modes (degradation,
+  retry/backoff, timeout, failover, graceful shutdown), and deciding the performance/resilience
+  gate under no-human governance before cost/resource governance. Performance budget failures
+  and unaccepted resilience risks block; this stage does not hunt for functional defects
+  (verification_loop_bug_finding) and does not re-run the functional test suite (test_execution).
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: performance_resilience_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Coder    # reason over code-level hotspots, allocations and resource-budget margins
+  - Memory   # recall NFR_CATALOG, architecture capacity/failure-mode design and prior perf decisions
+  - OS       # run benchmarks, load/soak probes and resource measurement in the build environment
+
+uses_skills:
+  - fmea        # reason about performance/resilience failure modes (degradation, retry storm, failover)
+  - gap-audit   # find uncovered NFRs / unmeasured performance & failure-behavior surface
+  - calibrate   # calibrate benchmark confidence and budget/headroom margins before deciding the gate
+  # NOTE: prism (divergent brainstorming) and verification-loop (bug/defect finding) are intentionally
+  #       EXCLUDED — locked skill semantics; this stage measures NFRs and reasons over failure behavior.
+
+uses_tools:
+  - benchmark_runner          # run latency/throughput/capacity & resilience probes (side-effect: governance + trace)
+  - resource_budget_checker   # verify CPU/RAM/IO/resource budgets vs NFR limits (side-effect: governance + trace)
+  - repo_reader               # read changeset hotspots / resource-sensitive code (side-effect-free)
+  - evidence_reader           # read NFR_CATALOG, architecture & RESOURCE_USAGE_DATA evidence (side-effect-free)
+  - artifact_writer           # write PERFORMANCE_REPORT / RESILIENCE_REPORT (side-effect: governance + trace)
+  - evidence_writer           # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - performance_governance    # stage-specific gate profile (performance budgets)
+  - resilience_governance     # stage-specific gate profile (failure-behavior / resilience risks)
+
+uses_audit_schemas:
+  - performance_evidence_schema   # evidence schema (distinct from trace)
+  - resilience_report_schema      # evidence schema (distinct from trace)
+  - stage_gate_trace_schema       # trace schema (gate evaluation provenance; distinct from evidence)
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile     # reconciled from legacy NON-CANONICAL performance_analysis_model
+  - coder_engineering_model    # reason over code-level performance hotspots / budgets
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - architecture_context_pack     # NFRs / capacity / failure-mode design context
+  - implementation_context_pack   # changeset + RESOURCE_USAGE_DATA under measurement
+
+inputs:
+  - CODE_CHANGESET_SUMMARY              # from implementation: what changed (perf-relevant code)
+  - NFR_CATALOG                         # from requirements: latency/throughput/capacity/resilience targets
+  - ARCHITECTURE_DOC                    # from architecture: capacity model & failure-behavior design
+  - RESOURCE_USAGE_DATA_IF_APPLICABLE   # from implementation (conditional): measured resource usage
+
+outputs:
+  - PERFORMANCE_REPORT
+  - RESILIENCE_REPORT
+  - PERFORMANCE_RESILIENCE_GATE_RESULT
+
+evidence:
+  - PERFORMANCE_REPORT
+  - RESILIENCE_REPORT
+  - PERFORMANCE_RESILIENCE_GATE_RESULT
+
+trace:
+  - performance_resilience_stage_trace
+  - benchmark_runner_tool_trace
+  - resource_budget_check_tool_trace
+  - performance_resilience_gate_trace
+
+gates:
+  - performance_resilience_pass_or_accepted
+  - resilience_risks_accepted_or_mitigated
+
+on_pass: cost_resource_governance
+on_fail: architecture
+rework_route: architecture
+
+blocking_conditions:
+  - performance_budget_failure
+  - unaccepted_resilience_risk
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

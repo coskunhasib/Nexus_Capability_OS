@@ -1,0 +1,43 @@
+id: fmea
+name: FMEA
+type: skill
+status: canonical
+semantic_category: failure_mode_analysis
+primary_purpose: structured failure-mode and effects analysis
+purpose: Structured failure-mode-and-effects analysis over failure-relevant surfaces
+  (security, risk register, data-leak/tenant isolation, data migration, performance/resilience,
+  data-loss/DR), producing a ranked failure-mode register.
+owner_domain: reasoning_methods
+allowed_usage:
+- failure_mode_analysis
+- effects_and_severity_ranking
+- risk_register_construction
+- script_failure_mode_analysis
+forbidden_usage:
+- brainstorming_only
+- defect_discovery_in_code
+governance_profiles:
+- skill_governance
+- locked_semantics_enforcement_policy
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  stages:
+  - sdlc:08-security-privacy-design
+  - sdlc:09-premortem-fmea
+  - sdlc:19-privacy-data-lifecycle-validation
+  - sdlc:22-data-migration-validation-if-applicable
+  - sdlc:24-performance-resilience
+  - sdlc:26-backup-restore-dr-validation-if-applicable
+  - skill_governance:script_reference_audit
+  agents:
+  - security_privacy_agent
+  - data_migration_agent
+  - performance_resilience_agent
+aliases: []
+notes: 6 SDLC stages — all failure-mode-relevant surfaces (review §3, CLEAN).

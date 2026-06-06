@@ -1,0 +1,100 @@
+# SDLC Pipeline — Stage Contract
+# Stage #3: skill_semantic_extraction (always-on)
+# Source of truth reconciled from:
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/01-foundation-and-requirements.md (§3, canonical)
+#   docs/nexus-ai-orchestration-model/legacy/03-skill-semantic-extraction.md (semantic detail + owner/reviewer recommendation)
+#   docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy 4.3/4.4 — skill_selection folded into this stage)
+#   configs/nexus-ai/sdlc_pipeline.yaml, artifact_registry.yaml, pipeline_contract_standard.yaml
+# Note: the legacy standalone `skill_selection` stage is folded into this stage; its binding
+#       gates (prism_bound_as_divergence, verification_loop_bound_as_bug_finding) live here.
+
+stage_id: skill_semantic_extraction
+name: Skill Semantic Extraction
+purpose: >-
+  Read every selected skill package (SKILL.md, scripts, references, assets, metadata) and extract
+  its primary purpose, semantic category, trigger/anti-trigger phrases, side effects, required tools,
+  misuse warnings, handoffs, and agent/stage binding proposal — so that no skill is wired into the
+  pipeline before its meaning is verified. Locks the two high-risk semantics: prism = divergence /
+  brainstorming, verification-loop = bug / defect finding.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: skill_librarian_agent
+sub_agents:
+  - skill_semantic_extractor_subagent
+
+uses_core_abilities:
+  - Memory
+  - OS
+
+uses_skills:
+  - skill-architect   # NON-CANONICAL vs locked registry; canonical prose + agent/sub-agent catalog name it. Flagged for registry formalization.
+  - gap-audit
+
+uses_tools:
+  - skill_package_reader
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - skill_governance
+  - skill_semantic_extraction_gate
+  - evidence_required_policy
+  - no_self_approval_policy
+
+uses_audit_schemas:
+  - skill_semantic_evidence_schema   # stage-appropriate evidence schema (distinct from trace)
+  - stage_gate_trace_schema          # trace schema
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - skill_semantic_context_pack   # canonical-prose name; NON-CANONICAL vs locked list. Flagged for formalization.
+
+inputs:
+  - DOMAIN_PROFILE_DECISION
+  - RISK_PROFILE
+  - SKILL_PACKAGES
+
+outputs:
+  - SKILL_SEMANTIC_CATALOG
+  - SKILL_MISUSE_WARNINGS
+  - SKILL_STAGE_BINDING_PROPOSAL
+  - SKILL_SEMANTIC_EXTRACTION_GATE_RESULT
+
+evidence:
+  - SKILL_SEMANTIC_CATALOG
+  - SKILL_MISUSE_WARNINGS
+  - SKILL_STAGE_BINDING_PROPOSAL
+  - SKILL_SEMANTIC_EXTRACTION_GATE_RESULT
+
+trace:
+  - skill_extraction_trace
+  - skill_package_reader_tool_trace
+  - skill_semantic_extraction_gate_trace
+
+gates:
+  - all_selected_skills_have_semantics
+  - misuse_warnings_present
+  - prism_bound_as_divergence
+  - verification_loop_bound_as_bug_finding
+  - skill_stage_binding_proposed
+  - skill_semantic_confidence_above_threshold
+
+on_pass: requirements
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - unknown_skill_semantics
+  - missing_misuse_warning
+  - prism_misclassified_as_bug_finding_or_readiness_gate
+  - verification_loop_misclassified_as_readiness_checklist
+  - skill_semantic_confidence_below_threshold
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

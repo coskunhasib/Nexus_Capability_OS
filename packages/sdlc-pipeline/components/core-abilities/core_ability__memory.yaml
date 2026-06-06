@@ -1,0 +1,88 @@
+id: memory
+name: Memory
+display_name: Memory
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+purpose: 'Long-term memory and recall capability: search, write, summarize, and recall
+  run/project context across stages and pipelines. Memory is a Core Ability (K-011);
+  its callable operations are tools in the Tools Registry. Context (run/agent working
+  context) is distinct and lives in the Context/Memory Profiles Registry, not here.'
+owner_domain: knowledge_memory
+model_provider_profiles:
+- memory_reasoning_profile
+exposed_tools:
+- memory_search
+- memory_write
+- memory_summarize
+- context_recall
+governance_profiles:
+- memory_access_governance
+- no_secret_read
+- no_silent_mutation
+audit_schemas:
+- core_ability_invocation_trace_schema
+- memory_update_trace_schema
+allowed_callers:
+- all_sdlc_agents
+- research_intake_agent
+- knowledge_memory_agents
+- operations_agents
+- skill_librarian_agent
+allowed_usage:
+- recall_prior_run_and_project_context
+- search_and_summarize_memory_and_run_history
+- persist_curated_learning_and_memory_items_via_memory_write
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- persisting_memory_without_an_explicit_tool_and_trace
+- surfacing_raw_secrets_from_stored_memory
+- being_conflated_with_context_memory_profiles_which_are_a_separate_registry
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - intake
+  - domain_risk_profile
+  - skill_semantic_extraction
+  - requirements
+  - requirements_review
+  - architecture
+  - architecture_review
+  - security_privacy_design
+  - premortem_fmea
+  - planning
+  - implementation
+  - code_review
+  - test_generation
+  - test_execution
+  - verification_loop_bug_finding
+  - security_validation
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - privacy_data_lifecycle_validation
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - data_migration_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  - evidence_graph_build
+  - development_completion
+  - release_candidate
+  - refraction_learning
+  capability_systems:
+  - nexus_ai_capability_system
+notes: Memory is bound by every SDLC stage (31/31) and by all 5 non-SDLC pipelines
+  plus the dedicated knowledge_memory_pipeline — the most universally-used ability
+  after Coder. Memory (the ability, with tools memory_search/memory_write/memory_summarize/context_recall)
+  is NOT the same as Context/Memory Profiles (run/agent working context), which are
+  owned by configs/nexus-ai/context_memory_profiles.yaml.

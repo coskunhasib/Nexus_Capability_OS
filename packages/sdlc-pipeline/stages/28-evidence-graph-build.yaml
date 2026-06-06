@@ -1,0 +1,183 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #28 of 31: evidence_graph_build (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; stage #28,
+#   between operations_readiness (#27) and development_completion (#29); produces the required
+#   always-on gate `evidence_graph_complete`).
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §2 (stage prose contract),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.20 (legacy detail; stale owner/skill/profile
+#     names superseded — do NOT carry the legacy 23-stage assumption / 4.x numbering),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (status: Required / always-on; the
+#     requirement -> design -> code -> test -> gate -> release trace),
+#   - docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md §6.8 (sub-agent id: evidence_trace_subagent),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (stage contract field set/order),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (release_evidence union; routing),
+#   - configs/nexus-ai/artifact_registry.yaml (completion_release group + release_evidence_required.core:
+#     EVIDENCE_GRAPH, TRACEABILITY_MATRIX are canonical UPPER_SNAKE artifacts).
+#
+# Reconciliation notes (legacy docs 05 / pipeline-model -> Phase A canonical registry):
+#   - owner_agent reconciled to canonical `evidence_graph_agent` (task-suggested; matches the more
+#     authoritative sdlc-stages/05 §2). Legacy 05-pipeline-model.md §4.20 and 04-team model §6.8
+#     name `release_manager_agent` as owner — SUPERSEDED here. Rationale beyond the registry:
+#     release_manager_agent owns development_completion (#29) and release_candidate (#30), the two
+#     stages that CONSUME this stage's EVIDENCE_GRAPH/TRACEABILITY_MATRIX to make the gate/release
+#     decisions; assigning the graph build to the distinct evidence_graph_agent keeps the artifact
+#     author separate from the downstream gate decider (no_self_approval-friendly). Flagged in
+#     open_questions because two canonical docs still carry the release_manager_agent owner.
+#   - sub_agent `evidence_trace_subagent` is canonical (Phase A sub-agent registry + team model §6.8,
+#     exact spelling). Legacy sdlc-stages/05 §2 used `evidence_trace_sub_agent` — normalized.
+#     RESOLVED: team model §6.8 originally listed evidence_trace_subagent.parent_agent =
+#     release_manager_agent; under the owner reconciliation above its effective parent for this stage is
+#     evidence_graph_agent, and team model §6.8 has since been corrected to match. Both are sdlc_team
+#     agent roles; parent_agent re-binding is reconciled (sub_agent_roles.yaml + team-model §6.8 agree).
+#   - Skill `evidence-graph-builder` is NON-CANONICAL: it is NOT in the canonical shared skills
+#     registry but is named by legacy docs 05/08/team-model and is load-bearing (it builds the
+#     requirement->...->release evidence DAG). Carried per the task's legacy-skill allowance and
+#     flagged in open_questions for registry formalization. `gap-audit` (canonical) is paired with
+#     it to detect orphan/broken-trace gaps. Skill semantics LOCKED honored: prism (divergent
+#     brainstorming) and verification-loop (bug/defect finding) are deliberately NOT used here —
+#     this stage assembles and audits an evidence/trace graph, it neither brainstorms nor hunts
+#     defects (defect finding is stage #15).
+#   - tools reconciled to canonical names: evidence_reader (read all upstream evidence/gate results),
+#     evidence_consistency_checker (verify the graph is internally consistent / no contradictions),
+#     requirements_trace_checker (verify requirement->artifact traceability coverage),
+#     diagram_generator (render the EVIDENCE_GRAPH as a graph artifact), artifact_writer +
+#     evidence_writer (persist outputs). Legacy listed only evidence_reader + artifact_writer; the
+#     added canonical tools make the gates (no-orphan / traceability-complete / consistency)
+#     mechanically checkable. Side-effect tools (writers, checkers, generator) imply governance + trace.
+#   - governance reconciled to canonical base profiles (sdlc_pipeline_governance,
+#     no_self_approval_policy, evidence_required_policy) + canonical-permitted stage-specific gate
+#     profiles. Legacy `evidence_graph_governance` / `traceability_required_gate` map onto the
+#     stage-specific snake_case profiles `evidence_graph_gate` and `traceability_required_gate`.
+#   - audit schemas: evidence and trace kept DISTINCT. Evidence schemas: sdlc_pipeline_evidence_schema
+#     (canonical) + stage-appropriate evidence_graph_evidence_schema and traceability_matrix_schema.
+#     Trace schema: stage_gate_trace_schema (canonical). Legacy `evidence_graph_schema` ->
+#     evidence_graph_evidence_schema (it is an EVIDENCE schema, not a trace schema) to keep the
+#     Evidence != Trace lock explicit.
+#   - model/context reconciled to canonical entries: there is no dedicated "evidence_graph" model or
+#     context pack in the canonical registry, so `release_reasoning_model` + `release_context_pack`
+#     are used (this stage directly assembles the release evidence chain immediately before
+#     development_completion/release_candidate). `sdlc_run_context` added as the base run context.
+#     Legacy `evidence_graph_model` / `evidence_graph_context_pack` are non-canonical and dropped;
+#     flagged in open_questions in case a dedicated evidence profile is later formalized.
+# No-self-approval: this stage AUTHORS the evidence graph / traceability matrix by reading upstream
+#   artifacts; it is not a review-gate adjudicating a single sibling author's artifact, and its
+#   owner_agent (evidence_graph_agent) differs from every upstream artifact author and from the
+#   downstream gate decider (release_manager_agent). The locked no_self_approval_policy is satisfied
+#   with a dedicated role; no sdlc_team_lead override is required.
+# Always-on (Required) stage: no applicability_decision block.
+
+stage_id: evidence_graph_build
+name: Evidence Graph Build
+purpose: >-
+  Assemble the end-to-end evidence DAG and traceability matrix that link every requirement and NFR
+  through design (architecture/ADRs/threat model), implementation changeset, generated/executed
+  tests, bug-finding, security/supply-chain/agentic-safety results, applicable product gates and
+  operations-readiness artifacts up to the release-candidate evidence — under no-human governance.
+  It verifies the chain is complete, internally consistent and free of orphan critical artifacts or
+  broken links, producing the EVIDENCE_GRAPH and TRACEABILITY_MATRIX that development_completion and
+  release_candidate consume. This is evidence/trace assembly and integrity auditing — NOT defect
+  finding and NOT divergent brainstorming.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: evidence_graph_agent
+sub_agents:
+  - evidence_trace_subagent
+
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty)
+uses_core_abilities:
+  - Memory   # recall the full run history: requirements, design, gate results, prior evidence
+  - OS       # invoke evidence/trace readers, checkers and the graph/diagram generator over artifacts
+
+uses_skills:
+  - evidence-graph-builder   # NON-CANONICAL (legacy docs 05/08/team-model): build the requirement->...->release evidence DAG
+  - gap-audit                # detect orphan critical artifacts, missing nodes and broken traceability links
+
+uses_tools:
+  - evidence_reader               # read all upstream evidence + gate results to build the graph
+  - evidence_consistency_checker  # verify graph internal consistency / no contradictory evidence (side-effect: governance + trace)
+  - requirements_trace_checker    # verify requirement -> artifact traceability coverage (side-effect: governance + trace)
+  - diagram_generator             # render EVIDENCE_GRAPH as a graph artifact (side-effect: governance + trace)
+  - artifact_writer               # write EVIDENCE_GRAPH / TRACEABILITY_MATRIX (side-effect: governance + trace)
+  - evidence_writer               # write stage evidence + gate result (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy        # evidence_graph_agent != upstream artifact authors and != release_manager_agent (downstream decider)
+  - evidence_required_policy
+  - evidence_graph_gate            # stage-specific gate profile (legacy evidence_graph_governance maps here)
+  - traceability_required_gate     # stage-specific gate profile
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema     # evidence schema (distinct from trace)
+  - evidence_graph_evidence_schema    # evidence schema: the assembled graph (distinct from trace)
+  - traceability_matrix_schema        # evidence schema: requirement->artifact matrix (distinct from trace)
+  - stage_gate_trace_schema           # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - release_reasoning_model   # canonical fit: assembles the release evidence chain pre-development_completion
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - release_context_pack
+
+inputs:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - THREAT_MODEL
+  - FMEA_RISK_REGISTER
+  - CODE_CHANGESET_SUMMARY
+  - CODE_REVIEW_REPORT
+  - TEST_EXECUTION_REPORT
+  - BUG_FINDING_REPORT
+  - SECURITY_SCAN_REPORT
+  - SUPPLY_CHAIN_GATE_RESULT
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+  - INCIDENT_RESPONSE_PLAN
+
+outputs:
+  - EVIDENCE_GRAPH
+  - TRACEABILITY_MATRIX
+  - EVIDENCE_GRAPH_GATE_RESULT
+
+evidence:
+  - EVIDENCE_GRAPH
+  - TRACEABILITY_MATRIX
+  - EVIDENCE_GRAPH_GATE_RESULT
+
+trace:
+  - evidence_graph_build_stage_trace
+  - evidence_graph_builder_skill_activation_trace
+  - evidence_consistency_checker_tool_trace
+  - requirements_trace_checker_tool_trace
+  - evidence_graph_gate_decision_trace
+
+gates:
+  - evidence_graph_complete
+  - traceability_matrix_complete
+  - no_orphan_critical_artifacts
+  - evidence_graph_internally_consistent
+
+on_pass: development_completion
+on_fail: relevant_failed_stage
+rework_route: relevant_failed_stage
+
+blocking_conditions:
+  - missing_required_evidence
+  - orphan_critical_artifact
+  - broken_traceability_link
+  - inconsistent_evidence_graph
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

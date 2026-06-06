@@ -1,0 +1,35 @@
+id: backup_plan_checker
+name: Backup Plan Checker
+type: tool
+category: tool
+status: canonical
+purpose: Verify backup scope/frequency/retention adequacy vs recovery objectives and
+  rollback prerequisites.
+owner_domain: operations_readiness
+provided_by_core_ability: null
+input_schema:
+  backup_plan: object
+  recovery_objectives: object
+output_schema:
+  backup_findings: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- operations_readiness_agent
+allowed_usage:
+- Read-only adequacy check of the backup plan (stages 26
+- 27).
+forbidden_usage:
+- Asserting adequacy without checking recovery objectives.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+notes: Shared by stage 26 (if-applicable) and stage 27.

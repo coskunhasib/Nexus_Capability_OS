@@ -1,0 +1,26 @@
+id: agentic_safety_governance
+name: Agentic Safety Governance
+type: stage_governance_profile
+status: canonical
+purpose: Stage-18 governance over AI agent safety evaluation (prompt-injection / tool-misuse
+  / context-poisoning).
+owner_domain: ai_safety
+allowed_usage:
+- Govern the ai_agent_safety_evaluation stage.
+forbidden_usage:
+- Used outside ai_agent_safety_evaluation.
+governance_profiles:
+- sdlc_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- ai_agent_safety_evaluation
+severity_default: blocker
+used_by:
+- ai_agent_safety_evaluation
+- sdlc_pipeline
+notes: Co-listed with tool_misuse_governance, context_safety_governance, evidence_integrity_gate.

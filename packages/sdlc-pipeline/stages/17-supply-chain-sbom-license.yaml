@@ -1,0 +1,136 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #17 of 31: supply_chain_sbom_license (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set).
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §2 (stage prose & legacy detail),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; stale 23-stage assumption NOT carried),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Supply Chain / SBOM / License = Required / always-on;
+#       gates supply_chain_pass / license_pass / sbom_present; provenance in scope),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract format),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (always gates: supply_chain_pass, license_pass, sbom_present;
+#       on_pass = ai_agent_safety_evaluation),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
+#       SBOM, LICENSE_REPORT, DEPENDENCY_RISK_REPORT, SUPPLY_CHAIN_GATE_RESULT).
+#
+# Reconciliation notes (legacy doc 04 §2 -> Phase A canonical registry):
+#   - owner_agent kept as canonical `supply_chain_agent`.
+#   - Tool `package_reputation_checker` is NOT in the canonical shared tool registry; it is
+#     load-bearing for package/provenance reputation checks and is carried from legacy doc 04.
+#     Flagged in open_questions for registry formalization.
+#   - Legacy model profile `supply_chain_analysis_model` and context profile `supply_chain_context_pack`
+#     are non-canonical; reconciled to the closest canonical profiles `security_analysis_model` and
+#     `security_context_pack`. Flagged in open_questions.
+#   - Legacy audit schemas `sbom_evidence_schema` / `license_report_schema` / `supply_chain_trace_schema`
+#     are non-canonical; reconciled to the canonical base evidence schema + a stage-appropriate evidence
+#     schema (`supply_chain_evidence_schema`) and the canonical trace schema (`stage_gate_trace_schema`).
+#     Evidence and trace schemas kept distinct. Flagged in open_questions.
+#   - Legacy input `DEPENDENCY_MANIFESTS` is not a registered artifact; dependency manifests are read
+#     directly from the repo via `repo_reader` rather than passed as a named artifact. Flagged.
+#
+# No-self-approval: this is an author/scan stage (it produces SBOM / license / dependency-risk findings
+# and gates ON ITS OWN scan output); it does not review another author's artifact, so
+# owner_agent = supply_chain_agent is compliant (same pattern as security_validation / premortem_fmea).
+# Side-effect tools (artifact_writer, evidence_writer, sbom_generator, *_scanner, *_checker) imply
+# governance + trace.
+
+stage_id: supply_chain_sbom_license
+name: Supply Chain / SBOM / License
+purpose: >-
+  Validate the software supply chain of the implemented changeset: generate a Software Bill of
+  Materials (SBOM), scan declared and transitive dependencies for known vulnerabilities and
+  provenance/reputation risk, and verify that every component license is permitted and policy
+  compliant. Produce a gated supply-chain decision so that no release candidate carries a
+  forbidden license, a critical dependency risk, or a missing/incomplete SBOM.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: supply_chain_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Coder    # parse manifests / lockfiles, interpret dependency graph and scanner output
+  - Memory   # read upstream changeset, security findings and prior supply-chain baselines
+  - Web      # resolve advisory feeds, license metadata and package reputation sources
+  - OS       # run dependency / SBOM / license tooling against the repo and package tree
+
+uses_skills:
+  - gap-audit   # find uninventoried dependencies, license/SBOM coverage gaps
+  - calibrate   # calibrate dependency-risk / vulnerability severity before gating
+
+uses_tools:
+  - repo_reader                # read dependency manifests / lockfiles from the repo
+  - dependency_scanner         # scan deps for known vulnerabilities (side-effect: governance + trace)
+  - sbom_generator             # generate the SBOM (side-effect: governance + trace)
+  - license_checker            # resolve & evaluate component licenses against policy (side-effect: governance + trace)
+  - package_reputation_checker # NON-CANONICAL (legacy doc 04): package provenance/reputation risk
+  - policy_query               # query forbidden-license / allowed-license policy for the gate
+  - artifact_writer            # write SBOM / license / dependency-risk artifacts (side-effect: governance + trace)
+  - evidence_writer            # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - supply_chain_governance
+  - license_compliance_gate            # stage-specific gate profile (snake_case)
+  - sbom_required_gate                 # stage-specific gate profile (snake_case)
+  - supply_chain_sbom_license_gate     # stage-specific gate profile (snake_case)
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema   # canonical base evidence schema (distinct from trace)
+  - supply_chain_evidence_schema    # stage-appropriate evidence schema (SBOM / license / dep-risk)
+  - stage_gate_trace_schema         # canonical trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - security_analysis_model   # canonical reconciliation of legacy `supply_chain_analysis_model`
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - security_context_pack   # canonical reconciliation of legacy `supply_chain_context_pack`
+
+inputs:
+  - CODE_CHANGESET_SUMMARY
+  - IMPLEMENTATION_NOTES
+  - SECURITY_FINDINGS_NORMALIZED
+
+outputs:
+  - SBOM
+  - LICENSE_REPORT
+  - DEPENDENCY_RISK_REPORT
+  - SUPPLY_CHAIN_GATE_RESULT
+
+evidence:
+  - SBOM
+  - LICENSE_REPORT
+  - DEPENDENCY_RISK_REPORT
+  - SUPPLY_CHAIN_GATE_RESULT
+
+trace:
+  - supply_chain_sbom_license_stage_trace
+  - dependency_scanner_tool_trace
+  - sbom_generation_tool_trace
+  - license_checker_tool_trace
+  - policy_query_tool_trace
+
+gates:
+  - sbom_present
+  - license_pass
+  - supply_chain_pass
+
+on_pass: ai_agent_safety_evaluation
+on_fail: implementation
+rework_route: implementation
+
+blocking_conditions:
+  - missing_sbom
+  - forbidden_license
+  - critical_dependency_risk
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

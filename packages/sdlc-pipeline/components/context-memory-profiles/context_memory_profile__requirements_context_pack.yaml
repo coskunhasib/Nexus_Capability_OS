@@ -1,0 +1,50 @@
+id: requirements_context_pack
+name: Requirements Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'Front-of-pipeline product/requirements working context: product brief, initial
+  scope, success metrics, REQUIREMENTS_SPEC, NFR_CATALOG, ACCEPTANCE_CRITERIA and
+  the requirements trace start. Consumed by requirements authoring/review and by any
+  stage that must trace back to a requirement (planning, compliance, accessibility/UX
+  flows).'
+owner_domain: sdlc
+allowed_usage:
+- read_by_requirements_authoring_and_review
+- provide_requirement_traceability_anchors_to_downstream_stages
+forbidden_usage:
+- used_to_approve_its_own_authoring_stage
+- treated_as_architecture_or_implementation_context
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_requirements_artifacts
+- product_and_scope_artifacts
+- sdlc_run_context
+- durable_memory_prior_requirements
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_requirements_domain
+- traceability_links_must_resolve_to_requirement_ids
+redaction_rules:
+- no_raw_secrets
+- redact_customer_pii_in_examples
+governance_profiles:
+- requirements_governance
+- context_access_governance
+audit_schemas:
+- requirements_evidence_schema
+- context_usage_trace_schema
+used_by:
+- sdlc_pipeline
+- stage:intake
+- stage:requirements
+- stage:requirements_review
+- stage:planning
+- stage:domain_regulatory_compliance_validation_if_applicable
+- stage:accessibility_ux_validation_if_applicable
+aliases: []
+notes: 'Canonical product/requirements pack. The legacy compliance_context_pack (stage
+  21) was split: its regulatory->requirement-trace portion maps here, its security-controls
+  portion maps to security_context_pack. The split is recorded as reconciliation metadata,
+  not a read-time alias.'

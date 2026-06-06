@@ -1,0 +1,29 @@
+required_gates:
+  always:
+  - requirements_complete
+  - nfr_coverage_complete
+  - architecture_complete
+  - adr_coverage_complete
+  - security_privacy_design_complete
+  - risk_register_reviewed
+  - implementation_scope_clean
+  - code_review_pass
+  - tests_pass
+  - verification_loop_bug_finding_pass
+  - security_validation_pass
+  - supply_chain_pass
+  - license_pass
+  - sbom_present
+  - performance_resilience_pass_or_accepted
+  - agentic_safety_eval_pass
+  - operations_readiness_pass
+  - evidence_graph_complete
+  - no_blocking_policy_failure
+  conditional:
+  - accessibility_pass_if_applicable
+  - data_migration_pass_if_applicable
+  - privacy_lifecycle_pass_if_applicable
+  - api_contract_compatibility_pass_if_applicable
+  - backup_restore_dr_pass_if_applicable
+  - compliance_pass_if_applicable
+  - cost_resource_governance_pass_if_applicable

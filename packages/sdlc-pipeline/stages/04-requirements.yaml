@@ -1,0 +1,102 @@
+# SDLC Pipeline — Stage Contract
+# Stage #4: requirements (always-on)
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Canonical pipeline: configs/nexus-ai/sdlc_pipeline.yaml (31-stage set)
+# Reconciliation: legacy docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (§4.5) and
+#   sdlc-stages/01-foundation-and-requirements.md (§4) used owner_agent
+#   `requirements_agent`; remapped to canonical `product_requirements_agent`
+#   per Phase A registry and phase-0-context-lock-report (open_questions #1).
+# Locked decisions honoured: K-008 (Evidence != Trace), no_self_approval_policy
+#   (requirements is an authoring stage; its review is the separate
+#   requirements_review stage #5, so no self-approval conflict here).
+
+version: draft-0.1
+stage_id: requirements
+name: Requirements
+purpose: >-
+  Ürün brief, domain/risk profili ve skill semantic katalogunu girdi alarak
+  fonksiyonel gereksinimleri, NFR katalogunu, acceptance criteria'yı ve
+  requirements-to-source traceability başlangıcını üretmek; her gereksinimi
+  kullanıcı niyetine ve başarı metriklerine bağlanabilir, test edilebilir ve
+  belirsizlikten arındırılmış hale getirmek.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: product_requirements_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+
+uses_skills:
+  - prism            # divergent requirement elicitation (LOCKED: brainstorming/divergence only)
+  - prompt-fidelity  # keep requirements faithful to USER_GOAL / PRODUCT_BRIEF intent
+  - gap-audit        # surface missing functional/non-functional coverage
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+  - requirements_trace_checker  # seed and validate REQUIREMENTS_TRACE_START linkage
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - evidence_required_policy
+  - requirements_acceptance_gate  # stage-specific gate profile (snake_case)
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema  # evidence (decision proof)
+  - stage_gate_trace_schema        # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - requirements_context_pack
+
+inputs:
+  - PRODUCT_BRIEF
+  - INITIAL_SCOPE
+  - SUCCESS_METRICS
+  - DOMAIN_PROFILE_DECISION
+  - RISK_PROFILE
+  - SKILL_SEMANTIC_CATALOG
+
+outputs:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ACCEPTANCE_CRITERIA
+  - REQUIREMENTS_TRACE_START
+
+evidence:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ACCEPTANCE_CRITERIA
+  - REQUIREMENTS_TRACE_START
+
+trace:
+  - requirements_agent_trace
+  - requirements_gate_decision_trace
+
+gates:
+  - requirements_present
+  - nfr_catalog_present
+  - acceptance_criteria_present
+  - requirements_traceable
+
+on_pass: requirements_review
+on_fail: requirements
+rework_route: intake
+
+blocking_conditions:
+  - missing_acceptance_criteria
+  - unresolved_requirement_ambiguity
+  - nfr_catalog_missing
+  - requirement_not_traceable_to_product_goal
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

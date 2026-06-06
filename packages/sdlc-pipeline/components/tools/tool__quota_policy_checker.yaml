@@ -1,0 +1,32 @@
+id: quota_policy_checker
+name: Quota Policy Checker
+type: tool
+category: tool
+status: canonical
+purpose: Verify quota / rate-limit / cost-cap policy compliance.
+owner_domain: cost_resource
+provided_by_core_ability: null
+input_schema:
+  usage: object
+  quota_policy: object
+output_schema:
+  quota_findings: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- cost_resource_agent
+allowed_usage:
+- Read-only quota/cost-cap compliance check; policy basis via policy_query.
+forbidden_usage:
+- Raising quota silently to force compliance.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - cost_resource_governance
+notes: Side-effect-free check.

@@ -1,0 +1,56 @@
+id: coder_engineering_model
+name: Coder Engineering Model
+type: model_provider_profile
+status: canonical
+purpose: 'Code-domain reasoning: authoring, code review, test generation/execution
+  analysis, data-migration and code-level performance reasoning. The profile consumed
+  by the Coder Core Ability.'
+owner_domain: engineering
+provider_type: code_llm
+model_family: code_reasoning
+capability_scope:
+- code_generation
+- code_review_reasoning
+- test_authoring_and_analysis
+- migration_and_data_change_reasoning
+- code_level_performance_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: large
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: sdlc_reasoning_profile
+governance_profiles:
+- sdlc_pipeline_governance
+- code_generation_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- code authoring, review, test generation/execution analysis, migration reasoning
+- consumed by the Coder Core Ability
+forbidden_usage:
+- security adjudication where security_analysis_model is required
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - implementation
+  - code_review
+  - test_generation
+  - test_execution
+  - data_migration_validation_if_applicable
+  - performance_resilience
+  core_abilities:
+  - Coder
+aliases:
+- code_review_model
+- test_generation_model
+- test_analysis_model
+- data_migration_analysis_model
+notes: Bound to the Coder Core Ability (01-nexus-ai-operating-model.md §11). Four
+  legacy stage-specific model names collapse onto it (see aliases).

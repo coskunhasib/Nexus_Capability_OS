@@ -1,0 +1,88 @@
+id: os
+name: OS
+display_name: OS
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+default_risk_level: high
+purpose: 'Operating-system and execution capability: read/write files and run shell
+  commands / processes in the (sandboxed) build environment to drive test runners,
+  scanners, eval harnesses, migration checks, and artifact/evidence I/O. OS is a Core
+  Ability (K-011); its callable operations are tools in the Tools Registry. It is
+  the highest-risk ability and provides the side-effecting tools that Coder/Vision
+  reasoning requests.'
+owner_domain: system_execution
+model_provider_profiles: []
+exposed_tools:
+- file_read
+- file_write
+- shell_exec
+- process_run
+governance_profiles:
+- system_access_governance
+- sandbox_execution_governance
+- no_silent_mutation
+- no_destructive_action_without_gate
+- no_secret_read
+audit_schemas:
+- core_ability_invocation_trace_schema
+- code_change_trace_schema
+- evidence_integrity_report_schema
+allowed_callers:
+- skill_librarian_agent
+- engineering_agent
+- code_reviewer_agent
+- qa_agent
+- security_validation_agent
+- privacy_agent
+- data_migration_agent
+- accessibility_ux_agent
+- performance_resilience_agent
+- operations_readiness_agent
+- evidence_graph_agent
+- refraction_learning_agent
+allowed_usage:
+- read_and_write_files_in_the_sandboxed_build_environment
+- run_test_runners_scanners_eval_harnesses_and_migration_checks
+- exercise_backup_restore_rollback_and_runbook_steps_in_a_recovery_environment
+- drive_artifact_and_evidence_io_for_pipeline_stages
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- executing_shell_or_processes_outside_a_sandbox_or_without_timeout_and_trace
+- performing_destructive_actions_without_an_explicit_policy_gate_and_evidence
+- mutating_the_environment_or_repository_silently
+- reading_or_emitting_raw_secrets
+- performing_a_production_deploy
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  stages:
+  - skill_semantic_extraction
+  - implementation
+  - code_review
+  - test_execution
+  - verification_loop_bug_finding
+  - security_validation
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - privacy_data_lifecycle_validation
+  - data_migration_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  - evidence_graph_build
+  - refraction_learning
+  capability_systems:
+  - nexus_ai_capability_system
+notes: 'OS is the HIGHEST-risk ability (filesystem write + shell + process execution)
+  and therefore carries the strictest governance stack: system_access_governance +
+  sandbox_execution_governance plus the no_silent_mutation / no_destructive_action_without_gate
+  / no_secret_read blocker policies. Per K-011/D-014 the filesystem/shell tools (file_read/file_write/shell_exec/
+  process_run) and the engineering tools that Coder reasons with (repo_reader/repo_writer/
+  test_runner) are OS-provided in the Tools Registry, keeping tool ownership single-sourced.'

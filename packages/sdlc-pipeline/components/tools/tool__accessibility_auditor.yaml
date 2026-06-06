@@ -1,0 +1,36 @@
+id: accessibility_auditor
+name: Accessibility Auditor
+type: tool
+category: tool
+status: canonical
+purpose: Automated WCAG-style accessibility audit of UI source/markup; emit ACCESSIBILITY_REPORT.
+owner_domain: accessibility_ux
+provided_by_core_ability: null
+input_schema:
+  ui_source: object
+  a11y_ruleset: object
+output_schema:
+  a11y_findings:
+  - object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- ux_accessibility_agent
+allowed_usage:
+- Run automated a11y audit for stage 23.
+forbidden_usage:
+- Passing the a11y gate without addressing blocking violations.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - accessibility_ux_validation_if_applicable
+notes: Canonical a11y tool; ux_flow_checker and contrast_checker (below) are NON-CANONICAL
+  legacy companions.

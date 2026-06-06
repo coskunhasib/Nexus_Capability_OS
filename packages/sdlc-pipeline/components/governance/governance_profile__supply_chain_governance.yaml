@@ -1,0 +1,24 @@
+id: supply_chain_governance
+name: Supply Chain Governance
+type: stage_governance_profile
+status: canonical
+purpose: Stage-17 governance over SBOM, license compliance, and dependency risk.
+owner_domain: security_engineering
+allowed_usage:
+- Govern the supply_chain_sbom_license stage.
+forbidden_usage:
+- Used outside supply_chain_sbom_license.
+governance_profiles:
+- sdlc_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- supply_chain_sbom_license
+severity_default: blocker
+used_by:
+- supply_chain_sbom_license
+notes: Co-listed with license_compliance_gate, sbom_required_gate, supply_chain_sbom_license_gate.

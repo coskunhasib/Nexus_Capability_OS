@@ -1,0 +1,195 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #23 of 31: accessibility_ux_validation_if_applicable (CONDITIONAL)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   position #23, between data_migration_validation_if_applicable (#22) and performance_resilience
+#   (#24)). Pipeline-level conditional gate produced here: accessibility_pass_if_applicable.
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §7 (stage prose — the
+#     authoritative legacy contract for this stage),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §4, §6, §7
+#       (UI_CHANGESET_SUMMARY_IF_APPLICABLE produced by implementation; applicability_decision
+#        standard -> ACCESSIBILITY_UX_APPLICABILITY_DECISION),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §3 (Accessibility / UX Validation =
+#       "Conditional Required"; accessibility_pass_if_applicable / data_migration_pass_if_applicable),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4, §13 (stage contract template +
+#       conditional gate rule: required_when: product_has_ui == true),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; no accessibility-specific per-stage
+#       names found — the stale 23-stage assumption is NOT carried),
+#   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
+#       ACCESSIBILITY_REPORT, UX_VALIDATION_REPORT, UI_RELEASE_GATE_RESULT;
+#       conditional release evidence: ACCESSIBILITY_REPORT under release_evidence_required.conditional).
+#
+# Reconciliation notes (legacy doc 04 §7 -> Phase A canonical registry):
+#   - owner_agent: canonical `ux_accessibility_agent` (suggested + canonical role). This is a
+#     validation stage that AUTHORS its own reports (ACCESSIBILITY_REPORT, UX_VALIDATION_REPORT) and
+#     decides the UI release gate; it does not sign off another agent's artifact, so it is
+#     no_self_approval compliant (not a peer-review gate of another author's work).
+#   - Core Abilities [Vision, Coder, Memory, Web, OS] are abilities only — NONE is used as
+#     owner_agent or as a team member, per locked decision K-003/K-004. Vision is load-bearing here
+#     (visual contrast, focus-indicator, layout/state inspection). OS added to legacy [Vision, Coder,
+#     Memory, Web] to execute the accessibility auditor against the built/rendered UI.
+#   - Skills: legacy [gap-audit, prompt-fidelity] retained (both canonical). prompt-fidelity is used
+#     in-scope to check UI copy/labels/error+empty-state text against the product brief / acceptance
+#     criteria. Added canonical `sentinel` to premortem the UI release gate before a pass, matching
+#     sibling product-gate stages. `prism` (divergent brainstorming) and `verification-loop`
+#     (bug/defect sweep = stage 15) are deliberately NOT used — this stage is conformance validation,
+#     not ideation and not the defect-finding loop.
+#   - Tools: `accessibility_auditor` is the canonical a11y tool. Legacy `ux_flow_checker` and
+#     `contrast_checker` are NON-CANONICAL (not in the Phase A shared Tools registry); they are
+#     load-bearing for UX-flow / error+empty-state coverage and color-contrast checks, carried from
+#     legacy prose and FLAGGED in open_questions for registry formalization. Added canonical
+#     `repo_reader` (inspect UI source/markup/templates) and `evidence_reader` (read upstream
+#     UI_CHANGESET_SUMMARY_IF_APPLICABLE / PRODUCT_BRIEF / ACCEPTANCE_CRITERIA). Side-effect tools
+#     (accessibility_auditor, ux_flow_checker, contrast_checker, artifact_writer, evidence_writer)
+#     imply governance + trace.
+#   - model profile reconciled from legacy `ux_accessibility_model` (NON-CANONICAL) to canonical
+#     `vision_model` (visual a11y/UX is a vision-domain reasoning task) + `sdlc_reasoning_profile`
+#     (general stage reasoning). Flagged in open_questions.
+#   - context profile reconciled from legacy `ux_accessibility_context_pack` (NON-CANONICAL) to
+#     canonical `sdlc_run_context` + `implementation_context_pack` (consumes the UI changeset) +
+#     `requirements_context_pack` (consumes product brief / acceptance criteria for UX-flow checks).
+#     Flagged in open_questions.
+#   - governance: legacy `accessibility_governance`, `ux_validation_governance`, `ui_release_gate`
+#     are treated as canonical-permitted stage-specific gate profiles (snake_case); canonical base
+#     profiles sdlc_pipeline_governance / no_self_approval_policy / evidence_required_policy added per
+#     the standard stage pattern.
+#   - audit: accessibility_evidence_schema / ux_validation_report_schema are EVIDENCE schemas;
+#     stage_gate_trace_schema is the TRACE schema (evidence vs trace kept DISTINCT per K-008).
+#   - routing: on_pass = performance_resilience (canonical, doc 04 §7). on_fail reconciled from legacy
+#     `implementation` to `architecture` per the Phase A task instruction (sibling product gates
+#     performance_resilience and api_contract_compatibility_validation also fail back to architecture
+#     for design-rooted defects). rework_route = relevant_failed_stage so the orchestrator routes
+#     STRUCTURAL UX/IA defects to architecture and pure code-level a11y defects back to implementation.
+#     This on_fail divergence from legacy is FLAGGED in open_questions.
+#   - Conditional stage per gap-audit "Conditional Required": applicability_decision block present
+#     (required_when: product_has_ui == true ...), and conditional_required_gates declared.
+
+stage_id: accessibility_ux_validation_if_applicable
+name: Accessibility / UX Validation (If Applicable)
+purpose: >-
+  When the change ships a user-facing interface, validate accessibility conformance (WCAG-style
+  criteria: perceivable contrast, keyboard/focus operability, semantic structure, alt text, ARIA
+  roles) and core UX quality (primary task flows, error states, empty states, loading/disabled
+  states, basic usability) against the UI changeset and product brief, and decide the UI release
+  gate under no-human governance before performance & resilience validation.
+
+# CONDITIONAL stage: applicability_decision (with required_when) appears right after purpose.
+applicability_decision:
+  decision: ACCESSIBILITY_UX_APPLICABILITY_DECISION
+  required_when: >-
+    product_has_ui == true or ui_changeset_present == true or
+    user_facing_interaction_changed == true
+  produced_by: ux_accessibility_agent
+  on_not_applicable:
+    route: performance_resilience
+    record_evidence: ACCESSIBILITY_UX_APPLICABILITY_DECISION
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: ux_accessibility_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present)
+uses_core_abilities:
+  - Vision   # inspect rendered UI: contrast, focus indicators, layout, visual state
+  - Coder    # inspect UI markup/templates/components in the changeset (semantics, ARIA, labels)
+  - Memory   # recall product brief, acceptance criteria and prior UX/a11y decisions
+  - Web      # source current accessibility criteria / WCAG technique references
+  - OS       # run the accessibility auditor against the built/rendered UI
+
+uses_skills:
+  - gap-audit         # find uncovered a11y / UX-flow requirements (WCAG criteria + flow/state gaps)
+  - prompt-fidelity   # verify UI copy / labels / error+empty-state text match the product brief
+  - sentinel          # premortem the UI release gate decision before committing to a pass
+
+uses_tools:
+  - accessibility_auditor   # canonical: automated WCAG-style a11y audit (side-effect: governance + trace)
+  - ux_flow_checker         # NON-CANONICAL (legacy): primary-flow / error / empty / loading-state coverage
+  - contrast_checker        # NON-CANONICAL (legacy): color-contrast / perceivability checks
+  - repo_reader             # inspect UI source/markup/templates (side-effect-free)
+  - evidence_reader         # read upstream UI changeset / product brief / acceptance criteria
+  - artifact_writer         # write accessibility / UX reports (side-effect: governance + trace)
+  - evidence_writer         # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - accessibility_governance     # stage-specific gate profile
+  - ux_validation_governance     # stage-specific gate profile
+  - ui_release_gate              # stage-specific gate profile
+
+uses_audit_schemas:
+  - accessibility_evidence_schema   # evidence schema
+  - ux_validation_report_schema     # evidence schema
+  - stage_gate_trace_schema         # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - vision_model              # visual a11y / UX reasoning over rendered UI
+  - sdlc_reasoning_profile    # general stage reasoning / gate decision
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - implementation_context_pack    # consumed: UI changeset / components / markup
+  - requirements_context_pack      # consumed: product brief / acceptance criteria for UX flows
+
+inputs:
+  - UI_CHANGESET_SUMMARY_IF_APPLICABLE   # from implementation (sdlc-stages/06 §4)
+  - PRODUCT_BRIEF                        # from intake: intended product / UX intent
+  - ACCEPTANCE_CRITERIA                  # from requirements: expected user-facing behavior
+  - NFR_CATALOG                          # accessibility/usability targets are often captured as NFRs
+  - DOMAIN_PROFILE_DECISION              # determines product_has_ui / UI applicability
+
+outputs:
+  - ACCESSIBILITY_UX_APPLICABILITY_DECISION
+  - ACCESSIBILITY_REPORT
+  - UX_VALIDATION_REPORT
+  - UI_RELEASE_GATE_RESULT
+
+evidence:
+  - ACCESSIBILITY_UX_APPLICABILITY_DECISION
+  - ACCESSIBILITY_REPORT
+  - UX_VALIDATION_REPORT
+  - UI_RELEASE_GATE_RESULT
+
+trace:
+  - accessibility_ux_validation_stage_trace
+  - accessibility_audit_tool_trace
+  - ux_flow_check_tool_trace
+  - contrast_check_tool_trace
+  - ui_release_gate_decision_trace
+
+gates:
+  - accessibility_pass_if_applicable
+  - ux_validation_pass_if_applicable
+  - ui_release_gate_pass_if_applicable
+
+on_pass: performance_resilience
+on_fail: architecture
+rework_route: relevant_failed_stage
+
+blocking_conditions:
+  - accessibility_blocker                  # e.g. critical WCAG failure (no keyboard path, missing labels)
+  - insufficient_color_contrast
+  - critical_ux_flow_failure               # primary task flow broken / unrecoverable
+  - missing_error_or_empty_state_handling
+
+optional_conditions:
+  - product_has_ui
+  - ui_changeset_present
+  - user_facing_interaction_changed
+
+conditional_required_gates:
+  - gate_id: accessibility_pass_if_applicable
+    required_when: >-
+      product_has_ui == true or ui_changeset_present == true or
+      user_facing_interaction_changed == true
+  - gate_id: ux_validation_pass_if_applicable
+    required_when: >-
+      product_has_ui == true or user_facing_interaction_changed == true
+  - gate_id: ui_release_gate_pass_if_applicable
+    required_when: product_has_ui == true or ui_changeset_present == true
+
+max_iterations: 3

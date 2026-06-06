@@ -1,0 +1,37 @@
+id: dr_runbook_checker
+name: DR Runbook Checker
+type: tool
+category: tool
+status: canonical
+purpose: Verify runbook / DR-runbook completeness, RTO/RPO coverage, failover steps,
+  and executability. Absorbs the legacy generic runbook_checker.
+owner_domain: operations_readiness
+provided_by_core_ability: null
+input_schema:
+  runbook: object
+  dr_objectives: object
+output_schema:
+  runbook_findings: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- operations_readiness_agent
+allowed_usage:
+- Read-only completeness/executability check of runbook/DR-runbook (stages 26
+- 27).
+forbidden_usage:
+- Marking a runbook complete without RTO/RPO/failover coverage.
+aliases:
+- runbook_checker
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+notes: Canonical runbook checker; absorbs the legacy runbook_checker name.

@@ -1,0 +1,43 @@
+id: scanner_runner
+name: Scanner Runner
+type: tool
+category: tool
+status: canonical
+purpose: Run SAST / SCA / secret / container / IaC scans and emit findings. Secret
+  scanning is one scanner mode (the legacy secret_scanner is folded in here).
+owner_domain: security
+provided_by_core_ability: null
+input_schema:
+  scan_targets:
+  - string
+  scan_modes:
+  - string
+output_schema:
+  findings:
+  - object
+  report_ref: string
+side_effects: executes_scanners_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- security_validation_agent
+allowed_usage:
+- Execute security scans inside the sandbox; emit SECURITY_SCAN_REPORT findings.
+forbidden_usage:
+- Scanning out-of-scope targets; suppressing high/critical findings.
+aliases:
+- secret_scanner
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - security_validation
+notes: Raw scanner output normalization/dedup is the skill `scanner-result-normalizer`
+  (Skill != Tool), not part of this tool.

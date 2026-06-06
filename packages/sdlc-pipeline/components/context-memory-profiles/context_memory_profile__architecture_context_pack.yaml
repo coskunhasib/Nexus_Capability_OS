@@ -1,0 +1,50 @@
+id: architecture_context_pack
+name: Architecture Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'Architecture/ADR working context: ARCHITECTURE_DOC, SYSTEM_CONTEXT_DIAGRAM,
+  ADR_INDEX, NFR/capacity/failure-mode design context and interface/contract design.
+  Consumed by architecture authoring/review, premortem/FMEA, API-contract validation,
+  and performance/resilience (NFR + capacity + failure-mode design context).'
+owner_domain: sdlc
+allowed_usage:
+- read_by_architecture_authoring_review_and_design_dependent_stages
+- supply_adr_and_nfr_design_context
+forbidden_usage:
+- used_as_implementation_changeset_context
+- used_to_self_approve_the_architecture_stage
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_architecture_artifacts
+- requirements_context_pack
+- sdlc_run_context
+- durable_memory_prior_architecture
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_architecture_domain
+- adrs_must_link_to_decisions
+redaction_rules:
+- no_raw_secrets
+- redact_internal_endpoint_credentials
+governance_profiles:
+- architecture_governance
+- context_access_governance
+audit_schemas:
+- architecture_evidence_schema
+- decision_trace_schema
+- context_usage_trace_schema
+used_by:
+- sdlc_pipeline
+- stage:architecture
+- stage:architecture_review
+- stage:premortem_fmea
+- stage:planning
+- stage:api_contract_compatibility_validation
+- stage:performance_resilience
+aliases: []
+notes: Canonical architecture pack. Legacy api_contract_context_pack and performance_context_pack
+  reconciled across this pack (design/ADR/NFR portion) plus implementation_context_pack
+  (changeset portion); see stage 20 / stage 24 headers. Because those legacy packs
+  split across two canonical packs, they are not read-time aliases.

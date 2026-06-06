@@ -1,0 +1,169 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #27 of 31: operations_readiness (always-on)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Top structure is the Nexus AI Orchestration Model; SDLC is ONE pipeline within it (not the top).
+# Core Abilities (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS) are capabilities,
+# NOT agents and NOT team members; none is ever owner_agent or an Agent here.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
+#   position #27, between backup_restore_dr_validation_if_applicable (#26) and evidence_graph_build (#28)).
+#   This stage produces the always-required pipeline gate `operations_readiness_pass`.
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §1 (operations_readiness prose),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.19 + §5 rework table
+#       (legacy owner/gate/route detail; on_fail -> planning; stale names superseded below),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Operations Readiness = Required;
+#       RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN evidence),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §4 (operations_readiness_pass is a mandatory gate),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template),
+#   - configs/nexus-ai/artifact_registry.yaml (canonical UPPER_SNAKE artifact names:
+#       RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN / INCIDENT_RESPONSE_PLAN),
+#   - configs/nexus-ai/stages/sdlc/10-planning.yaml (RUNBOOK_DRAFT / ROLLBACK_PLAN_DRAFT /
+#       OPERATIONAL_READINESS_DRAFTS upstream inputs, per 06-canonical-corrections §3).
+#
+# Reconciliation notes (legacy -> Phase A canonical registry):
+#   - owner_agent: canonical `operations_readiness_agent` (suggested + in the canonical Agent-role
+#     registry). This is a build/readiness stage that AUTHORS its own deliverables (runbook, rollback,
+#     observability, incident-response plans) and reviews no other author's artifact, so naming
+#     operations_readiness_agent as owner does NOT violate no_self_approval. Its read-only inputs
+#     DR_READINESS_REPORT and ROLLBACK_VALIDATION_REPORT are authored upstream by
+#     operations_readiness_agent at backup_restore_dr_validation_if_applicable (#26), and
+#     PERFORMANCE_REPORT by performance_resilience_agent (#24). This stage CONSUMES that evidence to
+#     author a distinct operational-readiness package and re-runs no upstream gate, so there is no
+#     self-approval concern (no_self_approval forbids reviewing/approving one's own artifact, not
+#     reusing upstream evidence as read-only input).
+#   - Supervisor is the routing Core Ability, NOT sdlc_team_lead; team_lead remains sdlc_team_lead.
+#   - skills: gap-audit (find operational-readiness coverage gaps) + sentinel (premortem the
+#     go-live readiness decision). Both canonical. NOTE: verification-loop is intentionally NOT used
+#     here — this stage is operational-readiness preparation, not a bug/defect sweep, and must not
+#     stand in for verification_loop_bug_finding or test_execution (locked skill semantics).
+#   - tools: legacy `runbook_checker`, `observability_plan_checker`, `rollback_validator` are NOT in
+#     the Phase A canonical shared Tools registry. Canonical `dr_runbook_checker` covers runbook/DR
+#     runbook validation; `restore_test_runner` and `backup_plan_checker` validate restore/rollback
+#     readiness; `policy_query` queries observability/on-call/SLO policy-as-data; `evidence_reader`
+#     reads upstream DR/perf evidence; artifact_writer/evidence_writer persist outputs (side-effect
+#     tools -> imply governance + trace). Two narrow legacy tools (observability_plan_checker,
+#     incident_runbook_checker) are still load-bearing for observability/incident validation and are
+#     carried + flagged in open_questions for registry formalization.
+#   - governance: legacy `operations_readiness_governance` / `runbook_required_gate` /
+#     `observability_required_gate` reconciled to canonical base profiles
+#     (sdlc_pipeline_governance / evidence_required_policy / no_self_approval_policy /
+#     release_candidate_governance) + a canonical-permitted stage-specific gate profile
+#     `operations_readiness_gate` (snake_case).
+#   - audit: legacy `operations_readiness_evidence_schema` (non-canonical) reconciled to canonical
+#     `release_evidence_schema` for evidence; `stage_gate_trace_schema` is the canonical TRACE schema.
+#     Evidence and trace schemas kept distinct (Evidence != Trace).
+#   - model profile reconciled from legacy `operations_analysis_model` (non-canonical) to canonical
+#     `release_reasoning_model` (operations/go-live readiness is a release-domain reasoning task).
+#   - context profile: `operations_context_pack` is canonical; `sdlc_run_context` added per the
+#     standard stage pattern.
+
+stage_id: operations_readiness
+name: Operations Readiness
+purpose: >-
+  Produce and verify the operational readiness package required to operate the system in
+  production — runbook, rollback plan, observability/monitoring-and-alerting plan, and incident
+  response plan — and decide the always-required operations_readiness_pass gate under no-human
+  governance before the evidence graph is assembled. Confirms operational acceptance conditions
+  (on-call, escalation, rollback path, monitoring/SLO coverage) are in place; it is operational
+  preparation, not defect finding.
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: operations_readiness_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present; empty -> [])
+uses_core_abilities:
+  - OS       # exercise runbook steps / rollback path / monitoring hooks in the build environment
+  - Memory   # recall architecture, DR, performance and rollback evidence and prior ops decisions
+  - Coder    # inspect deploy/rollback/observability wiring in the changeset
+  - Web      # reference operational runbook / observability / SLO conventions
+
+uses_skills:
+  - gap-audit   # find uncovered operational-readiness items (runbook/rollback/observability/incident gaps)
+  - sentinel    # premortem the go-live readiness decision before committing to operations_readiness_pass
+
+uses_tools:
+  - dr_runbook_checker          # validate runbook / DR-runbook completeness and executability (canonical)
+  - restore_test_runner         # validate rollback/restore readiness against the rollback plan (canonical)
+  - backup_plan_checker         # confirm rollback/recovery prerequisites are in place (canonical)
+  - observability_plan_checker  # NON-CANONICAL (legacy): verify monitoring/alerting/SLO coverage plan
+  - incident_runbook_checker    # NON-CANONICAL (legacy): verify incident-response plan completeness
+  - policy_query                # query observability/on-call/SLO policy-as-data (side-effect-free)
+  - evidence_reader             # read upstream DR/rollback/performance evidence (side-effect-free)
+  - artifact_writer             # write runbook/rollback/observability/incident plans (side-effect: governance + trace)
+  - evidence_writer             # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - release_candidate_governance
+  - operations_readiness_gate     # stage-specific gate profile (snake_case)
+
+uses_audit_schemas:
+  - release_evidence_schema       # evidence schema (distinct from trace)
+  - stage_gate_trace_schema       # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - release_reasoning_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - operations_context_pack
+
+inputs:
+  - RUNBOOK_DRAFT                 # from planning (#10): operational-readiness draft to finalize
+  - ROLLBACK_PLAN_DRAFT           # from planning (#10): rollback draft to finalize
+  - OPERATIONAL_READINESS_DRAFTS  # from planning (#10): operational acceptance drafts
+  - PERFORMANCE_REPORT            # from performance_resilience (#24): SLO/observability inputs
+  - DR_READINESS_REPORT           # from backup_restore_dr_validation_if_applicable (#26), if applicable
+  - ROLLBACK_VALIDATION_REPORT    # from backup_restore_dr_validation_if_applicable (#26), if applicable
+  - ARCHITECTURE_DOC              # deployment topology / operational boundaries
+
+outputs:
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+  - INCIDENT_RESPONSE_PLAN
+  - OPERATIONS_READINESS_GATE_RESULT
+
+evidence:
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+  - INCIDENT_RESPONSE_PLAN
+  - OPERATIONS_READINESS_GATE_RESULT
+
+trace:
+  - operations_readiness_agent_trace
+  - dr_runbook_check_tool_trace
+  - restore_test_runner_tool_trace
+  - observability_plan_check_tool_trace
+  - incident_runbook_check_tool_trace
+  - policy_query_tool_trace
+
+gates:
+  - runbook_present
+  - rollback_plan_present
+  - observability_plan_present
+  - incident_response_plan_present
+  - operations_readiness_pass
+
+on_pass: evidence_graph_build
+on_fail: planning
+rework_route: planning
+
+blocking_conditions:
+  - missing_runbook
+  - missing_rollback_plan
+  - missing_observability_plan
+  - missing_incident_response_plan
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

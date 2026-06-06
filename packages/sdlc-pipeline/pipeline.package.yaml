@@ -1,0 +1,406 @@
+package_schema_version: '0.1'
+pipeline_id: sdlc_pipeline
+name: SDLC Pipeline
+description: Sıfırdan ürün seviyesine yazılım geliştirme sürecini no-human governance
+  ile yürütmek.
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: f3181ae
+  source_path: configs/nexus-ai/sdlc_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: sdlc_team
+  version: 1.0.0
+  path: components/teams/team__sdlc_team.yaml
+- kind: team_lead
+  id: sdlc_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__sdlc_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: coder
+  version: 1.0.0
+  path: components/core-abilities/core_ability__coder.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: core_ability
+  id: os
+  version: 1.0.0
+  path: components/core-abilities/core_ability__os.yaml
+- kind: core_ability
+  id: vision
+  version: 1.0.0
+  path: components/core-abilities/core_ability__vision.yaml
+- kind: skill
+  id: prism
+  version: 1.0.0
+  path: components/skills/skill__prism.yaml
+- kind: skill
+  id: verification-loop
+  version: 1.0.0
+  path: components/skills/skill__verification-loop.yaml
+- kind: skill
+  id: sentinel
+  version: 1.0.0
+  path: components/skills/skill__sentinel.yaml
+- kind: skill
+  id: llm-council
+  version: 1.0.0
+  path: components/skills/skill__llm-council.yaml
+- kind: skill
+  id: fmea
+  version: 1.0.0
+  path: components/skills/skill__fmea.yaml
+- kind: skill
+  id: adr-builder
+  version: 1.0.0
+  path: components/skills/skill__adr-builder.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: prompt-fidelity
+  version: 1.0.0
+  path: components/skills/skill__prompt-fidelity.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: refraction
+  version: 1.0.0
+  path: components/skills/skill__refraction.yaml
+- kind: skill
+  id: fermi-decompose
+  version: 1.0.0
+  path: components/skills/skill__fermi-decompose.yaml
+- kind: skill
+  id: bayesian-update
+  version: 1.0.0
+  path: components/skills/skill__bayesian-update.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: repo_diff_reader
+  version: 1.0.0
+  path: components/tools/tool__repo_diff_reader.yaml
+- kind: tool
+  id: test_runner
+  version: 1.0.0
+  path: components/tools/tool__test_runner.yaml
+- kind: tool
+  id: scanner_runner
+  version: 1.0.0
+  path: components/tools/tool__scanner_runner.yaml
+- kind: tool
+  id: dependency_scanner
+  version: 1.0.0
+  path: components/tools/tool__dependency_scanner.yaml
+- kind: tool
+  id: sbom_generator
+  version: 1.0.0
+  path: components/tools/tool__sbom_generator.yaml
+- kind: tool
+  id: license_checker
+  version: 1.0.0
+  path: components/tools/tool__license_checker.yaml
+- kind: tool
+  id: accessibility_auditor
+  version: 1.0.0
+  path: components/tools/tool__accessibility_auditor.yaml
+- kind: tool
+  id: migration_checker
+  version: 1.0.0
+  path: components/tools/tool__migration_checker.yaml
+- kind: tool
+  id: contract_test_runner
+  version: 1.0.0
+  path: components/tools/tool__contract_test_runner.yaml
+- kind: tool
+  id: resource_budget_checker
+  version: 1.0.0
+  path: components/tools/tool__resource_budget_checker.yaml
+- kind: tool
+  id: compliance_matrix_builder
+  version: 1.0.0
+  path: components/tools/tool__compliance_matrix_builder.yaml
+- kind: tool
+  id: requirements_trace_checker
+  version: 1.0.0
+  path: components/tools/tool__requirements_trace_checker.yaml
+- kind: tool
+  id: prompt_injection_tester
+  version: 1.0.0
+  path: components/tools/tool__prompt_injection_tester.yaml
+- kind: tool
+  id: tool_misuse_tester
+  version: 1.0.0
+  path: components/tools/tool__tool_misuse_tester.yaml
+- kind: tool
+  id: context_poisoning_tester
+  version: 1.0.0
+  path: components/tools/tool__context_poisoning_tester.yaml
+- kind: tool
+  id: evidence_consistency_checker
+  version: 1.0.0
+  path: components/tools/tool__evidence_consistency_checker.yaml
+- kind: tool
+  id: agent_permission_auditor
+  version: 1.0.0
+  path: components/tools/tool__agent_permission_auditor.yaml
+- kind: tool
+  id: eval_runner
+  version: 1.0.0
+  path: components/tools/tool__eval_runner.yaml
+- kind: tool
+  id: backup_plan_checker
+  version: 1.0.0
+  path: components/tools/tool__backup_plan_checker.yaml
+- kind: tool
+  id: restore_test_runner
+  version: 1.0.0
+  path: components/tools/tool__restore_test_runner.yaml
+- kind: tool
+  id: dr_runbook_checker
+  version: 1.0.0
+  path: components/tools/tool__dr_runbook_checker.yaml
+- kind: tool
+  id: cost_estimator
+  version: 1.0.0
+  path: components/tools/tool__cost_estimator.yaml
+- kind: tool
+  id: quota_policy_checker
+  version: 1.0.0
+  path: components/tools/tool__quota_policy_checker.yaml
+- kind: governance_profile
+  id: sdlc_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__sdlc_pipeline_governance.yaml
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: governance_profile
+  id: agentic_safety_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__agentic_safety_governance.yaml
+- kind: governance_profile
+  id: supply_chain_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__supply_chain_governance.yaml
+- kind: governance_profile
+  id: privacy_lifecycle_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__privacy_lifecycle_governance.yaml
+- kind: governance_profile
+  id: data_migration_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__data_migration_governance.yaml
+- kind: governance_profile
+  id: domain_compliance_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__domain_compliance_governance.yaml
+- kind: governance_profile
+  id: release_candidate_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__release_candidate_governance.yaml
+- kind: audit_schema
+  id: sdlc_pipeline_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__sdlc_pipeline_evidence_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: audit_schema
+  id: release_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__release_evidence_schema.yaml
+- kind: audit_schema
+  id: compliance_matrix_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__compliance_matrix_schema.yaml
+- kind: audit_schema
+  id: regulatory_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__regulatory_evidence_schema.yaml
+- kind: model_provider_profile
+  id: sdlc_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__sdlc_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: coder_engineering_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__coder_engineering_model.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: model_provider_profile
+  id: architecture_reasoning_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__architecture_reasoning_model.yaml
+- kind: model_provider_profile
+  id: security_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__security_analysis_model.yaml
+- kind: model_provider_profile
+  id: release_reasoning_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__release_reasoning_model.yaml
+- kind: context_memory_profile
+  id: sdlc_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__sdlc_run_context.yaml
+- kind: context_memory_profile
+  id: requirements_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__requirements_context_pack.yaml
+- kind: context_memory_profile
+  id: architecture_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__architecture_context_pack.yaml
+- kind: context_memory_profile
+  id: implementation_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__implementation_context_pack.yaml
+- kind: context_memory_profile
+  id: release_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__release_context_pack.yaml
+gates:
+- id: requirements_complete
+  set: always
+- id: nfr_coverage_complete
+  set: always
+- id: architecture_complete
+  set: always
+- id: adr_coverage_complete
+  set: always
+- id: security_privacy_design_complete
+  set: always
+- id: risk_register_reviewed
+  set: always
+- id: implementation_scope_clean
+  set: always
+- id: code_review_pass
+  set: always
+- id: tests_pass
+  set: always
+- id: verification_loop_bug_finding_pass
+  set: always
+- id: security_validation_pass
+  set: always
+- id: supply_chain_pass
+  set: always
+- id: license_pass
+  set: always
+- id: sbom_present
+  set: always
+- id: performance_resilience_pass_or_accepted
+  set: always
+- id: agentic_safety_eval_pass
+  set: always
+- id: operations_readiness_pass
+  set: always
+- id: evidence_graph_complete
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: accessibility_pass_if_applicable
+  set: conditional
+- id: data_migration_pass_if_applicable
+  set: conditional
+- id: privacy_lifecycle_pass_if_applicable
+  set: conditional
+- id: api_contract_compatibility_pass_if_applicable
+  set: conditional
+- id: backup_restore_dr_pass_if_applicable
+  set: conditional
+- id: compliance_pass_if_applicable
+  set: conditional
+- id: cost_resource_governance_pass_if_applicable
+  set: conditional
+evidence:
+  required_evidence:
+  - REQUIREMENTS_SPEC
+  - NFR_CATALOG
+  - ARCHITECTURE_DOC
+  - ADR_INDEX
+  - THREAT_MODEL
+  - FMEA_RISK_REGISTER
+  - CODE_REVIEW_REPORT
+  - TEST_EXECUTION_REPORT
+  - BUG_FINDING_REPORT
+  - SECURITY_SCAN_REPORT
+  - SBOM
+  - LICENSE_REPORT
+  - AGENTIC_SAFETY_EVAL_REPORT
+  - RUNBOOK
+  - ROLLBACK_PLAN
+  - OBSERVABILITY_PLAN
+  - EVIDENCE_GRAPH
+  - DEVELOPMENT_COMPLETION_REPORT
+  - RELEASE_CANDIDATE_REPORT
+  required_trace:
+  - stage_gate_trace_schema
+  - stage_gate_decision_trace
+  - rework_routing_trace
+  - iteration_count_trace
+  - governance_gate_evaluation_trace
+stages:
+- intake
+- domain_risk_profile
+- skill_semantic_extraction
+- requirements
+- requirements_review
+- architecture
+- architecture_review
+- security_privacy_design
+- premortem_fmea
+- planning
+- implementation
+- code_review
+- test_generation
+- test_execution
+- verification_loop_bug_finding
+- security_validation
+- supply_chain_sbom_license
+- ai_agent_safety_evaluation
+- privacy_data_lifecycle_validation
+- api_contract_compatibility_validation
+- domain_regulatory_compliance_validation_if_applicable
+- data_migration_validation_if_applicable
+- accessibility_ux_validation_if_applicable
+- performance_resilience
+- cost_resource_governance
+- backup_restore_dr_validation_if_applicable
+- operations_readiness
+- evidence_graph_build
+- development_completion
+- release_candidate
+- refraction_learning

@@ -1,0 +1,45 @@
+id: compliance_matrix_schema
+name: Compliance Matrix Schema
+type: evidence_schema
+status: canonical
+purpose: Decision-proof record for the regulatory compliance matrix (COMPLIANCE_MATRIX_IF_APPLICABLE,
+  COMPLIANCE_GATE_RESULT_IF_APPLICABLE).
+owner_domain: sdlc
+allowed_usage:
+- Record requirement→control compliance-matrix decision-proof evidence.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required
+audit_schemas:
+- regulatory_evidence_schema
+- stage_gate_trace_schema
+notes: Stage 21 evidence schema (conditional stage). Also declared at SDLC pipeline
+  level (sdlc_pipeline.yaml uses_audit_schemas).
+applies_to:
+- sdlc_pipeline
+- sdlc_stage:domain_regulatory_compliance_validation_if_applicable
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- control_id
+- requirement_ref
+- compliance_status
+- source_artifacts
+- summary
+- status
+- created_at
+producer: compliance_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - domain_regulatory_compliance_validation_if_applicable
+  agents:
+  - compliance_agent

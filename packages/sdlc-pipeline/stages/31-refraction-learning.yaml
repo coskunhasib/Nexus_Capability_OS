@@ -1,0 +1,175 @@
+# Nexus AI Orchestration Model — SDLC Pipeline
+# Stage #31 of 31: refraction_learning (always-on; terminal learning stage)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# Top structure is the Nexus AI Orchestration Model; SDLC is ONE pipeline within it (not the top).
+# Core Abilities (Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS) are abilities, NOT agents and
+#   NOT team members — none appears as owner_agent or as an Agent in this contract.
+#
+# Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this is the LAST
+#   stage, position #31, immediately after release_candidate (#30); on_pass terminates the run).
+# Reconciled against:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §5 (stage prose contract),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.23 (legacy detail; stale 23-stage numbering —
+#       NOT carried; legacy `id:` 4.23 != canonical stage #31),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §3 row "Refraction / Learning"
+#       (status: "Advisory Required" — always-on but NOT a release blocker),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §3 (last stage in the canonical list),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (stage contract field set/order),
+#   - configs/nexus-ai/artifact_registry.yaml `artifact_groups.learning`
+#       (canonical UPPER_SNAKE artifacts: LESSONS_LEARNED, MEMORY_UPDATE_PROPOSAL,
+#        FUTURE_IMPROVEMENT_BACKLOG) and `gate_result_suffix: _GATE_RESULT` (=> LEARNING_GATE_RESULT).
+#
+# Reconciliation notes (legacy sdlc-stages/05 §5 + 05-pipeline-model §4.23 -> Phase A canonical registry):
+#   - owner_agent kept as canonical `memory_curator_agent` (task-suggested; present in the Phase A
+#     agent-roles list and in both legacy prose blocks). It is a pipeline Agent ROLE (snake_case),
+#     owner_team = sdlc_team, team_lead = sdlc_team_lead. Supervisor is a Core Ability, NOT the
+#     team_lead. NOTE: memory_curator_agent does not yet have a dedicated entry in
+#     docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md — flagged in open_questions for catalog
+#     formalization.
+#   - No-self-approval: this stage AUTHORS run-level learning artifacts (lessons, calibration update,
+#     improvement backlog) by reflecting over completed-run evidence produced by OTHER stages/agents.
+#     It does not review/adjudicate a sibling author's artifact, so owner_agent = memory_curator_agent
+#     does NOT violate no_self_approval. Its single gate (learning_record_present) is a
+#     self-completeness check on its OWN output and is Advisory (non-blocking), not a cross-author
+#     approval — so no separate reviewer / sdlc_team_lead override is required here.
+#   - Skills: `refraction` (LOCKED-semantics reflection/learning), `bayesian-update` (revise priors
+#     from run outcomes) and `calibrate` (update confidence/severity calibration) are ALL canonical
+#     shared Skills and are the exact set named by both legacy blocks. Skill semantics LOCKED honored:
+#     `prism` (divergent brainstorming) and `verification-loop` (bug/defect finding) are deliberately
+#     NOT used — this stage reflects/curates memory, it neither brainstorms options nor hunts defects
+#     (defect finding is stage #15). `gap-audit` is intentionally omitted: this is reflective learning,
+#     not a coverage/readiness audit.
+#   - Tools: legacy listed `artifact_writer` (+ `evidence_writer` and `memory_write`).
+#     Reconciled to the side-effect-free + proposal-writing tool set this stage actually needs:
+#       evidence_reader (read completed-run evidence: release-candidate/development-completion reports,
+#         evidence graph, bug-finding report, all gate results) — side-effect-free;
+#       defect_tracker (read/correlate recorded defects & rework to mine bug/decision patterns) ;
+#       artifact_writer (write LESSONS_LEARNED / MEMORY_UPDATE_PROPOSAL / FUTURE_IMPROVEMENT_BACKLOG) ;
+#       evidence_writer (write the learning record + gate result).
+#     `memory_write` is now a CANONICAL tool (an exposed_tool of the Memory Core Ability —
+#     tools_registry.yaml / core_abilities.yaml), but this stage deliberately does NOT call it:
+#     persisting the curated learning to project memory is represented as the MEMORY_UPDATE_PROPOSAL
+#     artifact (a proposal, not a direct memory mutation — keeping this stage a proposer, with the
+#     actual memory commit governed/performed separately). So memory_write is omitted from
+#     uses_tools by design, not because it is non-canonical.
+#     Side-effect tools (defect_tracker, artifact_writer, evidence_writer) imply governance + trace.
+#   - Governance: legacy `learning_governance` / `memory_update_governance` are NON-CANONICAL profile
+#     names. Reconciled to canonical base profiles (sdlc_pipeline_governance, no_self_approval_policy,
+#     evidence_required_policy) + canonical-permitted stage-specific snake_case gate profiles
+#     `learning_record_gate` and `memory_update_governance` (the latter retained as a stage-specific
+#     gate profile name governing the proposal-not-mutation rule). Flagged in open_questions.
+#   - Audit schemas: Evidence and Trace kept DISTINCT. Legacy `learning_record_schema` is an EVIDENCE
+#     schema; `memory_update_trace_schema` is a TRACE schema. Reconciled to canonical base
+#     `sdlc_pipeline_evidence_schema` (evidence) + stage-appropriate `learning_record_schema` (evidence)
+#     and canonical `stage_gate_trace_schema` (trace) + stage-appropriate `memory_update_trace_schema`
+#     (trace). The two `*learning*`/`*memory_update*` schemas are NOT in the Phase A canonical audit-schema
+#     set — carried per the template's "stage-appropriate evidence/trace schemas" allowance and flagged
+#     in open_questions for registry formalization.
+#   - Model profile: legacy `learning_reflection_model` is NON-CANONICAL. Reconciled to canonical
+#     `sdlc_reasoning_profile` (post-run reflection / bayesian-update / calibration is general SDLC
+#     reasoning, not a security/architecture/release/defect-specialised task). Flagged in open_questions.
+#   - Context profile: legacy `learning_context_pack` is NON-CANONICAL. Reconciled to canonical
+#     `sdlc_run_context` (full run history to reflect over) + `release_context_pack` (the just-produced
+#     release-candidate/development-completion evidence this stage learns from). Flagged in open_questions.
+#   - Routing: on_pass = done (canonical terminal — this is the final stage). on_fail / rework_route =
+#     refraction_learning (self-retry on a malformed/incomplete learning record), per both legacy blocks
+#     and the task. max_iterations = 3 (template default). Because the gate is Advisory (non-blocking),
+#     exhausting iterations must NOT block the release that already passed at #30; see optional_conditions.
+# Always-on (Advisory Required) stage: no applicability_decision block. The stage always runs but is a
+#   NON-blocking, post-decision learning step (blocking_conditions: []).
+
+stage_id: refraction_learning
+name: Refraction / Learning
+purpose: >-
+  Reflect over the completed SDLC run and curate durable, reusable learning under no-human governance:
+  mine error/defect and rework patterns, the decisions taken (and their outcomes), and confidence /
+  severity calibration drift; then produce the run's LESSONS_LEARNED, a MEMORY_UPDATE_PROPOSAL for
+  project memory, and a FUTURE_IMPROVEMENT_BACKLOG of process/pipeline improvements. This is reflective
+  learning and memory curation — it is explicitly NOT divergent brainstorming (prism) and NOT defect
+  finding (verification-loop / stage #15). As the terminal stage it is Advisory: it runs on every run
+  but never blocks the release decision already made at release_candidate (#30).
+
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: memory_curator_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty)
+uses_core_abilities:
+  - Memory   # primary ability: recall the full run history and persist the curated learning proposal
+  - OS       # invoke evidence/defect readers and artifact/evidence writers over run artifacts
+
+uses_skills:
+  - refraction        # LOCKED: reflection/learning — extract lessons & patterns from the completed run
+  - bayesian-update   # revise priors / risk estimates from observed run outcomes
+  - calibrate         # update confidence and severity calibration from actual-vs-expected outcomes
+
+uses_tools:
+  - evidence_reader   # read completed-run evidence (release-candidate/development-completion, evidence graph, gate results) — side-effect-free
+  - defect_tracker    # read/correlate recorded defects & rework to mine bug/decision patterns (side-effect: governance + trace)
+  - artifact_writer   # write LESSONS_LEARNED / MEMORY_UPDATE_PROPOSAL / FUTURE_IMPROVEMENT_BACKLOG (side-effect: governance + trace)
+  - evidence_writer   # write learning record + LEARNING_GATE_RESULT (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - no_self_approval_policy     # memory_curator_agent authors learning over OTHER stages' evidence; non-blocking self-completeness gate only
+  - evidence_required_policy
+  - learning_record_gate        # stage-specific gate profile (legacy learning_governance maps here)
+  - memory_update_governance    # stage-specific gate profile: governs proposal-not-direct-mutation of project memory
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema   # canonical base evidence schema (distinct from trace)
+  - learning_record_schema          # stage-appropriate EVIDENCE schema: the curated learning record
+  - stage_gate_trace_schema         # canonical trace schema (distinct from evidence)
+  - memory_update_trace_schema      # stage-appropriate TRACE schema: the memory-update proposal lineage
+
+uses_model_provider_profiles:
+  - sdlc_reasoning_profile   # canonical reconciliation of legacy `learning_reflection_model`
+
+uses_context_memory_profiles:
+  - sdlc_run_context         # full run history to reflect over
+  - release_context_pack     # canonical reconciliation of legacy `learning_context_pack`; the just-produced release evidence
+
+inputs:
+  - RELEASE_CANDIDATE_REPORT        # from release_candidate (#30): final SDLC decision context
+  - DEVELOPMENT_COMPLETION_REPORT   # from development_completion (#29): gate-set outcome context
+  - EVIDENCE_GRAPH                  # from evidence_graph_build (#28): end-to-end run trace to learn from
+  - BUG_FINDING_REPORT              # from verification_loop_bug_finding (#15): defect patterns to mine
+  - REWORK_HISTORY                  # accumulated rework/iteration history across the run (see open_questions)
+
+outputs:
+  - LESSONS_LEARNED
+  - MEMORY_UPDATE_PROPOSAL
+  - FUTURE_IMPROVEMENT_BACKLOG
+  - LEARNING_GATE_RESULT
+
+evidence:
+  - LESSONS_LEARNED
+  - MEMORY_UPDATE_PROPOSAL
+  - FUTURE_IMPROVEMENT_BACKLOG
+  - LEARNING_GATE_RESULT
+
+trace:
+  - refraction_learning_stage_trace
+  - refraction_skill_activation_trace
+  - bayesian_update_skill_activation_trace
+  - calibrate_skill_activation_trace
+  - memory_update_proposal_trace
+  - learning_record_gate_decision_trace
+
+gates:
+  - learning_record_present
+
+on_pass: done
+on_fail: refraction_learning
+rework_route: refraction_learning
+
+blocking_conditions: []
+
+optional_conditions:
+  - learning_stage_is_advisory_non_release_blocker   # gap-audit §3: "Advisory Required" — never blocks the #30 release decision
+
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,0 +1,55 @@
+id: security_analysis_model
+name: Security Analysis Model
+type: model_provider_profile
+status: canonical
+purpose: Security / privacy / adversarial-safety / regulatory-control reasoning across
+  the SDLC security and validation surfaces.
+owner_domain: security
+provider_type: reasoning_llm
+model_family: security_reasoning
+capability_scope:
+- threat_and_privacy_reasoning
+- supply_chain_and_sbom_reasoning
+- adversarial_safety_reasoning
+- regulatory_control_judgement
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: human_owner
+governance_profiles:
+- sdlc_pipeline_governance
+- security_validation_gate
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- security/privacy design, security validation, supply-chain, agentic-safety, regulatory
+  reasoning
+forbidden_usage:
+- substituting for defect_analysis_model on pure bug/defect sweeps where that profile
+  is required
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - security_privacy_design
+  - security_validation
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - privacy_data_lifecycle_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  core_abilities: []
+aliases:
+- security_reasoning_model
+- supply_chain_analysis_model
+- agentic_safety_eval_model
+- privacy_analysis_model
+notes: Broadest security profile; absorbs the clean legacy security/privacy model
+  names listed as aliases. Multi-target compliance and agentic-safety splits are recorded
+  in reconciliation.

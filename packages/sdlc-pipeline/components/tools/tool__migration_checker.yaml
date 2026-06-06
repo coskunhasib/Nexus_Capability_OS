@@ -1,0 +1,40 @@
+id: migration_checker
+name: Migration Checker
+type: tool
+category: tool
+status: canonical
+purpose: Validate/forward-migrate with rollback-replay and schema-diff coverage. Absorbs
+  the legacy schema_diff_checker (schema-diff coverage folded in).
+owner_domain: data_migration
+provided_by_core_ability: OS
+input_schema:
+  migration_files: object
+  source_schema: object
+  target_schema: object
+output_schema:
+  migration_validation: object
+  rollback_replay_result: object
+side_effects: executes_migration_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- data_migration_agent
+allowed_usage:
+- Validate forward-migration + rollback-replay against sandboxed schemas/data.
+forbidden_usage:
+- Running migrations against production data; deploying.
+aliases:
+- schema_diff_checker
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - data_migration_validation_if_applicable
+notes: Schema-diff coverage is folded in (legacy schema_diff_checker recorded as alias).
