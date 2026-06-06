@@ -54,30 +54,30 @@ Nexus AI Orchestration Model
 
 ## Current canonical source files
 
-Until the repository is physically reorganized, these files remain at their existing paths:
+The documentation has been physically migrated into this canonical namespace. The standards now live here:
 
 ```text
-docs/ai-sdlc-factory/README.md
-docs/ai-sdlc-factory/23-coordination-system-and-runtime-gap-closure.md
-docs/ai-sdlc-factory/24-mission-system-and-user-facing-runtime-model.md
-docs/ai-sdlc-factory/25-mission-runtime-gap-closure-audit.md
-docs/ai-sdlc-factory/26-post-launch-frontier-backlog-and-reassessment-plan.md
+docs/nexus-ai-orchestration-model/README.md
+docs/nexus-ai-orchestration-model/23-coordination-system-and-runtime-gap-closure.md
+docs/nexus-ai-orchestration-model/24-mission-system-and-user-facing-runtime-model.md
+docs/nexus-ai-orchestration-model/25-mission-runtime-gap-closure-audit.md
+docs/nexus-ai-orchestration-model/26-post-launch-frontier-backlog-and-reassessment-plan.md
 configs/nexus-ai/*.yaml
 .memory/*.md
 ```
 
-## Migration rule
+Legacy `docs/ai-sdlc-factory/` paths are retained only as backwards-compatibility stubs. See [`INDEX.md`](./INDEX.md) for the full map.
 
-Physical relocation should be deferred until it can be done safely without breaking internal links.
+## Migration status
 
-Planned future move:
+The physical relocation is **complete**:
 
 ```text
-from: docs/ai-sdlc-factory/
+from: docs/ai-sdlc-factory/   (now backwards-compatibility stubs)
 to:   docs/nexus-ai-orchestration-model/
 ```
 
-This move is documentation reorganization only. It must not change runtime behavior and must not authorize runtime implementation.
+It was documentation reorganization only — no runtime behavior change, no runtime implementation authorized. Evidence: [`migration/MIGRATION_COMPLETION_REPORT.md`](./migration/MIGRATION_COMPLETION_REPORT.md).
 
 ## Stop rule
 

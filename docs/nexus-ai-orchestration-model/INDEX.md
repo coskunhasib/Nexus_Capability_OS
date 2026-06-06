@@ -3,7 +3,7 @@
 Navigable index of the whole **Nexus AI Orchestration Model** blueprint and its single
 **SDLC Pipeline** contract corpus. This is documentation/blueprint only — no runtime code, no
 merge, no deploy. Every link below is repo-relative to this file's directory
-(`docs/ai-sdlc-factory/`) unless it points into `configs/` (then it is repo-relative from root).
+(`docs/nexus-ai-orchestration-model/`) unless it points into `configs/` (then it is repo-relative from root).
 
 **Top structure is the Nexus AI Orchestration Model.** The SDLC Pipeline is ONE pipeline under
 it, not the top of the model. The Core Abilities (Supervisor, Coder, Vision, Audio, Creative,
@@ -287,7 +287,7 @@ Mermaid (`.mmd`) source diagrams for the blueprint.
   `0003-sdlc-research-baseline.md`, `0004-next-actions.md`, `README.md`.
 - The repository-root [`README.md`](../../README.md) is an unrelated AI-Studio app scaffold and
   is **not** part of this blueprint; the blueprint's own README is
-  [`docs/ai-sdlc-factory/README.md`](./README.md).
+  [`docs/nexus-ai-orchestration-model/README.md`](./README.md).
 
 ---
 
