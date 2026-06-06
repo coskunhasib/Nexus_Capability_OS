@@ -82,8 +82,8 @@ no_plugin: true
 
 # Sources scanned to build this applied layer (read from disk, Phase E scope).
 sources:
-  readiness_plan: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md          # §4 profile contract, §5 rule contract, §8 core-ability minimum, §14 validation
-  governance_audit_layering: docs/ai-sdlc-factory/03-governance-and-audit-layering.md  # §7 Core Ability Governance; §9 tool sandbox/timeout/trace; §10-12 Evidence/Trace
+  readiness_plan: docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md          # §4 profile contract, §5 rule contract, §8 core-ability minimum, §14 validation
+  governance_audit_layering: docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md  # §7 Core Ability Governance; §9 tool sandbox/timeout/trace; §10-12 Evidence/Trace
   governance_registry: configs/nexus-ai/governance_profiles.yaml                       # scope: core_ability catalog (code_generation/web_access/system_access/memory_access governance) + global policies
   core_abilities_registry: configs/nexus-ai/core_abilities.yaml                        # the 8 abilities: exposed_tools, governance_profiles, audit_schemas, default_risk_level, allowed_callers
   tools_registry: configs/nexus-ai/tools_registry.yaml                                 # tool risk_level/requires_sandbox/side_effects/governance_profiles for the rule tie-ins

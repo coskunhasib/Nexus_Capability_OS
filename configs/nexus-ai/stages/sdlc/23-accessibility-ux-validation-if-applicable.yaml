@@ -6,16 +6,16 @@
 #   position #23, between data_migration_validation_if_applicable (#22) and performance_resilience
 #   (#24)). Pipeline-level conditional gate produced here: accessibility_pass_if_applicable.
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §7 (stage prose — the
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §7 (stage prose — the
 #     authoritative legacy contract for this stage),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §4, §6, §7
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §4, §6, §7
 #       (UI_CHANGESET_SUMMARY_IF_APPLICABLE produced by implementation; applicability_decision
 #        standard -> ACCESSIBILITY_UX_APPLICABILITY_DECISION),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §3 (Accessibility / UX Validation =
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §3 (Accessibility / UX Validation =
 #       "Conditional Required"; accessibility_pass_if_applicable / data_migration_pass_if_applicable),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md §4, §13 (stage contract template +
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4, §13 (stage contract template +
 #       conditional gate rule: required_when: product_has_ui == true),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; no accessibility-specific per-stage
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; no accessibility-specific per-stage
 #       names found — the stale 23-stage assumption is NOT carried),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
 #       ACCESSIBILITY_REPORT, UX_VALIDATION_REPORT, UI_RELEASE_GATE_RESULT;

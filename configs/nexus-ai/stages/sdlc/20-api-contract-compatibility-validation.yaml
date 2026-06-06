@@ -1,13 +1,13 @@
 # Nexus AI Orchestration Model — SDLC Pipeline
 # Stage #20 of 31: api_contract_compatibility_validation (CONDITIONAL)
 # Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
-# Authored per docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
+# Authored per docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
 # and configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields), reconciled against
 # the Phase A canonical shared registry.
 #
 # Stage class: CONDITIONAL — runs only when an API / event / SDK / public interface changed.
 #   Includes an applicability_decision block (with required_when) and conditional_required_gates,
-#   per docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §6/§7.
+#   per docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §6/§7.
 #   Canonical applicability decision artifact: API_CONTRACT_APPLICABILITY_DECISION (06 §6/§7).
 #
 # Routing (canonical):

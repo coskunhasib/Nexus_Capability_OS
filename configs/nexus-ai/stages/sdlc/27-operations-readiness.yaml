@@ -10,13 +10,13 @@
 #   position #27, between backup_restore_dr_validation_if_applicable (#26) and evidence_graph_build (#28)).
 #   This stage produces the always-required pipeline gate `operations_readiness_pass`.
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §1 (operations_readiness prose),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.19 + §5 rework table
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §1 (operations_readiness prose),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.19 + §5 rework table
 #       (legacy owner/gate/route detail; on_fail -> planning; stale names superseded below),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Operations Readiness = Required;
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Operations Readiness = Required;
 #       RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN evidence),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §4 (operations_readiness_pass is a mandatory gate),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §4 (operations_readiness_pass is a mandatory gate),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template),
 #   - configs/nexus-ai/artifact_registry.yaml (canonical UPPER_SNAKE artifact names:
 #       RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN / INCIDENT_RESPONSE_PLAN),
 #   - configs/nexus-ai/stages/sdlc/10-planning.yaml (RUNBOOK_DRAFT / ROLLBACK_PLAN_DRAFT /

@@ -28,7 +28,7 @@
 #   - configs/nexus-ai/team_templates.yaml       # activation_team roster (5 agents) + team_lead + forbidden_actions (self_approval_of_activation_decision, public_activation_without_owner_decision, ...)
 #   - configs/nexus-ai/team_lead_roles.yaml      # activation_team_lead forbidden_actions / blocking_limits
 #   - configs/nexus-ai/audit_schemas.yaml        # activation_evidence_schema; activation_decision_evidence_schema (decision_record_schema, producer activation_owner_decision_agent); rollback_readiness_evidence_schema; activation_transition_trace_schema; stage_gate_trace_schema
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §4  # activation rules (no pilot without preview; no public without pilot evidence; rollback mandatory)
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md §4  # activation rules (no pilot without preview; no public without pilot evidence; rollback mandatory)
 # =============================================================================
 
 version: draft-0.1

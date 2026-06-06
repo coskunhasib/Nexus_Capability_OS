@@ -26,7 +26,8 @@ Dosya şişerse yeni parça açılır.
 0006-coordination-runtime-gap-extension.md
 0007-mission-system-extension.md
 0008-post-launch-frontier-backlog.md
-0009-...
+0009-integration-and-memory-rules.md
+0010-...
 ```
 
 ## Yazım kuralları
@@ -36,6 +37,8 @@ Dosya şişerse yeni parça açılır.
 - Kesin kararlar ile açık tartışmalar ayrı tutulur.
 - Eski karar değişirse yeni dosyada decision superseded olarak işaretlenir.
 - Büyük hafıza tek dosyada büyütülmez; yeni parça açılır.
+- **Dallanma ve Entegrasyon Kuralı:** `nexus` branch'i tamamen bağımsızdır. Bu branch'in `main` branch'i ile birleştirilmesi (merge) kesinlikle yasaktır ve `main` branch'ine hiçbir koşulda müdahale edilmez. Bu repo ve branch olgunlaştırıldıktan sonra, `LLM_Calismalari` reposundaki `nexus` projesine bir özellik/modül olarak entegre edilecektir.
+- **Hafıza Yönetimi:** Tüm hafıza ve oturum bağlamları bu `.memory` klasörü altında sıralı markdown dosyaları şeklinde tutulur. Bu dokümanlar sürekli güncel tutulmalı, eskiyen ve geçerliliğini yitiren gereksiz bilgiler düzenli olarak temizlenmeli ve budanmalıdır.
 
 ## Güncel parçalar
 
@@ -48,4 +51,5 @@ Dosya şişerse yeni parça açılır.
 0006-coordination-runtime-gap-extension.md
 0007-mission-system-extension.md
 0008-post-launch-frontier-backlog.md
+0009-integration-and-memory-rules.md
 ```

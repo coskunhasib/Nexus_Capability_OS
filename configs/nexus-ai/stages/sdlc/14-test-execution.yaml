@@ -2,15 +2,15 @@
 # Stage #14 of 31: test_execution (always-on)
 # Machine-readable stage contract. Documentation/blueprint only — no runtime code.
 #
-# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract format)
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract format)
 #              configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields + shared_usage_fields)
 # Pipeline: sdlc_pipeline. Always-on stage (no applicability_decision).
 #
 # Reconciliation notes (legacy docs -> Phase A canonical registry):
-#   - Source prose: docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md §4 (canonical stage block),
-#     docs/ai-sdlc-factory/05-pipeline-model.md §4.15 (legacy 23-stage draft; stale owner/profile names
-#     superseded — the stale 23-stage assumption is NOT carried), docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md
-#     (Test Execution = Required / always-on), docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (routing),
+#   - Source prose: docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/03-build-review-and-test.md §4 (canonical stage block),
+#     docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.15 (legacy 23-stage draft; stale owner/profile names
+#     superseded — the stale 23-stage assumption is NOT carried), docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md
+#     (Test Execution = Required / always-on), docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (routing),
 #     configs/nexus-ai/sdlc_pipeline.yaml (position 14; mandatory gate tests_pass),
 #     configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names: TEST_EXECUTION_REPORT, COVERAGE_REPORT).
 #   - owner_agent reconciled from legacy `qa_lead_agent` (doc 05 §4.15) to canonical `qa_agent` (matches the
@@ -25,7 +25,7 @@
 #     is the TRACE schema. Evidence and trace are kept distinct.
 #
 # LOCKED-SEMANTIC GUARDRAIL: verification-loop is NOT used here. verification-loop = bug/defect finding and
-#   is owned by the next stage (verification_loop_bug_finding). Per docs/ai-sdlc-factory/05-pipeline-model.md §7,
+#   is owned by the next stage (verification_loop_bug_finding). Per docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §7,
 #   using verification-loop in place of test_execution is an explicit anti-pattern. This stage RUNS and EVIDENCES
 #   the already-generated test suite; it does not perform a defect sweep and does not replace test_execution.
 #

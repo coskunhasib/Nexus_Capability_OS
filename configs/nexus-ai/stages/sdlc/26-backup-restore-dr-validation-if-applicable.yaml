@@ -6,17 +6,17 @@
 #   position #26, between cost_resource_governance (#25) and operations_readiness (#27)).
 #   It is a CONDITIONAL gate — produces the conditional required gate `backup_restore_dr_pass_if_applicable`.
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §10 (stage prose),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§7
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §10 (stage prose),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§7
 #       (applicability_decision standard -> BACKUP_RESTORE_DR_APPLICABILITY_DECISION) and §3
 #       (planning authors RUNBOOK_DRAFT / ROLLBACK_PLAN_DRAFT / OPERATIONAL_READINESS_DRAFTS — MF-001),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.18–§4.19 (legacy operations/DR detail; stale owner/
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.18–§4.19 (legacy operations/DR detail; stale owner/
 #     tool/model/context names superseded below — do NOT carry the legacy 23-stage assumption),
-#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §1 (downstream
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §1 (downstream
 #     operations_readiness consumes DR_READINESS_REPORT + ROLLBACK_VALIDATION_REPORT -> confirms on_pass chain),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (operations / DR readiness coverage),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template + conditional gate rule),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (canonical tool names backup_plan_checker /
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (operations / DR readiness coverage),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template + conditional gate rule),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (canonical tool names backup_plan_checker /
 #     restore_test_runner / dr_runbook_checker; conditional gate backup_restore_dr_pass_if_applicable),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
 #     BACKUP_PLAN, RESTORE_TEST_REPORT, DR_READINESS_REPORT, ROLLBACK_VALIDATION_REPORT, DATA_INTEGRITY_REPORT).

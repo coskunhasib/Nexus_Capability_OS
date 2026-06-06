@@ -60,22 +60,22 @@ no_plugin: true
 
 # Provenance — sources scanned to extract every governance profile below.
 canonical_sources:
-  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md          # scope layers + GLOBAL governance set
-  - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md      # registry + usage-mapping rule
-  - docs/ai-sdlc-factory/06-governance-policy-evidence.md             # canonical blocker/advisory policies
-  - docs/ai-sdlc-factory/11-artifact-registry-standard.md             # artifact/evidence vs gate-result naming
-  - docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md     # §3 item contract + §7 governance fields
+  - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md          # scope layers + GLOBAL governance set
+  - docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md      # registry + usage-mapping rule
+  - docs/nexus-ai-orchestration-model/legacy/06-governance-policy-evidence.md             # canonical blocker/advisory policies
+  - docs/nexus-ai-orchestration-model/legacy/11-artifact-registry-standard.md             # artifact/evidence vs gate-result naming
+  - docs/nexus-ai-orchestration-model/legacy/17-shared-registry-formalization-plan.md     # §3 item contract + §7 governance fields
   - configs/nexus-ai/sdlc_pipeline.yaml                               # SDLC pipeline-level uses_governance_profiles
   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml                 # locked-decision guards (no_self_approval, no plugin)
   - configs/nexus-ai/stages/sdlc/*.yaml                               # 31 SDLC stage uses_governance_profiles (richest source)
   - configs/nexus-ai/pipeline_catalog.yaml                            # pre-R9 catalog definition_contract variant names (now summary-only; recorded as aliases)
-  - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md        # research governance (markdown authoritative)
-  - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md      # activation governance (markdown authoritative)
-  - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md      # operations governance (markdown authoritative)
-  - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md# skill-governance governance (markdown authoritative)
-  - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md# knowledge/memory governance (markdown authoritative)
-  - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md           # §4 consolidated newly-introduced governance names
-  - docs/ai-sdlc-factory/reviews/claude-code-skill-agent-review.md    # §8 undeclared skills (cross-ref for skill-scope governance)
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md        # research governance (markdown authoritative)
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md      # activation governance (markdown authoritative)
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md      # operations governance (markdown authoritative)
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md# skill-governance governance (markdown authoritative)
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md# knowledge/memory governance (markdown authoritative)
+  - docs/nexus-ai-orchestration-model/reviews/pipeline-catalog-review.md           # §4 consolidated newly-introduced governance names
+  - docs/nexus-ai-orchestration-model/reviews/claude-code-skill-agent-review.md    # §8 undeclared skills (cross-ref for skill-scope governance)
   # Reconciliation sweep (post-Phase G/H): intra-registry references resolved to first-class items or aliases.
   - configs/nexus-ai/tools_registry.yaml                              # tool_call_governance + global_no_secret_policy (referenced_governance_profiles)
   - configs/nexus-ai/model_provider_profiles.yaml                     # model_invocation_governance / global_governance / research_pipeline_governance refs

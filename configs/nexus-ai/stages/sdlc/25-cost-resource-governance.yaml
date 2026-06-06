@@ -6,15 +6,15 @@
 #   position #25, between performance_resilience (#24) and
 #   backup_restore_dr_validation_if_applicable (#26)).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §9 (legacy stage prose & detail),
-#   - docs/ai-sdlc-factory/06b-sdlc-agentic-safety-and-remaining-gates.md §6
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §9 (legacy stage prose & detail),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06b-sdlc-agentic-safety-and-remaining-gates.md §6
 #       (conditional_required status + required_when expression + uses/evidence detail),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§8
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§8
 #       (applicability_decision standard -> COST_RESOURCE_APPLICABILITY_DECISION;
 #        RESOURCE_USAGE_DATA -> RESOURCE_USAGE_DATA_IF_APPLICABLE; union usage mapping),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Performance/Resource coverage context),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale 23-stage assumption NOT carried),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Performance/Resource coverage context),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; stale 23-stage assumption NOT carried),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
 #       COST_ESTIMATE_REPORT, RESOURCE_BUDGET_REPORT, QUOTA_POLICY_REPORT, RESOURCE_GATE_RESULT,
 #       RESOURCE_USAGE_DATA_IF_APPLICABLE, COST_RESOURCE_APPLICABILITY_DECISION, PERFORMANCE_REPORT).

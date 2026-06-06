@@ -2,9 +2,9 @@
 # Stage #2 of 31: domain_risk_profile
 # Generated for the Nexus AI Orchestration Model (SDLC is one pipeline, not the top).
 # Canonical sources reconciled:
-#   - docs/ai-sdlc-factory/sdlc-stages/01-foundation-and-requirements.md (current per-stage prose)
-#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale owner team_lead_orchestrator corrected)
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md, 08-sdlc-pipeline-contract.md
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/01-foundation-and-requirements.md (current per-stage prose)
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; stale owner team_lead_orchestrator corrected)
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md, 08-sdlc-pipeline-contract.md
 #   - configs/nexus-ai/sdlc_pipeline.yaml, configs/nexus-ai/artifact_registry.yaml
 #
 # Notes:

@@ -36,12 +36,12 @@ F-012 Protocol Gateway: A2A + MCP + Internal Tools
 ## Repo’ya eklenen dosyalar
 
 ```text
-docs/ai-sdlc-factory/26-post-launch-frontier-backlog-and-reassessment-plan.md
+docs/nexus-ai-orchestration-model/26-post-launch-frontier-backlog-and-reassessment-plan.md
 configs/nexus-ai/post_launch_frontier_backlog.yaml
 .memory/0008-post-launch-frontier-backlog.md
 ```
 
-Ayrıca `docs/ai-sdlc-factory/README.md` post-launch frontier backlog ile güncellendi.
+Ayrıca `docs/nexus-ai-orchestration-model/README.md` post-launch frontier backlog ile güncellendi.
 
 ## Reassessment kuralı
 

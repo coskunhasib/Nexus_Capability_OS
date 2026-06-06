@@ -385,8 +385,8 @@ provenance:
   derived_from:
     - configs/nexus-ai/sdlc_pipeline.yaml
     - configs/nexus-ai/stages/sdlc/*.yaml
-    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md   # §4, §5, §7
-    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md     # §4 SDLC pipeline governance
+    - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md   # §4, §5, §7
+    - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md     # §4 SDLC pipeline governance
 no_plugin: true
 governance_not_audit: true
 evidence_not_trace: true

@@ -1,7 +1,7 @@
 # Nexus AI — Team Templates Registry
 # =============================================================================
 # Phase D / doc 18 — Team / Agent / Sub-agent Catalog.
-# Conforms to: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md §4
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md §4
 #   (Team Template Contract). One team_template per team; all 6 teams present.
 #
 # A Team is a PASSIVE ownership / policy boundary (04-team-agent-subagent-model.md §4,
@@ -373,7 +373,7 @@ team_templates:
 
   # ===========================================================================
   # 2) RESEARCH TEAM — owns the research_pipeline (10 stages, no sub-agents).
-  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md §1–§2.
+  #    Roster + uses_* from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §1–§2.
   #    No-self-approval is structural: cross_validation_agent is distinct from the
   #    producer agents (source_reliability / claim_extraction / claim_evidence).
   # ===========================================================================
@@ -456,7 +456,7 @@ team_templates:
 
   # ===========================================================================
   # 3) ACTIVATION TEAM — owns the activation_pipeline (preview -> pilot -> public).
-  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md §1–§3.
+  #    Roster + uses_* from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §1–§3.
   #    activation_owner_decision_agent RECORDS a human/owner decision (not an autonomous
   #    approver). Reviewer/decision owners are distinct from pilot/activation owners.
   # ===========================================================================
@@ -545,7 +545,7 @@ team_templates:
 
   # ===========================================================================
   # 4) OPERATIONS TEAM — owns the operations_pipeline (live-incident lifecycle).
-  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md §1–§3.
+  #    Roster + uses_* from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §1–§3.
   #    Consumes SDLC operations-readiness artifacts; does not regenerate SDLC.
   # ===========================================================================
   - team_id: operations_team
@@ -649,7 +649,7 @@ team_templates:
 
   # ===========================================================================
   # 5) SKILL GOVERNANCE TEAM — owns the skill_governance_pipeline.
-  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+  #    Roster + uses_* from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md
   #    §1–§3 (reconciled with 04 §4.7). skill_librarian_agent is shared with sdlc_team.
   #    skill_semantic_extractor_subagent is a PARENTED sub-agent (parent: skill_librarian_agent).
   #    Anti-pattern blocked: binding without semantics. Activation decider (skill_runtime_safety_agent)
@@ -745,7 +745,7 @@ team_templates:
 
   # ===========================================================================
   # 6) KNOWLEDGE TEAM — owns the knowledge_memory_pipeline.
-  #    Roster + uses_* from docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md §1–§3.
+  #    Roster + uses_* from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §1–§3.
   #    Memory stays a Core Ability USED by these agents — it is never promoted to an agent/owner.
   # ===========================================================================
   - team_id: knowledge_team

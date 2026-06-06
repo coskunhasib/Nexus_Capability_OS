@@ -1,9 +1,9 @@
 # SDLC Pipeline — Stage #6 Contract: architecture
-# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (Pipeline Stage Contract)
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (Pipeline Stage Contract)
 #               configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields)
 # Pipeline: sdlc_pipeline. Always-on stage (not conditional).
 # Reconciled against: sdlc-stages/02-design-risk-and-planning.md (§1 architecture),
-#   docs/ai-sdlc-factory/05-pipeline-model.md (§4.7), configs/nexus-ai/sdlc_pipeline.yaml,
+#   docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (§4.7), configs/nexus-ai/sdlc_pipeline.yaml,
 #   configs/nexus-ai/artifact_registry.yaml (canonical artifact names).
 # Core Abilities are NOT agents; owner_agent is a pipeline Agent role; review/gate lives in
 # the separate architecture_review stage (no self-approval).

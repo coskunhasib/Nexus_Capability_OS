@@ -1,9 +1,9 @@
 # SDLC Pipeline — Stage Contract
 # Stage #3: skill_semantic_extraction (always-on)
 # Source of truth reconciled from:
-#   docs/ai-sdlc-factory/sdlc-stages/01-foundation-and-requirements.md (§3, canonical)
-#   docs/ai-sdlc-factory/03-skill-semantic-extraction.md (semantic detail + owner/reviewer recommendation)
-#   docs/ai-sdlc-factory/05-pipeline-model.md (legacy 4.3/4.4 — skill_selection folded into this stage)
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/01-foundation-and-requirements.md (§3, canonical)
+#   docs/nexus-ai-orchestration-model/legacy/03-skill-semantic-extraction.md (semantic detail + owner/reviewer recommendation)
+#   docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy 4.3/4.4 — skill_selection folded into this stage)
 #   configs/nexus-ai/sdlc_pipeline.yaml, artifact_registry.yaml, pipeline_contract_standard.yaml
 # Note: the legacy standalone `skill_selection` stage is folded into this stage; its binding
 #       gates (prism_bound_as_divergence, verification_loop_bound_as_bug_finding) live here.

@@ -1,8 +1,8 @@
 # SDLC Pipeline — Stage Contract
 # Stage #4: requirements (always-on)
-# Format: docs/ai-sdlc-factory/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
 # Canonical pipeline: configs/nexus-ai/sdlc_pipeline.yaml (31-stage set)
-# Reconciliation: legacy docs/ai-sdlc-factory/05-pipeline-model.md (§4.5) and
+# Reconciliation: legacy docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (§4.5) and
 #   sdlc-stages/01-foundation-and-requirements.md (§4) used owner_agent
 #   `requirements_agent`; remapped to canonical `product_requirements_agent`
 #   per Phase A registry and phase-0-context-lock-report (open_questions #1).

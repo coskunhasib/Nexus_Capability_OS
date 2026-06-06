@@ -98,9 +98,9 @@ no_plugin: true                   # Plugin cancelled; absence enforced by plugin
 
 # --- provenance: sources this applicable layer was derived from ----------------
 canonical_sources:
-  - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md        # §4 profile, §5 rule, §6 global minimum, §14 validation
-  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md          # §3 global governance set
-  - docs/ai-sdlc-factory/06-governance-policy-evidence.md             # §2 rule shape (on_fail.action: block_stage), §3 blocker policies
+  - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md        # §4 profile, §5 rule, §6 global minimum, §14 validation
+  - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md          # §3 global governance set
+  - docs/nexus-ai-orchestration-model/legacy/06-governance-policy-evidence.md             # §2 rule shape (on_fail.action: block_stage), §3 blocker policies
   - configs/nexus-ai/governance_profiles.yaml                         # Phase C registry (scope:global catalog being implemented)
   - configs/nexus-ai/audit_schemas.yaml                              # evidence/trace schema ids referenced (never redefined)
   - configs/nexus-ai/sdlc_pipeline.yaml                              # pipeline-level uses_governance_profiles bindings

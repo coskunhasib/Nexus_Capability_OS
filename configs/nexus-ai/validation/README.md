@@ -1,7 +1,7 @@
 # Nexus AI — Config Validation
 
 How to validate the **SDLC stage contracts** and the **pipeline / run configs** of the
-**Nexus AI Orchestration Model** against the JSON Schemas in [`../schemas/`](../schemas/).
+**Nexus AI Orchestration Model** against the JSON Schemas in [`../schemas/`](../schemas).
 
 This is a **blueprint / documentation** repo (Phase A). Validation here means *static schema
 and consistency checking of YAML/JSON config files* — there is **no runtime, no merge, no
@@ -9,7 +9,7 @@ deploy**. Nothing in this directory executes the pipeline; it only checks that t
 are well-formed and mutually consistent.
 
 > Scope note: this directory currently ships **only this README** — the canonical recipe and
-> check list. No validator script is committed yet (see [Open items](#open-items)). The
+> check list. No validator script is committed yet (see [Open items](./README.md#open-items)). The
 > commands below are the reference procedure to run by hand or to wire into a future
 > `validate` script / CI job.
 
@@ -19,7 +19,7 @@ are well-formed and mutually consistent.
 
 | Config under test | Location | Validating schema (`../schemas/`) |
 |---|---|---|
-| Each SDLC **stage contract** | [`../stages/sdlc/NN-*.yaml`](../stages/sdlc/) (31 files, `01`–`31`) | `stage_contract.schema.json` |
+| Each SDLC **stage contract** | [`../stages/sdlc/NN-*.yaml`](../stages/sdlc/README.md) (31 files, `01`–`31`) | `stage_contract.schema.json` |
 | The SDLC **pipeline definition** | [`../sdlc_pipeline.yaml`](../sdlc_pipeline.yaml) | `pipeline_definition.schema.json` |
 | A **pipeline run** instance | *(none committed yet — author as needed)* | `pipeline_run.schema.json` |
 | A single **evidence item** | *(produced at run time)* | `evidence_item.schema.json` |

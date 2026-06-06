@@ -254,7 +254,7 @@ required_gates:
     - cost_resource_governance_pass_if_applicable
 
 canonical_docs:
-  - docs/ai-sdlc-factory/07-pipeline-contract-standard.md
-  - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md
-  - docs/ai-sdlc-factory/sdlc-stages/README.md
-  - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md
+  - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md
+  - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md
+  - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/README.md
+  - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md

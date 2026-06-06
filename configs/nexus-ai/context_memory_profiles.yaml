@@ -1,6 +1,6 @@
 # Nexus AI — Context / Memory Profiles Registry
 # Shared Registry Formalization (Phase C / doc 17 §10).
-# Output of: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
+# Output of: docs/nexus-ai-orchestration-model/legacy/17-shared-registry-formalization-plan.md
 #
 # WHAT THIS FILE IS
 #   This is the canonical Shared Registry for the "Context / Memory Profiles" category.
@@ -53,8 +53,8 @@ registry_id: nexus_ai_context_memory_profiles
 category: context_memory_profile
 plugin_registry: false   # locked: no plugin registry, ever
 locked_decisions_doc: .memory/0002-locked-decisions.md
-contract_doc: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
-usage_mapping_doc: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md
+contract_doc: docs/nexus-ai-orchestration-model/legacy/17-shared-registry-formalization-plan.md
+usage_mapping_doc: docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md
 
 # ---------------------------------------------------------------------------------------------
 # Shared meta. Type vocabulary used by `type:` on each item.
@@ -205,12 +205,12 @@ profiles:
       - stage:planning
       - stage:domain_regulatory_compliance_validation_if_applicable   # regulatory->requirement trace
       - stage:accessibility_ux_validation_if_applicable                # product brief / acceptance criteria for UX flows
-    aliases:
-      - compliance_context_pack   # legacy (stage 21) reconciled here (regulatory->requirement trace portion)
+    aliases: []
     notes: >-
       Canonical product/requirements pack. The legacy compliance_context_pack (stage 21) was
       split: its regulatory->requirement-trace portion maps here, its security-controls portion
-      maps to security_context_pack.
+      maps to security_context_pack. The split is recorded as reconciliation metadata, not a
+      read-time alias.
 
   - id: architecture_context_pack
     name: Architecture Context Pack
@@ -258,13 +258,12 @@ profiles:
       - stage:planning
       - stage:api_contract_compatibility_validation   # contract/interface design + ADRs
       - stage:performance_resilience                   # NFRs / capacity / failure-mode design
-    aliases:
-      - api_contract_context_pack   # legacy (stage 20) reconciled here (+ implementation_context_pack)
-      - performance_context_pack    # legacy (stage 24) reconciled here (+ implementation_context_pack)
+    aliases: []
     notes: >-
       Canonical architecture pack. Legacy api_contract_context_pack and performance_context_pack
       reconciled across this pack (design/ADR/NFR portion) plus implementation_context_pack
-      (changeset portion); see stage 20 / stage 24 headers.
+      (changeset portion); see stage 20 / stage 24 headers. Because those legacy packs split across
+      two canonical packs, they are not read-time aliases.
 
   - id: implementation_context_pack
     name: Implementation Context Pack
@@ -322,18 +321,12 @@ profiles:
     aliases:
       - planning_context_pack             # legacy (stage 10) -> requirements + architecture + implementation (planning seeds this pack)
       - code_review_context_pack          # legacy (stage 12) -> implementation + verification + run
-      - test_generation_context_pack      # legacy (stage 13) -> implementation + verification
-      - test_execution_context_pack       # legacy (stage 14) -> verification + implementation + run
-      - data_migration_context_pack       # legacy (stage 22) -> implementation + verification + run
-      - api_contract_context_pack         # legacy (stage 20) -> architecture + implementation
-      - performance_context_pack          # legacy (stage 24) -> architecture + implementation
       - ux_accessibility_context_pack     # legacy (stage 23) -> implementation(UI changeset) + requirements + run
-      - agentic_safety_context_pack       # legacy (stage 18) -> security + verification + implementation + run
     notes: >-
       Canonical changeset pack. Many legacy stage packs reconciled partly here (the
-      changeset/tool-permission portion); the same legacy names also appear as aliases on
-      verification_context_pack / security_context_pack / architecture_context_pack where their
-      other portions landed. See stage headers 12/13/14/18/20/22/23/24 for the exact splits.
+      changeset/tool-permission portion). Legacy names that split across multiple canonical packs
+      are recorded in reconciliation notes rather than as read-time aliases. See stage headers
+      12/13/14/18/20/22/23/24 for the exact splits.
 
   - id: verification_context_pack
     name: Verification Context Pack
@@ -378,15 +371,12 @@ profiles:
       - stage:verification_loop_bug_finding
       - stage:ai_agent_safety_evaluation        # bug/defect-finding context
       - stage:data_migration_validation_if_applicable
-    aliases:
-      - test_generation_context_pack      # legacy (stage 13) reconciled here (+ implementation)
-      - test_execution_context_pack       # legacy (stage 14) reconciled here (+ implementation + run)
-      - data_migration_context_pack       # legacy (stage 22) reconciled here (+ implementation + run)
-      - agentic_safety_context_pack       # legacy (stage 18) reconciled here (+ security + implementation + run)
+    aliases: []
     notes: >-
       Canonical verification pack. Carries the defect/verification lineage. verification-loop is a
       bug/defect-finding skill ONLY (locked); this pack is its working context, not a readiness
-      checklist.
+      checklist. Split legacy verification pack names are recorded in reconciliation notes rather
+      than as read-time aliases.
 
   - id: security_context_pack
     name: Security Context Pack
@@ -438,12 +428,11 @@ profiles:
       - security_validation_context_pack   # legacy (stage 16) reconciled here (+ run)
       - privacy_context_pack               # legacy (stage 19) reconciled here (+ run)
       - supply_chain_context_pack          # legacy (stage 17) reconciled here (+ run)
-      - compliance_context_pack            # legacy (stage 21) reconciled here (security-controls portion; + requirements)
-      - agentic_safety_context_pack        # legacy (stage 18) reconciled here (threat/abuse portion; + verification/implementation/run)
     notes: >-
       Canonical security/privacy pack. Strictest redaction profile (no raw secrets is a blocker
       policy, doc 06 §3). Legacy security/privacy/supply-chain/compliance/agentic-safety packs
-      reconciled here for their security portions; see stage headers 16/17/18/19/21.
+      reconciled here for their security portions; split legacy names are recorded in reconciliation
+      notes rather than as read-time aliases. See stage headers 16/17/18/19/21.
 
   - id: operations_context_pack
     name: Operations Context Pack
@@ -543,13 +532,11 @@ profiles:
     aliases:
       - development_completion_context_pack   # legacy (stage 29) reconciled here (+ run)
       - evidence_graph_context_pack           # legacy (stage 28) reconciled here (+ run); dropped as standalone
-      - learning_context_pack                 # legacy SDLC (stage 31) reconciled here (+ run) for refraction
     notes: >-
-      Canonical release-decision pack. NOTE the alias `learning_context_pack` here is the SDLC
-      stage-31 legacy reconciliation only. The Operations Pipeline introduces a DISTINCT candidate
-      item also named `learning_context_pack` (Section D) for live-ops learning; they share a
-      legacy name but differ in scope/owner_domain. Phase E should confirm whether to keep the
-      operations learning pack under a disambiguated id (e.g. operations_learning_context_pack).
+      Canonical release-decision pack. The SDLC stage-31 legacy name `learning_context_pack` is
+      recorded as reconciliation metadata only because the Operations Pipeline introduces a distinct
+      candidate item with the same id for live-ops learning. Phase E should confirm whether to keep
+      the operations learning pack under a disambiguated id (e.g. operations_learning_context_pack).
 
   - id: domain_risk_context_pack
     name: Domain Risk Context Pack
@@ -1473,7 +1460,7 @@ validation:
 # ---------------------------------------------------------------------------------------------
 open_questions:
   - >-
-    NAME COLLISION on `learning_context_pack`: it is BOTH an SDLC stage-31 legacy alias reconciled
+    NAME COLLISION on `learning_context_pack`: it is BOTH an SDLC stage-31 legacy reconciliation
     into release_context_pack AND a distinct candidate live-operations learning pack
     (owner_domain: operations_reliability). Decide in Phase E whether to rename the operations item
     to `operations_learning_context_pack` to eliminate the shared legacy name.

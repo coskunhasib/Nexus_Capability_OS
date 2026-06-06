@@ -29,7 +29,7 @@
 #   - configs/nexus-ai/team_templates.yaml       # knowledge_team roster (6 agents) + team_lead + forbidden_actions (memory_core_ability_promoted_to_agent, retrieval_profile_update_without_validity_window, unredacted_sensitive_content_exposed)
 #   - configs/nexus-ai/team_lead_roles.yaml      # knowledge_team_lead forbidden_actions / blocking_limits
 #   - configs/nexus-ai/audit_schemas.yaml        # memory_provenance_schema; memory_update_trace_schema; stage_gate_trace_schema
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §5/§7  # team role rules + Memory governance (ability, not agent)
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md §5/§7  # team role rules + Memory governance (ability, not agent)
 # =============================================================================
 
 version: draft-0.1

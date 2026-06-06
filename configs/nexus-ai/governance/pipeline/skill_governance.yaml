@@ -13,7 +13,7 @@
 # -SDLC skill semantic extraction). Do not conflate the two.
 #
 # DERIVED FROM (doc 19 §4):
-#   - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md (MARKDOWN
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (MARKDOWN
 #     authoritative; §1 uses_governance_profiles + §2 per-stage key gates + §3.2
 #     governance placeholders):
 #       uses_governance_profiles:
@@ -287,10 +287,10 @@ escalation:
 provenance:
   registry_profile: governance_profiles.yaml#pipeline.skill_governance_pipeline_governance
   derived_from:
-    - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md  # markdown authoritative
+    - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md  # markdown authoritative
     - configs/nexus-ai/pipeline_catalog.yaml                               # skill_governance_pipeline summary entry (skill_governance_profile was a pre-R9 definition_contract alias; catalog now summary-only)
-    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md           # §4, §5, §9 locked semantics
-    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md             # §8 skill governance
+    - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md           # §4, §5, §9 locked semantics
+    - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md             # §8 skill governance
 no_plugin: true
 governance_not_audit: true
 evidence_not_trace: true

@@ -8,17 +8,17 @@
 #   may be produced). It produces the always-required gate `no_blocking_policy_failure` and is the
 #   precondition for release_candidate.
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §3 (canonical-aligned
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §3 (canonical-aligned
 #     prose contract; owner_agent=release_manager_agent, fuller required+conditional gate set),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.21 (legacy detail — STALE 23-stage assumption,
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.21 (legacy detail — STALE 23-stage assumption,
 #     thinner gate set; do NOT carry it; legacy skill `release-readiness-judge` reconciled below),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §8 (Required / always-on; canonical
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §8 (Required / always-on; canonical
 #     "minimum gate set" that development_completion must evaluate),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §9 (release-candidate minimum evidence set),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §9 (override:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §9 (release-candidate minimum evidence set),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §9 (override:
 #     compliance_pass_if_applicable is a guaranteed member of the gate set),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract field order),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §4/§6/§7 (mandatory + conditional gates;
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract field order),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §4/§6/§7 (mandatory + conditional gates;
 #     §6: completion requires ALL required + applicable conditional gates evaluated; §7: release
 #     candidate cannot be produced before development completion passes),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names DEVELOPMENT_COMPLETION_REPORT

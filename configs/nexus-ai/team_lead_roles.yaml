@@ -1,7 +1,7 @@
 # =============================================================================
 # Nexus AI — Team Lead Roles
 # Phase D / doc 18 — Team / Agent / Sub-agent Catalog
-# Output of: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md (§5 Team Lead Role Contract)
+# Output of: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md (§5 Team Lead Role Contract)
 # =============================================================================
 #
 # WHAT THIS FILE IS
@@ -81,11 +81,11 @@ purpose: >-
 # ---------------------------------------------------------------------------
 sources_scanned:
   - configs/nexus-ai/stages/sdlc/*.yaml                 # SDLC owner_agent/sub_agent roster + sdlc_team_lead review-gate ownership
-  - docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md
-  - docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md
-  - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md
-  - docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
-  - docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
   - configs/nexus-ai/pipeline_catalog.yaml              # pipeline_id / required_team_type / required_team_lead_role
   - configs/nexus-ai/governance_profiles.yaml           # team/pipeline/global governance ids (incl. sdlc_team_governance, research_team_governance)
   - configs/nexus-ai/audit_schemas.yaml                 # evidence/trace schema ids
@@ -93,8 +93,8 @@ sources_scanned:
   - configs/nexus-ai/tools_registry.yaml                # tool ids (orchestration/read tools only for leads)
   - configs/nexus-ai/skills_registry.yaml               # skill ids
   - configs/nexus-ai/core_abilities.yaml                # Core Ability ids/names
-  - docs/ai-sdlc-factory/00-decision-log.md             # D-002/D-003/D-004/D-006/D-007/D-008
-  - docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md  # §5 field contract + §11 boundary rules
+  - docs/nexus-ai-orchestration-model/legacy/00-decision-log.md             # D-002/D-003/D-004/D-006/D-007/D-008
+  - docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md  # §5 field contract + §11 boundary rules
 
 # ---------------------------------------------------------------------------
 # Registry-wide invariants (enforce the locked rules from this file's data).
@@ -251,7 +251,7 @@ team_lead_roles:
 
   # ===========================================================================
   # 2. RESEARCH TEAM LEAD
-  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md §2 (per-stage owner_agent).
+  #    Source of truth: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2 (per-stage owner_agent).
   # ===========================================================================
   - team_lead_id: research_team_lead
     team_id: research_team
@@ -319,7 +319,7 @@ team_lead_roles:
 
   # ===========================================================================
   # 3. ACTIVATION TEAM LEAD
-  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md §2 (per-stage owner_agent).
+  #    Source of truth: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2 (per-stage owner_agent).
   # ===========================================================================
   - team_lead_id: activation_team_lead
     team_id: activation_team
@@ -390,7 +390,7 @@ team_lead_roles:
 
   # ===========================================================================
   # 4. OPERATIONS TEAM LEAD
-  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md §2 (per-stage owner_agent).
+  #    Source of truth: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2 (per-stage owner_agent).
   # ===========================================================================
   - team_lead_id: operations_team_lead
     team_id: operations_team
@@ -464,7 +464,7 @@ team_lead_roles:
 
   # ===========================================================================
   # 5. SKILL GOVERNANCE TEAM LEAD
-  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md §2/§3.1.
+  #    Source of truth: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md §2/§3.1.
   # ===========================================================================
   - team_lead_id: skill_governance_team_lead
     team_id: skill_governance_team
@@ -538,7 +538,7 @@ team_lead_roles:
 
   # ===========================================================================
   # 6. KNOWLEDGE TEAM LEAD
-  #    Source of truth: docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md §2/§3.1
+  #    Source of truth: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2/§3.1
   #    (markdown uses knowledge_team / knowledge_team_lead — authoritative over the catalog YAML's
   #     knowledge_memory_team / knowledge_memory_team_lead; see open_questions).
   # ===========================================================================

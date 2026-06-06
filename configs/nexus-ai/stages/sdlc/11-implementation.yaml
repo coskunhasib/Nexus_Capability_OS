@@ -1,14 +1,14 @@
 # SDLC Pipeline — Stage #11 Contract: implementation
-# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (Pipeline Stage Contract, §4)
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (Pipeline Stage Contract, §4)
 #               configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields)
 # Pipeline: sdlc_pipeline. Always-on stage (not conditional) — see 06-sdlc-coverage-gap-audit.md
 #   (Implementation = Required) and configs/nexus-ai/sdlc_pipeline.yaml (stage 11 of 31).
 # Reconciled against:
-#   docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md (§1 implementation — canonical prose)
-#   docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md (§4 — adds 7 conditional outputs)
-#   docs/ai-sdlc-factory/05-pipeline-model.md (§4.12 — legacy detail; owner `tech_lead_agent` / `engineering_team`
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/03-build-review-and-test.md (§1 implementation — canonical prose)
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md (§4 — adds 7 conditional outputs)
+#   docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (§4.12 — legacy detail; owner `tech_lead_agent` / `engineering_team`
 #     superseded by canonical `engineering_agent` + `sdlc_team`; do NOT carry the stale 23-stage assumption)
-#   docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (routing: on_pass=code_review; mandatory gate
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (routing: on_pass=code_review; mandatory gate
 #     `implementation_scope_clean`)
 #   configs/nexus-ai/artifact_registry.yaml (canonical UPPER_SNAKE artifact names incl. implementation_review group)
 # Boundary notes:

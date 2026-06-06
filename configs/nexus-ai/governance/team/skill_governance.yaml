@@ -26,7 +26,7 @@
 #   - configs/nexus-ai/team_templates.yaml       # skill_governance_team roster (2 agents + 1 parented sub-agent) + team_lead + forbidden_actions (binding_proposed_without_semantics, skill_activated_without_misuse_warnings, locked_semantics_violation, self_approval_of_activation_decision)
 #   - configs/nexus-ai/team_lead_roles.yaml      # skill_governance_team_lead forbidden_actions / blocking_limits
 #   - configs/nexus-ai/audit_schemas.yaml        # skill_governance_evidence_schema; skill_semantic_extract_schema; skill_misuse_warning_schema; skill_binding_decision_schema; skill_governance_trace_schema
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §8  # locked prism/verification-loop semantics
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md §8  # locked prism/verification-loop semantics
 # =============================================================================
 
 version: draft-0.1

@@ -1,7 +1,7 @@
 # =============================================================================
 # Nexus AI — Skills Registry
 # Phase C / doc 17 §5 — Shared Registry Formalization
-# Output of: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
+# Output of: docs/nexus-ai-orchestration-model/legacy/17-shared-registry-formalization-plan.md
 # =============================================================================
 #
 # WHAT THIS FILE IS
@@ -71,13 +71,13 @@ sources_scanned:
   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml   # locked anti-patterns for prism / verification-loop / skill binding
   - configs/nexus-ai/pipeline_catalog.yaml              # catalog summaries (markdown is authoritative per review F-1)
   - docs/ai-sdlc-factory/pipeline-catalog/*.md          # 5 non-SDLC pipelines (research, activation, operations, skill-governance, knowledge-memory)
-  - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md       # §4 consolidated newly-introduced names
-  - docs/ai-sdlc-factory/reviews/claude-code-skill-agent-review.md # §8 the 6 undeclared skills
-  - docs/ai-sdlc-factory/03-skill-semantic-extraction.md          # canonical semantic_category / primary_purpose / not_for model
-  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md      # §8 skill-level governance profiles
-  - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md  # the dual registry+usage rule
-  - docs/ai-sdlc-factory/06-governance-policy-evidence.md         # no_unread_skill_binding rule
-  - docs/ai-sdlc-factory/11-artifact-registry-standard.md         # evidence/trace separation
+  - docs/nexus-ai-orchestration-model/reviews/pipeline-catalog-review.md       # §4 consolidated newly-introduced names
+  - docs/nexus-ai-orchestration-model/reviews/claude-code-skill-agent-review.md # §8 the 6 undeclared skills
+  - docs/nexus-ai-orchestration-model/legacy/03-skill-semantic-extraction.md          # canonical semantic_category / primary_purpose / not_for model
+  - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md      # §8 skill-level governance profiles
+  - docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md  # the dual registry+usage rule
+  - docs/nexus-ai-orchestration-model/legacy/06-governance-policy-evidence.md         # no_unread_skill_binding rule
+  - docs/nexus-ai-orchestration-model/legacy/11-artifact-registry-standard.md         # evidence/trace separation
 
 # ---------------------------------------------------------------------------
 # Registry-wide invariants (enforce the locked rules from registry data).

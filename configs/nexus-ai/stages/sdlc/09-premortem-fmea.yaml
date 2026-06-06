@@ -1,10 +1,10 @@
 # SDLC Pipeline — Stage #9 contract
 # Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set)
-# Reconciled against: docs/ai-sdlc-factory/sdlc-stages/02-design-risk-and-planning.md (stage prose),
-#   docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale owner/profile names superseded),
-#   docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Required / always-on status),
-#   docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract format),
-#   docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (routing: on_pass=planning),
+# Reconciled against: docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/02-design-risk-and-planning.md (stage prose),
+#   docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; stale owner/profile names superseded),
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Required / always-on status),
+#   docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract format),
+#   docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (routing: on_pass=planning),
 #   configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names).
 # Always-on stage (no applicability_decision).
 

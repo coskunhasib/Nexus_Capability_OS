@@ -1,7 +1,7 @@
 # Nexus AI Orchestration Model — SDLC Pipeline
 # Stage #21 of 31: domain_regulatory_compliance_validation_if_applicable (CONDITIONAL)
 # Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
-# Authored per docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract +
+# Authored per docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract +
 #   §13 Conditional gate rule) and reconciled against the Phase A canonical shared registry.
 # Conditional stage: includes applicability_decision (required_when) + conditional_required_gates.
 #

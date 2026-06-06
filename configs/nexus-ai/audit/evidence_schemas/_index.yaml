@@ -65,8 +65,8 @@ index_id: nexus_ai_audit_evidence_schemas_index
 family: audit
 audit_kind: evidence
 source_registry: configs/nexus-ai/audit_schemas.yaml
-contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
-concept_ref: docs/ai-sdlc-factory/03-governance-and-audit-layering.md
+contract_ref: docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md#12
+concept_ref: docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md
 sibling_directory: configs/nexus-ai/audit/trace_schemas/   # Trace family (separate; never merged)
 
 files:

@@ -21,7 +21,7 @@
 #   - configs/nexus-ai/team_templates.yaml       # research_team roster (10 agents) + team_lead + forbidden_actions
 #   - configs/nexus-ai/team_lead_roles.yaml      # research_team_lead forbidden_actions / blocking_limits
 #   - configs/nexus-ai/audit_schemas.yaml        # source_evidence_schema / claim_evidence_schema / stage_gate_trace_schema
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §5  # research team rule: producer != sole validator of own source
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md §5  # research team rule: producer != sole validator of own source
 # =============================================================================
 
 version: draft-0.1

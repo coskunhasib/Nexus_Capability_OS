@@ -5,13 +5,13 @@
 # Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
 #   an always-on mandatory gate — produces required gate `security_validation_pass`).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §1 (stage prose),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.17 (legacy detail; stale owner/skill/tool/
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §1 (stage prose),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.17 (legacy detail; stale owner/skill/tool/
 #     context names superseded — do NOT carry the legacy 23-stage assumption),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Required / always-on; SAST/SCA/secret/
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Required / always-on; SAST/SCA/secret/
 #     container/IaC/API scanner result interpretation),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract format),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (routing: on_pass=supply_chain_sbom_license),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract format),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (routing: on_pass=supply_chain_sbom_license),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names:
 #     SECURITY_SCAN_REPORT, SECURITY_FINDINGS_NORMALIZED).
 #

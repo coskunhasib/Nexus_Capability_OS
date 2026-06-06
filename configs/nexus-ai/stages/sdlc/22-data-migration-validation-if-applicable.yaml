@@ -10,18 +10,18 @@
 # Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; stage #22 =
 #   data_migration_validation_if_applicable; conditional gate data_migration_pass_if_applicable;
 #   on_pass -> accessibility_ux_validation_if_applicable).
-# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract field set/order),
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract field set/order),
 #              configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields + shared_usage_fields).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §6 (legacy per-stage draft:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §6 (legacy per-stage draft:
 #     owner/skills/gates/blocking conditions),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §5 (canonical inputs =
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §5 (canonical inputs =
 #     *_IF_APPLICABLE), §6/§7 (applicability_decision = DATA_MIGRATION_APPLICABILITY_DECISION),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §3 (status: Conditional Required; needed when
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §3 (status: Conditional Required; needed when
 #     data model / migration / rollback / data-loss risk exists),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy 23-stage draft has NO dedicated data-migration
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy 23-stage draft has NO dedicated data-migration
 #     stage — this stage is a gap-audit addition; the stale 23-stage assumption is NOT carried),
-#   - docs/ai-sdlc-factory/04-team-agent-subagent-model.md (data_model_subagent = data model/retention/
+#   - docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md (data_model_subagent = data model/retention/
 #     migration RISK extraction, lives in the architecture stage; engineering_agent owns migration
 #     IMPLEMENTATION incl. the unsafe_migration blocking condition),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names; product_gates group:

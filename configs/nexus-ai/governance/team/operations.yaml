@@ -25,7 +25,7 @@
 #   - configs/nexus-ai/team_templates.yaml       # operations_team roster (6 agents) + team_lead + forbidden_actions (self_approved_resolution, missing_severity_classification_before_mitigation, rollback_or_fix_without_runbook_or_rollback_evidence, team_lead_executes_rollback_or_fix)
 #   - configs/nexus-ai/team_lead_roles.yaml      # operations_team_lead forbidden_actions / blocking_limits
 #   - configs/nexus-ai/audit_schemas.yaml        # incident_evidence_schema; severity_classification_evidence_schema; mitigation_plan_evidence_schema; rollback_fix_evidence_schema; postmortem_evidence_schema; operational_learning_evidence_schema; stage_gate_trace_schema
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §4  # operations rules (severity classification mandatory; postmortem mandatory; rollback/runbook evidence mandatory)
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md §4  # operations rules (severity classification mandatory; postmortem mandatory; rollback/runbook evidence mandatory)
 # =============================================================================
 
 version: draft-0.1

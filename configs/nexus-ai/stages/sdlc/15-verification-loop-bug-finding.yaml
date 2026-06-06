@@ -4,14 +4,14 @@
 #
 # Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; stage #15).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md §5 (stage prose contract),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §5 (worked stage example; routing),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.16 / §5 (legacy detail; stale owner/profile
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/03-build-review-and-test.md §5 (stage prose contract),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §5 (worked stage example; routing),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.16 / §5 (legacy detail; stale owner/profile
 #     names superseded — qa_lead_agent -> qa_agent; do NOT carry the stale 23-stage assumption),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (status: Required / always-on),
-#   - docs/ai-sdlc-factory/04-team-agent-subagent-model.md §6.2 + 01-core-definitions.md
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (status: Required / always-on),
+#   - docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md §6.2 + 01-core-definitions.md
 #     (canonical sub-agent id: bug_hunter_subagent),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract field set/order),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract field set/order),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names; test_bugfinding group).
 #
 # Reconciliation notes:

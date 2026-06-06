@@ -1,7 +1,7 @@
 # SDLC Pipeline — Stage Contract 01: intake
 # Machine-readable stage contract (Phase A, blueprint/documentation only).
 # Conforms to: configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields)
-#              docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 stage contract)
+#              docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (§4 stage contract)
 # Top structure: Nexus AI Orchestration Model. SDLC is ONE pipeline under it.
 # Pipeline: sdlc_pipeline. This is stage #1 of the canonical 31-stage SDLC pipeline.
 # Stage class: always-on (not conditional) — no applicability_decision block.

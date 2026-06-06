@@ -2,15 +2,15 @@
 # Stage #13 of 31: test_generation (always-on)
 # Machine-readable stage contract. Documentation/blueprint only — no runtime code.
 #
-# Format: docs/ai-sdlc-factory/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract).
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract).
 # Canonical pipeline & ordering: configs/nexus-ai/sdlc_pipeline.yaml (31-stage set; index 13).
-# Required / always-on per docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md
+# Required / always-on per docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md
 #   ("Test Generation | Evet | ... | Required") -> no applicability_decision.
 # Canonical artifact names: configs/nexus-ai/artifact_registry.yaml (group test_bugfinding).
-# Primary stage prose: docs/ai-sdlc-factory/sdlc-stages/03-build-review-and-test.md §3.
+# Primary stage prose: docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/03-build-review-and-test.md §3.
 #
 # Reconciliation notes (legacy detail -> Phase A canonical registry):
-#   - owner_agent: legacy docs/ai-sdlc-factory/05-pipeline-model.md §4.14 named `qa_lead_agent`
+#   - owner_agent: legacy docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.14 named `qa_lead_agent`
 #     (stale 23-stage assumption); remapped to canonical `qa_agent`. qa_agent also owns the
 #     downstream test_execution (#14) and verification_loop_bug_finding (#15) stages.
 #   - sub_agent: prose said `test_generation_sub_agent`; canonical sub-agent catalog name is

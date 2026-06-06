@@ -1,6 +1,6 @@
 # SDLC Pipeline — Stage #7 contract
 # Machine-readable stage contract. Documentation/blueprint only: no runtime code, no merge, no deploy.
-# Authored per docs/ai-sdlc-factory/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
+# Authored per docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (§4 Pipeline Stage Contract)
 # and reconciled against the Phase A canonical shared registry.
 # Always-on stage (not conditional): no applicability_decision block.
 

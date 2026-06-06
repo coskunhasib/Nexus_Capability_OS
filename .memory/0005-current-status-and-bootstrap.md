@@ -29,14 +29,14 @@ Yeni oturumda önce şunları oku:
 .memory/0006-coordination-runtime-gap-extension.md
 .memory/0007-mission-system-extension.md
 
-docs/ai-sdlc-factory/README.md
-docs/ai-sdlc-factory/BLUEPRINT_INDEX.md
-docs/ai-sdlc-factory/00-decision-log.md                              (D-001..D-016)
-docs/ai-sdlc-factory/23-coordination-system-and-runtime-gap-closure.md
-docs/ai-sdlc-factory/24-mission-system-and-user-facing-runtime-model.md
-docs/ai-sdlc-factory/25-mission-runtime-gap-closure-audit.md
-docs/ai-sdlc-factory/reviews/final-readiness-gate.md                 (owner kararı)
-docs/ai-sdlc-factory/reviews/claude-code-sdlc-completion-summary.md  (WP-05 kapanış)
+docs/nexus-ai-orchestration-model/README.md
+docs/nexus-ai-orchestration-model/INDEX.md
+docs/nexus-ai-orchestration-model/legacy/00-decision-log.md                              (D-001..D-016)
+docs/nexus-ai-orchestration-model/23-coordination-system-and-runtime-gap-closure.md
+docs/nexus-ai-orchestration-model/24-mission-system-and-user-facing-runtime-model.md
+docs/nexus-ai-orchestration-model/25-mission-runtime-gap-closure-audit.md
+docs/nexus-ai-orchestration-model/reviews/final-readiness-gate.md                 (owner kararı)
+docs/nexus-ai-orchestration-model/reviews/claude-code-sdlc-completion-summary.md  (WP-05 kapanış)
 ```
 
 ## Kilitli kararlar

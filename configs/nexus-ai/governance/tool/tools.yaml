@@ -62,7 +62,7 @@ config_layer: governance
 scope: tool
 config_version: draft-0.1
 config_status: draft
-owner_doc: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md
+owner_doc: docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md
 no_plugin: true
 
 # Provenance — sources read from disk to derive every profile/rule below.
@@ -70,8 +70,8 @@ derived_from:
   - configs/nexus-ai/tools_registry.yaml                 # 81 tool definitions: side_effects/risk_level/requires_sandbox/allowed_callers (authoritative)
   - configs/nexus-ai/governance_profiles.yaml            # Phase C registry: tool-scope sandbox_execution_governance + global profiles tools bind
   - configs/nexus-ai/audit_schemas.yaml                  # trace/evidence schema ids referenced by required_trace/required_evidence
-  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md   # §9 Tool Governance; §2 scope layers; §10–§12 Evidence/Trace split
-  - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md # §4 profile contract, §5 rule contract, §10 tool minimum, §13/§14/§15
+  - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md   # §9 Tool Governance; §2 scope layers; §10–§12 Evidence/Trace split
+  - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md # §4 profile contract, §5 rule contract, §10 tool minimum, §13/§14/§15
 
 # Controlled vocabularies (doc 19 §4/§5; aligned to governance_profiles.yaml).
 scope_value: tool                                        # every profile here references the known `tool` scope (§14)

@@ -9,13 +9,13 @@
 # Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this is the LAST
 #   stage, position #31, immediately after release_candidate (#30); on_pass terminates the run).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §5 (stage prose contract),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.23 (legacy detail; stale 23-stage numbering —
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §5 (stage prose contract),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.23 (legacy detail; stale 23-stage numbering —
 #       NOT carried; legacy `id:` 4.23 != canonical stage #31),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §3 row "Refraction / Learning"
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §3 row "Refraction / Learning"
 #       (status: "Advisory Required" — always-on but NOT a release blocker),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §3 (last stage in the canonical list),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md §4 (stage contract field set/order),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §3 (last stage in the canonical list),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (stage contract field set/order),
 #   - configs/nexus-ai/artifact_registry.yaml `artifact_groups.learning`
 #       (canonical UPPER_SNAKE artifacts: LESSONS_LEARNED, MEMORY_UPDATE_PROPOSAL,
 #        FUTURE_IMPROVEMENT_BACKLOG) and `gate_result_suffix: _GATE_RESULT` (=> LEARNING_GATE_RESULT).
@@ -25,7 +25,7 @@
 #     agent-roles list and in both legacy prose blocks). It is a pipeline Agent ROLE (snake_case),
 #     owner_team = sdlc_team, team_lead = sdlc_team_lead. Supervisor is a Core Ability, NOT the
 #     team_lead. NOTE: memory_curator_agent does not yet have a dedicated entry in
-#     docs/ai-sdlc-factory/04-team-agent-subagent-model.md — flagged in open_questions for catalog
+#     docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md — flagged in open_questions for catalog
 #     formalization.
 #   - No-self-approval: this stage AUTHORS run-level learning artifacts (lessons, calibration update,
 #     improvement backlog) by reflecting over completed-run evidence produced by OTHER stages/agents.

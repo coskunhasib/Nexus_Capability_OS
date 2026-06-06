@@ -60,9 +60,9 @@ Mission Analytics çalışma süresini, sorunları, kontrolleri, kanıtları ve 
 ## Repo’ya eklenen dosyalar
 
 ```text
-docs/ai-sdlc-factory/24-mission-system-and-user-facing-runtime-model.md
-docs/ai-sdlc-factory/README-updates-after-mission-system.md
-docs/ai-sdlc-factory/AI_STUDIO_USER_SIMULATION_PROMPT.md
+docs/nexus-ai-orchestration-model/24-mission-system-and-user-facing-runtime-model.md
+docs/nexus-ai-orchestration-model/README-updates-after-mission-system.md
+docs/nexus-ai-orchestration-model/AI_STUDIO_USER_SIMULATION_PROMPT.md
 configs/nexus-ai/mission_system.yaml
 configs/nexus-ai/validation_contract.yaml
 configs/nexus-ai/structured_handoff_contract.yaml
@@ -80,7 +80,7 @@ configs/nexus-ai/runtime_workpackage_execution_contract.yaml
 Ayrıca güncellendi:
 
 ```text
-docs/ai-sdlc-factory/AI_STUDIO_HIERARCHY_PROMPT.md
+docs/nexus-ai-orchestration-model/AI_STUDIO_HIERARCHY_PROMPT.md
 configs/nexus-ai/runtime_gap_closure.yaml
 ```
 

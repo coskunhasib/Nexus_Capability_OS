@@ -6,14 +6,14 @@
 #   between operations_readiness (#27) and development_completion (#29); produces the required
 #   always-on gate `evidence_graph_complete`).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §2 (stage prose contract),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.20 (legacy detail; stale owner/skill/profile
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §2 (stage prose contract),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.20 (legacy detail; stale owner/skill/profile
 #     names superseded — do NOT carry the legacy 23-stage assumption / 4.x numbering),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (status: Required / always-on; the
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (status: Required / always-on; the
 #     requirement -> design -> code -> test -> gate -> release trace),
-#   - docs/ai-sdlc-factory/04-team-agent-subagent-model.md §6.8 (sub-agent id: evidence_trace_subagent),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md §4 (stage contract field set/order),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (release_evidence union; routing),
+#   - docs/nexus-ai-orchestration-model/legacy/04-team-agent-subagent-model.md §6.8 (sub-agent id: evidence_trace_subagent),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (stage contract field set/order),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (release_evidence union; routing),
 #   - configs/nexus-ai/artifact_registry.yaml (completion_release group + release_evidence_required.core:
 #     EVIDENCE_GRAPH, TRACEABILITY_MATRIX are canonical UPPER_SNAKE artifacts).
 #

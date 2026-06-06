@@ -10,7 +10,7 @@
 #     parent: skill_librarian_agent). research / activation / operations / knowledge-memory
 #     pipelines declare only Agents — no sub-agents. => 8 distinct sub-agents total.
 #
-# Contract shape: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md §7 (Sub-agent Role
+# Contract shape: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md §7 (Sub-agent Role
 #   Contract). Boundary rules: doc 18 §11 (and task LOCKED DECISIONS):
 #   - Core Abilities [Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS] are a separate
 #     capability LAYER that agents/sub-agents USE via uses_core_abilities; they are NEVER agents.
@@ -38,8 +38,8 @@ version: draft-0.1
 catalog_id: nexus_ai_sub_agent_roles
 category: sub_agent_role
 status: draft
-owner_doc: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md
-contract_shape_ref: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md#7-sub-agent-role-contract
+owner_doc: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md
+contract_shape_ref: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md#7-sub-agent-role-contract
 plugin_registry: false   # locked: no plugin registry, ever
 
 # Convention applied to every entry:

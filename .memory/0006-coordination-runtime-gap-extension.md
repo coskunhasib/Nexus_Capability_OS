@@ -86,15 +86,15 @@ Runtime Workpackage Execution Contract
 ## Repo’ya eklenen dosyalar
 
 ```text
-docs/ai-sdlc-factory/23-coordination-system-and-runtime-gap-closure.md
-docs/ai-sdlc-factory/AI_STUDIO_HIERARCHY_PROMPT.md
-docs/ai-sdlc-factory/README-updates-after-coordination-runtime-gaps.md
+docs/nexus-ai-orchestration-model/23-coordination-system-and-runtime-gap-closure.md
+docs/nexus-ai-orchestration-model/AI_STUDIO_HIERARCHY_PROMPT.md
+docs/nexus-ai-orchestration-model/README-updates-after-coordination-runtime-gaps.md
 configs/nexus-ai/coordination_system.yaml
 configs/nexus-ai/runtime_gap_closure.yaml
 .memory/0006-coordination-runtime-gap-extension.md
 ```
 
-Ayrıca `docs/ai-sdlc-factory/README.md` güncellendi ve Coordination System ana kavram ailelerine eklendi.
+Ayrıca `docs/nexus-ai-orchestration-model/README.md` güncellendi ve Coordination System ana kavram ailelerine eklendi.
 
 ## Handoff etkisi
 

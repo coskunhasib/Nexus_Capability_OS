@@ -12,19 +12,19 @@
 #   release_candidate; always-on; on_pass -> refraction_learning; on_fail -> development_completion;
 #   pipeline-level governance includes release_candidate_governance and audit includes
 #   release_evidence_schema).
-# Conforms to: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract field set/order),
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract field set/order),
 #              configs/nexus-ai/pipeline_contract_standard.yaml (stage_required_fields + shared_usage_fields).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/05-completion-release-and-learning.md §4 (legacy per-stage draft:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/05-completion-release-and-learning.md §4 (legacy per-stage draft:
 #     owner/skills/tools/gates/inputs/outputs/routing for release_candidate),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.22 (legacy detail; stale owner/skill names superseded —
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.22 (legacy detail; stale owner/skill names superseded —
 #     the legacy doc numbers this stage 22 under a stale 23-stage assumption; that assumption is NOT
 #     carried — release_candidate is stage #30 of the canonical 31-stage pipeline),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md §9 (Release Candidate minimum evidence set) and
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md §9 (Release Candidate minimum evidence set) and
 #     the audit table row "Release Candidate | Required",
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §7 (Release Candidate minimum + conditional
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §7 (Release Candidate minimum + conditional
 #     evidence; "Release Candidate, Development Completion pass olmadan üretilemez"),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §10 (Release Candidate
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §10 (Release Candidate
 #     conditional evidence override: COMPLIANCE_APPLICABILITY_DECISION, COMPLIANCE_MATRIX_IF_APPLICABLE,
 #     REGULATORY_TRACEABILITY_REPORT_IF_APPLICABLE, COMPLIANCE_GATE_RESULT_IF_APPLICABLE),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names; completion_release group:

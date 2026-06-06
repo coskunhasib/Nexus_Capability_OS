@@ -5,14 +5,14 @@
 # Source of truth: configs/nexus-ai/sdlc_pipeline.yaml (canonical 31-stage set; this stage is
 #   position #19, between ai_agent_safety_evaluation (#18) and api_contract_compatibility_validation (#20)).
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §4 (stage prose),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§7
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §4 (stage prose),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §6–§7
 #       (applicability_decision standard -> PRIVACY_LIFECYCLE_APPLICABILITY_DECISION),
-#   - docs/ai-sdlc-factory/06b-sdlc-agentic-safety-and-remaining-gates.md §3
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06b-sdlc-agentic-safety-and-remaining-gates.md §3
 #       (conditional_required status + required_when expression + uses/evidence detail),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Privacy / Data Lifecycle coverage),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md (legacy detail; stale names superseded below),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Privacy / Data Lifecycle coverage),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md (legacy detail; stale names superseded below),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names).
 #
 # Reconciliation notes (legacy -> Phase A canonical registry):

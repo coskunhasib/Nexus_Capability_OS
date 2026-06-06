@@ -9,7 +9,7 @@
 # governance_profiles.yaml -> pipeline.operations_pipeline_governance.
 #
 # DERIVED FROM (doc 19 §4):
-#   - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md (MARKDOWN is
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md (MARKDOWN is
 #     authoritative; §1 uses_governance_profiles + §2 per-stage key gates + §3.2
 #     governance placeholders):
 #       uses_governance_profiles:
@@ -272,10 +272,10 @@ escalation:
 provenance:
   registry_profile: governance_profiles.yaml#pipeline.operations_pipeline_governance
   derived_from:
-    - docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md  # markdown authoritative
+    - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md  # markdown authoritative
     - configs/nexus-ai/pipeline_catalog.yaml                         # operations_pipeline summary entry (incident_response_governance was a pre-R9 definition_contract alias; catalog now summary-only)
-    - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md     # §4, §5
-    - docs/ai-sdlc-factory/03-governance-and-audit-layering.md       # §4 operations pipeline governance
+    - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md     # §4, §5
+    - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md       # §4 operations pipeline governance
 no_plugin: true
 governance_not_audit: true
 evidence_not_trace: true

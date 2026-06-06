@@ -48,7 +48,7 @@
 #   - configs/nexus-ai/stages/sdlc/12-code-review.yaml  # code_review gate + on_fail/rework (representative review gate)
 #   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml # anti_patterns: self_approval_gate, release_candidate_without_policy_gate, supervisor_as_team_lead
 #   - configs/nexus-ai/audit_schemas.yaml               # evidence/trace schema ids referenced below (Evidence != Trace)
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md §5  # SDLC team rules (developer/QA/release-agent separation)
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md §5  # SDLC team rules (developer/QA/release-agent separation)
 # =============================================================================
 
 version: draft-0.1

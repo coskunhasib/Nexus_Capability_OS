@@ -27,18 +27,18 @@
 #   - configs/nexus-ai/stages/sdlc/*.yaml (31 SDLC stage contracts; uses_model_provider_profiles
 #     + inline NON-CANONICAL reconciliation annotations) — authoritative per-stage used_by.
 #   - configs/nexus-ai/sdlc_pipeline.yaml (pipeline-level uses_model_provider_profiles).
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §uses_model_provider_profiles.
-#   - docs/ai-sdlc-factory/TRACEABILITY_OVERVIEW.md §7.6 (canonical 8-profile registry + the
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §uses_model_provider_profiles.
+#   - docs/nexus-ai-orchestration-model/legacy/TRACEABILITY_OVERVIEW.md §7.6 (canonical 8-profile registry + the
 #     19 finer-grained legacy names that collapse onto the canonical set).
-#   - docs/ai-sdlc-factory/01-nexus-ai-operating-model.md §11 (Core Ability -> profile binding).
-#   - docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md §11.
+#   - docs/nexus-ai-orchestration-model/01-nexus-ai-operating-model.md §11 (Core Ability -> profile binding).
+#   - docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md §11.
 #   - docs/ai-sdlc-factory/pipeline-catalog/{research,activation,operations,skill-governance,
 #     knowledge-memory}.md (markdown = authoritative per pipeline-catalog-review F-1) and the
 #     pre-R9 configs/nexus-ai/pipeline_catalog.yaml definition_contract blocks (divergent YAML
 #     variants recorded under aliases per F-1). NOTE: R9 later collapsed pipeline_catalog.yaml into
 #     a summary-only catalog — those per-pipeline definition_contract blocks no longer exist there;
 #     the authoritative per-pipeline source is now each pipeline's markdown definition_doc.
-#   - docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md §4.4 (consolidated new profiles).
+#   - docs/nexus-ai-orchestration-model/reviews/pipeline-catalog-review.md §4.4 (consolidated new profiles).
 #
 # LOCKED DECISIONS honoured: Plugin cancelled (no plugin profiles, ever). Core Abilities are NOT
 # items here. owner_domain is a domain label, never a Core Ability. Skill != Tool, Governance !=
@@ -133,17 +133,12 @@ profiles:
       - planning_reasoning_model            # stage 10 planning (legacy doc 05)
       - performance_analysis_model          # stage 24 performance_resilience
       - cost_resource_analysis_model        # stage 25 cost_resource_governance
-      - compliance_reasoning_model          # stage 21 (also -> security_analysis_model)
       - contract_analysis_model             # stage 20 (also -> architecture_reasoning_model)
-      - ux_accessibility_model              # stage 23 (also -> vision_model)
-      - learning_reflection_model           # stage 31 refraction_learning (NOTE: SAME name is a NEW operations-pipeline profile; see candidate entry + open_questions)
       - risk_reasoning_model                # TRACEABILITY_OVERVIEW §7.6 finer-grained list
     notes: >-
-      Most-used canonical profile (14 SDLC stages). Many legacy finer-grained `*_analysis_model`
-      names collapse onto it (see aliases). The legacy SDLC stage-31 name `learning_reflection_model`
-      was reconciled HERE, but a DISTINCT candidate profile of the same name is introduced by the
-      operations pipeline — these are tracked as two entries and flagged for de-duplication in
-      open_questions (potential naming collision).
+      Most-used canonical profile (14 SDLC stages). Legacy finer-grained `*_analysis_model`
+      names that map cleanly to this profile are listed as aliases. Multi-target or first-class
+      colliding legacy names are recorded in the reconciliation block instead of read-time aliases.
 
   - id: coder_engineering_model
     name: Coder Engineering Model
@@ -347,10 +342,9 @@ profiles:
       - supply_chain_analysis_model         # stage 17 supply_chain_sbom_license (legacy)
       - agentic_safety_eval_model           # stage 18 (legacy; also -> defect_analysis_model)
       - privacy_analysis_model              # stage 19 privacy_data_lifecycle_validation (legacy)
-      - compliance_reasoning_model          # stage 21 (legacy; also -> sdlc_reasoning_profile)
     notes: >-
-      Broadest security profile; absorbs five legacy stage-specific security/privacy/compliance
-      model names (see aliases). On stage 18 it pairs with defect_analysis_model.
+      Broadest security profile; absorbs the clean legacy security/privacy model names listed as
+      aliases. Multi-target compliance and agentic-safety splits are recorded in reconciliation.
 
   - id: release_reasoning_model
     name: Release Reasoning Model
@@ -396,13 +390,12 @@ profiles:
         - release_candidate
       core_abilities: []
     aliases:
-      - operations_analysis_model           # stages 26 & 27 (legacy SDLC reconciliation). NOTE: SAME name is a NEW operations-pipeline profile; see candidate entry + open_questions.
       - evidence_graph_model                # stage 28 evidence_graph_build (legacy; dropped/reconciled)
     notes: >-
       Used by the five release/operations-readiness SDLC stages. The legacy SDLC name
-      `operations_analysis_model` was reconciled HERE (stages 26/27), but the operations pipeline
-      introduces a DISTINCT candidate profile of the same name — flagged for de-duplication in
-      open_questions (naming collision).
+      `operations_analysis_model` was reconciled here as historical metadata (stages 26/27), but the
+      operations pipeline introduces a distinct candidate profile of the same name. It is therefore
+      recorded in reconciliation/open_questions rather than as a read-time alias.
 
   - id: defect_analysis_model
     name: Defect Analysis Model
@@ -487,8 +480,7 @@ profiles:
       stages:
         - accessibility_ux_validation_if_applicable
       core_abilities: [Vision]
-    aliases:
-      - ux_accessibility_model              # stage 23 (legacy; also -> sdlc_reasoning_profile)
+    aliases: []
     notes: >-
       Bound to the Vision Core Ability (01-nexus-ai-operating-model.md §11). On stage 23 it pairs
       with sdlc_reasoning_profile for the general gate decision.
@@ -737,8 +729,7 @@ profiles:
       pipelines: [operations_pipeline]
       stages: [incident_intake, severity_classification]
       core_abilities: []
-    aliases:
-      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract collapsed all operations models into this single variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: defect_analysis_model
       recommendation: >-
@@ -746,13 +737,13 @@ profiles:
         of defect_analysis_model for the failure-reasoning core, layering only the
         severity-classification specifics. Decide in Phase E. Note the pre-R9 pipeline_catalog.yaml
         definition_contract represented ALL four operations models with a single
-        `operations_reasoning_profile` (recorded as alias).
+        `operations_reasoning_profile` (recorded in reconciliation metadata).
     notes: >-
       Markdown operations-pipeline.md §1 lists four distinct operations models; the pre-R9
       pipeline_catalog.yaml definition_contract collapsed them into one `operations_reasoning_profile`.
       Markdown is authoritative (F-1), so the four are registered separately with that YAML name as a
-      shared alias. R9 has since made pipeline_catalog.yaml summary-only; the authoritative per-pipeline
-      source is the markdown definition_doc.
+      non-resolving legacy variant. R9 has since made pipeline_catalog.yaml summary-only; the
+      authoritative per-pipeline source is the markdown definition_doc.
 
   - id: operations_analysis_model
     name: Operations Analysis Model
@@ -790,8 +781,7 @@ profiles:
       pipelines: [operations_pipeline]
       stages: [rollback_or_fix, mitigation]
       core_abilities: []
-    aliases:
-      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: release_reasoning_model
       recommendation: >-
@@ -845,8 +835,7 @@ profiles:
       pipelines: [operations_pipeline]
       stages: [postmortem]
       core_abilities: []
-    aliases:
-      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
@@ -894,8 +883,7 @@ profiles:
       pipelines: [operations_pipeline]
       stages: [learning_update]
       core_abilities: []
-    aliases:
-      - operations_reasoning_profile        # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
@@ -948,8 +936,7 @@ profiles:
       pipelines: [skill_governance_pipeline]
       stages: [skill_intake, skill_binding_proposal, skill_activation_decision]
       core_abilities: []
-    aliases:
-      - skill_analysis_model                # pre-R9 pipeline_catalog.yaml definition_contract collapsed skill models into this single variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: sdlc_reasoning_profile
       recommendation: >-
@@ -995,8 +982,7 @@ profiles:
       pipelines: [skill_governance_pipeline]
       stages: [skill_semantic_extraction]
       core_abilities: []
-    aliases:
-      - skill_analysis_model                   # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: null
       recommendation: >-
@@ -1042,8 +1028,7 @@ profiles:
       pipelines: [skill_governance_pipeline]
       stages: [script_reference_audit]
       core_abilities: []
-    aliases:
-      - skill_analysis_model                   # pre-R9 pipeline_catalog.yaml definition_contract single-profile variant (F-1)
+    aliases: []
     overlap:
       overlaps_with: security_analysis_model
       recommendation: >-

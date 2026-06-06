@@ -113,9 +113,9 @@ canonical_sources:
   - configs/nexus-ai/sdlc_pipeline.yaml                 # SDLC pipeline-level uses_governance_profiles
   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml   # rework_route allowlist + routing invariants + locked guards
   - configs/nexus-ai/pipeline_contract_standard.yaml    # severity_values; allowed_rework_routes
-  - docs/ai-sdlc-factory/03-governance-and-audit-layering.md   # §6 stage governance (concept)
-  - docs/ai-sdlc-factory/06-governance-policy-evidence.md      # canonical no_self_approval / evidence_required / no_policy_bypass
-  - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md # §4 profile contract, §5 rule contract, §14 validation
+  - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md   # §6 stage governance (concept)
+  - docs/nexus-ai-orchestration-model/legacy/06-governance-policy-evidence.md      # canonical no_self_approval / evidence_required / no_policy_bypass
+  - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md # §4 profile contract, §5 rule contract, §14 validation
 
 # ----- closed vocabularies (doc 19 §14 validation) ---------------------------
 scope_vocabulary: [global, pipeline, team, stage, core_ability, skill, tool]

@@ -75,8 +75,8 @@
 #   - configs/nexus-ai/audit_schemas.yaml              # evidence/trace schema ids referenced by required_evidence/required_trace
 #   - configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml# locked anti-patterns (prism_as_non_divergence, etc.)
 #   - configs/nexus-ai/stages/sdlc/*.yaml              # gate/on_fail/rework routes the rework_route fields align to
-#   - docs/ai-sdlc-factory/03-governance-and-audit-layering.md  # §8 skill governance
-#   - docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md# §4/§5/§9 contracts + locked semantics
+#   - docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md  # §8 skill governance
+#   - docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md# §4/§5/§9 contracts + locked semantics
 # =============================================================================
 
 config_id: nexus_ai_governance_skill_scope
@@ -86,7 +86,7 @@ layer: applicable                       # implements the Phase C catalog profile
 version: draft-0.1
 status: draft
 phase: E
-source_doc: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md
+source_doc: docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md
 implements_registry: configs/nexus-ai/governance_profiles.yaml#scope=skill
 no_plugin: true
 

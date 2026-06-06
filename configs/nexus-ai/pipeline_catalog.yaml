@@ -17,7 +17,7 @@
 #   pipeline_id, name, purpose, status, required_team_type, required_team_lead_role,
 #   stage_count, definition_doc.
 #   stage_count mirrors the authoritative definition_doc (and the README table in
-#   docs/ai-sdlc-factory/pipeline-catalog/README.md §3); it is a convenience index, not a
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/README.md §3); it is a convenience index, not a
 #   second source of truth. If a definition_doc changes its stage list, update stage_count here.
 #
 # Locked context (see .memory/0002-locked-decisions.md):
@@ -29,7 +29,7 @@
 #   - Shared Registry + Usage Mapping: every shared item a pipeline uses is listed in that
 #     pipeline's definition_doc usage mapping, not duplicated here.
 #
-# Contract source: docs/ai-sdlc-factory/07-pipeline-contract-standard.md (section 2 — Pipeline Definition Contract).
+# Contract source: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (section 2 — Pipeline Definition Contract).
 #
 # Catalog status of THIS file:
 catalog_id: nexus_ai_pipeline_catalog
@@ -39,12 +39,12 @@ catalog_status: draft
 catalog_kind: summary_index   # summary-only; authoritative detail is in each definition_doc
 top_structure: nexus_ai_orchestration_model
 no_plugin: true
-canonical_contract_doc: docs/ai-sdlc-factory/07-pipeline-contract-standard.md
+canonical_contract_doc: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md
 canonical_contract_section: "2"
-shared_registry_doc: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md
+shared_registry_doc: docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md
 locked_decisions_doc: .memory/0002-locked-decisions.md
-pipeline_catalog_expansion_plan_doc: docs/ai-sdlc-factory/16-pipeline-catalog-expansion-plan.md
-catalog_index_doc: docs/ai-sdlc-factory/pipeline-catalog/README.md
+pipeline_catalog_expansion_plan_doc: docs/nexus-ai-orchestration-model/legacy/16-pipeline-catalog-expansion-plan.md
+catalog_index_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/README.md
 
 # Canonical shared skills (prefer these; non-canonical names are flagged in this repo's open questions).
 # Locked semantics: prism = brainstorming/divergence ; verification-loop = bug/defect finding.
@@ -106,7 +106,7 @@ pipelines:
     required_team_type: research_team
     required_team_lead_role: research_team_lead
     stage_count: 10
-    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md
+    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
 
   # =========================================================================
   # 3. ACTIVATION PIPELINE
@@ -120,7 +120,7 @@ pipelines:
     required_team_type: activation_team
     required_team_lead_role: activation_team_lead
     stage_count: 7
-    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md
+    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md
 
   # =========================================================================
   # 4. OPERATIONS PIPELINE
@@ -134,7 +134,7 @@ pipelines:
     required_team_type: operations_team
     required_team_lead_role: operations_team_lead
     stage_count: 6
-    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md
+    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md
 
   # =========================================================================
   # 5. SKILL GOVERNANCE PIPELINE
@@ -148,7 +148,7 @@ pipelines:
     required_team_type: skill_governance_team
     required_team_lead_role: skill_governance_team_lead
     stage_count: 7   # authoritative definition_doc lists 7 stages (skill_intake..skill_deprecation_update, §1 + §2.1–2.7). README table's "6" is the stale draft-scope value.
-    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md
 
   # =========================================================================
   # 6. KNOWLEDGE / MEMORY PIPELINE
@@ -162,7 +162,7 @@ pipelines:
     required_team_type: knowledge_team
     required_team_lead_role: knowledge_team_lead
     stage_count: 6
-    definition_doc: docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md
+    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
 
 # ---------------------------------------------------------------------------
 # CANDIDATE PIPELINES (doc 16, section 3 — "Aday / sonraki pipeline'lar").

@@ -1,7 +1,7 @@
 # =============================================================================
 # Nexus AI — Agent Role Catalog
 # =============================================================================
-# Phase D / doc 18 (docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md).
+# Phase D / doc 18 (docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md).
 #
 # This catalog defines ONE Agent role per distinct `owner_agent` discovered by
 # reading ALL 31 SDLC stage contracts (configs/nexus-ai/stages/sdlc/*.yaml),
@@ -46,7 +46,7 @@ version: draft-0.1
 status: draft
 category: agent_role
 phase: D
-doc_ref: docs/ai-sdlc-factory/18-team-agent-subagent-catalog-plan.md
+doc_ref: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md
 
 # -----------------------------------------------------------------------------
 # Invariants asserted by this catalog (checked against the source contracts and
@@ -1595,7 +1595,7 @@ agents:
 
   # ===========================================================================
   # RESEARCH TEAM (team_id: research_team, lead: research_team_lead) — 10 roles
-  # Source: docs/ai-sdlc-factory/pipeline-catalog/research-pipeline.md
+  # Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
   # ===========================================================================
 
   - agent_id: research_intake_agent
@@ -1983,7 +1983,7 @@ agents:
 
   # ===========================================================================
   # ACTIVATION TEAM (team_id: activation_team, lead: activation_team_lead) — 5
-  # Source: docs/ai-sdlc-factory/pipeline-catalog/activation-pipeline.md
+  # Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md
   # ===========================================================================
 
   - agent_id: activation_manager_agent
@@ -2230,7 +2230,7 @@ agents:
 
   # ===========================================================================
   # OPERATIONS TEAM (team_id: operations_team, lead: operations_team_lead) — 6
-  # Source: docs/ai-sdlc-factory/pipeline-catalog/operations-pipeline.md
+  # Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md
   # ===========================================================================
 
   - agent_id: incident_intake_agent
@@ -2496,7 +2496,7 @@ agents:
   # ===========================================================================
   # SKILL GOVERNANCE TEAM (team_id: skill_governance_team,
   #   lead: skill_governance_team_lead)
-  # Source: docs/ai-sdlc-factory/pipeline-catalog/skill-governance-pipeline.md
+  # Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md
   # NOTE: skill_semantic_extraction is owned by skill_semantic_extractor_subagent
   #   (a SUB-AGENT, parent skill_librarian_agent) — catalogued in
   #   sub_agent_roles.yaml, NOT here (see open_questions).
@@ -2581,7 +2581,7 @@ agents:
 
   # ===========================================================================
   # KNOWLEDGE TEAM (team_id: knowledge_team, lead: knowledge_team_lead) — 6
-  # Source: docs/ai-sdlc-factory/pipeline-catalog/knowledge-memory-pipeline.md
+  # Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
   # Memory stays a Core Ability; these agents USE it and are never the owner.
   # ===========================================================================
 

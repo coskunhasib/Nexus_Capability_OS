@@ -4,7 +4,7 @@
 #
 # WHAT THIS FILE IS
 #   The single machine-readable answer to "what tools exist in the system?" (Shared Registry =
-#   ownership/existence, per docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md §3 and
+#   ownership/existence, per docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md §3 and
 #   00a-shared-registry-decisions.md D-011/D-012). The *usage* relationship ("who/which stage/agent
 #   uses a tool") is ALSO carried here per-item via `used_by`, so the usage-mapping rule is
 #   enforceable from registry data alone (doc 17 §13 exit criterion). The same tools are additionally
@@ -34,8 +34,8 @@
 registry_id: nexus_ai_tools_registry
 version: draft-0.1
 category: tool
-owner_doc: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md
-applies_rule: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md   # Shared Registry + Usage Mapping
+owner_doc: docs/nexus-ai-orchestration-model/legacy/17-shared-registry-formalization-plan.md
+applies_rule: docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md   # Shared Registry + Usage Mapping
 
 # STATUS VOCABULARY (doc 17 §3 / task)
 status_vocabulary:

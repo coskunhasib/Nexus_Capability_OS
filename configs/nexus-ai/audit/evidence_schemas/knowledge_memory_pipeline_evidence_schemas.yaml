@@ -36,7 +36,7 @@ scope: pipeline
 applies_to_pipeline: knowledge_memory_pipeline
 owning_team: knowledge_team
 source_registry: configs/nexus-ai/audit_schemas.yaml
-contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+contract_ref: docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md#12
 purpose: >-
   Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
   knowledge/memory pipeline (per-memory-item provenance, validity window, and

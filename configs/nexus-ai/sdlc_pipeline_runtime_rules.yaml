@@ -8,20 +8,20 @@
 # configs/nexus-ai/stages/sdlc/*.yaml).
 #
 # Source of truth (the unique contributions this file formalizes):
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §5 (Rework routing table)  -> rework_routing_table
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §6 (Iteration policy)      -> iteration_policy
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §7 (Pipeline anti-patterns)-> anti_patterns
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §5 (Rework routing table)  -> rework_routing_table
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §6 (Iteration policy)      -> iteration_policy
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §7 (Pipeline anti-patterns)-> anti_patterns
 #   Doc 05 §0 explicitly directs §5/§6/§7 to be carried into
 #   configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml (this file).
 #
 # Reconciled against (so routing targets resolve to REAL canonical stage_ids, not the stale
 # 23-stage draft that doc 05 §3/§4 still describes):
 #   - configs/nexus-ai/sdlc_pipeline.yaml (CANONICAL 31-stage set + ordering),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md §3 (canonical stage list),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md §3 (canonical stage list),
 #   - configs/nexus-ai/stages/sdlc/*.yaml (per-stage canonical on_fail / rework_route values),
 #   - configs/nexus-ai/pipeline_contract_standard.yaml (severity_values; allowed_rework_routes
 #     and blocking_conditions are pipeline-contract fields this file feeds),
-#   - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md §1/§2 (route overrides).
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md §1/§2 (route overrides).
 #
 # LOCKED-DECISION compliance baked into this file:
 #   - Plugin is cancelled: "no plugin stage" is preserved as a FORBIDDEN anti-pattern; no plugin
@@ -82,7 +82,7 @@ routing_terminals:
 #   rollup gates reconciled from doc 06 §8 (risk_register_reviewed -> stage 9 premortem_fmea;
 #   performance_resilience_pass_or_accepted -> stage 24 performance_resilience). (sdlc_pipeline.yaml
 #   carries more rollup gates; the rest are already covered by
-#   docs/ai-sdlc-factory/TRACEABILITY_OVERVIEW.md §4 and/or are cross-cutting policies — e.g.
+#   docs/nexus-ai-orchestration-model/legacy/TRACEABILITY_OVERVIEW.md §4 and/or are cross-cutting policies — e.g.
 #   no_blocking_policy_failure — that have no single producing stage. This block formalizes exactly
 #   these 8 gates so they are machine-checkable here.)
 #
@@ -90,7 +90,7 @@ routing_terminals:
 #   producing_rule is the stage-specific gate-bearing governance profile in that stage's
 #   `uses_governance_profiles`, each a first-class item in configs/nexus-ai/governance_profiles.yaml
 #   (so every rule id below resolves — no new dangling edge). Cross-checked against
-#   docs/ai-sdlc-factory/TRACEABILITY_OVERVIEW.md §4 (gate → producing stage aggregation).
+#   docs/nexus-ai-orchestration-model/legacy/TRACEABILITY_OVERVIEW.md §4 (gate → producing stage aggregation).
 #
 # CHECKER CONTRACT (how to verify): for each entry, assert
 #   (a) `gate` ∈ sdlc_pipeline.yaml required_gates.always (or .conditional for *_if_applicable),
@@ -214,7 +214,7 @@ rework_routing_table:
   # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
   # Values copied from each stage's own canonical `rework_route` in
   # configs/nexus-ai/stages/sdlc/*.yaml; stages 30/31 (release_candidate, refraction_learning)
-  # are taken from docs/ai-sdlc-factory/05-pipeline-model.md §4.22/§4.23 pending stage-file build.
+  # are taken from docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.22/§4.23 pending stage-file build.
   by_stage:
     intake: intake
     domain_risk_profile: intake
@@ -378,8 +378,8 @@ locked_decision_guards:
 
 # Canonical docs this runtime-rules file is bound to.
 canonical_docs:
-  - docs/ai-sdlc-factory/05-pipeline-model.md
+  - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md
   - configs/nexus-ai/sdlc_pipeline.yaml
   - configs/nexus-ai/pipeline_contract_standard.yaml
-  - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md
-  - docs/ai-sdlc-factory/sdlc-stages/06-canonical-corrections-and-overrides.md
+  - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md
+  - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/06-canonical-corrections-and-overrides.md

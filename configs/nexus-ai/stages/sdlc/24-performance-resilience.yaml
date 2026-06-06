@@ -6,14 +6,14 @@
 #   position #24, between accessibility_ux_validation_if_applicable (#23) and
 #   cost_resource_governance (#25)). Always-on stage — NO applicability_decision block.
 # Reconciled against:
-#   - docs/ai-sdlc-factory/sdlc-stages/04-validation-and-product-gates.md §8 (canonical stage block:
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/sdlc-stages/04-validation-and-product-gates.md §8 (canonical stage block:
 #       owner_agent=performance_resilience_agent, on_pass=cost_resource_governance, on_fail=architecture),
-#   - docs/ai-sdlc-factory/06-sdlc-coverage-gap-audit.md (Performance / Resilience = Required / always-on;
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/06-sdlc-coverage-gap-audit.md (Performance / Resilience = Required / always-on;
 #       latency, resource, capacity, failure behavior, resiliency checks),
-#   - docs/ai-sdlc-factory/05-pipeline-model.md §4.18 (legacy 23-stage draft; stale owner
+#   - docs/nexus-ai-orchestration-model/legacy/05-pipeline-model.md §4.18 (legacy 23-stage draft; stale owner
 #       `tech_lead_agent` and the 23-stage assumption are NOT carried),
-#   - docs/ai-sdlc-factory/07-pipeline-contract-standard.md (stage contract template),
-#   - docs/ai-sdlc-factory/08-sdlc-pipeline-contract.md (always-on ordering; nfr_coverage_complete origin),
+#   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md (stage contract template),
+#   - docs/nexus-ai-orchestration-model/pipelines/sdlc/08-sdlc-pipeline-contract.md (always-on ordering; nfr_coverage_complete origin),
 #   - configs/nexus-ai/artifact_registry.yaml (UPPER_SNAKE artifact names: PERFORMANCE_REPORT,
 #       RESILIENCE_REPORT, RESOURCE_USAGE_DATA_IF_APPLICABLE, NFR_CATALOG).
 #

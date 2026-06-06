@@ -83,19 +83,19 @@ name_form_convention:
 
 # Source documents scanned to build this registry (read from disk, Phase C scope).
 sources:
-  contract_plan: docs/ai-sdlc-factory/17-shared-registry-formalization-plan.md          # §3 item contract + §4 category fields + §11/§13 rules
+  contract_plan: docs/nexus-ai-orchestration-model/legacy/17-shared-registry-formalization-plan.md          # §3 item contract + §4 category fields + §11/§13 rules
   locked_decisions: .memory/0002-locked-decisions.md                                     # K-001..K-012
-  operating_model: docs/ai-sdlc-factory/01-nexus-ai-operating-model.md                   # §6 Capability System (the 8 abilities), §11 Model/Provider, §12 Context/Memory
-  core_definitions: docs/ai-sdlc-factory/01-core-definitions.md                          # Skill/Tool/Agent boundaries
-  shared_registry: docs/ai-sdlc-factory/05-shared-registry-and-usage-mapping.md          # registry vs usage; §8 Core Ability sub-tools; §11 model profiles
-  shared_registry_decisions: docs/ai-sdlc-factory/00a-shared-registry-decisions.md       # D-011..D-015
-  governance_audit_layering: docs/ai-sdlc-factory/03-governance-and-audit-layering.md    # §7 Core Ability Governance profile names; §10-12 Evidence/Trace
-  governance_policy_evidence: docs/ai-sdlc-factory/06-governance-policy-evidence.md       # canonical policy ids (no_self_approval, evidence_required, no_secret_read, ...)
+  operating_model: docs/nexus-ai-orchestration-model/01-nexus-ai-operating-model.md                   # §6 Capability System (the 8 abilities), §11 Model/Provider, §12 Context/Memory
+  core_definitions: docs/nexus-ai-orchestration-model/legacy/01-core-definitions.md                          # Skill/Tool/Agent boundaries
+  shared_registry: docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md          # registry vs usage; §8 Core Ability sub-tools; §11 model profiles
+  shared_registry_decisions: docs/nexus-ai-orchestration-model/legacy/00a-shared-registry-decisions.md       # D-011..D-015
+  governance_audit_layering: docs/nexus-ai-orchestration-model/legacy/03-governance-and-audit-layering.md    # §7 Core Ability Governance profile names; §10-12 Evidence/Trace
+  governance_policy_evidence: docs/nexus-ai-orchestration-model/legacy/06-governance-policy-evidence.md       # canonical policy ids (no_self_approval, evidence_required, no_secret_read, ...)
   artifact_registry: configs/nexus-ai/artifact_registry.yaml                             # evidence artifact names
   sdlc_stage_contracts: configs/nexus-ai/stages/sdlc/                                    # 31 contracts — richest source of uses_core_abilities + model profiles
   pipeline_catalog: configs/nexus-ai/pipeline_catalog.yaml                               # SDLC + 5 non-SDLC pipelines' uses_core_abilities
-  pipeline_catalog_review: docs/ai-sdlc-factory/reviews/pipeline-catalog-review.md        # §4 consolidated new names; §4.4 new model/provider profiles
-  skill_agent_review: docs/ai-sdlc-factory/reviews/claude-code-skill-agent-review.md      # §4/§5 Core Ability boundary confirmation
+  pipeline_catalog_review: docs/nexus-ai-orchestration-model/reviews/pipeline-catalog-review.md        # §4 consolidated new names; §4.4 new model/provider profiles
+  skill_agent_review: docs/nexus-ai-orchestration-model/reviews/claude-code-skill-agent-review.md      # §4/§5 Core Ability boundary confirmation
 
 # Hard rules this registry asserts and is validated against (doc 17 §4, §11 Validation).
 hard_rules:
@@ -182,6 +182,7 @@ core_abilities:
         - activation_pipeline
         - operations_pipeline
         - skill_governance_pipeline
+        - knowledge_memory_pipeline
       stages:                           # SDLC stage_ids whose uses_core_abilities lists Supervisor
         - architecture_review
         - planning
@@ -250,6 +251,8 @@ core_abilities:
     used_by:
       pipelines:
         - sdlc_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
       stages:                           # SDLC stage_ids whose uses_core_abilities lists Coder
         - architecture
         - security_privacy_design
@@ -276,8 +279,8 @@ core_abilities:
     notes: >-
       Coder is the single most broadly-used ability across SDLC (20 stages). It is a reasoning
       capability; it owns no I/O tools. Filesystem/shell/test tools belong to OS so tool ownership
-      stays unambiguous in the Tools Registry (provided_by_core_ability). Not bound by any of the 5
-      non-SDLC pipelines in the current catalog.
+      stays unambiguous in the Tools Registry (provided_by_core_ability). It is also bound by the
+      operations and skill-governance pipeline definitions where code/config reasoning is required.
 
   # -------------------------------------------------------------------------
   # 3. VISION — visual perception / reasoning capability.
@@ -558,6 +561,9 @@ core_abilities:
       pipelines:
         - sdlc_pipeline
         - research_pipeline
+        - activation_pipeline
+        - operations_pipeline
+        - skill_governance_pipeline
         - knowledge_memory_pipeline
       stages:                           # SDLC stage_ids whose uses_core_abilities lists Web
         - intake
@@ -718,19 +724,19 @@ referenced_candidates:
       owned_by: configs/nexus-ai/model_provider_profiles.yaml
   governance_profiles:
     - id: code_generation_governance
-      status: canonical                 # doc 03 §7
+      status: candidate                 # owner registry says candidate; ratify in Phase E
       owned_by: configs/nexus-ai/governance_profiles.yaml
     - id: web_access_governance
-      status: canonical                 # doc 03 §7
+      status: candidate                 # owner registry says candidate; ratify in Phase E
       owned_by: configs/nexus-ai/governance_profiles.yaml
     - id: system_access_governance
-      status: canonical                 # doc 03 §7
+      status: candidate                 # owner registry says candidate; ratify in Phase E
       owned_by: configs/nexus-ai/governance_profiles.yaml
     - id: memory_access_governance
-      status: canonical                 # doc 03 §7
+      status: candidate                 # owner registry says candidate; ratify in Phase E
       owned_by: configs/nexus-ai/governance_profiles.yaml
     - id: sandbox_execution_governance
-      status: canonical                 # doc 03 §9
+      status: candidate                 # owner registry says candidate; ratify in Phase E
       owned_by: configs/nexus-ai/governance_profiles.yaml
     - id: orchestration_governance
       status: candidate                 # Supervisor routing/arbitration governance (Phase E)

@@ -36,7 +36,7 @@ audit_kind: evidence
 scope: pipeline
 applies_to_pipeline: operations_pipeline
 source_registry: configs/nexus-ai/audit_schemas.yaml
-contract_ref: docs/ai-sdlc-factory/19-governance-audit-readiness-plan.md#12
+contract_ref: docs/nexus-ai-orchestration-model/legacy/19-governance-audit-readiness-plan.md#12
 purpose: >-
   Applicable per-scope EVIDENCE (decision-proof) audit-schema config for the
   operations pipeline (incident intake, severity, mitigation, rollback/fix,
