@@ -1,0 +1,215 @@
+# Nexus AI Orchestration Model — Post-Launch Frontier Backlog
+#
+# Scope: blueprint/config planning only. This file records important frontier ideas that must not
+# trap launch/runtime execution in endless pre-launch expansion.
+
+post_launch_frontier_backlog_id: nexus_ai_post_launch_frontier_backlog
+post_launch_frontier_backlog_version: draft-0.1
+status: deferred_until_post_launch_reassessment
+scope: planning_only
+no_runtime_code_authorized: true
+no_launch_blocker_status: true
+no_plugin: true
+
+principle: >-
+  Record now, do not block launch, reassess after launch with evidence.
+
+reassessment_triggers:
+  - post_launch_30_days
+  - post_launch_100_missions
+  - first_external_agent_integration_request
+  - first_enterprise_security_review
+  - first_tool_marketplace_or_mcp_gateway_need
+  - first_major_agent_quality_regression
+  - first_cross_workspace_or_multi_tenant_need
+  - first_high_cost_or_latency_issue
+  - first_user_facing_mission_control_feedback_cycle
+
+items:
+  - id: F-001
+    title: Agent Interoperability Layer
+    status: deferred
+    rationale: External agent interoperability is becoming an ecosystem requirement.
+    benefits:
+      - external_agent_integration
+      - vendor_framework_independence
+      - clean_external_agent_trust_boundary
+    risks_if_ignored:
+      - ad_hoc_external_agent_integration
+      - weak_trust_boundary
+      - unsafe_external_artifact_acceptance
+    reassess_when: first_external_agent_integration_request
+
+  - id: F-002
+    title: Tool Descriptor Security Layer
+    status: deferred
+    rationale: Tool descriptions/manifests can be attack surfaces, not only tool execution.
+    benefits:
+      - trusted_tool_registry
+      - signed_descriptors
+      - manifest_review
+      - tool_poisoning_detection
+      - rug_pull_detection
+    risks_if_ignored:
+      - malicious_tool_descriptions
+      - silent_tool_replacement
+      - cross_tool_data_exfiltration
+    reassess_when: first_tool_marketplace_or_mcp_gateway_need
+
+  - id: F-003
+    title: Coordination Skill Registry / Swarm Skills
+    status: deferred
+    rationale: Coordination patterns can become reusable, versioned, measurable skills.
+    benefits:
+      - portable_coordination_protocols
+      - measurable_coordination_quality
+      - reuse_across_mission_types
+    risks_if_ignored:
+      - scattered_coordination_logic
+      - hard_to_improve_orchestration
+      - no_coordination_quality_metrics
+    reassess_when: initial_mission_logs_exist
+
+  - id: F-004
+    title: Mission Evaluation Suite and Dynamic Benchmarking
+    status: deferred
+    rationale: Mission quality needs realistic, dynamic, contamination-aware benchmarks.
+    benefits:
+      - measurable_mission_quality
+      - regression_detection
+      - validator_quality_measurement
+      - less_demo_driven_decision_making
+    risks_if_ignored:
+      - quality_drift
+      - false_performance_confidence
+      - user_discovered_regressions
+    reassess_when: first_20_to_100_real_or_synthetic_missions
+
+  - id: F-005
+    title: Continual Mission Learning Evaluation
+    status: deferred
+    rationale: Memory/refraction must be measured for usefulness, forgetting, stale-memory harm and transfer.
+    benefits:
+      - measured_learning_effectiveness
+      - stale_memory_detection
+      - transfer_and_forgetting_metrics
+    risks_if_ignored:
+      - memory_bloat
+      - stale_decisions_poisoning_new_missions
+      - unmeasured_learning_claims
+    reassess_when: multiple_related_missions_exist
+
+  - id: F-006
+    title: Agent Workspace / Agent-Computer Interface
+    status: deferred
+    rationale: Agents need purpose-built interfaces for repo navigation, scoped edits, tests and handoffs.
+    benefits:
+      - safer_edits
+      - better_repo_navigation
+      - cleaner_handoffs
+      - lower_tool_misuse_risk
+    risks_if_ignored:
+      - poor_tool_ergonomics
+      - higher_error_rate
+      - wasted_context
+    reassess_when: during_wp05_wp09_wp10_runtime_design
+
+  - id: F-007
+    title: Formal Policy Verification Layer
+    status: deferred
+    rationale: Some governance rules should be impossible to violate by state-machine design.
+    benefits:
+      - state_machine_invariants
+      - forbidden_transition_checks
+      - higher_security_confidence
+    risks_if_ignored:
+      - policy_bypass_edge_cases
+      - forbidden_runtime_transitions
+    reassess_when: before_public_or_enterprise_grade_runtime
+
+  - id: F-008
+    title: Agent Runtime Compatibility Matrix
+    status: deferred
+    rationale: Nexus should remain framework-agnostic across OpenAI Agents SDK, LangGraph, CrewAI, A2A, MCP and local runtimes.
+    benefits:
+      - runtime_portability
+      - less_vendor_lock_in
+      - explicit_unsupported_feature_list
+    risks_if_ignored:
+      - implicit_framework_lock_in
+      - difficult_future_migration
+    reassess_when: before_runtime_framework_freeze
+
+  - id: F-009
+    title: Mission Improvement Search / Evolutionary Planning
+    status: deferred
+    rationale: Nexus may later generate and evaluate multiple plan/architecture/coordination variants.
+    benefits:
+      - better_plans
+      - more_robust_architectures
+      - measurable_optimization
+    risks_if_done_too_early:
+      - unbounded_self_modification
+      - optimization_against_weak_metrics
+    reassess_when: after_mission_evaluation_suite_exists
+
+  - id: F-010
+    title: Collaboration Mode Taxonomy
+    status: deferred
+    rationale: Agent relations can be cooperative, adversarial, competitive or mixed.
+    benefits:
+      - clearer_validator_behavior
+      - explicit_coopetition_patterns
+      - less_hidden_conflict
+    risks_if_ignored:
+      - all_agents_treated_as_cooperative
+      - weak_adversarial_validation
+    reassess_when: after_validator_behavior_is_measured
+
+  - id: F-011
+    title: Change Request / Feedback Intake
+    status: deferred
+    rationale: User feedback, bug reports and change requests should become new Missions or pipeline routes.
+    benefits:
+      - closed_feedback_loop
+      - bug_to_mission_conversion
+      - feature_request_triage
+    risks_if_ignored:
+      - manual_triage_burden
+      - missed_learning_opportunities
+    reassess_when: first_user_feedback_cycle
+
+  - id: F-012
+    title: Protocol Gateway — A2A + MCP + Internal Tools
+    status: deferred
+    rationale: A future gateway may mediate external agent protocols, tool protocols and internal Nexus contracts.
+    benefits:
+      - single_trust_boundary
+      - protocol_mediation
+      - external_interoperability
+      - external_call_audit_trail
+    risks_if_ignored:
+      - ad_hoc_external_integration
+      - fragmented_trust_boundaries
+    reassess_when: after_tool_descriptor_security_and_interoperability_design
+
+pre_launch_non_blocking_rule:
+  these_items_do_not_block:
+    - WP-01
+    - initial_runtime_execution
+    - launch_oriented_core_mission_loop
+  can_be_promoted_to_blocker_only_by: explicit_owner_decision
+
+post_launch_reassessment_packet_requires:
+  - current_mission_metrics
+  - user_feedback_summary
+  - runtime_incidents
+  - tool_safety_findings
+  - validator_quality_findings
+  - memory_usefulness_or_harm_observations
+  - cost_and_latency_profile
+  - integration_requests
+  - security_review_outcomes
+  - items_to_promote_to_active_workpackages
+  - items_to_keep_deferred
+  - items_to_reject
