@@ -62,6 +62,11 @@ Team System = kimler var?
 Coordination System = bu roller nasıl birlikte çalışır?
 ```
 
+```text
+Frontier research items launch blocker değildir.
+Bunlar Post-Launch Frontier Backlog olarak kayıtlıdır ve launch sonrası evidence ile tekrar değerlendirilir.
+```
+
 ## Ana kavram aileleri
 
 ```text
@@ -132,6 +137,16 @@ Nexus AI
 9. Audit System
    - Evidence
    - Trace
+
+10. Post-Launch Frontier Backlog
+   - Agent Interoperability Layer
+   - Tool Descriptor Security Layer
+   - Coordination Skill Registry / Swarm Skills
+   - Mission Evaluation Suite
+   - Continual Mission Learning Evaluation
+   - Agent Workspace / Agent-Computer Interface
+   - Formal Policy Verification Layer
+   - Runtime Compatibility Matrix
 ```
 
 ## Mission System
@@ -260,6 +275,21 @@ Mission Control varsayılan olarak kullanıcı dostu isimler gösterir.
 Teknik ID’ler yalnız advanced/debug modunda görünür.
 ```
 
+## Post-Launch Frontier Backlog kuralı
+
+Frontier research öğeleri kaydedildi ama launch blocker değildir.
+
+```text
+Record now. Do not block launch. Reassess after launch with evidence.
+```
+
+Bu öğeler şurada izlenir:
+
+```text
+docs/ai-sdlc-factory/26-post-launch-frontier-backlog-and-reassessment-plan.md
+configs/nexus-ai/post_launch_frontier_backlog.yaml
+```
+
 ## Temel ayrımlar
 
 ```text
@@ -296,8 +326,9 @@ Plugin yok
 15. [`23-coordination-system-and-runtime-gap-closure.md`](23-coordination-system-and-runtime-gap-closure.md)
 16. [`24-mission-system-and-user-facing-runtime-model.md`](24-mission-system-and-user-facing-runtime-model.md)
 17. [`25-mission-runtime-gap-closure-audit.md`](25-mission-runtime-gap-closure-audit.md)
-18. [`AI_STUDIO_HIERARCHY_PROMPT.md`](AI_STUDIO_HIERARCHY_PROMPT.md)
-19. [`AI_STUDIO_USER_SIMULATION_PROMPT.md`](AI_STUDIO_USER_SIMULATION_PROMPT.md)
+18. [`26-post-launch-frontier-backlog-and-reassessment-plan.md`](26-post-launch-frontier-backlog-and-reassessment-plan.md)
+19. [`AI_STUDIO_HIERARCHY_PROMPT.md`](AI_STUDIO_HIERARCHY_PROMPT.md)
+20. [`AI_STUDIO_USER_SIMULATION_PROMPT.md`](AI_STUDIO_USER_SIMULATION_PROMPT.md)
 
 ## SDLC stage contracts
 
@@ -328,6 +359,7 @@ configs/nexus-ai/owner_decision_registry.yaml
 configs/nexus-ai/executor_override_policy.yaml
 configs/nexus-ai/runtime_workpackage_execution_contract.yaml
 configs/nexus-ai/user_facing_terminology.yaml
+configs/nexus-ai/post_launch_frontier_backlog.yaml
 ```
 
 Bu dosyalar blueprint/config genişletmesidir; runtime kodu değildir.
@@ -338,6 +370,12 @@ Mission / coordination / runtime boşluklarının hangi dosya ile kapatıldığ�
 
 ```text
 docs/ai-sdlc-factory/25-mission-runtime-gap-closure-audit.md
+```
+
+Post-launch frontier fikirleri şurada tutulur:
+
+```text
+docs/ai-sdlc-factory/26-post-launch-frontier-backlog-and-reassessment-plan.md
 ```
 
 ## Uygulama yasağı
@@ -361,3 +399,5 @@ Runtime workpackage execution ayrıca ve açıkça onaylanmadan:
 ## Şimdiki hedef
 
 Planlama/handoff tamamlandı. Coordination System ve Mission System ekleri, runtime execution başlamadan önce workpackage kapsamına yansıtılması gereken eksik koordinasyon, kullanıcı-facing çalışma, validation, handoff, scheduling, model routing, owner decision ve monitoring bileşenlerini netleştirir.
+
+Frontier araştırma fikirleri launch blocker değildir; post-launch evidence ile yeniden değerlendirilecektir.
