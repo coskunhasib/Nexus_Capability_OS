@@ -6,7 +6,7 @@
 # SINGLE SOURCE OF TRUTH (R9 reconciliation):
 #   This catalog is summary-only. The AUTHORITATIVE per-pipeline definition (full Pipeline
 #   Definition Contract — stages, owner_domain, uses_tools, uses_audit_schemas, etc.) lives in
-#   each pipeline's markdown `definition_doc` under docs/ai-sdlc-factory/pipeline-catalog/*.md
+#   each pipeline's markdown `definition_doc` under docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md
 #   (and, for the SDLC Pipeline, in configs/nexus-ai/sdlc_pipeline.yaml + stages/sdlc/*.yaml).
 #   This file MUST NOT re-embed or duplicate that detail. Earlier drafts carried a per-pipeline
 #   `definition_contract` block that diverged from the markdown on stage_count / owner_domain /

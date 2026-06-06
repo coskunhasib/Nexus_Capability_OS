@@ -6,11 +6,11 @@
 # This catalog defines ONE Agent role per distinct `owner_agent` discovered by
 # reading ALL 31 SDLC stage contracts (configs/nexus-ai/stages/sdlc/*.yaml),
 # PLUS the Agent roles defined by the 5 non-SDLC pipeline catalog entries
-# (docs/ai-sdlc-factory/pipeline-catalog/*.md). Field shape per doc 18 §6.
+# (docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md). Field shape per doc 18 §6.
 #
 # AUTHORITATIVE SOURCES
 #   - SDLC owner_agent + sub_agents: the 31 files in configs/nexus-ai/stages/sdlc/
-#   - Non-SDLC rosters: docs/ai-sdlc-factory/pipeline-catalog/*.md (§2 per-stage)
+#   - Non-SDLC rosters: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md (§2 per-stage)
 #   - uses_* references resolve against:
 #       core_abilities.yaml, skills_registry.yaml, tools_registry.yaml,
 #       governance_profiles.yaml, audit_schemas.yaml,

@@ -4,7 +4,7 @@
 # Scope: one role per DISTINCT sub_agent referenced across the authoritative sources:
 #   - configs/nexus-ai/stages/sdlc/*.yaml  (31 SDLC stage contracts — AUTHORITATIVE for SDLC
 #     owner_agent + sub_agents). Only 8 stages declare a non-empty `sub_agents:` list.
-#   - docs/ai-sdlc-factory/pipeline-catalog/*.md  (5 non-SDLC pipelines). Of these, only the
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md  (5 non-SDLC pipelines). Of these, only the
 #     skill_governance pipeline references a sub-agent, and it REUSES the SDLC
 #     `skill_semantic_extractor_subagent` (it owns stage 2.2 skill_semantic_extraction there,
 #     parent: skill_librarian_agent). research / activation / operations / knowledge-memory

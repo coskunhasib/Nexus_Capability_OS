@@ -12,7 +12,7 @@
 #
 # AUTHORITATIVE SOURCES (read from disk, reconciled):
 #   - configs/nexus-ai/stages/sdlc/*.yaml          — 31 SDLC stage contracts (owner_agent + sub_agents).
-#   - docs/ai-sdlc-factory/pipeline-catalog/*.md    — 5 non-SDLC pipeline definitions (rosters + uses_*).
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md    — 5 non-SDLC pipeline definitions (rosters + uses_*).
 #   - configs/nexus-ai/{core_abilities,skills_registry,tools_registry,governance_profiles,
 #       audit_schemas,model_provider_profiles,context_memory_profiles}.yaml — Shared Registry.
 #

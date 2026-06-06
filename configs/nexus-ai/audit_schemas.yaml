@@ -3647,5 +3647,5 @@ cross_file_notes:
   - Governance profile ids referenced in `governance_profiles` are defined in the
     SEPARATE configs/nexus-ai/governance_profiles.yaml (Governance != Audit).
   - producer/consumer agent roles are cataloged in Phase D
-    (docs/ai-sdlc-factory/18-* / configs team-agent catalogs); none is a Core
+    (docs/nexus-ai-orchestration-model/legacy/18-* / configs team-agent catalogs); none is a Core
     Ability.

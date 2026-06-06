@@ -52,7 +52,7 @@
 #
 # AUTHORITATIVE SOURCES (read from disk; usage mapping per doc 05)
 #   - configs/nexus-ai/stages/sdlc/*.yaml          # 31 SDLC stage contracts: owner_agent + sub_agents + team_lead (AUTHORITATIVE for SDLC roster)
-#   - docs/ai-sdlc-factory/pipeline-catalog/*.md    # 5 non-SDLC pipelines: per-stage owner_agent rosters (markdown authoritative over catalog YAML)
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md    # 5 non-SDLC pipelines: per-stage owner_agent rosters (markdown authoritative over catalog YAML)
 #   - configs/nexus-ai/{core_abilities,skills_registry,tools_registry,
 #       governance_profiles,audit_schemas,context_memory_profiles}.yaml
 #                                                   # every may_*/uses_* item below resolves to a registered id

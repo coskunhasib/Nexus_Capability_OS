@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nexus-ai/configs/nexus-ai/schemas/stage_contract.schema.json",
   "title": "Nexus AI SDLC Pipeline Stage Contract",
-  "description": "JSON Schema (draft 2020-12) for a single Nexus AI pipeline stage contract. Field set is the Pipeline Stage Contract from docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 4 (mirrored in configs/nexus-ai/pipeline_contract_standard.yaml stage_required_fields), PLUS applicability_decision (conditional stages only), conditional_required_gates, and max_iterations. Locked decisions enforced: no 'plugin' concept anywhere; owner_agent is a snake_case pipeline Agent ROLE string and may never be a Core Ability; all 7 usage-mapping arrays are required (each may be empty []).",
+  "description": "JSON Schema (draft 2020-12) for a single Nexus AI pipeline stage contract. Field set is the Pipeline Stage Contract from docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md section 4 (mirrored in configs/nexus-ai/pipeline_contract_standard.yaml stage_required_fields), PLUS applicability_decision (conditional stages only), conditional_required_gates, and max_iterations. Locked decisions enforced: no 'plugin' concept anywhere; owner_agent is a snake_case pipeline Agent ROLE string and may never be a Core Ability; all 7 usage-mapping arrays are required (each may be empty []).",
   "type": "object",
   "$defs": {
     "coreAbilityName": {

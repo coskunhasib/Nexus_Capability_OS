@@ -32,7 +32,7 @@
 #     19 finer-grained legacy names that collapse onto the canonical set).
 #   - docs/nexus-ai-orchestration-model/01-nexus-ai-operating-model.md §11 (Core Ability -> profile binding).
 #   - docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md §11.
-#   - docs/ai-sdlc-factory/pipeline-catalog/{research,activation,operations,skill-governance,
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/{research,activation,operations,skill-governance,
 #     knowledge-memory}.md (markdown = authoritative per pipeline-catalog-review F-1) and the
 #     pre-R9 configs/nexus-ai/pipeline_catalog.yaml definition_contract blocks (divergent YAML
 #     variants recorded under aliases per F-1). NOTE: R9 later collapsed pipeline_catalog.yaml into

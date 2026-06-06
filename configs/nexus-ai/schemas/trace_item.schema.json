@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nexus-ai/configs/nexus-ai/schemas/trace_item.schema.json",
   "title": "Nexus AI Trace Item",
-  "description": "Machine-readable contract for a single Nexus AI audit Trace item, per docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 12 (Trace Contract). A Trace item is operation history (islem gecmisi) that proves the production path of evidence (K-008: Evidence = decision proof; Trace = operation history; the two are grouped under Audit but kept distinct). Documentation/blueprint only; no runtime code. LOCKED: no 'plugin' concept anywhere (K-001).",
+  "description": "Machine-readable contract for a single Nexus AI audit Trace item, per docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md section 12 (Trace Contract). A Trace item is operation history (islem gecmisi) that proves the production path of evidence (K-008: Evidence = decision proof; Trace = operation history; the two are grouped under Audit but kept distinct). Documentation/blueprint only; no runtime code. LOCKED: no 'plugin' concept anywhere (K-001).",
   "type": "object",
   "additionalProperties": false,
   "unevaluatedProperties": false,

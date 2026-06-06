@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nexus-ai/configs/nexus-ai/schemas/pipeline_run.schema.json",
   "title": "Nexus AI Pipeline Run Contract",
-  "description": "Machine-readable JSON Schema (draft 2020-12) for a Nexus AI Pipeline Run, derived from docs/ai-sdlc-factory/07-pipeline-contract-standard.md section 3 (Pipeline Run Contract) and configs/nexus-ai/pipeline_contract_standard.yaml (pipeline_run_required_fields). Locked decisions enforced: no 'plugin' concept anywhere; owner_agent is always a snake_case pipeline Agent ROLE and is never a Core Ability; embedded stage_contract objects must declare all 7 usage-mapping arrays. Documentation/blueprint only -- not runtime code.",
+  "description": "Machine-readable JSON Schema (draft 2020-12) for a Nexus AI Pipeline Run, derived from docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md section 3 (Pipeline Run Contract) and configs/nexus-ai/pipeline_contract_standard.yaml (pipeline_run_required_fields). Locked decisions enforced: no 'plugin' concept anywhere; owner_agent is always a snake_case pipeline Agent ROLE and is never a Core Ability; embedded stage_contract objects must declare all 7 usage-mapping arrays. Documentation/blueprint only -- not runtime code.",
   "type": "object",
   "$comment": "Core Abilities (Supervisor, Coder, Vision, Audio, Creative, Memory, Web, OS) are NOT agents and NEVER valid owner_agent values. owner_team=sdlc_team, team_lead=sdlc_team_lead for the SDLC pipeline. Skill != Tool; Governance != Audit; Evidence != Trace.",
 
