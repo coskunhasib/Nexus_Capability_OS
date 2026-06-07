@@ -1,0 +1,16 @@
+catalog_id: nexus_ai_pipeline_package_catalog
+catalog_schema_version: '0.1'
+purpose: 'Pull catalog: the .pipeline packages a host (Nexus) can acquire. Generated
+  by engine/build_catalog.py — do not hand-edit.'
+package_count: 1
+packages:
+- pipeline_id: sdlc_pipeline
+  name: SDLC Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/sdlc-pipeline
+  components: 70
+  gates_always: 19
+  gates_conditional: 7
+  stages: 31
+  source_commit: f3181ae
