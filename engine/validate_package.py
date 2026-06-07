@@ -155,6 +155,46 @@ def main():
     elif stage_ids:
         ok(f"all {len(stage_ids)} stages have bundled contracts")
 
+    # --- hardening checks (step 3) ---
+    import re
+    SEMVER = re.compile(r"^\d+\.\d+\.\d+([-+].+)?$")
+    SUPPORTED_SCHEMA = {"0.1"}
+    sv = str(man.get("package_schema_version", ""))
+    ok("schema_version") if sv in SUPPORTED_SCHEMA else err(
+        f"unsupported package_schema_version '{sv}' (supported: {sorted(SUPPORTED_SCHEMA)})")
+    pv = str(man.get("package_version", ""))
+    ok("package_version semver") if SEMVER.match(pv) else err(f"package_version '{pv}' not semver")
+    bad_ver = [f"{c.get('kind')}:{c.get('id')}={c.get('version')}"
+               for c in comps if not SEMVER.match(str(c.get("version", "")))]
+    if bad_ver:
+        warn(f"{len(bad_ver)} components have non-semver versions: {bad_ver[:5]}")
+    elif comps:
+        ok("component versions semver")
+    seen = {}
+    for c in comps:
+        seen[(c.get("kind"), c.get("id"))] = seen.get((c.get("kind"), c.get("id")), 0) + 1
+    dups = [f"{k[0]}:{k[1]}" for k, n in seen.items() if n > 1]
+    if dups:
+        err(f"duplicate component ids: {dups}")
+    elif comps:
+        ok("no duplicate component ids")
+    # self-containment: every uses_* / team ref in the def must be bundled (by id or alias)
+    if pdef:
+        comp_ids = set()
+        for c in comps:
+            comp_ids.add(str(c.get("id")).lower())
+            if c.get("requested_as"):
+                comp_ids.add(str(c.get("requested_as")).lower())
+        USES = ["uses_core_abilities", "uses_skills", "uses_tools", "uses_governance_profiles",
+                "uses_audit_schemas", "uses_model_provider_profiles", "uses_context_memory_profiles"]
+        refs = [str(v) for f in USES for v in (pdef.get(f) or [])]
+        refs += [str(pdef[f]) for f in ("required_team_type", "required_team_lead_role") if pdef.get(f)]
+        dangling = [r for r in refs if r.lower() not in comp_ids]
+        if dangling:
+            err(f"{len(dangling)} declared deps not bundled (dangling): {dangling[:8]}")
+        elif refs:
+            ok(f"all {len(refs)} declared deps bundled (self-contained)")
+
     # report
     print(f"[validator] package: {os.path.relpath(pkg, REPO)}")
     print(f"[validator] {n_ok} checks ok, {len(warnings)} warn, {len(errors)} fail")

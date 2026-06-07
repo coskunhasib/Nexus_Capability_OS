@@ -144,6 +144,16 @@ A `.pipeline` package always carries, inside the bundle:
 
 So governance is **not** something the host adds later — it travels *with* the pipeline. This is the differentiator MetaGPT/Atoms lack.
 
+## 8b. Versioning & provenance
+
+- **`package_version`** — semver, authored per package (the package as a whole).
+- **component `version`** — semver, authored per bundled part (its label). Identity for *sharing* is still the consumer-computed content fingerprint (§7); `version` is for humans + conflict messages, never an input to the hash.
+- **`package_schema_version`** — the format version a package targets (currently `0.1`). A consumer **MUST refuse** a `package_schema_version` it does not support.
+- **aliases** — when a `uses_*` token differs from a component's canonical id, the manifest records `requested_as: <token>` so resolution stays traceable.
+- **`provenance`** (`produced_by`, `source_commit`, `source_path`) — records where/what the package was generated from. Advisory only; never an input to identity.
+
+The validator (`engine/validate_package.py`) enforces: supported schema version, semver on package + components, no duplicate component ids, and **self-containment** (every `uses_*` / team reference in the definition is bundled, by id or alias).
+
 ## 9. Out of scope for this doc
 - The host-side **import/dedup/resolve implementation** → Nexus (see the consumer contract, separate doc in this folder).
 - A **reference/sample plan** for that implementation → separate doc.
