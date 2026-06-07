@@ -14,6 +14,9 @@ The local **workbench** for authoring, validating, and test-running `.pipeline` 
 | `package_pipeline.py` | Reads a pipeline def + the Shared Registry → emits a self-contained `.pipeline` package (manifest + components + gates + evidence + stages). |
 | `validate_package.py` | Checks a package conforms to the format (manifest, contract fields, all parts present, D-016 19 gates, evidence/trace, every stage). |
 | `run_pipeline.py` | Loads a package and runs it end-to-end with a **mock** agent loop (observe→think→act), enforces the gates, emits evidence + trace, prints a verdict. |
+| `select_pipeline.py` | **(T1)** Deterministic intent→pipeline selector via `configs/nexus-ai/pipeline_selection_contract.yaml`; ambiguous → defer to orchestrator/owner. |
+| `build_catalog.py` | Scans `packages/` → `packages/INDEX.yaml` (the pull catalog a host/Nexus acquires from). |
+| `run_trials.py` | **(T2)** Runs `trials/*.trial.yaml` golden cases (intent → expected pipeline + package shape). |
 
 ## Usage
 
@@ -22,6 +25,9 @@ python3 engine/package_pipeline.py                              # 1. produce the
 python3 engine/validate_package.py packages/sdlc-pipeline       # 2. validate it
 python3 engine/run_pipeline.py    packages/sdlc-pipeline        # 3. run it (mock) -> PASS
 python3 engine/run_pipeline.py    packages/sdlc-pipeline --skip requirements   # gate enforcement bites -> FAIL
+python3 engine/select_pipeline.py --intent "bir SaaS MVP yap"   # T1: intent -> pipeline + package
+python3 engine/build_catalog.py                                 # build the pull catalog (packages/INDEX.yaml)
+python3 engine/run_trials.py                                    # T2: run acceptance fixtures (5/5)
 ```
 
 Requires Python 3 + PyYAML. Run outputs go to `engine/runs/` (gitignored).
