@@ -34,7 +34,7 @@ Requires Python 3 + PyYAML. Run outputs go to `engine/runs/` (gitignored).
 
 ## Real vs mock (v0)
 
-- **Real:** the orchestration loop (31 stages in order), **gate enforcement** wired to the gate→producer map (D-016, 19 always-required), evidence/trace emission, package self-containment + validation.
+- **Real:** the orchestration loop (stages in order, all 6 pipelines); **gate enforcement for every pipeline** — sdlc via its explicit gate→producer map (D-016 19), the other 5 **derived** from each package's stage contracts (skip a producing stage → its gate FAILs); evidence/trace emission; package self-containment + validation.
 - **Mock:** the agent "work" itself (deterministic stubs — no LLM, no network).
 
 ## The MetaGPT transfer

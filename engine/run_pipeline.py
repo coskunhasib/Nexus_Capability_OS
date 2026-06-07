@@ -25,9 +25,9 @@ REPO = os.path.dirname(HERE)
 CFG = os.path.join(REPO, "configs", "nexus-ai")
 
 
-def load_gate_producers():
-    """gate_id -> {producing_stage, satisfied_by} from runtime rules (best-effort)."""
-    p = os.path.join(CFG, "sdlc_pipeline_runtime_rules.yaml")
+def load_gate_producers(pid):
+    """Explicit gate_id -> {producing_stage, satisfied_by} from <pid>_runtime_rules.yaml (if present)."""
+    p = os.path.join(CFG, f"{pid}_runtime_rules.yaml")
     out = {}
     if os.path.exists(p):
         gp = (load_yaml(p) or {}).get("required_gate_producers") or {}
@@ -37,6 +37,19 @@ def load_gate_producers():
                     "producing_stage": e.get("producing_stage"),
                     "satisfied_by": e.get("satisfied_by_stage_gates") or [],
                 }
+    return out
+
+
+def derive_producers(stage_by_id):
+    """Derive gate -> producing stage from the bundled stage contracts: a gate listed in a
+    stage's `gates` is produced by that stage (each gate is its own satisfied-by). This gives
+    REAL gate enforcement to pipelines that have no explicit runtime-rules map."""
+    out = {}
+    for sid, sc in stage_by_id.items():
+        for g in (sc.get("gates") or []):
+            gid = g if isinstance(g, str) else (g.get("id") or g.get("gate"))
+            if gid and gid not in out:
+                out[gid] = {"producing_stage": sid, "satisfied_by": [gid]}
     return out
 
 
@@ -94,7 +107,8 @@ def main():
         passed_stage_gates[sid] = set(r["stage_gates_passed"])
 
     # 2. enforce rollup gates (D-016 always + conditional) via the gate->producer map
-    producers = load_gate_producers()
+    producers = derive_producers(stage_by_id)          # from the package's own stage contracts
+    producers.update(load_gate_producers(pid))          # explicit runtime-rules map (sdlc) overrides derived
     req_gates = pdef.get("required_gates", {}) or {}
     gate_results = []
 
