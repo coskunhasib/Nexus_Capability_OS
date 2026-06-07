@@ -1,0 +1,4 @@
+id: ambiguous-greeting
+intent: "merhaba nasılsın"
+expected:
+  ambiguous: true

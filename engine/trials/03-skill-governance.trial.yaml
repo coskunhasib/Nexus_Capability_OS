@@ -1,0 +1,4 @@
+id: skill-audit-binding
+intent: "yeni skill için semantic extraction + safety audit yap ve binding kontrol et"
+expected:
+  pipeline_id: skill_governance_pipeline

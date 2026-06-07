@@ -1,0 +1,4 @@
+id: ops-incident
+intent: "prod'da incident var, runbook çalıştır ve rollback hazırla, postmortem yaz"
+expected:
+  pipeline_id: operations_pipeline
