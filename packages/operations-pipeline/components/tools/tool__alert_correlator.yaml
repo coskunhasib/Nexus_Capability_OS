@@ -1,0 +1,32 @@
+id: alert_correlator
+name: Alert Correlator
+type: tool
+category: tool
+status: candidate
+purpose: Correlate alerts so duplicate signals collapse into one incident.
+owner_domain: operations_reliability
+provided_by_core_ability: null
+input_schema:
+  alerts:
+  - object
+output_schema:
+  correlated_incident: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- incident_intake_agent
+allowed_usage:
+- Read-only correlation/deduplication of alert signals at intake.
+forbidden_usage:
+- Suppressing distinct incidents by over-correlating.
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.incident_intake
+notes: NEW (operations) per review §4.3.

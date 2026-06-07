@@ -1,0 +1,43 @@
+id: activation_flag_controller
+name: Activation Flag Controller
+type: tool
+category: tool
+status: candidate
+purpose: Control the activation/feature flag across preview -> pilot -> public scopes
+  (toggle/scope changes).
+owner_domain: activation_and_release_operations
+provided_by_core_ability: OS
+input_schema:
+  flag_id: string
+  scope: string
+  state: string
+output_schema:
+  flag_state: object
+side_effects: mutates_activation_state
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- activation_manager_agent
+- pilot_activation_agent
+allowed_usage:
+- Toggle/scope the activation flag for preview and pilot exposure.
+forbidden_usage:
+- Public activation without owner decision (owner_activation_decision_gate) and validated
+  rollback (rollback_required_gate).
+- Pilot activation without a passing preview (preview_required_gate).
+used_by:
+  pipelines:
+  - activation_pipeline
+  pipeline_stages:
+  - activation_pipeline.superadmin_preview
+  - activation_pipeline.pilot_activation
+  - activation_pipeline.activation_completion
+notes: NEW (activation) per review §4.3 (markdown authoritative; YAML variant feature_flag_controller
+  is a divergence flagged in review F-1, not a separate tool).

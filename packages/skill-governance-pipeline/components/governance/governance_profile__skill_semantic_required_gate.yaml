@@ -1,0 +1,29 @@
+id: skill_semantic_required_gate
+name: Skill Semantic Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Skill Governance gate: no progression without skill semantic extraction
+  (semantic_category, primary_purpose, not_for, used_by_agents, used_in_stages, confidence
+  >= threshold) — binding never precedes semantics (skill-governance-pipeline.md §2.2).'
+owner_domain: skill_governance
+allowed_usage:
+- Gate that skill semantics are extracted before binding/activation in the Skill Governance
+  Pipeline.
+forbidden_usage:
+- Used outside the Skill Governance Pipeline (the SDLC in-pipeline equivalent is skill_semantic_extraction_gate).
+governance_profiles:
+- skill_governance_pipeline_governance
+- locked_semantics_enforcement_policy
+- evidence_required
+audit_schemas:
+- skill_semantic_extract_schema
+- skill_governance_trace_schema
+scope: stage
+applies_to:
+- skill_semantic_extraction
+severity_default: blocker
+used_by:
+- skill_semantic_extraction
+notes: NEW (pipeline-catalog-review.md §4.1). Skill Governance Pipeline gate. Distinct
+  from the SDLC stage-03 skill_semantic_extraction_gate (same intent, different pipeline).
+  Enforces the no_unread_skill_binding family.

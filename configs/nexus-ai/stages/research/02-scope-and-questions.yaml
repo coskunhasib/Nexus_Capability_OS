@@ -1,0 +1,63 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #2 of 10: scope_and_questions
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.2.
+# Field set mirrors configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+# prism is used here for DIVERGENCE (LOCKED: brainstorming/divergence only), NOT validation.
+version: draft-0.1
+stage_id: scope_and_questions
+name: Scope and Questions
+purpose: >-
+  Decompose the goal into concrete, answerable research questions and sub-questions;
+  mark which are load-bearing for the downstream decision. prism is used here for
+  divergence — generating a diverse question set and candidate angles, not for validation.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: research_scoping_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - prism       # LOCKED: divergence — diverse question set / candidate angles, NOT validation
+  - gap-audit   # surface missing question coverage / scope gaps
+uses_tools:
+  - artifact_writer
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+
+inputs:
+  - RESEARCH_BRIEF
+outputs:
+  - RESEARCH_QUESTION_SET
+
+evidence:
+  - RESEARCH_QUESTION_SET
+trace:
+  - agent_invocation_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - research_questions_bounded
+  - load_bearing_questions_identified
+  - no_major_question_gap
+
+on_pass: source_discovery
+on_fail: research_intake
+rework_route: scope_and_questions
+
+blocking_conditions: []
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

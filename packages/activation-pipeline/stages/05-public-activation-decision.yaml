@@ -1,0 +1,91 @@
+# Activation Pipeline — Stage Contract
+# Stage #5: public_activation_decision
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.5.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# Human/owner decision gate: the authorizing actor is the human owner, NOT an autonomous agent.
+# owner_agent activation_owner_decision_agent records and routes the human/owner decision; the
+#   decision is recorded as evidence and cannot be self-approved by any stage-owning agent (md §2.5).
+
+version: draft-0.1
+stage_id: public_activation_decision
+name: Public Activation Decision
+purpose: >-
+  The human/owner decision gate. The owner reviews pilot evidence, the validated
+  rollback plan, and residual risk, then explicitly decides whether to authorize
+  public (general-availability) activation. This decision is recorded as evidence
+  and cannot be self-approved by any stage-owning agent. The decision gate must be
+  satisfied before broad activation is executed; rollback readiness is confirmed in
+  the next stage prior to completion.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_owner_decision_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+
+uses_skills:
+  - sentinel          # foresight/premortem on residual risk before authorizing public scope
+  - llm-council       # surface decision considerations for the owner
+  - calibrate         # calibrate residual-risk assessment
+
+uses_tools:
+  - evidence_reader              # read pilot evidence + validated rollback plan
+  - artifact_writer
+  - evidence_writer
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - owner_activation_decision_gate
+
+uses_audit_schemas:
+  - activation_decision_evidence_schema   # decision record (decision proof)
+  - stage_gate_trace_schema               # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+  - risk_analysis_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - activation_decision_context_pack
+
+inputs:
+  - PILOT_EVIDENCE_REVIEW_REPORT
+  - ROLLBACK_PLAN
+
+outputs:
+  - ACTIVATION_DECISION
+
+evidence:
+  - ACTIVATION_DECISION
+
+trace:
+  - owner_decision_trace
+  - stage_gate_decision_trace
+
+gates:
+  - owner_activation_decision_gate
+  - no_self_approval_policy
+  - rollback_plan_present
+
+on_pass: rollback_readiness
+on_fail: pilot_evidence_review
+rework_route: pilot_evidence_review
+
+blocking_conditions:
+  - public_activation_without_owner_decision
+  - self_approval_of_activation_decision
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

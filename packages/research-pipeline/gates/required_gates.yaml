@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - all_research_questions_addressed_or_flagged
+  - every_load_bearing_claim_has_mapped_evidence
+  - every_used_source_has_reliability_score
+  - validator_role_distinct_from_producer
+  - cross_validation_completed_by_separate_role
+  - uncertainty_report_present
+  - citation_required_gate_pass
+  - research_evidence_graph_complete
+  - no_blocking_policy_failure
+  conditional: []

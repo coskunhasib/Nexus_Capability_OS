@@ -1,0 +1,34 @@
+id: expiration_scanner
+name: Expiration Scanner
+type: tool
+category: tool
+status: candidate
+purpose: Scan for memories whose validity window has reached its horizon for refresh/re-validate/downgrade/expire
+  review.
+owner_domain: knowledge_management
+provided_by_core_ability: Memory
+input_schema:
+  now: string
+  scope: object
+output_schema:
+  expiring_items:
+  - object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- memory_expiration_agent
+allowed_usage:
+- Read-only scan for items at/over their validity horizon (memory_expiration_review).
+forbidden_usage:
+- Silently retaining expired memory (expiration_outcome_recorded must follow).
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  pipeline_stages:
+  - knowledge_memory_pipeline.memory_expiration_review
+notes: NEW (knowledge/memory) per review §4.3. Read-only scan; retirement is via retrieval_profile_writer.

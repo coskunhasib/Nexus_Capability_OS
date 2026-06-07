@@ -1,0 +1,36 @@
+id: bayesian-update
+name: Bayesian Update
+type: skill
+status: canonical
+semantic_category: belief_update
+primary_purpose: update priors / beliefs from new evidence
+purpose: Update prior beliefs/estimates from new evidence (post-run learning, cross-validation
+  in research, validity-window updates in memory, incident pattern updates in operations).
+owner_domain: reasoning_methods
+allowed_usage:
+- belief_update
+- prior_revision
+- evidence_weighted_estimation
+forbidden_usage:
+- bug_finding
+- decision_making_by_itself
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - operations_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - sdlc:31-refraction-learning
+  - research:uncertainty_reporting
+  - operations:operational_learning
+  - knowledge_memory:memory_validity
+  agents:
+  - refraction_agent
+aliases: []
+notes: SDLC learning stage; also used in research, operations and knowledge/memory.

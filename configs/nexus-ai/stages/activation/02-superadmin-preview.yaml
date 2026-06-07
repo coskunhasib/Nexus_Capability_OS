@@ -1,0 +1,84 @@
+# Activation Pipeline — Stage Contract
+# Stage #2: superadmin_preview
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.2.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
+# Enforces preview_required_gate: no pilot may begin without a passing preview (md §2.2).
+
+version: draft-0.1
+stage_id: superadmin_preview
+name: Superadmin Preview
+purpose: >-
+  Activate the target in a restricted superadmin/internal-only context to confirm
+  it behaves as expected before any external exposure. Smoke-checks behavior,
+  telemetry wiring, and that the activation flag is controllable. Enforces
+  preview_required_gate — no pilot may begin without a passing preview.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_manager_agent
+sub_agents: []
+
+uses_core_abilities:
+  - OS                # exercise the target in the restricted preview context
+  - Memory
+
+uses_skills:
+  - gap-audit         # confirm preview coverage (behavior + telemetry wiring)
+  - calibrate         # calibrate preview observations before promoting to pilot
+
+uses_tools:
+  - activation_flag_controller   # confirm the activation flag is controllable
+  - telemetry_reader             # confirm telemetry is observable in preview
+  - artifact_writer
+  - evidence_writer
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - evidence_required_policy
+  - preview_required_gate
+
+uses_audit_schemas:
+  - activation_evidence_schema       # evidence (decision proof)
+  - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - preview_context_pack
+
+inputs:
+  - ACTIVATION_REQUEST
+
+outputs:
+  - PREVIEW_RESULT
+
+evidence:
+  - PREVIEW_RESULT
+
+trace:
+  - preview_activation_trace
+  - stage_gate_decision_trace
+
+gates:
+  - preview_required_gate
+  - preview_behaves_as_expected
+  - telemetry_observable_in_preview
+
+on_pass: pilot_activation
+on_fail: superadmin_preview
+rework_route: superadmin_preview
+
+blocking_conditions:
+  - pilot_activation_attempted_without_superadmin_preview_pass
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

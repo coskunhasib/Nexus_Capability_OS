@@ -1,0 +1,44 @@
+id: source_evaluation_model
+name: Source Evaluation Model
+type: model_provider_profile
+status: candidate
+purpose: Source reliability / credibility assessment for the research pipeline (scoring
+  sources during source discovery and reliability assessment).
+owner_domain: research_and_knowledge
+provider_type: reasoning_llm
+model_family: source_assessment_reasoning
+capability_scope:
+- source_reliability_scoring
+- provenance_and_bias_assessment
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: research_reasoning_profile
+governance_profiles:
+- research_source_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- source reliability/credibility scoring in the research pipeline
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - research_pipeline
+  stages:
+  - source_reliability_assessment
+  - source_discovery
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: null
+  recommendation: No canonical equivalent — source-reliability scoring is a genuinely
+    new specialisation. Keep as its own profile; ratify in Phase E.
+notes: Markdown research-pipeline.md §1 + §3 ("Model/Provider profiles introduced
+  ... to be registered in phase C").

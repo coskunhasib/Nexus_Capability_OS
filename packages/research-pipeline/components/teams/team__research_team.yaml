@@ -1,0 +1,76 @@
+team_id: research_team
+team_type: research_team
+pipeline_id: research_pipeline
+purpose: 'Run sourced research under no-human governance: capture the research goal,
+  decompose it into bounded questions, discover candidate sources with recorded provenance,
+  score source reliability, extract atomic checkable claims, map each load-bearing
+  claim to supporting and contradicting evidence, independently cross-validate (distinct
+  role), report residual uncertainty, and synthesize a fully-cited research output
+  with an assembled evidence graph.'
+team_lead_role: research_team_lead
+agents:
+- research_intake_agent
+- research_scoping_agent
+- source_discovery_agent
+- source_reliability_agent
+- claim_extraction_agent
+- claim_evidence_agent
+- cross_validation_agent
+- uncertainty_reporting_agent
+- research_synthesis_agent
+- research_completion_agent
+direct_sub_agents: []
+uses_core_abilities:
+- Web
+- Memory
+- Supervisor
+uses_skills:
+- prism
+- llm-council
+- calibrate
+- gap-audit
+- bayesian-update
+uses_tools:
+- web_search
+- web_fetch
+- source_reliability_checker
+- claim_mapper
+- artifact_writer
+- evidence_writer
+- evidence_reader
+uses_governance_profiles:
+- research_source_governance
+- citation_required_gate
+- no_self_approval_policy
+- evidence_required_policy
+uses_audit_schemas:
+- source_evidence_schema
+- claim_evidence_schema
+- stage_gate_trace_schema
+uses_model_provider_profiles:
+- research_reasoning_profile
+- supervisor_routing_model
+- source_evaluation_model
+uses_context_memory_profiles:
+- research_run_context
+- source_corpus_context_pack
+- claim_evidence_context_pack
+permissions:
+- own_and_execute_research_stages
+- assign_stage_owner_agents
+- discover_and_fetch_sources_with_provenance
+- score_sources_and_map_claims_to_evidence
+- cross_validate_with_a_distinct_role
+- emit_cited_synthesis_with_evidence_graph
+- request_rework_along_allowed_routes
+forbidden_actions:
+- core_ability_as_team_member
+- supervisor_as_team_lead
+- producer_role_is_sole_validator_of_own_source
+- agent_approves_own_work
+- uncited_load_bearing_claim_in_synthesis
+- unscored_source_used_in_synthesis
+- team_lead_bypasses_blocking_gate
+- team_lead_owns_a_stage
+- orphan_sub_agent_without_parent_or_direct_call_flag
+- introduce_plugin

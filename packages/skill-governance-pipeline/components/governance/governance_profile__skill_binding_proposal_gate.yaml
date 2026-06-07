@@ -1,0 +1,31 @@
+id: skill_binding_proposal_gate
+name: Skill Binding Proposal Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Skill Governance gate: binding may not be proposed without upstream semantic
+  + script-audit + misuse-warning evidence (anti-pattern: binding without semantics)
+  (skill-governance-pipeline.md §2.5).'
+owner_domain: skill_governance
+allowed_usage:
+- Gate that a SKILL_BINDING_PROPOSAL rests on completed semantics/audit/misuse evidence.
+forbidden_usage:
+- Used outside the Skill Governance Pipeline.
+governance_profiles:
+- skill_governance_pipeline_governance
+- evidence_required
+audit_schemas:
+- skill_binding_decision_schema
+- skill_governance_trace_schema
+scope: stage
+applies_to:
+- skill_binding_proposal
+severity_default: blocker
+used_by:
+- skill_binding_proposal
+aliases:
+- skill_binding_gate
+notes: NEW. Part of the Skill Governance set (pipeline-catalog-review.md §4.1). Enforces
+  binding_proposed_without_semantics == false. The pre-R9 catalog-YAML definition_contract
+  variant `skill_binding_gate` is retained under aliases only as the historical reconciliation
+  record; after R9 collapsed pipeline_catalog.yaml into a summary-only catalog, the
+  authoritative per-pipeline source is the markdown definition_doc.

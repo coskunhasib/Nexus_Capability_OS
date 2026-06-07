@@ -1,0 +1,165 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline (pipeline definition)
+# Machine-readable transcription of the catalog entry. Field set mirrors
+# configs/nexus-ai/sdlc_pipeline.yaml exactly.
+# Source of truth (transcribed, not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
+#   §1 Pipeline Definition Contract (the YAML fields) + §2 Per-stage definitions.
+# Top structure is the Nexus AI Orchestration Model; Knowledge / Memory is ONE pipeline under it.
+# Locked notes (md §"Locked-decision notes"): Memory stays a Core Ability and is NEVER promoted to
+#   an agent; owner_agent is always a snake_case Agent role; the team lead is the pipeline-specific
+#   knowledge_team_lead role (NOT Supervisor). Skill != Tool, Governance != Audit, Evidence != Trace.
+version: draft-0.1
+pipeline_id: knowledge_memory_pipeline
+name: Knowledge / Memory Pipeline
+purpose: >
+  Govern the knowledge / memory lifecycle for Nexus AI: ingest candidate memory, classify its
+  source, summarize it, assign a validity window, update the affected retrieval profile, and review
+  expiration. Memory remains a Core Ability; this pipeline curates what that ability is allowed to
+  remember, for how long, and how it is retrieved. It does not turn Memory into an agent.
+status: draft
+owner_domain: knowledge_management
+required_team_type: knowledge_team
+required_team_lead_role: knowledge_team_lead
+
+# Domains this pipeline applies to (md §1 applicable_domains).
+applicable_domains:
+  - knowledge_base
+  - long_term_memory
+  - retrieval_augmented_context
+  - context_pack_curation
+  - reference_corpus
+
+# Risk profiles this pipeline can operate under (md §1 risk_profiles).
+risk_profiles:
+  - internal_knowledge
+  - shared_operational_memory
+  - sensitive_or_regulated_knowledge
+  - external_sourced_knowledge
+
+# Conditions that must hold before the pipeline may start (md §1 entry_criteria).
+entry_criteria:
+  - candidate_memory_item_present
+  - candidate_origin_reference_present
+  - target_knowledge_scope_declared
+
+# Conditions that mark the pipeline complete (md §1 exit_criteria).
+exit_criteria:
+  - source_classification_complete
+  - summary_generated_and_calibrated
+  - validity_window_assigned
+  - retrieval_profile_updated_or_explicitly_skipped
+  - expiration_review_outcome_recorded
+  - memory_provenance_evidence_complete
+
+# Pipeline-level conditions that block progression / release (md §1 blocking_conditions).
+blocking_conditions:
+  - source_classification_missing
+  - unredacted_sensitive_content_detected
+  - validity_window_missing
+  - provenance_record_missing
+  - retrieval_profile_update_without_validity_window
+
+# Permitted rework routes (md §1 allowed_rework_routes). Each value is "source -> target",
+# where both endpoints are known stage_ids (transcribed verbatim from the md).
+allowed_rework_routes:
+  - source_classification -> memory_intake
+  - summary_generation -> source_classification
+  - validity_window_assignment -> source_classification
+  - retrieval_profile_update -> validity_window_assignment
+  - memory_expiration_review -> validity_window_assignment
+
+# Evidence artifacts the pipeline must produce (md §1 required_evidence).
+# Evidence = decision proof, DISTINCT from trace.
+required_evidence:
+  - MEMORY_INTAKE_RECORD
+  - SOURCE_CLASSIFICATION_REPORT
+  - MEMORY_SUMMARY
+  - VALIDITY_WINDOW_DECISION
+  - RETRIEVAL_PROFILE_UPDATE_REPORT
+  - MEMORY_EXPIRATION_REVIEW_REPORT
+  - MEMORY_PROVENANCE_RECORD
+
+# Trace records the pipeline must produce (md §1 required_trace).
+# Trace = operation/decision log, DISTINCT from evidence.
+required_trace:
+  - memory_intake_trace
+  - source_classification_trace
+  - summary_generation_skill_activation_trace
+  - validity_window_assignment_trace
+  - retrieval_profile_update_trace
+  - memory_expiration_review_trace
+
+stages:
+  - memory_intake
+  - source_classification
+  - summary_generation
+  - validity_window_assignment
+  - retrieval_profile_update
+  - memory_expiration_review
+
+uses_core_abilities:
+  - Memory
+  - Supervisor
+  - Web
+
+uses_skills:
+  - gap-audit
+  - calibrate
+  - refraction
+  - bayesian-update
+
+uses_tools:
+  - memory_ingestor
+  - source_classifier
+  - summary_writer
+  - validity_window_calculator
+  - retrieval_profile_writer
+  - expiration_scanner
+  - redaction_tool
+  - provenance_recorder
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - memory_source_governance
+  - validity_window_required_gate
+  - redaction_required_gate
+
+uses_audit_schemas:
+  - memory_provenance_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - knowledge_reasoning_profile
+  - summarization_model
+  - supervisor_routing_model
+
+uses_context_memory_profiles:
+  - knowledge_run_context
+  - memory_candidate_context_pack
+  - retrieval_profile_context_pack
+
+# Required gates. The md does not define a dedicated D-016-style canonical gate set; the
+# always-required gates here are the md's per-stage blocker gates (§2) that are unconditional,
+# plus the no-self-approval structural gate from §3.1. The two applicability-gated blocker gates
+# (§2.2 redaction_applied_if_required; §2.6 expired_memory_retired_from_retrieval) are listed
+# under `conditional`.
+required_gates:
+  always:
+    - intake_metadata_complete
+    - provenance_seed_recorded
+    - source_trust_tier_assigned
+    - sensitivity_classified
+    - summary_grounded_in_source
+    - validity_window_present
+    - update_bound_to_validity_window
+    - sensitivity_exposure_consistent
+    - expiration_outcome_recorded
+    - team_lead_cannot_self_approve_or_bypass_gate
+  conditional:
+    - redaction_applied_if_required
+    - expired_memory_retired_from_retrieval
+
+canonical_docs:
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md

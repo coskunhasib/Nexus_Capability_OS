@@ -1,0 +1,70 @@
+# Skill Governance Pipeline — Stage Contract 01: skill_intake
+# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.1)
+# Format mirror: configs/nexus-ai/stages/sdlc/01-intake.yaml
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #1 of 7. Stage class: always-on.
+version: draft-0.1
+stage_id: skill_intake
+name: Skill Intake
+purpose: >-
+  Aday skill paketini envantere alır, canonical_source, sürüm/hash ve risk
+  profilini kaydeder. SKILL.md dışında scripts/**, references/**, assets/** ve
+  metadata varlığını tespit eder (yalnız envanter; semantik henüz çıkarılmaz).
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_librarian_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - OS
+
+uses_skills:
+  - gap-audit
+
+uses_tools:
+  - skill_package_reader
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_governance_evidence_schema
+  - skill_governance_trace_schema
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_SOURCE_REFERENCE
+outputs:
+  - SKILL_INVENTORY_ENTRY
+
+evidence:
+  - SKILL_INVENTORY_ENTRY
+trace:
+  - skill_package_read_trace
+  - gate_evaluation_trace
+
+# key gate: skill_intake_inventory_complete (advisory -> blocker if package unreadable)
+gates:
+  - skill_intake_inventory_complete
+
+on_pass: skill_semantic_extraction
+on_fail: skill_intake
+rework_route: skill_intake
+
+blocking_conditions:
+  - skill_package_unreadable
+  - canonical_source_unresolved
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

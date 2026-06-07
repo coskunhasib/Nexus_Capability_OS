@@ -1,0 +1,47 @@
+id: retrieval_profile_context_pack
+name: Retrieval Profile Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Retrieval-profile working context: the affected retrieval profile / context
+  pack to be updated so curated memory becomes retrievable under the right scope,
+  with exposure bounded by sensitivity and validity window. Consumed by retrieval_profile_update
+  and expiration review (to retire expired memory from active retrieval).'
+owner_domain: knowledge_management
+allowed_usage:
+- read_during_retrieval_profile_update_and_expiration_review
+- expose_curated_memory_under_scope_bounded_by_sensitivity_and_validity
+forbidden_usage:
+- expose_a_memory_beyond_its_classified_sensitivity
+- update_for_a_memory_with_no_validity_window
+- retain_expired_memory_in_active_retrieval
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- target_retrieval_profile
+- memory_candidate_context_pack
+- knowledge_run_context
+retention: registry_lifetime
+validity_window: bounded_by_each_member_memory_validity_window
+retrieval_rules:
+- update_bound_to_validity_window
+- sensitivity_exposure_must_not_exceed_classification
+- expired_memory_retired_from_active_retrieval
+redaction_rules:
+- no_raw_secrets
+- sensitive_memory_not_placed_in_broadly_readable_profile
+governance_profiles:
+- memory_source_governance
+- validity_window_required_gate
+- context_access_governance
+audit_schemas:
+- memory_provenance_schema
+- context_usage_trace_schema
+- stage_gate_trace_schema
+used_by:
+- knowledge_memory_pipeline
+- stage:retrieval_profile_update@knowledge_memory_pipeline
+- stage:memory_expiration_review@knowledge_memory_pipeline
+aliases: []
+notes: New (draft-0.1, knowledge-memory-pipeline.md §2.5-§2.6). This is the curated,
+  retrievable view that the Memory Core Ability exposes under scope; it is governed
+  working context, not the ability itself.

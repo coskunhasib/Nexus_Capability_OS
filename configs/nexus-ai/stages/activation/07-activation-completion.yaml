@@ -1,0 +1,89 @@
+# Activation Pipeline — Stage Contract
+# Stage #7: activation_completion
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.7.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
+# Captures activation lessons for memory (refraction) so future activations are calibrated (md §2.7).
+
+version: draft-0.1
+stage_id: activation_completion
+name: Activation Completion
+purpose: >-
+  Execute the authorized activation at the approved scope, assemble the full
+  activation evidence package and traceability, confirm all gates passed, and record
+  completion. Captures activation lessons for memory (refraction) so future
+  activations are calibrated.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_manager_agent
+sub_agents: []
+
+uses_core_abilities:
+  - OS                # execute the authorized activation at the approved scope
+  - Memory            # capture activation lessons back into memory
+  - Web
+
+uses_skills:
+  - refraction        # capture activation lessons for memory / future calibration
+  - calibrate         # calibrate future activations from this run's outcome
+  - gap-audit         # confirm the evidence package and traceability are complete
+
+uses_tools:
+  - activation_flag_controller   # execute the authorized activation at the approved scope
+  - telemetry_reader
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - activation_evidence_schema           # full activation evidence package (decision proof)
+  - activation_transition_trace_schema   # trace (stage transitions) — kept distinct from evidence
+  - stage_gate_trace_schema              # trace (gate decisions) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - activation_decision_context_pack
+
+inputs:
+  - ACTIVATION_DECISION
+  - ROLLBACK_READINESS_REPORT
+
+outputs:
+  - ACTIVATION_COMPLETION_REPORT
+
+evidence:
+  - ACTIVATION_COMPLETION_REPORT
+
+trace:
+  - activation_transition_trace
+  - stage_gate_decision_trace
+
+gates:
+  - activation_evidence_complete
+  - all_required_gates_passed
+  - no_blocking_policy_failure
+
+on_pass: done
+on_fail: relevant_failed_stage
+rework_route: relevant_failed_stage
+
+blocking_conditions:
+  - missing_release_candidate_evidence
+  - self_approval_of_activation_decision
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

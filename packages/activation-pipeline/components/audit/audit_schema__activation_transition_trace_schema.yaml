@@ -1,0 +1,55 @@
+id: activation_transition_trace_schema
+name: Activation Transition Trace Schema
+type: trace_schema
+status: candidate
+purpose: Trace record for activation stage transitions — the operation history of
+  moving between activation phases (e.g. owner_decision_trace, rollback_drill_trace).
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Record activation stage-transition / phase-change lineage.
+forbidden_usage:
+- Used as an activation decision proof itself (that is activation_decision_evidence_schema).
+governance_profiles:
+- global_trace_required_policy
+- activation_pipeline_governance
+audit_schemas:
+- activation_evidence_schema
+- activation_decision_evidence_schema
+notes: NEW (activation). The single NEW trace schema for activation; process history
+  that supports — but is distinct from — activation evidence.
+aliases:
+- activation_trace_schema
+applies_to:
+- activation_pipeline
+- activation_transition_provenance
+required_fields:
+- trace_id
+- type
+- actor
+- action
+- related_stage
+- from_phase
+- to_phase
+- input_refs
+- output_refs
+- status
+- timestamp
+producer: activation_manager_agent
+consumer: evidence_graph_agent
+retention: retain_with_activation_record
+redaction_rules:
+- no_raw_secret_exposure
+- redact_cohort_user_identifiers
+used_by:
+  pipelines:
+  - activation_pipeline
+  stages:
+  - activation_intake
+  - superadmin_preview
+  - pilot_activation
+  - pilot_evidence_review
+  - public_activation_decision
+  - rollback_readiness
+  - activation_completion
+  agents:
+  - activation_manager_agent

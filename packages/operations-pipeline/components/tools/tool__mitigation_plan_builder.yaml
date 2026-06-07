@@ -1,0 +1,35 @@
+id: mitigation_plan_builder
+name: Mitigation Plan Builder
+type: tool
+category: tool
+status: candidate
+purpose: Build an actionable MITIGATION_PLAN with options, chosen option, rollback-vs-fix
+  recommendation, and runbook references.
+owner_domain: operations_reliability
+provided_by_core_ability: null
+input_schema:
+  severity_classification: object
+  runbook_refs: object
+output_schema:
+  mitigation_plan_ref: string
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- mitigation_planning_agent
+allowed_usage:
+- Produce the MITIGATION_PLAN for an active incident (mitigation_plan).
+forbidden_usage:
+- Recommending execution without a resolved runbook reference.
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.mitigation_plan
+notes: NEW (operations) per review §4.3. Plan-building only; execution is runbook_executor/rollback_executor.

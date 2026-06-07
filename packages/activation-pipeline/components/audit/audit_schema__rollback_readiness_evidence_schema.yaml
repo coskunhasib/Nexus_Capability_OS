@@ -1,0 +1,47 @@
+id: rollback_readiness_evidence_schema
+name: Rollback Readiness Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for activation rollback readiness (ROLLBACK_PLAN present
+  and drilled).
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Record activation rollback-readiness decision-proof evidence.
+forbidden_usage:
+- Used to record process history (trace_schema).
+- Confused with the SDLC rollback_validation_schema or the operations rollback_fix_evidence_schema.
+governance_profiles:
+- evidence_required_policy
+- activation_pipeline_governance
+- rollback_required_gate
+audit_schemas:
+- activation_evidence_schema
+- activation_transition_trace_schema
+- stage_gate_trace_schema
+notes: NEW (activation). Rollback plan must be present and drilled before public activation;
+  distinct from SDLC/operations rollback schemas.
+applies_to:
+- activation_pipeline
+- activation_stage:rollback_readiness
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- rollback_plan_present
+- rollback_drilled
+- source_artifacts
+- status
+- created_at
+producer: rollback_readiness_agent
+consumer: activation_owner_decision_agent
+retention: retain_with_activation_record
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - activation_pipeline
+  stages:
+  - rollback_readiness
+  agents:
+  - rollback_readiness_agent

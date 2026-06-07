@@ -1,0 +1,15 @@
+required_evidence:
+- INCIDENT_RECORD
+- SEVERITY_CLASSIFICATION_REPORT
+- MITIGATION_PLAN
+- ROLLBACK_OR_FIX_REPORT
+- POSTMORTEM_REPORT
+- OPERATIONAL_LEARNING_RECORD
+required_trace:
+- incident_intake_trace
+- severity_classification_trace
+- mitigation_plan_trace
+- rollback_or_fix_trace
+- postmortem_trace
+- learning_update_trace
+- stage_gate_decision_trace

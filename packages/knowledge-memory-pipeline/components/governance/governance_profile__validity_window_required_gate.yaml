@@ -1,0 +1,36 @@
+id: validity_window_required_gate
+name: Validity Window Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Knowledge/Memory gate: every retained memory must carry an explicit validity
+  window, and retrieval-profile updates must be bound to it ("no window" is not allowed)
+  (knowledge-memory-pipeline.md §3.2).'
+owner_domain: knowledge_management
+allowed_usage:
+- Gate that a validity window exists before retrieval exposure; bind updates to the
+  window.
+forbidden_usage:
+- Used outside the Knowledge/Memory Pipeline.
+governance_profiles:
+- memory_source_governance
+- evidence_required
+audit_schemas:
+- memory_provenance_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- validity_window_assignment
+- retrieval_profile_update
+- memory_expiration_review
+severity_default: blocker
+used_by:
+- validity_window_assignment
+- retrieval_profile_update
+- memory_expiration_review
+aliases:
+- memory_validity_gate
+notes: NEW (pipeline-catalog-review.md §4.1). Knowledge/Memory Pipeline gate. The
+  pre-R9 catalog-YAML definition_contract variant `memory_validity_gate` is retained
+  under aliases only as the historical reconciliation record; after R9 collapsed pipeline_catalog.yaml
+  into a summary-only catalog, the authoritative per-pipeline source is the markdown
+  definition_doc.

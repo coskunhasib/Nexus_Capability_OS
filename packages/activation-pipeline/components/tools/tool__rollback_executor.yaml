@@ -1,0 +1,42 @@
+id: rollback_executor
+name: Rollback Executor
+type: tool
+category: tool
+status: candidate
+purpose: Execute a rollback to a known-good state (activation rollback drill / operations
+  rollback).
+owner_domain: operations_reliability
+provided_by_core_ability: OS
+input_schema:
+  rollback_plan_ref: string
+  mode: string
+output_schema:
+  rollback_result: object
+side_effects: executes_rollback_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- rollback_readiness_agent
+- incident_response_agent
+allowed_usage:
+- Perform the rollback drill/dry-run at activation rollback_readiness; execute rollback
+  at operations rollback_or_fix.
+forbidden_usage:
+- Rolling back without a validated rollback plan (rollback_required_gate).
+- Self-approved rollback execution (no_self_approval_policy).
+used_by:
+  pipelines:
+  - activation_pipeline
+  - operations_pipeline
+  pipeline_stages:
+  - activation_pipeline.rollback_readiness
+  - operations_pipeline.rollback_or_fix
+notes: Sub-operation of OS (D-014). Side-effecting executor. Distinct from the SDLC
+  candidate rollback_validator (which only validates the plan read-only).

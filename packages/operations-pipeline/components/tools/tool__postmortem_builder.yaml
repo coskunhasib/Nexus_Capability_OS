@@ -1,0 +1,34 @@
+id: postmortem_builder
+name: Postmortem Builder
+type: tool
+category: tool
+status: candidate
+purpose: Build a blameless POSTMORTEM_REPORT (timeline, root causes, contributing
+  failure modes, corrective actions).
+owner_domain: operations_reliability
+provided_by_core_ability: null
+input_schema:
+  incident_evidence: object
+output_schema:
+  postmortem_report_ref: string
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- postmortem_agent
+allowed_usage:
+- Assemble the POSTMORTEM_REPORT (postmortem).
+forbidden_usage:
+- Self-approved postmortem (no_self_approval_policy / postmortem_required_gate).
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.postmortem
+notes: NEW (operations) per review §4.3.

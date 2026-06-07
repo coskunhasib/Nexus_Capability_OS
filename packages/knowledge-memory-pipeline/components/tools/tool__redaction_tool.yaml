@@ -1,0 +1,36 @@
+id: redaction_tool
+name: Redaction Tool
+type: tool
+category: tool
+status: candidate
+purpose: Redact sensitive content before summarization, storage, or retrieval exposure.
+owner_domain: knowledge_management
+provided_by_core_ability: null
+input_schema:
+  content: object
+  sensitivity_rules: object
+output_schema:
+  redacted_content: object
+side_effects: writes_artifact_store
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- source_classification_agent
+allowed_usage:
+- Redact sensitive content when redaction_required_gate applies.
+forbidden_usage:
+- Storing/exposing unredacted sensitive content (unredacted_sensitive_content_detected
+  blocker).
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  pipeline_stages:
+  - knowledge_memory_pipeline.source_classification
+notes: NEW (knowledge/memory) per review §4.3.

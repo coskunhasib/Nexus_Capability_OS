@@ -1,0 +1,32 @@
+id: owner_activation_decision_gate
+name: Owner Activation Decision Gate (HUMAN/OWNER)
+type: stage_gate_profile
+status: candidate
+purpose: 'The public-activation decision is a HUMAN / owner authority gate: the authorizing
+  actor is the human owner, NOT an autonomous agent. The owner reviews pilot evidence
+  + validated rollback + residual risk and explicitly authorizes general-availability
+  activation (activation-pipeline.md §2.5).'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Gate public activation on a recorded human/owner decision (owner decision record).
+- Coexist with no_self_approval (the agent recording the decision is not the authorizer).
+forbidden_usage:
+- Treated as autonomous agent approval — this is HUMAN authority, DISTINCT from no_self_approval.
+- An autonomous agent self-authorizing public activation.
+governance_profiles:
+- activation_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- activation_decision_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- public_activation_decision
+severity_default: blocker
+used_by:
+- public_activation_decision
+notes: NEW (pipeline-catalog-review.md §4.1, F-4). HUMAN/owner gate — the one place
+  a pipeline asserts human-in-the-loop authority under the otherwise no-human governance
+  framing. EXPLICITLY DISTINCT from autonomous-agent no_self_approval. Phase E must
+  sign off the owner/human gate (F-4).

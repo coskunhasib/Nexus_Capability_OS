@@ -1,0 +1,236 @@
+package_schema_version: '0.1'
+pipeline_id: skill_governance_pipeline
+name: Skill Governance Pipeline
+description: 'Skill paketlerinin keşfi, zorunlu semantic extraction, script/reference
+  güvenlik denetimi, misuse-warning üretimi, skill-stage binding önerisi, aktivasyon
+  kararı ve deprecation/update yönetimini no-human governance ile yürütmek. Hiçbir
+  skill, semantic extraction tamamlanmadan ve misuse-warning üretilmeden binding''e
+  veya aktivasyona geçemez. prism = brainstorming, verification-loop = bug-finding
+  olarak locked semantics enforce edilir.
+
+  '
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 9ed30f2
+  source_path: configs/nexus-ai/skill_governance_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: skill_governance_team
+  version: 1.0.0
+  path: components/teams/team__skill_governance_team.yaml
+- kind: team_lead
+  id: skill_governance_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__skill_governance_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: os
+  version: 1.0.0
+  path: components/core-abilities/core_ability__os.yaml
+- kind: core_ability
+  id: coder
+  version: 1.0.0
+  path: components/core-abilities/core_ability__coder.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: fmea
+  version: 1.0.0
+  path: components/skills/skill__fmea.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: llm-council
+  version: 1.0.0
+  path: components/skills/skill__llm-council.yaml
+- kind: skill
+  id: sentinel
+  version: 1.0.0
+  path: components/skills/skill__sentinel.yaml
+- kind: skill
+  id: prism
+  version: 1.0.0
+  path: components/skills/skill__prism.yaml
+- kind: skill
+  id: verification-loop
+  version: 1.0.0
+  path: components/skills/skill__verification-loop.yaml
+- kind: tool
+  id: skill_package_reader
+  version: 1.0.0
+  path: components/tools/tool__skill_package_reader.yaml
+- kind: tool
+  id: skill_semantic_extractor
+  version: 1.0.0
+  path: components/tools/tool__skill_semantic_extractor.yaml
+- kind: tool
+  id: script_static_analyzer
+  version: 1.0.0
+  path: components/tools/tool__script_static_analyzer.yaml
+- kind: tool
+  id: reference_index_builder
+  version: 1.0.0
+  path: components/tools/tool__reference_index_builder.yaml
+- kind: tool
+  id: skill_binding_proposer
+  version: 1.0.0
+  path: components/tools/tool__skill_binding_proposer.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: governance_profile
+  id: skill_governance_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__skill_governance_pipeline_governance.yaml
+- kind: governance_profile
+  id: skill_semantic_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__skill_semantic_required_gate.yaml
+- kind: governance_profile
+  id: script_reference_audit_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__script_reference_audit_gate.yaml
+- kind: governance_profile
+  id: misuse_warning_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__misuse_warning_required_gate.yaml
+- kind: governance_profile
+  id: skill_binding_proposal_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__skill_binding_proposal_gate.yaml
+- kind: governance_profile
+  id: skill_activation_decision_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__skill_activation_decision_gate.yaml
+- kind: governance_profile
+  id: locked_semantics_enforcement_policy
+  version: 1.0.0
+  path: components/governance/governance_profile__locked_semantics_enforcement_policy.yaml
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: audit_schema
+  id: skill_governance_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__skill_governance_evidence_schema.yaml
+- kind: audit_schema
+  id: skill_semantic_extract_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__skill_semantic_extract_schema.yaml
+- kind: audit_schema
+  id: script_audit_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__script_audit_evidence_schema.yaml
+- kind: audit_schema
+  id: skill_misuse_warning_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__skill_misuse_warning_schema.yaml
+- kind: audit_schema
+  id: skill_binding_decision_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__skill_binding_decision_schema.yaml
+- kind: audit_schema
+  id: skill_governance_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__skill_governance_trace_schema.yaml
+- kind: model_provider_profile
+  id: skill_governance_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__skill_governance_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: skill_semantic_extraction_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__skill_semantic_extraction_model.yaml
+- kind: model_provider_profile
+  id: script_safety_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__script_safety_analysis_model.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: context_memory_profile
+  id: skill_governance_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__skill_governance_run_context.yaml
+- kind: context_memory_profile
+  id: skill_semantic_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__skill_semantic_context_pack.yaml
+- kind: context_memory_profile
+  id: skill_registry_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__skill_registry_context_pack.yaml
+gates:
+- id: skill_intake_inventory_complete
+  set: always
+- id: skill_semantic_required_gate
+  set: always
+- id: locked_semantics_enforcement_policy
+  set: always
+- id: script_reference_audit_gate
+  set: always
+- id: reference_index_complete
+  set: always
+- id: misuse_warning_required_gate
+  set: always
+- id: skill_binding_proposal_gate
+  set: always
+- id: skill_activation_decision_gate
+  set: always
+- id: skill_deprecation_required_gate
+  set: conditional
+evidence:
+  required_evidence:
+  - SKILL_INVENTORY_ENTRY
+  - SKILL_SEMANTIC_EXTRACT
+  - SCRIPT_REFERENCE_AUDIT_REPORT
+  - SKILL_REFERENCE_INDEX
+  - SKILL_MISUSE_WARNINGS
+  - SKILL_BINDING_PROPOSAL
+  - SKILL_ACTIVATION_DECISION
+  required_trace:
+  - skill_package_read_trace
+  - skill_semantic_extraction_trace
+  - script_static_analysis_trace
+  - misuse_warning_generation_trace
+  - skill_binding_proposal_trace
+  - skill_activation_decision_trace
+  - gate_evaluation_trace
+stages:
+- skill_intake
+- skill_semantic_extraction
+- script_reference_audit
+- misuse_warning_generation
+- skill_binding_proposal
+- skill_activation_decision
+- skill_deprecation_update

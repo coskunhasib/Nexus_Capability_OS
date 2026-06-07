@@ -1,0 +1,35 @@
+id: telemetry_reader
+name: Telemetry Reader
+type: tool
+category: tool
+status: candidate
+purpose: Read real-usage telemetry, error rates, and incident signals during preview/pilot.
+owner_domain: activation_and_release_operations
+provided_by_core_ability: null
+input_schema:
+  query: object
+output_schema:
+  telemetry: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- activation_manager_agent
+- pilot_activation_agent
+- activation_reviewer_agent
+allowed_usage:
+- Read-only retrieval of telemetry for preview confirmation and pilot evidence.
+forbidden_usage:
+- Mutating telemetry; treating telemetry as the owner decision itself.
+used_by:
+  pipelines:
+  - activation_pipeline
+  pipeline_stages:
+  - activation_pipeline.superadmin_preview
+  - activation_pipeline.pilot_activation
+  - activation_pipeline.pilot_evidence_review
+notes: NEW (activation) per review §4.3. Read-only.

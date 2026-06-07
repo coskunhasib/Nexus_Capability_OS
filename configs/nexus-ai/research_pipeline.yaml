@@ -1,0 +1,175 @@
+# Nexus AI Orchestration Model — Research Pipeline (pipeline definition)
+# Machine-readable transcription of the catalog entry. Field set mirrors
+# configs/nexus-ai/sdlc_pipeline.yaml exactly.
+# Source of truth (transcribed, not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
+#   §1 Pipeline Definition Contract (the YAML fields) + §2 Per-stage detail.
+# Top structure is the Nexus AI Orchestration Model; Research is ONE pipeline under it.
+# Core Abilities (Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS) are abilities,
+#   NOT agents and NOT team members; owner_agent is always a snake_case Agent role; the
+#   team lead is the pipeline-specific research_team_lead role (NOT Supervisor).
+version: draft-0.1
+pipeline_id: research_pipeline
+name: Research Pipeline
+purpose: >
+  Run sourced research with no-human governance: discover sources, score source reliability,
+  extract claims, map claims to evidence, cross-validate findings with a separate role,
+  report uncertainty, and synthesize a cited research output.
+status: draft
+owner_domain: research_and_knowledge
+required_team_type: research_team
+required_team_lead_role: research_team_lead
+
+# Domains this pipeline applies to (md §1 applicable_domains).
+applicable_domains:
+  - market_research
+  - technical_research
+  - competitive_intelligence
+  - literature_review
+  - due_diligence
+  - policy_and_regulatory_research
+
+# Risk profiles this pipeline can operate under (md §1 risk_profiles).
+risk_profiles:
+  - exploratory
+  - decision_support
+  - high_stakes_cited
+  - regulated_or_high_risk
+
+# Conditions that must hold before the pipeline may start (md §1 entry_criteria).
+entry_criteria:
+  - research_goal_present
+  - research_questions_bounded_or_derivable
+  - risk_profile_selected
+
+# Conditions that mark the pipeline complete (md §1 exit_criteria).
+exit_criteria:
+  - all_research_questions_addressed_or_flagged
+  - every_load_bearing_claim_has_mapped_evidence
+  - every_used_source_has_reliability_score
+  - cross_validation_completed_by_separate_role
+  - uncertainty_report_present
+  - citation_required_gate_pass
+  - no_blocking_policy_failure
+  - research_evidence_graph_complete
+
+# Pipeline-level conditions that block progression / release (md §1 blocking_conditions).
+blocking_conditions:
+  - load_bearing_claim_without_evidence_count > 0
+  - unscored_source_used_in_synthesis == true
+  - producer_role_is_sole_validator_of_own_source == true
+  - uncited_claim_in_final_synthesis == true
+  - critical_source_reliability_conflict_unresolved == true
+
+# Permitted rework routes (md §1 allowed_rework_routes). Each value is a known stage_id.
+allowed_rework_routes:
+  scope_gap: scope_and_questions
+  insufficient_sources: source_discovery
+  source_reliability_failure: source_discovery
+  unmapped_claim: claim_evidence_mapping
+  cross_validation_conflict: claim_evidence_mapping
+  uncertainty_underreported: uncertainty_reporting
+  synthesis_not_supported_by_evidence: claim_evidence_mapping
+  citation_gap: synthesis
+
+# Evidence artifacts the pipeline must produce (md §1 required_evidence).
+# Evidence = decision proof, DISTINCT from trace.
+required_evidence:
+  - RESEARCH_BRIEF
+  - RESEARCH_QUESTION_SET
+  - SOURCE_INVENTORY
+  - SOURCE_RELIABILITY_REPORT
+  - CLAIM_REGISTER
+  - CLAIM_EVIDENCE_MAP
+  - CROSS_VALIDATION_REPORT
+  - UNCERTAINTY_REPORT
+  - RESEARCH_SYNTHESIS
+  - CITATION_INDEX
+  - RESEARCH_EVIDENCE_GRAPH
+  - RESEARCH_COMPLETION_REPORT
+
+# Trace records the pipeline must produce (md §1 required_trace).
+# Trace = operation/decision log, DISTINCT from evidence.
+required_trace:
+  - web_search_tool_trace
+  - web_fetch_tool_trace
+  - source_reliability_checker_tool_trace
+  - claim_mapper_tool_trace
+  - skill_activation_trace
+  - cross_validation_role_handoff_trace
+  - gate_decision_trace
+
+stages:
+  - research_intake
+  - scope_and_questions
+  - source_discovery
+  - source_reliability_assessment
+  - claim_extraction
+  - claim_evidence_mapping
+  - cross_validation
+  - uncertainty_reporting
+  - synthesis
+  - research_completion
+
+uses_core_abilities:
+  - Web
+  - Memory
+  - Supervisor
+
+uses_skills:
+  - prism
+  - llm-council
+  - calibrate
+  - gap-audit
+  - bayesian-update
+
+uses_tools:
+  - web_search
+  - web_fetch
+  - source_reliability_checker
+  - claim_mapper
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader
+
+uses_governance_profiles:
+  - research_source_governance
+  - citation_required_gate
+  - no_self_approval_policy
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - source_evidence_schema
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - research_reasoning_profile
+  - supervisor_routing_model
+  - source_evaluation_model
+
+uses_context_memory_profiles:
+  - research_run_context
+  - source_corpus_context_pack
+  - claim_evidence_context_pack
+
+# Required gates. The md does not define a dedicated D-016-style canonical gate set;
+# the always-required gates here are the md's pipeline-level pass conditions
+# (md §1 exit_criteria + the no-self-approval structural gate from §2.7/§3). The md
+# defines no applicability-gated gates, so `conditional` is empty.
+required_gates:
+  always:
+    - all_research_questions_addressed_or_flagged
+    - every_load_bearing_claim_has_mapped_evidence
+    - every_used_source_has_reliability_score
+    - validator_role_distinct_from_producer
+    - cross_validation_completed_by_separate_role
+    - uncertainty_report_present
+    - citation_required_gate_pass
+    - research_evidence_graph_complete
+    - no_blocking_policy_failure
+  conditional: []
+
+canonical_docs:
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md

@@ -1,0 +1,26 @@
+id: incident_severity_required_gate
+name: Incident Severity Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Operations gate: severity classification is mandatory before any mitigation
+  work may begin (operations-pipeline.md §2.2; 03 §4 "incident severity sınıflandırması
+  zorunlu").'
+owner_domain: operations_reliability
+allowed_usage:
+- Gate that a severity is assigned before mitigation planning.
+forbidden_usage:
+- Used outside the Operations Pipeline.
+governance_profiles:
+- operations_pipeline_governance
+- evidence_required
+audit_schemas:
+- severity_classification_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- severity_classification
+severity_default: blocker
+used_by:
+- severity_classification
+notes: NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate (severity_assigned
+  blocker).

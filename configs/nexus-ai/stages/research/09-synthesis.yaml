@@ -1,0 +1,69 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #9 of 10: synthesis
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.9.
+# Field set mirrors configs/nexus-ai/stages/sdlc/ stage contracts.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+# citation_required_gate blocks any uncited load-bearing claim in the final synthesis.
+version: draft-0.1
+stage_id: synthesis
+name: Synthesis
+purpose: >-
+  Produce the final cited research synthesis answering the research questions, with every
+  load-bearing statement traceable to mapped evidence and explicit uncertainty. The
+  citation_required_gate blocks any uncited load-bearing claim.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: research_synthesis_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - gap-audit
+uses_tools:
+  - artifact_writer
+  - evidence_reader
+uses_governance_profiles:
+  - citation_required_gate
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - claim_evidence_context_pack
+
+inputs:
+  - UNCERTAINTY_REPORT
+  - CLAIM_EVIDENCE_MAP
+outputs:
+  - RESEARCH_SYNTHESIS
+  - CITATION_INDEX
+
+evidence:
+  - RESEARCH_SYNTHESIS
+  - CITATION_INDEX
+trace:
+  - agent_invocation_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - all_research_questions_addressed_or_flagged
+  - no_uncited_load_bearing_claim
+  - synthesis_consistent_with_uncertainty_report
+
+on_pass: research_completion
+on_fail: synthesis
+rework_route: synthesis
+
+blocking_conditions:
+  - uncited_claim_in_final_synthesis == true
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

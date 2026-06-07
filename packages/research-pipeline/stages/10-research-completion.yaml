@@ -1,0 +1,74 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #10 of 10: research_completion (terminal completion/gate stage)
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.10.
+# Field set mirrors configs/nexus-ai/stages/sdlc/ stage contracts (analogous to SDLC
+#   development_completion). on_pass = done (canonical terminal); on_fail routes to the
+#   specific stage that produced the missing/failed evidence (relevant_failed_stage).
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+version: draft-0.1
+stage_id: research_completion
+name: Research Completion
+purpose: >-
+  Final gate: assemble the research evidence graph, confirm all exit criteria and
+  no-blocking-policy-failure, and emit the completion report. Analogous to SDLC
+  development_completion but for research outputs.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: research_completion_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - gap-audit
+uses_tools:
+  - evidence_reader
+  - artifact_writer
+uses_governance_profiles:
+  - evidence_required_policy
+  - no_self_approval_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+
+inputs:
+  - RESEARCH_SYNTHESIS
+  - CITATION_INDEX
+  - UNCERTAINTY_REPORT
+  - CROSS_VALIDATION_REPORT
+outputs:
+  - RESEARCH_EVIDENCE_GRAPH
+  - RESEARCH_COMPLETION_REPORT
+
+evidence:
+  - RESEARCH_EVIDENCE_GRAPH
+  - RESEARCH_COMPLETION_REPORT
+trace:
+  - agent_invocation_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - research_evidence_graph_complete
+  - cross_validation_completed_by_separate_role
+  - citation_required_gate_pass
+  - no_blocking_policy_failure
+
+on_pass: done
+on_fail: relevant_failed_stage
+rework_route: relevant_failed_stage
+
+blocking_conditions:
+  - load_bearing_claim_without_evidence_count > 0
+  - unscored_source_used_in_synthesis == true
+  - uncited_claim_in_final_synthesis == true
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

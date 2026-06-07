@@ -1,0 +1,79 @@
+# Skill Governance Pipeline — Stage Contract 05: skill_binding_proposal
+# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.5)
+# Format mirror: configs/nexus-ai/stages/sdlc/04-requirements.yaml
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #5 of 7. Stage class: always-on.
+# Produces a PROPOSAL, not a decision. Anti-pattern blocked: binding without semantics.
+version: draft-0.1
+stage_id: skill_binding_proposal
+name: Skill Binding Proposal
+purpose: >-
+  Skill'i hangi agent/sub-agent ve hangi stage'lere bağlanabileceğini önerir
+  (allowed_as_subskill_of, used_by_agents, used_in_stages). Semantik + script audit
+  + misuse-warning tamamlanmadan binding önerilemez (anti-pattern: binding without
+  semantics). prism yalnız aday binding seçeneklerini çoğaltmak (divergence) için
+  kullanılır; llm-council öneriyi çok-perspektifli inceler. Bu stage karar üretmez,
+  öneri üretir.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_librarian_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Supervisor
+
+uses_skills:
+  - prism         # divergence only (multiply candidate binding options), NOT bug finding
+  - llm-council   # multi-perspective review of the proposal
+
+uses_tools:
+  - skill_binding_proposer
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - skill_binding_proposal_gate
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_binding_decision_schema
+  - skill_governance_trace_schema
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+  - supervisor_routing_model
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_SEMANTIC_EXTRACT
+  - SCRIPT_REFERENCE_AUDIT_REPORT
+  - SKILL_MISUSE_WARNINGS
+outputs:
+  - SKILL_BINDING_PROPOSAL
+
+evidence:
+  - SKILL_BINDING_PROPOSAL
+trace:
+  - skill_binding_proposal_trace
+  - gate_evaluation_trace
+
+# key gate: skill_binding_proposal_gate (blocker) — fail if binding_proposed_without_semantics
+# (cannot pass without upstream semantic/audit/misuse evidence).
+gates:
+  - skill_binding_proposal_gate
+
+on_pass: skill_activation_decision
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - binding_proposed_without_semantics
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

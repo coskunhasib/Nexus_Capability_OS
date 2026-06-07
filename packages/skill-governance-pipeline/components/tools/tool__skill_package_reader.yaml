@@ -1,0 +1,38 @@
+id: skill_package_reader
+name: Skill Package Reader
+type: tool
+category: tool
+status: canonical
+purpose: Read a skill package's structure (SKILL.md, scripts/**, references/**, assets/**,
+  metadata) for inventory and semantic extraction (read-only).
+owner_domain: skill_governance
+provided_by_core_ability: null
+input_schema:
+  package_path_or_hash: string
+output_schema:
+  package_manifest: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- skill_librarian_agent
+allowed_usage:
+- Read-only inventory of skill package contents.
+forbidden_usage:
+- Executing package scripts (that is script_static_analyzer/analysis
+- not reading).
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - skill_governance_pipeline
+  sdlc_stages:
+  - skill_semantic_extraction
+  pipeline_stages:
+  - skill_governance_pipeline.skill_intake
+notes: 'Canonical: present in SDLC stage 03 (owner skill_librarian_agent) AND the
+  skill_governance pipeline skill_intake stage. Read-only; produces SKILL_INVENTORY_ENTRY
+  input.'

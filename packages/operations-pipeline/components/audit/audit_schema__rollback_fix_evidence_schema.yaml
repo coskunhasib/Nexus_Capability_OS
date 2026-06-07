@@ -1,0 +1,48 @@
+id: rollback_fix_evidence_schema
+name: Rollback or Fix Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for the rollback-or-forward-fix action and its confirmation.
+owner_domain: operations_reliability
+allowed_usage:
+- Record the rollback/forward-fix decision-proof evidence (forward-fix confirmed via
+  verification-loop defect sweep).
+forbidden_usage:
+- Used to record process history (trace_schema).
+- Confused with SDLC rollback_validation_schema or activation rollback_readiness_evidence_schema.
+governance_profiles:
+- evidence_required_policy
+- no_self_approval_policy
+- rollback_runbook_evidence_gate
+audit_schemas:
+- mitigation_plan_evidence_schema
+- stage_gate_trace_schema
+notes: NEW (operations). Stage rollback_or_fix; owner incident_response_agent. Operations-scoped
+  rollback; distinct from SDLC/activation rollback schemas.
+applies_to:
+- operations_pipeline
+- operations_stage:rollback_or_fix
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- incident_id
+- action_taken
+- rollback_or_fix
+- confirmation_status
+- source_artifacts
+- status
+- created_at
+producer: incident_response_agent
+consumer: postmortem_agent
+retention: retain_with_postmortem
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - operations_pipeline
+  stages:
+  - rollback_or_fix
+  agents:
+  - incident_response_agent

@@ -1,0 +1,44 @@
+id: postmortem_context_pack
+name: Postmortem Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Blameless postmortem working context: reconstructed timeline, root cause(s)
+  and contributing failure modes, the rollback/fix outcome, and corrective/preventive
+  actions. Consumed by the postmortem stage; mandatory for major_incident and critical_outage_or_safety_event.'
+owner_domain: operations_reliability
+allowed_usage:
+- read_during_the_blameless_postmortem_stage
+- carry_timeline_root_cause_and_corrective_actions
+forbidden_usage:
+- attribute_individual_person_blame
+- be_self_approved_by_the_incident_responder
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- incident_context_pack
+- current_run_rollback_or_fix_report
+- operations_run_context
+retention: durable_with_review
+validity_window: review_on_recurrence_or_related_incident
+retrieval_rules:
+- scoped_to_one_incident_postmortem
+- root_cause_and_corrective_actions_required
+- postmortem_not_self_approved
+redaction_rules:
+- no_raw_secrets
+- blameless_redact_individual_identities
+- redact_customer_pii
+governance_profiles:
+- postmortem_required_gate
+- no_self_approval_policy
+- operations_pipeline_governance
+- context_access_governance
+audit_schemas:
+- postmortem_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- operations_pipeline
+- stage:postmortem@operations_pipeline
+aliases: []
+notes: New (draft-0.1, operations-pipeline.md §2.5). Blameless redaction is a defining
+  rule here.

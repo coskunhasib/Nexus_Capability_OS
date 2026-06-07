@@ -1,0 +1,49 @@
+id: learning_context_pack
+name: Operational Learning Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Operational-learning working context: the postmortem-derived lessons, proposed
+  runbook/rollback/observability improvements, and the future-improvement backlog
+  handed back toward the SDLC Pipeline (referenced, not regenerated). Consumed by
+  the learning_update stage.'
+owner_domain: operations_reliability
+allowed_usage:
+- read_during_operational_learning_update
+- hand_a_future_improvement_backlog_back_to_the_sdlc_as_reference
+forbidden_usage:
+- regenerate_the_sdlc_pipeline
+- persist_learning_inline_instead_of_via_the_memory_core_ability
+- attribute_individual_person_blame
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- postmortem_context_pack
+- operations_run_context
+- durable_memory_operational_learnings
+retention: durable_with_review
+validity_window: review_on_related_incident_or_sdlc_change
+retrieval_rules:
+- scoped_to_operational_learning
+- improvement_backlog_handed_off_to_sdlc_as_reference
+- learning_persisted_via_memory_core_ability_not_inline
+redaction_rules:
+- no_raw_secrets
+- blameless_redact_individual_identities
+governance_profiles:
+- operations_pipeline_governance
+- evidence_required_policy
+- context_access_governance
+audit_schemas:
+- operational_learning_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- operations_pipeline
+- stage:learning_update@operations_pipeline
+aliases: []
+notes: 'New (draft-0.1, operations-pipeline.md §2.6). NAME COLLISION: SDLC stage 31
+  had a legacy `learning_context_pack` reconciled into release_context_pack (see that
+  item''s aliases). This candidate is the DISTINCT live-operations learning pack (owner_domain:
+  operations_reliability). Recorded in open_questions: Phase E should decide whether
+  to disambiguate this id (e.g. operations_learning_context_pack) to remove the shared
+  legacy name. Persistence happens via the Memory Core Ability (memory_write), keeping
+  Memory-as-ability vs context-pack distinct.'

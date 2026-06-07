@@ -1,0 +1,55 @@
+id: skill_governance_trace_schema
+name: Skill Governance Trace Schema
+type: trace_schema
+status: candidate
+purpose: Trace record for skill-governance operation history (skill_package_read,
+  semantic_extraction, script_static_analysis, misuse_warning, binding_proposal, activation_decision,
+  gate_evaluation traces).
+owner_domain: skill_governance
+allowed_usage:
+- Record the operation history of every skill-governance stage step.
+forbidden_usage:
+- Used as a skill-governance decision proof itself (those are the evidence/decision
+  schemas above).
+governance_profiles:
+- global_trace_required_policy
+- skill_governance_pipeline_governance
+audit_schemas:
+- skill_governance_evidence_schema
+- skill_binding_decision_schema
+notes: NEW (skill governance). The single NEW trace schema for the skill-governance
+  pipeline; spans all 7 stages.
+applies_to:
+- skill_governance_pipeline
+- skill_governance_provenance
+required_fields:
+- trace_id
+- type
+- actor
+- action
+- related_stage
+- related_skill
+- input_refs
+- output_refs
+- status
+- timestamp
+producer: skill_librarian_agent
+consumer: evidence_graph_agent
+retention: retain_with_skill_registry_entry
+redaction_rules:
+- no_raw_secret_exposure
+- redact_secrets_in_script_snippets
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  stages:
+  - skill_intake
+  - skill_semantic_extraction
+  - script_reference_audit
+  - misuse_warning_generation
+  - skill_binding_proposal
+  - skill_activation_decision
+  - skill_deprecation_update
+  agents:
+  - skill_librarian_agent
+  - skill_runtime_safety_agent

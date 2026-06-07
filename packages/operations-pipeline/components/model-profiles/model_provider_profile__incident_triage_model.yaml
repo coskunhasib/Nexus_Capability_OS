@@ -1,0 +1,52 @@
+id: incident_triage_model
+name: Incident Triage Model
+type: model_provider_profile
+status: candidate
+purpose: Incident detection/triage and severity classification reasoning (failure-mode
+  + blast-radius reasoning to assign incident severity) in the operations pipeline.
+owner_domain: operations_reliability
+provider_type: reasoning_llm
+model_family: defect_reasoning
+capability_scope:
+- incident_triage
+- severity_classification
+- blast_radius_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: high
+fallback_policy:
+  on_unavailable: escalate_immediately
+  degraded_mode: conservative_high_severity
+  escalation: human_owner
+governance_profiles:
+- operations_pipeline_governance
+- incident_severity_required_gate
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- incident intake, triage and severity classification in the operations pipeline
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - operations_pipeline
+  stages:
+  - incident_intake
+  - severity_classification
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: defect_analysis_model
+  recommendation: Overlaps defect_analysis_model (both reason about failures/blast-radius).
+    Recommend reuse of defect_analysis_model for the failure-reasoning core, layering
+    only the severity-classification specifics. Decide in Phase E. Note the pre-R9
+    pipeline_catalog.yaml definition_contract represented ALL four operations models
+    with a single `operations_reasoning_profile` (recorded in reconciliation metadata).
+notes: Markdown operations-pipeline.md §1 lists four distinct operations models; the
+  pre-R9 pipeline_catalog.yaml definition_contract collapsed them into one `operations_reasoning_profile`.
+  Markdown is authoritative (F-1), so the four are registered separately with that
+  YAML name as a non-resolving legacy variant. R9 has since made pipeline_catalog.yaml
+  summary-only; the authoritative per-pipeline source is the markdown definition_doc.

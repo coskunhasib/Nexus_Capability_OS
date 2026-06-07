@@ -1,0 +1,223 @@
+package_schema_version: '0.1'
+pipeline_id: activation_pipeline
+name: Activation Pipeline
+description: Staged activation of a feature, capability, or pipeline through preview
+  -> pilot -> public, with mandatory rollback readiness and a human/owner decision
+  gate before any public activation. Promotes an already release-candidate artifact
+  (produced by the SDLC Pipeline) into progressively wider exposure under no-self-approval
+  governance.
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 9ed30f2
+  source_path: configs/nexus-ai/activation_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: activation_team
+  version: 1.0.0
+  path: components/teams/team__activation_team.yaml
+- kind: team_lead
+  id: activation_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__activation_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: os
+  version: 1.0.0
+  path: components/core-abilities/core_ability__os.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: skill
+  id: sentinel
+  version: 1.0.0
+  path: components/skills/skill__sentinel.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: llm-council
+  version: 1.0.0
+  path: components/skills/skill__llm-council.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: prompt-fidelity
+  version: 1.0.0
+  path: components/skills/skill__prompt-fidelity.yaml
+- kind: skill
+  id: refraction
+  version: 1.0.0
+  path: components/skills/skill__refraction.yaml
+- kind: tool
+  id: activation_flag_controller
+  version: 1.0.0
+  path: components/tools/tool__activation_flag_controller.yaml
+- kind: tool
+  id: cohort_selector
+  version: 1.0.0
+  path: components/tools/tool__cohort_selector.yaml
+- kind: tool
+  id: rollback_executor
+  version: 1.0.0
+  path: components/tools/tool__rollback_executor.yaml
+- kind: tool
+  id: telemetry_reader
+  version: 1.0.0
+  path: components/tools/tool__telemetry_reader.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: tool
+  id: policy_query
+  version: 1.0.0
+  path: components/tools/tool__policy_query.yaml
+- kind: governance_profile
+  id: activation_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__activation_pipeline_governance.yaml
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: governance_profile
+  id: preview_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__preview_required_gate.yaml
+- kind: governance_profile
+  id: pilot_evidence_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__pilot_evidence_gate.yaml
+- kind: governance_profile
+  id: rollback_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__rollback_required_gate.yaml
+- kind: governance_profile
+  id: owner_activation_decision_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__owner_activation_decision_gate.yaml
+- kind: audit_schema
+  id: activation_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__activation_evidence_schema.yaml
+- kind: audit_schema
+  id: activation_decision_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__activation_decision_evidence_schema.yaml
+- kind: audit_schema
+  id: rollback_readiness_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__rollback_readiness_evidence_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: audit_schema
+  id: activation_transition_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__activation_transition_trace_schema.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: model_provider_profile
+  id: activation_reasoning_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__activation_reasoning_model.yaml
+- kind: model_provider_profile
+  id: risk_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__risk_analysis_model.yaml
+- kind: context_memory_profile
+  id: activation_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__activation_run_context.yaml
+- kind: context_memory_profile
+  id: preview_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__preview_context_pack.yaml
+- kind: context_memory_profile
+  id: pilot_evidence_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__pilot_evidence_context_pack.yaml
+- kind: context_memory_profile
+  id: activation_decision_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__activation_decision_context_pack.yaml
+gates:
+- id: release_candidate_evidence_present
+  set: always
+- id: activation_scope_defined
+  set: always
+- id: rollback_owner_assigned
+  set: always
+- id: preview_required_gate
+  set: always
+- id: preview_behaves_as_expected
+  set: always
+- id: telemetry_observable_in_preview
+  set: always
+- id: activation_evidence_complete
+  set: always
+- id: all_required_gates_passed
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: pilot_evidence_gate_if_public_scope
+  set: conditional
+- id: owner_activation_decision_gate_if_public_scope
+  set: conditional
+- id: rollback_required_gate_if_public_scope
+  set: conditional
+evidence:
+  required_evidence:
+  - ACTIVATION_REQUEST
+  - PREVIEW_RESULT
+  - PILOT_RESULT
+  - PILOT_EVIDENCE_REVIEW_REPORT
+  - ROLLBACK_PLAN
+  - ROLLBACK_READINESS_REPORT
+  - ACTIVATION_DECISION
+  - ACTIVATION_COMPLETION_REPORT
+  required_trace:
+  - activation_transition_trace
+  - preview_activation_trace
+  - pilot_activation_trace
+  - rollback_drill_trace
+  - owner_decision_trace
+  - policy_evaluation_trace
+stages:
+- activation_intake
+- superadmin_preview
+- pilot_activation
+- pilot_evidence_review
+- public_activation_decision
+- rollback_readiness
+- activation_completion

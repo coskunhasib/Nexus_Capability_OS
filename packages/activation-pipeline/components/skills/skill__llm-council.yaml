@@ -1,0 +1,48 @@
+id: llm-council
+name: LLM Council
+type: skill
+status: canonical
+semantic_category: multi_perspective_review
+primary_purpose: multi-perspective decision review and verdict synthesis
+purpose: 'Multi-model deliberation/adjudication for genuinely hard or contested judgement
+  contexts: architecture option scoring, architecture review, agentic-safety severity,
+  ambiguous regulatory interpretation. May call prism before decision review.'
+owner_domain: reasoning_methods
+allowed_usage:
+- multi_perspective_review
+- verdict_synthesis
+- contested_judgement_adjudication
+- option_scoring
+- severity_adjudication
+- binding_proposal_review
+forbidden_usage:
+- direct_code_execution
+- policy_bypass
+- replacing_a_single_owner_decision_record
+governance_profiles:
+- skill_governance
+- locked_semantics_enforcement_policy
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+- decision_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - skill_governance_pipeline
+  stages:
+  - sdlc:06-architecture
+  - sdlc:07-architecture-review
+  - sdlc:18-ai-agent-safety-evaluation
+  - sdlc:21-domain-regulatory-compliance-validation-if-applicable
+  - research:cross_validation
+  - skill_governance:skill_binding_proposal
+  agents:
+  - llm_council_agent
+  - architecture_agent
+  - compliance_agent
+aliases: []
+notes: 4 SDLC stages — all genuinely hard/contested judgement contexts (review §3,
+  CLEAN).

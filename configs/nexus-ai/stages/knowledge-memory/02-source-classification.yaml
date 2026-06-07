@@ -1,0 +1,73 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Stage #2 of 6: source_classification
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.2.
+# Field set mirrors configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+# Pipeline: knowledge_memory_pipeline. owner_agent is a snake_case Agent role under knowledge_team.
+# gap-audit is used here to find missing/inconsistent source attributes (md §2.2).
+version: draft-0.1
+stage_id: source_classification
+name: Source Classification
+purpose: >-
+  Classify the candidate's source — origin type, trust tier, sensitivity, and whether
+  redaction is required — so that every later decision (summary framing, validity window,
+  retrieval exposure) inherits a governed classification.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: source_classification_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+uses_skills:
+  - gap-audit   # find missing or inconsistent source attributes
+uses_tools:
+  - source_classifier
+  - redaction_tool
+  - provenance_recorder
+  - evidence_writer
+uses_governance_profiles:
+  - memory_source_governance
+  - redaction_required_gate
+uses_audit_schemas:
+  - memory_provenance_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - knowledge_reasoning_profile
+uses_context_memory_profiles:
+  - knowledge_run_context
+  - memory_candidate_context_pack
+
+inputs:
+  - MEMORY_INTAKE_RECORD
+outputs:
+  - SOURCE_CLASSIFICATION_REPORT
+
+evidence:
+  - SOURCE_CLASSIFICATION_REPORT
+trace:
+  - source_classification_trace
+  - gate_decision_trace
+
+# md §2.2 key gates. redaction_applied_if_required is a conditional blocker
+# (required_when: sensitivity_requires_redaction == true) — see conditional_required_gates.
+gates:
+  - source_trust_tier_assigned
+  - sensitivity_classified
+  - redaction_applied_if_required
+
+on_pass: summary_generation
+on_fail: memory_intake
+rework_route: memory_intake
+
+blocking_conditions:
+  - source_trust_tier_unassigned
+  - sensitivity_unclassified
+  - redaction_not_applied_when_required
+optional_conditions: []
+conditional_required_gates:
+  # md §2.2: redaction_applied_if_required (blocker) — required_when sensitivity requires redaction.
+  - redaction_applied_if_required
+
+max_iterations: 3

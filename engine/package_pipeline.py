@@ -142,15 +142,15 @@ def stage_key(filename):
     return base.replace("-", "_").lower()
 
 
-def find_stage_files():
-    """Map stage_key -> filepath for every YAML under STAGES_ROOT (recursive)."""
+def find_stage_files(root=STAGES_ROOT):
+    """Map stage_key -> filepath for every YAML under `root` (recursive)."""
     out = {}
-    if not os.path.isdir(STAGES_ROOT):
+    if not os.path.isdir(root):
         return out
-    for root, _, files in os.walk(STAGES_ROOT):
+    for r, _, files in os.walk(root):
         for fn in files:
             if fn.lower().endswith((".yaml", ".yml")):
-                out.setdefault(stage_key(fn), os.path.join(root, fn))
+                out.setdefault(stage_key(fn), os.path.join(r, fn))
     return out
 
 
@@ -215,7 +215,8 @@ def main():
     # 5. stages (copy matching contracts)
     stage_ids = pdef.get("stages", []) or []
     os.makedirs(os.path.join(pkg_dir, "stages"), exist_ok=True)
-    stage_files = find_stage_files()
+    stage_subdir = os.path.join(STAGES_ROOT, pid.replace("_pipeline", "").replace("_", "-"))
+    stage_files = find_stage_files(stage_subdir) if os.path.isdir(stage_subdir) else find_stage_files()
     stages_copied, stages_missing = [], []
     for sid in stage_ids:
         src = stage_files.get(str(sid).lower())

@@ -1,0 +1,49 @@
+id: learning_reflection_model
+name: Learning Reflection Model
+type: model_provider_profile
+status: candidate
+purpose: Convert postmortem output into durable operational learning (operational_learning_record)
+  in the operations pipeline learning_update stage.
+owner_domain: operations_reliability
+provider_type: reasoning_llm
+model_family: general_reasoning
+capability_scope:
+- operational_learning_synthesis
+- reflection_and_calibration
+- knowledge_update_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: operations_analysis_model
+governance_profiles:
+- operations_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- operational learning synthesis in the operations pipeline learning_update stage
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - operations_pipeline
+  stages:
+  - learning_update
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: sdlc_reasoning_profile
+  recommendation: NAME COLLISION + overlap. `learning_reflection_model` is ALSO the
+    legacy SDLC name that was reconciled onto canonical sdlc_reasoning_profile at
+    SDLC stage 31 (refraction_learning). The operations pipeline re-introduces the
+    same name for operational learning. Recommend EITHER (a) reuse sdlc_reasoning_profile
+    (general reflective reasoning) for both, OR (b) rename this operations profile
+    to avoid colliding with the reconciled-away SDLC alias. Resolve in Phase E. See
+    open_questions.
+notes: Same id appears as a legacy alias under sdlc_reasoning_profile (SDLC stage
+  31) — second de-duplication finding (mirrors operations_analysis_model).

@@ -1,0 +1,27 @@
+id: rollback_runbook_evidence_gate
+name: Rollback / Runbook Evidence Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Operations gate: any rollback-or-fix must carry runbook OR rollback execution
+  evidence (operations-pipeline.md §2.4; 03 §4 "rollback/runbook evidence zorunlu").'
+owner_domain: operations_reliability
+allowed_usage:
+- Gate that the rollback_or_fix step is backed by runbook or rollback evidence.
+forbidden_usage:
+- Used outside the Operations Pipeline.
+governance_profiles:
+- operations_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- rollback_fix_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- rollback_or_fix
+severity_default: blocker
+used_by:
+- rollback_or_fix
+notes: NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate. Consumes SDLC
+  RUNBOOK / ROLLBACK_PLAN (produced by SDLC operations_readiness) — referenced, not
+  regenerated.

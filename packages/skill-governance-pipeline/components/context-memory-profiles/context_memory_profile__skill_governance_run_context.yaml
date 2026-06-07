@@ -1,0 +1,49 @@
+id: skill_governance_run_context
+name: Skill Governance Run Context
+type: run_context
+status: candidate
+scope: run
+purpose: 'Whole-run working context for a Skill Governance Pipeline run: the run goal,
+  the candidate skill source reference (canonical_source or package path/hash), the
+  locked-semantics rules, and which governance gates (semantic / script-audit / misuse
+  / binding / activation) have passed. Lets the activation decision confirm semantics-before-binding
+  was honored.'
+owner_domain: skill_governance
+allowed_usage:
+- read_as_run_level_backbone_by_any_skill_governance_stage
+- confirm_semantics_before_binding_was_honored
+forbidden_usage:
+- allow_binding_before_semantics_are_complete
+- change_locked_prism_or_verification_loop_semantics
+- let_a_proposer_self_approve_its_own_activation_decision
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- candidate_skill_source_reference
+- current_run_skill_governance_artifacts
+- skill_registry_context_pack
+- locked_skill_semantics_rules
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- readable_by_all_skill_governance_stages
+- run_scoped_isolation: true
+- binding_blocked_until_semantics_complete
+- locked_semantics_immutable
+redaction_rules:
+- no_raw_secrets
+- flag_unsafe_script_calls_do_not_execute
+governance_profiles:
+- skill_governance_pipeline_governance
+- locked_semantics_enforcement_policy
+- no_self_approval_policy
+- context_access_governance
+audit_schemas:
+- skill_governance_evidence_schema
+- skill_governance_trace_schema
+- stage_gate_trace_schema
+used_by:
+- skill_governance_pipeline
+aliases: []
+notes: New (draft-0.1, skill-governance-pipeline.md §1). Enforces "no binding without
+  semantics" at the run level. This pipeline records/validates other skills' semantics;
+  it cannot change the locked prism/verification-loop semantics.

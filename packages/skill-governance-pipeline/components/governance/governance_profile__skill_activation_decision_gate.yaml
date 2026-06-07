@@ -1,0 +1,29 @@
+id: skill_activation_decision_gate
+name: Skill Activation Decision Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Skill Governance gate: the activate/hold/deprecate decision requires evidence
+  and may not be self-approved (proposer != decider); locked semantics re-checked
+  (skill-governance-pipeline.md §2.6).'
+owner_domain: skill_governance
+allowed_usage:
+- Gate the skill activation decision (evidence-backed, no self-approval).
+forbidden_usage:
+- Used outside the Skill Governance Pipeline.
+- Self-approval of the activation decision.
+governance_profiles:
+- skill_governance_pipeline_governance
+- no_self_approval
+- locked_semantics_enforcement_policy
+- evidence_required
+audit_schemas:
+- skill_binding_decision_schema
+- skill_governance_trace_schema
+scope: stage
+applies_to:
+- skill_activation_decision
+severity_default: blocker
+used_by:
+- skill_activation_decision
+notes: NEW (pipeline-catalog-review.md §4.1). Skill Governance Pipeline gate. skill_runtime_safety_agent
+  decides over skill_librarian_agent's proposal (review independence).

@@ -1,0 +1,45 @@
+id: skill_governance_evidence_schema
+name: Skill Governance Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for the skill-governance pipeline (skill intake and
+  overall governance evidence).
+owner_domain: skill_governance
+allowed_usage:
+- Record skill-governance decision-proof evidence (base/intake).
+forbidden_usage:
+- Used to record process history (that is skill_governance_trace_schema).
+governance_profiles:
+- evidence_required_policy
+- skill_governance_pipeline_governance
+audit_schemas:
+- skill_semantic_extract_schema
+- script_audit_evidence_schema
+- skill_misuse_warning_schema
+- skill_binding_decision_schema
+- skill_governance_trace_schema
+notes: NEW (skill governance). Stage skill_intake; owner skill_librarian_agent.
+applies_to:
+- skill_governance_pipeline
+- skill_governance_stage:skill_intake
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- skill_id
+- source_artifacts
+- status
+- created_at
+producer: skill_librarian_agent
+consumer: skill_runtime_safety_agent
+retention: retain_with_skill_registry_entry
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  stages:
+  - skill_intake
+  agents:
+  - skill_librarian_agent

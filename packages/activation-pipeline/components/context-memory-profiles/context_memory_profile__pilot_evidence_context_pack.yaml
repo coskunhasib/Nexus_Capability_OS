@@ -1,0 +1,44 @@
+id: pilot_evidence_context_pack
+name: Pilot Evidence Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Pilot working context: the bounded pilot cohort definition, real-usage telemetry,
+  error rates, incidents, and user signal collected under controlled exposure, evaluated
+  against activation acceptance thresholds. Consumed by pilot_activation and pilot_evidence_review.'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- read_by_pilot_activation_and_independent_pilot_evidence_review
+- evaluate_pilot_telemetry_against_acceptance_thresholds
+forbidden_usage:
+- used_for_public_activation_without_sufficient_pilot_evidence
+- let_the_pilot_owner_be_the_sole_reviewer_of_its_own_pilot
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_pilot_telemetry
+- activation_run_context
+- durable_memory_pilot_baselines
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_pilot_cohort
+- reviewer_role_distinct_from_pilot_owner
+- public_activation_blocked_without_sufficient_pilot_evidence
+redaction_rules:
+- no_raw_secrets
+- redact_cohort_member_pii
+- aggregate_user_signal_before_exposure
+governance_profiles:
+- pilot_evidence_gate
+- activation_pipeline_governance
+- no_self_approval_policy
+- context_access_governance
+audit_schemas:
+- activation_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- activation_pipeline
+- stage:pilot_activation@activation_pipeline
+- stage:pilot_evidence_review@activation_pipeline
+aliases: []
+notes: New (draft-0.1, activation-pipeline.md §2.3-§2.4). Feeds the pilot_evidence_gate.

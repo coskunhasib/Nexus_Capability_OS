@@ -1,0 +1,189 @@
+package_schema_version: '0.1'
+pipeline_id: research_pipeline
+name: Research Pipeline
+description: 'Run sourced research with no-human governance: discover sources, score
+  source reliability, extract claims, map claims to evidence, cross-validate findings
+  with a separate role, report uncertainty, and synthesize a cited research output.
+
+  '
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 9ed30f2
+  source_path: configs/nexus-ai/research_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: research_team
+  version: 1.0.0
+  path: components/teams/team__research_team.yaml
+- kind: team_lead
+  id: research_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__research_team_lead.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: skill
+  id: prism
+  version: 1.0.0
+  path: components/skills/skill__prism.yaml
+- kind: skill
+  id: llm-council
+  version: 1.0.0
+  path: components/skills/skill__llm-council.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: bayesian-update
+  version: 1.0.0
+  path: components/skills/skill__bayesian-update.yaml
+- kind: tool
+  id: web_search
+  version: 1.0.0
+  path: components/tools/tool__web_search.yaml
+- kind: tool
+  id: web_fetch
+  version: 1.0.0
+  path: components/tools/tool__web_fetch.yaml
+- kind: tool
+  id: source_reliability_checker
+  version: 1.0.0
+  path: components/tools/tool__source_reliability_checker.yaml
+- kind: tool
+  id: claim_mapper
+  version: 1.0.0
+  path: components/tools/tool__claim_mapper.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: governance_profile
+  id: research_source_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__research_source_governance.yaml
+- kind: governance_profile
+  id: citation_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__citation_required_gate.yaml
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: audit_schema
+  id: source_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__source_evidence_schema.yaml
+- kind: audit_schema
+  id: claim_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__claim_evidence_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: research_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__research_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: model_provider_profile
+  id: source_evaluation_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__source_evaluation_model.yaml
+- kind: context_memory_profile
+  id: research_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__research_run_context.yaml
+- kind: context_memory_profile
+  id: source_corpus_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__source_corpus_context_pack.yaml
+- kind: context_memory_profile
+  id: claim_evidence_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__claim_evidence_context_pack.yaml
+gates:
+- id: all_research_questions_addressed_or_flagged
+  set: always
+- id: every_load_bearing_claim_has_mapped_evidence
+  set: always
+- id: every_used_source_has_reliability_score
+  set: always
+- id: validator_role_distinct_from_producer
+  set: always
+- id: cross_validation_completed_by_separate_role
+  set: always
+- id: uncertainty_report_present
+  set: always
+- id: citation_required_gate_pass
+  set: always
+- id: research_evidence_graph_complete
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+evidence:
+  required_evidence:
+  - RESEARCH_BRIEF
+  - RESEARCH_QUESTION_SET
+  - SOURCE_INVENTORY
+  - SOURCE_RELIABILITY_REPORT
+  - CLAIM_REGISTER
+  - CLAIM_EVIDENCE_MAP
+  - CROSS_VALIDATION_REPORT
+  - UNCERTAINTY_REPORT
+  - RESEARCH_SYNTHESIS
+  - CITATION_INDEX
+  - RESEARCH_EVIDENCE_GRAPH
+  - RESEARCH_COMPLETION_REPORT
+  required_trace:
+  - web_search_tool_trace
+  - web_fetch_tool_trace
+  - source_reliability_checker_tool_trace
+  - claim_mapper_tool_trace
+  - skill_activation_trace
+  - cross_validation_role_handoff_trace
+  - gate_decision_trace
+stages:
+- research_intake
+- scope_and_questions
+- source_discovery
+- source_reliability_assessment
+- claim_extraction
+- claim_evidence_mapping
+- cross_validation
+- uncertainty_reporting
+- synthesis
+- research_completion

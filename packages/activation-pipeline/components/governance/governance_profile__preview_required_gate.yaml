@@ -1,0 +1,25 @@
+id: preview_required_gate
+name: Preview Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Activation gate: no pilot activation may begin without a passing superadmin/internal
+  preview (activation-pipeline.md §2.2; 03 §4 "superadmin preview olmadan pilot activation
+  yok").'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Gate that a passing superadmin preview precedes pilot activation.
+forbidden_usage:
+- Used outside the Activation Pipeline.
+governance_profiles:
+- activation_pipeline_governance
+- evidence_required
+audit_schemas:
+- activation_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- superadmin_preview
+severity_default: blocker
+used_by:
+- superadmin_preview
+notes: NEW (pipeline-catalog-review.md §4.1). Activation Pipeline gate.

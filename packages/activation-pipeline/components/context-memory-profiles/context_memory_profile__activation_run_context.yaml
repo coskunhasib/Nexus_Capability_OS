@@ -1,0 +1,46 @@
+id: activation_run_context
+name: Activation Run Context
+type: run_context
+status: candidate
+scope: run
+purpose: 'Whole-run working context for an Activation Pipeline run: the target release-candidate
+  reference and its SDLC release evidence, requested staged scope (preview/pilot/public),
+  target cohorts, rollback owner, and which activation gates have been satisfied.
+  Lets the owner decision and completion confirm the staged path was honored.'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- read_as_run_level_backbone_by_any_activation_stage
+- carry_the_target_release_candidate_reference_and_staged_scope
+forbidden_usage:
+- used_to_skip_the_preview_pilot_public_ordering
+- used_to_self_approve_an_activation_decision
+- regenerate_the_sdlc_pipeline
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- sdlc_release_candidate_evidence
+- current_run_activation_artifacts
+- durable_memory_prior_activations
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- readable_by_all_activation_stages
+- run_scoped_isolation: true
+- staged_scope_order_preview_then_pilot_then_public_is_enforced
+redaction_rules:
+- no_raw_secrets
+- redact_cohort_member_pii
+- mask_feature_flag_tokens
+governance_profiles:
+- activation_pipeline_governance
+- context_access_governance
+- no_self_approval_policy
+audit_schemas:
+- activation_evidence_schema
+- activation_transition_trace_schema
+- stage_gate_trace_schema
+used_by:
+- activation_pipeline
+aliases: []
+notes: New (draft-0.1, activation-pipeline.md §1). Consumes the SDLC release candidate
+  as upstream; SDLC is referenced, not regenerated. The public_activation_decision
+  is a human/owner gate (review F-4) recorded as evidence within this run context.

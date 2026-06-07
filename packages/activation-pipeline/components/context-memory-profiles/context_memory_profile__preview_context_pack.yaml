@@ -1,0 +1,39 @@
+id: preview_context_pack
+name: Preview Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Superadmin/internal preview working context: the restricted activation flag
+  state, preview telemetry wiring, and behavior smoke-check signals used to confirm
+  the target behaves before any external exposure. Consumed by the superadmin_preview
+  stage.'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- read_during_superadmin_preview_to_confirm_behavior_before_external_exposure
+forbidden_usage:
+- expose_preview_state_to_pilot_or_public_audiences
+- begin_a_pilot_without_a_passing_preview
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_preview_signals
+- activation_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_superadmin_internal_audience
+- no_pilot_or_public_exposure_from_preview_context
+redaction_rules:
+- no_raw_secrets
+- mask_feature_flag_tokens
+governance_profiles:
+- preview_required_gate
+- activation_pipeline_governance
+- context_access_governance
+audit_schemas:
+- activation_evidence_schema
+- activation_transition_trace_schema
+used_by:
+- activation_pipeline
+- stage:superadmin_preview@activation_pipeline
+aliases: []
+notes: New (draft-0.1, activation-pipeline.md §2.2). Enforces preview-before-pilot.

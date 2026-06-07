@@ -122,11 +122,18 @@ def main():
     else:
         g = (load_yaml(gpath) or {}).get("required_gates", {}) or {}
         always = g.get("always", []) or []
-        missing_gates = [x for x in D016_ALWAYS if x not in always]
-        if missing_gates:
-            err(f"missing D-016 always gates: {missing_gates}")
+        if not always:
+            err("required_gates.always is empty")
         else:
-            ok("all 19 D-016 always-required gates present")
+            ok(f"{len(always)} always-required gates")
+        # D-016 is the canonical SDLC always-required set — assert it ONLY for sdlc_pipeline.
+        # Other pipelines carry their own domain-specific always gates.
+        if man.get("pipeline_id") == "sdlc_pipeline":
+            missing_gates = [x for x in D016_ALWAYS if x not in always]
+            if missing_gates:
+                err(f"missing D-016 always gates: {missing_gates}")
+            else:
+                ok("all 19 D-016 always-required gates present")
         man_always = sorted(x["id"] for x in man.get("gates", []) if x.get("set") == "always")
         if set(man_always) != set(always):
             warn("manifest gates(always) != required_gates.always")

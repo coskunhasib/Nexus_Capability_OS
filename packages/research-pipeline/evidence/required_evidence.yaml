@@ -1,0 +1,21 @@
+required_evidence:
+- RESEARCH_BRIEF
+- RESEARCH_QUESTION_SET
+- SOURCE_INVENTORY
+- SOURCE_RELIABILITY_REPORT
+- CLAIM_REGISTER
+- CLAIM_EVIDENCE_MAP
+- CROSS_VALIDATION_REPORT
+- UNCERTAINTY_REPORT
+- RESEARCH_SYNTHESIS
+- CITATION_INDEX
+- RESEARCH_EVIDENCE_GRAPH
+- RESEARCH_COMPLETION_REPORT
+required_trace:
+- web_search_tool_trace
+- web_fetch_tool_trace
+- source_reliability_checker_tool_trace
+- claim_mapper_tool_trace
+- skill_activation_trace
+- cross_validation_role_handoff_trace
+- gate_decision_trace

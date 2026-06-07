@@ -1,0 +1,63 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #1 of 10: research_intake
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.1.
+# Field set mirrors configs/nexus-ai/stages/sdlc/01-intake.yaml.
+# Pipeline: research_pipeline (configs/nexus-ai/research_pipeline.yaml).
+# owner_agent is a snake_case Agent role under research_team, managed by research_team_lead;
+#   Supervisor is a Core Ability, NEVER the team_lead and NEVER a stage owner_agent.
+version: draft-0.1
+stage_id: research_intake
+name: Research Intake
+purpose: >-
+  Capture the research goal, requester intent, decision the research must support,
+  scope boundaries, and risk profile.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: research_intake_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty).
+# md §2.1 names no per-stage abilities/skills/tools beyond pipeline defaults.
+uses_core_abilities:
+  - Memory
+uses_skills: []
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+
+inputs:
+  - RESEARCH_GOAL
+outputs:
+  - RESEARCH_BRIEF
+
+evidence:
+  - RESEARCH_BRIEF
+trace:
+  - agent_invocation_trace
+  - gate_decision_trace
+
+gates:
+  - research_goal_present
+  - risk_profile_selected
+  - scope_initially_bounded
+
+on_pass: scope_and_questions
+on_fail: research_intake
+rework_route: research_intake
+
+blocking_conditions: []
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

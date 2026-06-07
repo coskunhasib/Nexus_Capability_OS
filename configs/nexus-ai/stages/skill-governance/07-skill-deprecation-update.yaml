@@ -1,0 +1,78 @@
+# Skill Governance Pipeline — Stage Contract 07: skill_deprecation_update
+# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.7)
+# Format mirror: configs/nexus-ai/stages/sdlc/04-requirements.yaml
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #7 of 7. Stage class: CONDITIONAL —
+# runs only when deprecation_or_update is active in risk_profiles OR version/hash changed.
+version: draft-0.1
+stage_id: skill_deprecation_update
+name: Skill Deprecation Update
+purpose: >-
+  Mevcut/aktif skill'lerin deprecation veya sürüm güncellemesini yönetir;
+  sürüm/hash değişiminde semantik yeniden doğrulama gerekip gerekmediğine karar
+  verir ve registry tutarlılığını korur. Conditional stage: yalnız risk_profiles
+  içinde deprecation_or_update aktifse veya version_or_hash değiştiyse çalışır.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_librarian_agent
+sub_agents: []
+
+# Conditional stage applicability (md §2.7).
+applicability_decision:
+  conditional_required_when: deprecation_or_update == true or version_or_hash_changed == true
+
+uses_core_abilities:
+  - Memory
+  - OS
+
+uses_skills:
+  - gap-audit   # detect registry inconsistency / missing re-validation on version/hash change
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - skill_deprecation_required_gate
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_governance_evidence_schema
+  - skill_governance_trace_schema
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_ACTIVATION_DECISION
+outputs:
+  - SKILL_INVENTORY_ENTRY   # updated lifecycle/version state
+
+evidence:
+  - SKILL_INVENTORY_ENTRY
+trace:
+  - skill_package_read_trace
+  - gate_evaluation_trace
+
+# key gate: skill_deprecation_required_gate (major) — if version/hash changed,
+# skill_semantic_required_gate is re-triggered.
+gates:
+  - skill_deprecation_required_gate
+
+# on_pass: pipeline exit (lifecycle updated)
+on_pass: done
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - registry_inconsistency_unresolved
+optional_conditions: []
+conditional_required_gates:
+  - skill_semantic_required_gate   # re-triggered when version_or_hash_changed == true
+
+max_iterations: 3

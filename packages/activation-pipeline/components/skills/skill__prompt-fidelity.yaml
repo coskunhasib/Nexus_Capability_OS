@@ -1,0 +1,39 @@
+id: prompt-fidelity
+name: Prompt Fidelity
+type: skill
+status: canonical
+semantic_category: intent_fidelity
+primary_purpose: ensure outputs faithfully reflect stated intent
+purpose: Check that captured/produced artifacts faithfully reflect the user's stated
+  intent (brief vs intent, requirements vs intent, code-change vs intent, UX copy
+  vs intent, release notes vs intent).
+owner_domain: reasoning_methods
+allowed_usage:
+- intent_fidelity_check
+- brief_to_intent_alignment
+- requirement_to_intent_alignment
+- changeset_to_intent_alignment
+forbidden_usage:
+- bug_finding
+- decision_making
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - activation_pipeline
+  stages:
+  - sdlc:01-intake
+  - sdlc:04-requirements
+  - sdlc:05-requirements-review
+  - sdlc:12-code-review
+  - sdlc:23-accessibility-ux-validation-if-applicable
+  - sdlc:30-release-candidate
+  agents:
+  - product_requirements_agent
+  - code_reviewer_agent
+aliases: []
+notes: 6 SDLC stages.

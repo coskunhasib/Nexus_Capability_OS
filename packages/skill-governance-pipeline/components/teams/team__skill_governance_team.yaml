@@ -1,0 +1,84 @@
+team_id: skill_governance_team
+team_type: skill_governance_team
+pipeline_id: skill_governance_pipeline
+purpose: 'Govern the skill lifecycle under no-human governance: inventory candidate
+  skill packages, perform MANDATORY semantic extraction before any binding, run script/reference
+  safety audit, generate misuse warnings, propose agent/stage bindings, and record
+  the activate/hold/deprecate decision — enforcing locked semantics (prism = brainstorming/divergence,
+  verification-loop = bug/defect finding) and the rule that no skill is bound or activated
+  before its semantics and misuse warnings exist.'
+team_lead_role: skill_governance_team_lead
+agents:
+- skill_librarian_agent
+- skill_runtime_safety_agent
+direct_sub_agents: []
+uses_core_abilities:
+- Supervisor
+- Memory
+- OS
+- Coder
+- Web
+uses_skills:
+- gap-audit
+- fmea
+- calibrate
+- llm-council
+- sentinel
+- prism
+- verification-loop
+uses_tools:
+- skill_package_reader
+- skill_semantic_extractor
+- script_static_analyzer
+- reference_index_builder
+- skill_binding_proposer
+- artifact_writer
+- evidence_writer
+uses_governance_profiles:
+- skill_governance_pipeline_governance
+- skill_semantic_required_gate
+- script_reference_audit_gate
+- misuse_warning_required_gate
+- skill_binding_proposal_gate
+- skill_activation_decision_gate
+- locked_semantics_enforcement_policy
+- no_self_approval_policy
+- evidence_required_policy
+uses_audit_schemas:
+- skill_governance_evidence_schema
+- skill_semantic_extract_schema
+- script_audit_evidence_schema
+- skill_misuse_warning_schema
+- skill_binding_decision_schema
+- skill_governance_trace_schema
+uses_model_provider_profiles:
+- skill_governance_reasoning_profile
+- skill_semantic_extraction_model
+- script_safety_analysis_model
+- supervisor_routing_model
+uses_context_memory_profiles:
+- skill_governance_run_context
+- skill_semantic_context_pack
+- skill_registry_context_pack
+permissions:
+- own_and_execute_skill_governance_stages
+- assign_stage_owner_agents
+- invoke_parented_sub_agents_via_their_parent_agent
+- inventory_and_read_skill_packages
+- perform_mandatory_semantic_extraction_before_binding
+- audit_scripts_and_references_for_safety
+- generate_misuse_warnings
+- propose_bindings_and_record_activation_decision
+- request_rework_along_allowed_routes
+forbidden_actions:
+- core_ability_as_team_member
+- supervisor_as_team_lead
+- binding_proposed_without_semantics
+- skill_activated_without_misuse_warnings
+- locked_semantics_violation
+- self_approval_of_activation_decision
+- agent_approves_own_work
+- team_lead_bypasses_blocking_gate
+- team_lead_owns_a_stage
+- orphan_sub_agent_without_parent_or_direct_call_flag
+- introduce_plugin

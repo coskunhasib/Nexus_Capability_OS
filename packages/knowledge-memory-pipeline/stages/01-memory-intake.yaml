@@ -1,0 +1,71 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Stage #1 of 6: memory_intake
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.1.
+# Field set mirrors configs/nexus-ai/stages/sdlc/01-intake.yaml.
+# Pipeline: knowledge_memory_pipeline (configs/nexus-ai/knowledge_memory_pipeline.yaml).
+# owner_agent is a snake_case Agent role under knowledge_team, managed by knowledge_team_lead;
+#   Memory is a Core Ability USED by the agent, NEVER the owner; Supervisor is never the team_lead.
+version: draft-0.1
+stage_id: memory_intake
+name: Memory Intake
+purpose: >-
+  Receive a candidate memory item plus its origin reference, normalize it into a
+  candidate record, and confirm minimum intake metadata before anything is
+  classified or stored.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: knowledge_intake_agent
+sub_agents: []
+
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty). md §2.1 "Uses (mapping)".
+uses_core_abilities:
+  - Memory
+uses_skills: []
+uses_tools:
+  - memory_ingestor
+  - provenance_recorder
+  - artifact_writer
+  - evidence_writer
+uses_governance_profiles:
+  - memory_source_governance
+uses_audit_schemas:
+  - memory_provenance_schema
+uses_model_provider_profiles:
+  - knowledge_reasoning_profile
+uses_context_memory_profiles:
+  - knowledge_run_context
+  - memory_candidate_context_pack
+
+inputs:
+  - MEMORY_CANDIDATE
+  - CANDIDATE_ORIGIN_REFERENCE
+outputs:
+  - MEMORY_INTAKE_RECORD
+  - MEMORY_PROVENANCE_RECORD
+
+evidence:
+  - MEMORY_INTAKE_RECORD
+  - MEMORY_PROVENANCE_RECORD
+trace:
+  - memory_intake_trace
+  - gate_decision_trace
+
+# md §2.1 key gates (both blockers).
+gates:
+  - intake_metadata_complete
+  - provenance_seed_recorded
+
+# md §2.1 on_pass: source_classification; on_fail: reject and stop intake (no downstream
+# stage runs for an item that cannot be provenance-seeded).
+on_pass: source_classification
+on_fail: memory_intake
+rework_route: memory_intake
+
+blocking_conditions:
+  - intake_metadata_incomplete
+  - provenance_seed_not_recorded
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

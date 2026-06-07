@@ -1,0 +1,50 @@
+id: skill_registry_context_pack
+name: Skill Registry Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'The shared-skills-registry working view: existing skill inventory entries,
+  their semantic categories, current bindings, misuse warnings, and activation status
+  — used to place a candidate skill consistently and to manage deprecation/version
+  updates. Consumed by skill intake, binding proposal, activation decision, and deprecation/update.'
+owner_domain: skill_governance
+allowed_usage:
+- read_by_intake_binding_proposal_activation_and_deprecation_update
+- reflect_the_canonical_status_of_each_registered_skill
+forbidden_usage:
+- used_to_propose_a_binding_without_upstream_semantic_evidence
+- treated_as_a_single_packages_semantic_extract
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- shared_skills_registry
+- current_run_skill_inventory_entry
+- skill_governance_run_context
+retention: registry_lifetime
+validity_window: until_registry_change
+retrieval_rules:
+- scoped_to_skills_registry_view
+- reflects_canonical_status_of_each_skill
+redaction_rules:
+- no_raw_secrets
+governance_profiles:
+- skill_governance_pipeline_governance
+- skill_binding_proposal_gate
+- skill_activation_decision_gate
+- context_access_governance
+audit_schemas:
+- skill_binding_decision_schema
+- skill_governance_trace_schema
+used_by:
+- skill_governance_pipeline
+- stage:skill_intake@skill_governance_pipeline
+- stage:skill_binding_proposal@skill_governance_pipeline
+- stage:skill_activation_decision@skill_governance_pipeline
+- stage:skill_deprecation_update@skill_governance_pipeline
+aliases:
+- skill_inventory_context_pack
+notes: New (draft-0.1, skill-governance-pipeline.md §1, name authoritative). The pre-R9
+  pipeline_catalog.yaml definition_contract used `skill_inventory_context_pack`; per
+  review F-1 the markdown name `skill_registry_context_pack` is canonical. After R9
+  collapsed pipeline_catalog.yaml into a summary-only catalog (no definition_contract
+  blocks), the authoritative per-pipeline source is the markdown definition_doc and
+  the YAML name is retained as an alias only for the historical record.

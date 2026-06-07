@@ -1,0 +1,79 @@
+team_lead_id: skill_governance_team_lead
+team_id: skill_governance_team
+pipeline_id: skill_governance_pipeline
+mission: 'Orchestrate the Skill Governance Pipeline (intake -> mandatory semantic
+  extraction -> script/reference audit -> misuse warnings -> binding proposal -> activation
+  decision -> deprecation/update): enforce that no skill is bound or activated before
+  semantic extraction and misuse warnings exist, that locked skill semantics (prism
+  = brainstorming, verification-loop = bug-finding) are recorded not altered, and
+  that the activation decision is made by an Agent distinct from the binding proposer
+  (no self-approval).'
+responsibilities:
+- Inventory the candidate skill and assign each stage to its owner Agent/sub-agent.
+- Enforce the anti-pattern guard: binding never precedes semantic extraction + misuse
+    warnings.
+- Enforce locked_semantics_enforcement (prism/verification-loop semantics may be recorded,
+  never changed).
+- Ensure the activation decision (skill_runtime_safety_agent) is independent of the
+  binding proposer (skill_librarian_agent).
+- Route rework (e.g. skill_binding_proposal -> skill_semantic_extraction) and confirm
+  evidence/trace completeness.
+may_assign_agents:
+- skill_librarian_agent
+- skill_runtime_safety_agent
+may_call_direct_sub_agents: []
+may_use_core_abilities:
+- Supervisor
+- Memory
+- OS
+may_use_skills:
+- gap-audit
+- sentinel
+- prompt-fidelity
+- llm-council
+may_call_tools:
+- evidence_reader
+- policy_query
+- artifact_writer
+- evidence_writer
+uses_governance_profiles:
+- skill_governance_pipeline_governance
+- skill_semantic_required_gate
+- script_reference_audit_gate
+- misuse_warning_required_gate
+- skill_binding_proposal_gate
+- skill_activation_decision_gate
+- locked_semantics_enforcement_policy
+- no_self_approval
+- evidence_required
+uses_audit_schemas:
+- skill_governance_evidence_schema
+- skill_semantic_extract_schema
+- script_audit_evidence_schema
+- skill_misuse_warning_schema
+- skill_binding_decision_schema
+- skill_governance_trace_schema
+uses_context_memory_profiles:
+- skill_governance_run_context
+- skill_semantic_context_pack
+- skill_registry_context_pack
+forbidden_actions:
+- - cannot_author_then_approve_same_artifact
+  - cannot_bypass_a_failed_governance_gate
+  - cannot_mutate_an_artifact_it_reviews
+  - cannot_act_as_the_supervisor_core_ability
+  - cannot_be_listed_as_a_core_ability
+  - cannot_implement_or_write_product_code
+  - cannot_read_secrets
+  - cannot_perform_production_deploy_or_destructive_tool_actions
+  - cannot_reintroduce_a_plugin_concept
+- cannot_allow_a_binding_proposal_before_semantic_extraction_and_misuse_warnings
+- cannot_alter_locked_skill_semantics
+- cannot_let_the_binding_proposer_self_approve_the_activation_decision
+blocking_limits:
+- - cannot_close_a_run_with_an_open_blocking_gate
+  - cannot_advance_past_a_stage_whose_required_evidence_is_missing
+  - cannot_skip_a_mandatory_stage_or_gate_for_the_pipeline
+  - cannot_route_rework_outside_the_pipeline_allowed_rework_routes
+- cannot_activate_a_skill_with_unknown_semantics
+- cannot_activate_a_skill_with_an_unmitigated_unsafe_script

@@ -1,0 +1,34 @@
+id: incident_intake_tool
+name: Incident Intake Tool
+type: tool
+category: tool
+status: candidate
+purpose: Receive, deduplicate, and normalize an incident signal into a single INCIDENT_RECORD.
+owner_domain: operations_reliability
+provided_by_core_ability: null
+input_schema:
+  incident_signal: object
+output_schema:
+  incident_record_ref: string
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- incident_intake_agent
+allowed_usage:
+- Normalize incident signals into an INCIDENT_RECORD (incident_intake).
+forbidden_usage:
+- Discarding a signal without recording it.
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.incident_intake
+notes: NEW (operations) per review §4.3 (markdown authoritative; YAML variant incident_intake_recorder
+  flagged in review F-1).

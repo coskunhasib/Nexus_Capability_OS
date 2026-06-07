@@ -1,0 +1,65 @@
+id: no_self_approval
+name: No Self-Approval
+type: global_governance_policy
+status: canonical
+purpose: 'A producing agent may not be the sole approver/validator of its own output:
+  producer_agent_id != approver_agent_id for any gate decision (06 §2–§3, §6 no-self-approval
+  matrix). The single most-referenced cross-cutting policy in the repo (every SDLC
+  review/validation gate + all 5 new pipelines bind it).'
+owner_domain: nexus_global_governance
+allowed_usage:
+- Require a review/validation/decision gate's owner to differ from the reviewed artifact's
+  author.
+- Fall back to *_team_lead as the gate owner where no dedicated reviewer role fits
+  (SDLC 05/07).
+- Enforce producer-role != validator-role structurally (research cross_validation;
+  skill activation).
+forbidden_usage:
+- A review/gate stage whose owner_agent equals the author of the artifact it adjudicates.
+- Used to authorize a HUMAN/owner gate — owner_activation_decision_gate is a distinct
+  human gate.
+governance_profiles: []
+audit_schemas:
+- stage_gate_trace_schema
+scope: global
+applies_to:
+- all_review_and_validation_gates
+- all_decision_gates
+severity_default: blocker
+used_by:
+- skill_semantic_extraction
+- requirements_review
+- architecture_review
+- security_privacy_design
+- premortem_fmea
+- code_review
+- test_execution
+- verification_loop_bug_finding
+- security_validation
+- supply_chain_sbom_license
+- ai_agent_safety_evaluation
+- privacy_data_lifecycle_validation
+- api_contract_compatibility_validation
+- domain_regulatory_compliance_validation_if_applicable
+- data_migration_validation_if_applicable
+- accessibility_ux_validation_if_applicable
+- performance_resilience
+- cost_resource_governance
+- backup_restore_dr_validation_if_applicable
+- operations_readiness
+- evidence_graph_build
+- development_completion
+- release_candidate
+- refraction_learning
+- sdlc_pipeline
+- research_pipeline
+- activation_pipeline
+- operations_pipeline
+- skill_governance_pipeline
+- knowledge_memory_pipeline
+aliases:
+- no_self_approval_policy
+notes: Canonical id is `no_self_approval` (06 §2 example). The repo and all 5 new
+  pipelines spell it `no_self_approval_policy`; recorded under aliases per the naming-reconciliation
+  rule. DISTINCT from owner_activation_decision_gate, which is a HUMAN/owner authority
+  gate, not autonomous agent self-approval.

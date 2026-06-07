@@ -1,0 +1,34 @@
+id: source_classifier
+name: Source Classifier
+type: tool
+category: tool
+status: candidate
+purpose: Classify a memory candidate's source (origin type, trust tier, sensitivity,
+  redaction-required).
+owner_domain: knowledge_management
+provided_by_core_ability: null
+input_schema:
+  memory_candidate: object
+output_schema:
+  source_classification: object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- source_classification_agent
+allowed_usage:
+- Produce SOURCE_CLASSIFICATION_REPORT (source_classification).
+forbidden_usage:
+- Proceeding without a trust tier and sensitivity classification.
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  pipeline_stages:
+  - knowledge_memory_pipeline.source_classification
+notes: NEW (knowledge/memory) per review §4.3.

@@ -1,0 +1,28 @@
+id: citation_required_gate
+name: Citation Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Research synthesis gate: blocks any uncited load-bearing claim in the final
+  research synthesis (research-pipeline.md §2.9). Citation/evidence is mandatory (03
+  §4).'
+owner_domain: research_and_knowledge
+allowed_usage:
+- Gate the research synthesis stage for full citation of load-bearing claims.
+forbidden_usage:
+- Used outside the Research Pipeline.
+- Confused with research_source_governance (source admissibility, not citation).
+governance_profiles:
+- research_source_governance
+- evidence_required
+audit_schemas:
+- claim_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- synthesis
+- research_completion
+severity_default: blocker
+used_by:
+- synthesis
+- research_completion
+notes: NEW (pipeline-catalog-review.md §4.1). Research Pipeline gate.

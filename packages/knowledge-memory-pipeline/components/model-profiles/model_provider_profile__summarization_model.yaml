@@ -1,0 +1,45 @@
+id: summarization_model
+name: Summarization Model
+type: model_provider_profile
+status: candidate
+purpose: Summarise/condense candidate memory and source content for durable storage
+  in the knowledge/memory pipeline.
+owner_domain: knowledge_management
+provider_type: reasoning_llm
+model_family: summarization_reasoning
+capability_scope:
+- content_summarization
+- condensation_for_storage
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: knowledge_reasoning_profile
+governance_profiles:
+- redaction_required_gate
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- summarising memory candidates / source content for storage in the knowledge/memory
+  pipeline
+forbidden_usage:
+- summarising un-redacted sensitive content (redaction_required_gate applies first)
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  stages:
+  - memory_summarization
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: null
+  recommendation: No canonical equivalent — summarization is a distinct specialisation.
+    Keep as its own profile; ratify in Phase E.
+notes: Markdown knowledge-memory-pipeline.md §1 + §2 (memory_summarization stage,
+  Model/Provider [summarization_model]). Candidate; flagged in open_questions.

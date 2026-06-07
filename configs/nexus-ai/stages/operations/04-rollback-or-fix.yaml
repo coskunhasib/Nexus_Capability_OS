@@ -1,0 +1,91 @@
+# Operations Pipeline — Stage Contract
+# Stage #4: rollback_or_fix
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.4.
+# Either path (rollback OR forward fix) must be backed by runbook or rollback evidence
+#   (satisfies rollback_runbook_evidence_gate). verification-loop is CONDITIONAL — bound only
+#   when a forward fix is applied (bug/defect confirmation that the fix resolves the incident).
+
+version: draft-0.1
+stage_id: rollback_or_fix
+name: Rollback or Fix
+purpose: >-
+  Execute the chosen path — roll back to a known-good state via the SDLC ROLLBACK_PLAN,
+  or apply a forward fix via the RUNBOOK — and capture the outcome with execution
+  evidence. Produces ROLLBACK_OR_FIX_REPORT and the decision/outcome record. Either
+  path must be backed by runbook or rollback evidence.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: incident_response_agent
+sub_agents: []
+
+uses_core_abilities:
+  - OS
+  - Coder
+  - Memory
+
+uses_skills:
+  - verification-loop  # CONDITIONAL: only when a forward fix is applied — confirm the fix removes the incident defect
+  - sentinel           # pre-execution premortem of the rollback/fix step
+
+uses_tools:
+  - rollback_executor
+  - runbook_executor
+  - monitoring_query_tool   # confirm recovery
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - rollback_runbook_evidence_gate
+  - operations_pipeline_governance
+  - no_self_approval_policy
+
+uses_audit_schemas:
+  - rollback_fix_evidence_schema   # evidence (decision proof)
+  - stage_gate_trace_schema        # trace (operation history)
+
+uses_model_provider_profiles:
+  - operations_analysis_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - operations_context_pack
+
+inputs:
+  - MITIGATION_PLAN
+  - RUNBOOK
+  - ROLLBACK_PLAN
+
+outputs:
+  - ROLLBACK_OR_FIX_REPORT
+
+evidence:
+  - ROLLBACK_OR_FIX_REPORT
+
+trace:
+  - rollback_or_fix_trace
+  - stage_gate_decision_trace
+
+gates:
+  - rollback_or_fix_executed
+  - runbook_or_rollback_evidence_present   # blocker — satisfies rollback_runbook_evidence_gate
+  - service_recovery_confirmed
+
+on_pass: postmortem
+on_fail: mitigation_plan
+rework_route: mitigation_plan
+
+blocking_conditions:
+  - rollback_or_fix_lacks_runbook_or_rollback_evidence
+  - self_approved_resolution
+
+# verification-loop bug/defect confirmation is required ONLY when the chosen path is a
+# forward fix (md §2.4); for a rollback path it is not applicable.
+optional_conditions:
+  - forward_fix_defect_confirmation_when_fix_applied
+
+conditional_required_gates: []
+
+max_iterations: 3

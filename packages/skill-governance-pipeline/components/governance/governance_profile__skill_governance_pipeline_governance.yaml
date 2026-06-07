@@ -1,0 +1,45 @@
+id: skill_governance_pipeline_governance
+name: Skill Governance Pipeline Governance
+type: pipeline_governance_profile
+status: candidate
+purpose: 'Pipeline-level policy for the Skill Governance Pipeline: no binding/activation
+  without mandatory semantic extraction; script/reference safety audit required; misuse-warnings
+  required; locked skill semantics enforced (skill-governance-pipeline.md §3.2).'
+owner_domain: skill_governance
+allowed_usage:
+- Bind at the Skill Governance Pipeline level and re-show under each of its stages.
+- Govern the skill lifecycle (intake -> semantics -> audit -> misuse -> binding ->
+  activation).
+forbidden_usage:
+- Used outside the Skill Governance Pipeline.
+- Used to alter the locked semantics of prism/verification-loop (that is enforced
+  separately).
+governance_profiles:
+- no_self_approval
+- evidence_required
+- locked_semantics_enforcement_policy
+audit_schemas:
+- skill_governance_evidence_schema
+- skill_governance_trace_schema
+scope: pipeline
+applies_to:
+- skill_governance_pipeline
+- skill_intake
+- skill_semantic_extraction
+- script_reference_audit
+- misuse_warning_generation
+- skill_binding_proposal
+- skill_activation_decision
+- skill_deprecation_update
+severity_default: blocker
+used_by:
+- skill_governance_pipeline
+aliases:
+- skill_governance_profile
+notes: NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. NOTE the SDLC
+  pipeline already has a stage 03 `skill_governance` (stage-scope) profile — that
+  is DISTINCT from this whole- pipeline umbrella for the dedicated Skill Governance
+  Pipeline. The pre-R9 catalog-YAML definition_contract variant `skill_governance_profile`
+  is retained under aliases only as the historical reconciliation record; after R9
+  collapsed pipeline_catalog.yaml into a summary-only catalog, the authoritative per-pipeline
+  source is the markdown definition_doc.

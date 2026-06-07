@@ -1,0 +1,82 @@
+team_id: activation_team
+team_type: activation_team
+pipeline_id: activation_pipeline
+purpose: Stage the activation of an already release-candidate artifact (produced by
+  the SDLC pipeline) through preview -> pilot -> public, with mandatory rollback readiness
+  and a human/owner decision gate before any public activation. Confirms release-candidate
+  evidence on intake, runs a superadmin preview, executes a bounded pilot, independently
+  reviews pilot evidence, records the owner's public-activation decision, validates
+  rollback readiness, and completes activation with a full evidence package — under
+  no-self-approval governance.
+team_lead_role: activation_team_lead
+agents:
+- activation_manager_agent
+- pilot_activation_agent
+- activation_reviewer_agent
+- activation_owner_decision_agent
+- rollback_readiness_agent
+direct_sub_agents: []
+uses_core_abilities:
+- Supervisor
+- Memory
+- OS
+- Web
+uses_skills:
+- sentinel
+- gap-audit
+- llm-council
+- calibrate
+- prompt-fidelity
+- refraction
+uses_tools:
+- activation_flag_controller
+- cohort_selector
+- rollback_executor
+- telemetry_reader
+- artifact_writer
+- evidence_writer
+- evidence_reader
+- policy_query
+uses_governance_profiles:
+- activation_pipeline_governance
+- no_self_approval_policy
+- evidence_required_policy
+- preview_required_gate
+- pilot_evidence_gate
+- rollback_required_gate
+- owner_activation_decision_gate
+uses_audit_schemas:
+- activation_evidence_schema
+- activation_decision_evidence_schema
+- rollback_readiness_evidence_schema
+- stage_gate_trace_schema
+- activation_transition_trace_schema
+uses_model_provider_profiles:
+- supervisor_routing_model
+- activation_reasoning_model
+- risk_analysis_model
+uses_context_memory_profiles:
+- activation_run_context
+- preview_context_pack
+- pilot_evidence_context_pack
+- activation_decision_context_pack
+permissions:
+- own_and_execute_activation_stages
+- assign_stage_owner_agents
+- control_activation_flags_and_cohorts
+- execute_validated_rollback
+- record_owner_activation_decision
+- emit_activation_evidence_package
+- request_rework_along_allowed_routes
+forbidden_actions:
+- core_ability_as_team_member
+- supervisor_as_team_lead
+- self_approval_of_activation_decision
+- agent_approves_own_work
+- public_activation_without_owner_decision
+- public_activation_without_validated_rollback_plan
+- pilot_activation_without_passing_preview
+- team_lead_bypasses_blocking_gate
+- team_lead_owns_a_stage
+- orphan_sub_agent_without_parent_or_direct_call_flag
+- introduce_plugin

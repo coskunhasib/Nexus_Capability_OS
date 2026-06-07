@@ -1,0 +1,46 @@
+id: activation_decision_context_pack
+name: Activation Decision Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Owner/public-activation decision working context: assembled pilot evidence,
+  the validated rollback plan, residual risk, and the recorded owner decision. Consumed
+  by public_activation_decision and rollback_readiness.'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- read_during_public_activation_decision_and_rollback_readiness
+- carry_pilot_evidence_validated_rollback_plan_and_owner_decision
+forbidden_usage:
+- used_to_self_approve_the_activation_decision_by_a_stage_owning_agent
+- authorize_public_scope_without_an_owner_decision_or_validated_rollback
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- pilot_evidence_context_pack
+- current_run_rollback_readiness
+- activation_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_activation_decision
+- owner_decision_required_before_public_scope
+- decision_must_not_be_self_approved_by_a_stage_owning_agent
+redaction_rules:
+- no_raw_secrets
+- redact_pii_from_decision_evidence
+governance_profiles:
+- owner_activation_decision_gate
+- rollback_required_gate
+- no_self_approval_policy
+- context_access_governance
+audit_schemas:
+- activation_decision_evidence_schema
+- rollback_readiness_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- activation_pipeline
+- stage:public_activation_decision@activation_pipeline
+- stage:rollback_readiness@activation_pipeline
+aliases: []
+notes: New (draft-0.1, activation-pipeline.md §2.5-§2.6). The public activation decision
+  is a human/owner gate (review F-4); the authorizing actor is the human owner, recorded
+  as evidence.

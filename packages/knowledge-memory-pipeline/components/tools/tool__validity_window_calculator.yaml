@@ -1,0 +1,35 @@
+id: validity_window_calculator
+name: Validity Window Calculator
+type: tool
+category: tool
+status: candidate
+purpose: Assign a validity window (start, expiry/review horizon, rationale) from trust
+  tier and decay expectations.
+owner_domain: knowledge_management
+provided_by_core_ability: null
+input_schema:
+  source_classification: object
+  decay_model: object
+output_schema:
+  validity_window_decision: object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- validity_window_agent
+allowed_usage:
+- Produce VALIDITY_WINDOW_DECISION (validity_window_assignment).
+forbidden_usage:
+- Leaving "no window" (validity_window_required_gate forbids it).
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  pipeline_stages:
+  - knowledge_memory_pipeline.validity_window_assignment
+notes: NEW (knowledge/memory) per review §4.3.

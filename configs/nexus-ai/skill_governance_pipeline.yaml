@@ -1,0 +1,173 @@
+# Skill Governance Pipeline — Pipeline Definition Contract (machine-readable)
+# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§1)
+# Format mirror: configs/nexus-ai/sdlc_pipeline.yaml (field set + order)
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §2 (Pipeline Definition Contract)
+# Top structure: Nexus AI Orchestration Model. This is ONE pipeline under it (catalog entry, Phase B / doc 16).
+# Anti-pattern blocked: binding without semantics. Locked semantics enforced:
+#   prism = brainstorming/divergence, verification-loop = bug/defect finding.
+version: draft-0.1
+pipeline_id: skill_governance_pipeline
+name: Skill Governance Pipeline
+purpose: >
+  Skill paketlerinin keşfi, zorunlu semantic extraction, script/reference güvenlik
+  denetimi, misuse-warning üretimi, skill-stage binding önerisi, aktivasyon kararı ve
+  deprecation/update yönetimini no-human governance ile yürütmek. Hiçbir skill,
+  semantic extraction tamamlanmadan ve misuse-warning üretilmeden binding'e veya
+  aktivasyona geçemez. prism = brainstorming, verification-loop = bug-finding olarak
+  locked semantics enforce edilir.
+status: draft
+owner_domain: skill_governance
+required_team_type: skill_governance_team
+required_team_lead_role: skill_governance_team_lead
+
+# Product/problem domains this pipeline applies to.
+applicable_domains:
+  - skill_lifecycle
+  - capability_registry
+  - agent_skill_binding
+  - skill_runtime_safety
+  - shared_registry_maintenance
+
+# Risk profiles this pipeline can operate under.
+risk_profiles:
+  - new_skill_intake
+  - script_bearing_skill
+  - high_privilege_skill
+  - locked_semantics_skill
+  - deprecation_or_update
+
+# Conditions that must hold before the pipeline may start (first stage is skill_intake).
+entry_criteria:
+  - SKILL_GOVERNANCE_RUN_GOAL present
+  - SKILL_SOURCE_REFERENCE present (canonical_source or candidate package path/hash)
+  - skill_governance_team assigned with skill_governance_team_lead
+
+# Conditions that mark the pipeline complete.
+exit_criteria:
+  - SKILL_SEMANTIC_EXTRACT produced and skill_semantic_required_gate passed
+  - SCRIPT_REFERENCE_AUDIT_REPORT produced and script_reference_audit_gate passed
+  - SKILL_MISUSE_WARNINGS produced and misuse_warning_required_gate passed
+  - SKILL_BINDING_PROPOSAL produced (binding never precedes semantics)
+  - SKILL_ACTIVATION_DECISION recorded (activate / hold / deprecate) via skill_activation_decision_gate
+  - EVIDENCE and TRACE complete for every executed stage
+
+# Pipeline-level conditions that block progression / activation.
+blocking_conditions:
+  - skill_semantics_unknown
+  - binding_proposed_without_semantics
+  - unsafe_skill_script_unmitigated
+  - missing_misuse_warnings
+  - locked_semantics_violation
+  - self_approval_of_activation_decision
+
+# Permitted rework routes. Each entry is a known stage_id.
+allowed_rework_routes:
+  - skill_binding_proposal -> skill_semantic_extraction
+  - misuse_warning_generation -> script_reference_audit
+  - script_reference_audit -> skill_semantic_extraction
+  - skill_activation_decision -> skill_binding_proposal
+  - skill_semantic_extraction -> skill_intake
+
+# Evidence artifacts the pipeline must produce. Evidence = decision proof, DISTINCT from trace.
+required_evidence:
+  - SKILL_INVENTORY_ENTRY
+  - SKILL_SEMANTIC_EXTRACT
+  - SCRIPT_REFERENCE_AUDIT_REPORT
+  - SKILL_REFERENCE_INDEX
+  - SKILL_MISUSE_WARNINGS
+  - SKILL_BINDING_PROPOSAL
+  - SKILL_ACTIVATION_DECISION
+
+# Trace records the pipeline must produce. Trace = operation/decision log, DISTINCT from evidence.
+required_trace:
+  - skill_package_read_trace
+  - skill_semantic_extraction_trace
+  - script_static_analysis_trace
+  - misuse_warning_generation_trace
+  - skill_binding_proposal_trace
+  - skill_activation_decision_trace
+  - gate_evaluation_trace
+
+stages:
+  - skill_intake
+  - skill_semantic_extraction
+  - script_reference_audit
+  - misuse_warning_generation
+  - skill_binding_proposal
+  - skill_activation_decision
+  - skill_deprecation_update
+
+uses_core_abilities:
+  - Supervisor
+  - Memory
+  - OS
+  - Coder
+  - Web
+
+uses_skills:
+  - gap-audit
+  - fmea
+  - calibrate
+  - llm-council
+  - sentinel
+  - prism
+  - verification-loop
+
+uses_tools:
+  - skill_package_reader
+  - skill_semantic_extractor
+  - script_static_analyzer
+  - reference_index_builder
+  - skill_binding_proposer
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - skill_semantic_required_gate
+  - script_reference_audit_gate
+  - misuse_warning_required_gate
+  - skill_binding_proposal_gate
+  - skill_activation_decision_gate
+  - locked_semantics_enforcement_policy
+  - no_self_approval_policy
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_governance_evidence_schema
+  - skill_semantic_extract_schema
+  - script_audit_evidence_schema
+  - skill_misuse_warning_schema
+  - skill_binding_decision_schema
+  - skill_governance_trace_schema
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+  - skill_semantic_extraction_model
+  - script_safety_analysis_model
+  - supervisor_routing_model
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_semantic_context_pack
+  - skill_registry_context_pack
+
+# Gate set for this pipeline. `always` gates fire on every run; `conditional` gates are
+# applicability-gated (skill_deprecation_update only runs when deprecation_or_update or a
+# version/hash change applies). Source: md §2 per-stage key gates + §3.2 governance placeholders.
+required_gates:
+  always:
+    - skill_intake_inventory_complete
+    - skill_semantic_required_gate
+    - locked_semantics_enforcement_policy
+    - script_reference_audit_gate
+    - reference_index_complete
+    - misuse_warning_required_gate
+    - skill_binding_proposal_gate
+    - skill_activation_decision_gate
+  conditional:
+    - skill_deprecation_required_gate
+
+canonical_docs:
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md

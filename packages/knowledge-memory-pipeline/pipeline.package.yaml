@@ -1,0 +1,185 @@
+package_schema_version: '0.1'
+pipeline_id: knowledge_memory_pipeline
+name: Knowledge / Memory Pipeline
+description: 'Govern the knowledge / memory lifecycle for Nexus AI: ingest candidate
+  memory, classify its source, summarize it, assign a validity window, update the
+  affected retrieval profile, and review expiration. Memory remains a Core Ability;
+  this pipeline curates what that ability is allowed to remember, for how long, and
+  how it is retrieved. It does not turn Memory into an agent.
+
+  '
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 9ed30f2
+  source_path: configs/nexus-ai/knowledge_memory_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: knowledge_team
+  version: 1.0.0
+  path: components/teams/team__knowledge_team.yaml
+- kind: team_lead
+  id: knowledge_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__knowledge_team_lead.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: refraction
+  version: 1.0.0
+  path: components/skills/skill__refraction.yaml
+- kind: skill
+  id: bayesian-update
+  version: 1.0.0
+  path: components/skills/skill__bayesian-update.yaml
+- kind: tool
+  id: memory_ingestor
+  version: 1.0.0
+  path: components/tools/tool__memory_ingestor.yaml
+- kind: tool
+  id: source_classifier
+  version: 1.0.0
+  path: components/tools/tool__source_classifier.yaml
+- kind: tool
+  id: summary_writer
+  version: 1.0.0
+  path: components/tools/tool__summary_writer.yaml
+- kind: tool
+  id: validity_window_calculator
+  version: 1.0.0
+  path: components/tools/tool__validity_window_calculator.yaml
+- kind: tool
+  id: retrieval_profile_writer
+  version: 1.0.0
+  path: components/tools/tool__retrieval_profile_writer.yaml
+- kind: tool
+  id: expiration_scanner
+  version: 1.0.0
+  path: components/tools/tool__expiration_scanner.yaml
+- kind: tool
+  id: redaction_tool
+  version: 1.0.0
+  path: components/tools/tool__redaction_tool.yaml
+- kind: tool
+  id: provenance_recorder
+  version: 1.0.0
+  path: components/tools/tool__provenance_recorder.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: governance_profile
+  id: memory_source_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__memory_source_governance.yaml
+- kind: governance_profile
+  id: validity_window_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__validity_window_required_gate.yaml
+- kind: governance_profile
+  id: redaction_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__redaction_required_gate.yaml
+- kind: audit_schema
+  id: memory_provenance_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__memory_provenance_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: knowledge_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__knowledge_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: summarization_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__summarization_model.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: context_memory_profile
+  id: knowledge_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__knowledge_run_context.yaml
+- kind: context_memory_profile
+  id: memory_candidate_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__memory_candidate_context_pack.yaml
+- kind: context_memory_profile
+  id: retrieval_profile_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__retrieval_profile_context_pack.yaml
+gates:
+- id: intake_metadata_complete
+  set: always
+- id: provenance_seed_recorded
+  set: always
+- id: source_trust_tier_assigned
+  set: always
+- id: sensitivity_classified
+  set: always
+- id: summary_grounded_in_source
+  set: always
+- id: validity_window_present
+  set: always
+- id: update_bound_to_validity_window
+  set: always
+- id: sensitivity_exposure_consistent
+  set: always
+- id: expiration_outcome_recorded
+  set: always
+- id: team_lead_cannot_self_approve_or_bypass_gate
+  set: always
+- id: redaction_applied_if_required
+  set: conditional
+- id: expired_memory_retired_from_retrieval
+  set: conditional
+evidence:
+  required_evidence:
+  - MEMORY_INTAKE_RECORD
+  - SOURCE_CLASSIFICATION_REPORT
+  - MEMORY_SUMMARY
+  - VALIDITY_WINDOW_DECISION
+  - RETRIEVAL_PROFILE_UPDATE_REPORT
+  - MEMORY_EXPIRATION_REVIEW_REPORT
+  - MEMORY_PROVENANCE_RECORD
+  required_trace:
+  - memory_intake_trace
+  - source_classification_trace
+  - summary_generation_skill_activation_trace
+  - validity_window_assignment_trace
+  - retrieval_profile_update_trace
+  - memory_expiration_review_trace
+stages:
+- memory_intake
+- source_classification
+- summary_generation
+- validity_window_assignment
+- retrieval_profile_update
+- memory_expiration_review

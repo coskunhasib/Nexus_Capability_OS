@@ -1,0 +1,33 @@
+id: reference_index_builder
+name: Reference Index Builder
+type: tool
+category: tool
+status: candidate
+purpose: Index a skill's reference files into a SKILL_REFERENCE_INDEX.
+owner_domain: skill_governance
+provided_by_core_ability: null
+input_schema:
+  references: object
+output_schema:
+  skill_reference_index_ref: string
+side_effects: writes_artifact_store
+risk_level: low
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- skill_runtime_safety_agent
+allowed_usage:
+- Build the SKILL_REFERENCE_INDEX during script_reference_audit.
+forbidden_usage:
+- Indexing references not present in the package.
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  pipeline_stages:
+  - skill_governance_pipeline.script_reference_audit
+notes: NEW (skill governance) per review §4.3.

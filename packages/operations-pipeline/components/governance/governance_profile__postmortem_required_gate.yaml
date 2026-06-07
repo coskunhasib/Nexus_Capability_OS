@@ -1,0 +1,28 @@
+id: postmortem_required_gate
+name: Postmortem Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Operations gate: postmortem mandatory — always for major_incident / critical_outage_or_safety_event;
+  a lightweight POSTMORTEM_REPORT is still produced for lower severities (operations-pipeline.md
+  §2.5).'
+owner_domain: operations_reliability
+allowed_usage:
+- Gate presence of a postmortem (blocking for required severities).
+forbidden_usage:
+- Used outside the Operations Pipeline.
+governance_profiles:
+- operations_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- postmortem_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- postmortem
+severity_default: blocker
+used_by:
+- postmortem
+notes: 'NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate. Conditional:
+  blocker for severity >= major OR rollback_executed == true; otherwise the POSTMORTEM_REPORT
+  must still exist.'

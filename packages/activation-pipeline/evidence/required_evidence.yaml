@@ -1,0 +1,16 @@
+required_evidence:
+- ACTIVATION_REQUEST
+- PREVIEW_RESULT
+- PILOT_RESULT
+- PILOT_EVIDENCE_REVIEW_REPORT
+- ROLLBACK_PLAN
+- ROLLBACK_READINESS_REPORT
+- ACTIVATION_DECISION
+- ACTIVATION_COMPLETION_REPORT
+required_trace:
+- activation_transition_trace
+- preview_activation_trace
+- pilot_activation_trace
+- rollback_drill_trace
+- owner_decision_trace
+- policy_evaluation_trace

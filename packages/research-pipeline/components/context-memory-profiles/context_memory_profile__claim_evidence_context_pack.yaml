@@ -1,0 +1,46 @@
+id: claim_evidence_context_pack
+name: Claim Evidence Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Claim->evidence mapping working context: each atomic claim with supporting/contradicting
+  evidence, support strength, conflicts, single-source flags, and per-claim uncertainty.
+  Consumed by claim extraction, claim->evidence mapping, cross-validation, uncertainty
+  reporting, and synthesis.'
+owner_domain: research_and_knowledge
+allowed_usage:
+- read_by_claim_mapping_cross_validation_uncertainty_and_synthesis
+- carry_support_strength_conflicts_and_single_source_flags
+forbidden_usage:
+- support_an_uncited_load_bearing_claim_in_final_synthesis
+- hide_contradictions_or_single_source_claims
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_claim_evidence_map
+- source_corpus_context_pack
+- research_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_claim_evidence_mapping
+- every_load_bearing_claim_must_have_mapped_evidence
+- contradictions_and_single_source_claims_must_be_visible
+redaction_rules:
+- no_raw_secrets
+- redact_pii_from_claim_excerpts
+governance_profiles:
+- citation_required_gate
+- context_access_governance
+- evidence_required_policy
+audit_schemas:
+- claim_evidence_schema
+- context_usage_trace_schema
+used_by:
+- research_pipeline
+- stage:claim_extraction@research_pipeline
+- stage:claim_evidence_mapping@research_pipeline
+- stage:cross_validation@research_pipeline
+- stage:uncertainty_reporting@research_pipeline
+- stage:synthesis@research_pipeline
+aliases: []
+notes: New (draft-0.1, research-pipeline.md §2.6-§2.9). Feeds the citation_required_gate.

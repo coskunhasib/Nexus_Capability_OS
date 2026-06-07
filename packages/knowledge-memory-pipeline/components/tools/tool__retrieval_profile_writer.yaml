@@ -1,0 +1,41 @@
+id: retrieval_profile_writer
+name: Retrieval Profile Writer
+type: tool
+category: tool
+status: candidate
+purpose: Update the affected retrieval profile / context pack so curated memory becomes
+  retrievable within bounded scope.
+owner_domain: knowledge_management
+provided_by_core_ability: Memory
+input_schema:
+  memory_summary: object
+  validity_window: object
+  sensitivity: object
+output_schema:
+  retrieval_profile_update_report_ref: string
+side_effects: writes_memory_store
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- retrieval_profile_agent
+- memory_expiration_agent
+allowed_usage:
+- Update retrieval profiles bound to a validity window (retrieval_profile_update;
+  retire on expiry).
+forbidden_usage:
+- Updating a profile for a memory with no validity window (retrieval_profile_update_without_validity_window).
+- Exposing sensitive memory beyond its classified sensitivity.
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  pipeline_stages:
+  - knowledge_memory_pipeline.retrieval_profile_update
+  - knowledge_memory_pipeline.memory_expiration_review
+notes: NEW (knowledge/memory) per review §4.3. Sub-operation of Memory (D-014).

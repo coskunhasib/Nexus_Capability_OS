@@ -1,0 +1,25 @@
+id: misuse_warning_required_gate
+name: Misuse Warning Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Skill Governance gate: a skill cannot proceed to binding/activation with
+  empty or missing misuse-warnings; each locked-semantics skill requires at least
+  one `not_for` warning (skill-governance-pipeline.md §2.4).'
+owner_domain: skill_governance
+allowed_usage:
+- Gate presence/completeness of SKILL_MISUSE_WARNINGS before binding.
+forbidden_usage:
+- Used outside the Skill Governance Pipeline.
+governance_profiles:
+- skill_governance_pipeline_governance
+- evidence_required
+audit_schemas:
+- skill_misuse_warning_schema
+- skill_governance_trace_schema
+scope: stage
+applies_to:
+- misuse_warning_generation
+severity_default: blocker
+used_by:
+- misuse_warning_generation
+notes: NEW (pipeline-catalog-review.md §4.1). Skill Governance Pipeline gate.

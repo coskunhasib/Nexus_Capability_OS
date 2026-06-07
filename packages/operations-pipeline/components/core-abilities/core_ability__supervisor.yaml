@@ -1,0 +1,66 @@
+id: supervisor
+name: Supervisor
+display_name: Supervisor
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+never_team_lead: true
+purpose: 'Cross-stage orchestration and routing capability: reason over upstream gate
+  results, choose rework targets, and arbitrate model/provider routing trade-offs.
+  It REASONS about routing; it does not execute side-effecting I/O and it does not
+  hold the team_lead role.'
+owner_domain: orchestration_routing
+model_provider_profiles:
+- supervisor_routing_model
+exposed_tools: []
+governance_profiles:
+- orchestration_governance
+- no_self_approval
+- no_policy_bypass
+- evidence_required
+audit_schemas:
+- core_ability_invocation_trace_schema
+- gate_decision_trace_schema
+- release_decision_trace_schema
+allowed_callers:
+- sdlc_team_lead
+- research_team_lead
+- activation_team_lead
+- operations_team_lead
+- skill_governance_team_lead
+- knowledge_team_lead
+- pipeline_orchestration_layer
+allowed_usage:
+- cross_stage_routing_and_rework_target_selection
+- multi_agent_tool_delegation_reasoning
+- model_provider_routing_arbitration
+- aggregate_gate_result_reasoning_for_completion_and_release
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- being_declared_as_a_team_lead_or_sdlc_team_lead
+- approving_its_own_output
+- overriding_or_bypassing_a_blocking_policy_gate
+- performing_a_release_or_deploy_action
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - architecture_review
+  - planning
+  - ai_agent_safety_evaluation
+  - cost_resource_governance
+  - development_completion
+  - release_candidate
+  capability_systems:
+  - nexus_ai_capability_system
+notes: 'LOCKED: Supervisor is a Core Ability, never an Agent and never the team_lead
+  (K-006; confirmed by claude-code-skill-agent-review §5). The *_team_lead roles in
+  allowed_callers are Agent-tier orchestrator ROLES that CALL this ability — they
+  are not this ability. Low default risk because Supervisor performs no environment/repo
+  mutation and reads no raw secrets.'

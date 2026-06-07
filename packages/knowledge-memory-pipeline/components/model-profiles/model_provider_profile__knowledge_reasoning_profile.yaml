@@ -1,0 +1,47 @@
+id: knowledge_reasoning_profile
+name: Knowledge Reasoning Profile
+type: model_provider_profile
+status: candidate
+purpose: 'General reasoning for the knowledge/memory pipeline: memory candidate evaluation,
+  validity and retrieval-profile reasoning.'
+owner_domain: knowledge_management
+provider_type: reasoning_llm
+model_family: general_reasoning
+capability_scope:
+- memory_candidate_reasoning
+- validity_window_reasoning
+- retrieval_profile_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: supervisor_routing_model
+governance_profiles:
+- memory_source_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- knowledge/memory pipeline reasoning stages
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  stages:
+  - memory_candidate_evaluation
+  - retrieval_profile_update
+  core_abilities: []
+aliases:
+- memory_reasoning_profile
+overlap:
+  overlaps_with: sdlc_reasoning_profile
+  recommendation: Overlaps the general_reasoning family. Recommend reuse of a shared
+    general reasoning profile. Decide in Phase E.
+notes: Beyond the task's explicit NEW list; present in pipeline-catalog-review §4.4
+  and knowledge-memory-pipeline.md §1. Markdown name authoritative; YAML `memory_reasoning_profile`
+  recorded as alias (F-1). Candidate; flagged in open_questions.

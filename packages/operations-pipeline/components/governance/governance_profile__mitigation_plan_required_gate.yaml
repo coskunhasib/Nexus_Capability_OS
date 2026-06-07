@@ -1,0 +1,26 @@
+id: mitigation_plan_required_gate
+name: Mitigation Plan Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Operations gate: an active (non-resolved) incident must have a mitigation
+  plan before rollback-or-fix execution (operations-pipeline.md §2.3).'
+owner_domain: operations_reliability
+allowed_usage:
+- Gate presence of a MITIGATION_PLAN for an active incident.
+forbidden_usage:
+- Used outside the Operations Pipeline.
+governance_profiles:
+- operations_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- mitigation_plan_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- mitigation_plan
+severity_default: blocker
+used_by:
+- mitigation_plan
+notes: NEW (pipeline-catalog-review.md §4.1). Operations Pipeline gate (mitigation_plan_present
+  blocker).

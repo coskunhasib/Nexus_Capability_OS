@@ -1,0 +1,33 @@
+id: cohort_selector
+name: Cohort Selector
+type: tool
+category: tool
+status: candidate
+purpose: Select/define the bounded pilot cohort for staged activation.
+owner_domain: activation_and_release_operations
+provided_by_core_ability: null
+input_schema:
+  cohort_criteria: object
+output_schema:
+  cohort: object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- pilot_activation_agent
+allowed_usage:
+- Define the bounded pilot cohort (pilot_activation).
+forbidden_usage:
+- Selecting an unbounded/public cohort during pilot.
+used_by:
+  pipelines:
+  - activation_pipeline
+  pipeline_stages:
+  - activation_pipeline.pilot_activation
+notes: NEW (activation) per review §4.3.

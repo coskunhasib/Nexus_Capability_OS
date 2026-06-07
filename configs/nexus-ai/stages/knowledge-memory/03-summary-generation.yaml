@@ -1,0 +1,67 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Stage #3 of 6: summary_generation
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.3.
+# Field set mirrors configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+# Pipeline: knowledge_memory_pipeline. owner_agent is a snake_case Agent role under knowledge_team.
+# calibrate is used here for confidence calibration of the summary (md §2.3).
+version: draft-0.1
+stage_id: summary_generation
+name: Summary Generation
+purpose: >-
+  Produce a faithful, well-scoped summary of the (already classified, already redacted)
+  memory item, calibrated so that stated confidence matches actual support in the source.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: memory_summarization_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - calibrate   # confidence calibration of the summary
+uses_tools:
+  - summary_writer
+  - provenance_recorder
+  - artifact_writer
+  - evidence_writer
+uses_governance_profiles:
+  - memory_source_governance
+uses_audit_schemas:
+  - memory_provenance_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - summarization_model
+uses_context_memory_profiles:
+  - knowledge_run_context
+  - memory_candidate_context_pack
+
+inputs:
+  - SOURCE_CLASSIFICATION_REPORT
+outputs:
+  - MEMORY_SUMMARY
+
+evidence:
+  - MEMORY_SUMMARY
+trace:
+  - summary_generation_skill_activation_trace
+  - gate_decision_trace
+
+# md §2.3 key gates: summary_grounded_in_source (blocker); summary_confidence_calibrated (major).
+gates:
+  - summary_grounded_in_source
+  - summary_confidence_calibrated
+
+on_pass: validity_window_assignment
+on_fail: source_classification
+rework_route: source_classification
+
+blocking_conditions:
+  - summary_not_grounded_in_source
+optional_conditions:
+  # md §2.3: summary_confidence_calibrated is a MAJOR (non-blocking) gate; over/under-confident
+  # summaries are routed back rather than hard-blocked.
+  - summary_confidence_uncalibrated
+conditional_required_gates: []
+
+max_iterations: 3

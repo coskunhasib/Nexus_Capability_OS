@@ -1,0 +1,27 @@
+id: pilot_evidence_gate
+name: Pilot Evidence Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Activation gate: public activation is impossible without sufficient pilot
+  evidence (activation-pipeline.md §2.4; 03 §4 "pilot evidence olmadan public activation
+  yok").'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Gate that sufficient pilot evidence exists before public activation.
+forbidden_usage:
+- Used outside the Activation Pipeline.
+governance_profiles:
+- activation_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- activation_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- pilot_evidence_review
+severity_default: blocker
+used_by:
+- pilot_evidence_review
+notes: NEW (pipeline-catalog-review.md §4.1). Activation Pipeline gate; reviewer !=
+  pilot owner.

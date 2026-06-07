@@ -1,0 +1,83 @@
+# Operations Pipeline — Stage Contract
+# Stage #1: incident_intake
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.1.
+# Top structure: Nexus AI Orchestration Model. operations_pipeline is ONE pipeline under it.
+# owner_agent is a snake_case Agent role under operations_team (md boundary note); a Core Ability
+#   is NEVER an owner_agent. operations_team_lead is a pipeline-specific lead role, NOT Supervisor.
+
+version: draft-0.1
+stage_id: incident_intake
+name: Incident Intake
+purpose: >-
+  Receive, deduplicate, and normalize an incident signal (alert, monitoring breach,
+  page, or human/agent report) into a single INCIDENT_RECORD with timeline anchor,
+  affected capability, and initial observations. Correlates alerts so duplicate
+  signals collapse into one incident.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: incident_intake_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - OS
+  - Web
+
+uses_skills:
+  - gap-audit         # completeness of the intake record
+
+uses_tools:
+  - incident_intake_tool
+  - monitoring_query_tool
+  - alert_correlator
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - operations_pipeline_governance
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - incident_evidence_schema       # evidence (decision proof)
+  - stage_gate_trace_schema        # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - incident_triage_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - incident_context_pack
+
+inputs:
+  - INCIDENT_SIGNAL
+
+outputs:
+  - INCIDENT_RECORD
+
+evidence:
+  - INCIDENT_RECORD
+
+trace:
+  - incident_intake_trace
+  - stage_gate_decision_trace
+
+gates:
+  - incident_record_present
+  - affected_capability_identified
+  - duplicate_signals_correlated
+
+on_pass: severity_classification
+on_fail: incident_intake
+rework_route: incident_intake
+
+blocking_conditions:
+  - missing_required_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

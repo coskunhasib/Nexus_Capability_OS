@@ -1,0 +1,65 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #8 of 10: uncertainty_reporting
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.8.
+# Field set mirrors configs/nexus-ai/stages/sdlc/ stage contracts.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+version: draft-0.1
+stage_id: uncertainty_reporting
+name: Uncertainty Reporting
+purpose: >-
+  Quantify and document residual uncertainty per claim and per research question —
+  confidence levels, evidence strength, contested points, and known gaps.
+  bayesian-update adjusts confidence as corroborating/contradicting evidence accumulates.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: uncertainty_reporting_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - bayesian-update   # adjust confidence as evidence accumulates
+  - calibrate
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - claim_evidence_context_pack
+
+inputs:
+  - CLAIM_EVIDENCE_MAP
+  - CROSS_VALIDATION_REPORT
+outputs:
+  - UNCERTAINTY_REPORT
+
+evidence:
+  - UNCERTAINTY_REPORT
+trace:
+  - agent_invocation_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - uncertainty_report_present
+  - confidence_levels_rationale_backed
+  - contested_points_explicit
+
+on_pass: synthesis
+on_fail: uncertainty_reporting
+rework_route: uncertainty_reporting
+
+blocking_conditions: []
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

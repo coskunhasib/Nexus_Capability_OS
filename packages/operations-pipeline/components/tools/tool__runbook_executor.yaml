@@ -1,0 +1,40 @@
+id: runbook_executor
+name: Runbook Executor
+type: tool
+category: tool
+status: candidate
+purpose: Execute (or dry-run) a runbook step to apply a forward fix or readiness check.
+owner_domain: operations_reliability
+provided_by_core_ability: OS
+input_schema:
+  runbook_ref: string
+  step_selector: object
+  mode: string
+output_schema:
+  execution_result: object
+side_effects: executes_runbook_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- mitigation_planning_agent
+- incident_response_agent
+allowed_usage:
+- Dry-run/readiness check at mitigation_plan; execute a forward fix at rollback_or_fix.
+forbidden_usage:
+- Executing without runbook/rollback evidence (rollback_runbook_evidence_gate).
+- Self-approved resolution (no_self_approval_policy).
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.mitigation_plan
+  - operations_pipeline.rollback_or_fix
+notes: Sub-operation of OS (D-014). Side-effecting executor — sandbox + governance
+  + trace mandatory.

@@ -1,0 +1,80 @@
+# Skill Governance Pipeline — Stage Contract 03: script_reference_audit
+# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.3)
+# Format mirror: configs/nexus-ai/stages/sdlc/04-requirements.yaml
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #3 of 7. Stage class: always-on.
+# verification-loop used here ONLY with defect/bug-finding semantics (script defect sweep).
+version: draft-0.1
+stage_id: script_reference_audit
+name: Script Reference Audit
+purpose: >-
+  scripts/** ve references/** üzerinde statik güvenlik/yan-etki denetimi yapar;
+  tehlikeli side-effect, gizli tool çağrısı, sandbox-dışı yürütme veya policy
+  bypass riskini çıkarır. verification-loop burada yalnız defect/bug-finding
+  semantiğiyle (script defect sweep) kullanılır; fmea ile script failure mode'ları
+  çıkarılır. Reference dosyaları indekslenir (SKILL_REFERENCE_INDEX).
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_runtime_safety_agent
+sub_agents: []
+
+uses_core_abilities:
+  - OS
+  - Coder
+
+uses_skills:
+  - verification-loop   # LOCKED: defect/bug-finding semantics only (script defect sweep)
+  - fmea                # derive script failure modes
+
+uses_tools:
+  - script_static_analyzer
+  - reference_index_builder
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - script_reference_audit_gate
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - script_audit_evidence_schema
+  - skill_governance_trace_schema
+
+uses_model_provider_profiles:
+  - script_safety_analysis_model
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_INVENTORY_ENTRY
+  - SKILL_SEMANTIC_EXTRACT
+outputs:
+  - SCRIPT_REFERENCE_AUDIT_REPORT
+  - SKILL_REFERENCE_INDEX
+
+evidence:
+  - SCRIPT_REFERENCE_AUDIT_REPORT
+  - SKILL_REFERENCE_INDEX
+trace:
+  - script_static_analysis_trace
+  - gate_evaluation_trace
+
+# key gates: script_reference_audit_gate (blocker) — fail if unsafe_skill_script_unmitigated;
+# reference_index_complete (major).
+gates:
+  - script_reference_audit_gate
+  - reference_index_complete
+
+on_pass: misuse_warning_generation
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - unsafe_skill_script_unmitigated
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

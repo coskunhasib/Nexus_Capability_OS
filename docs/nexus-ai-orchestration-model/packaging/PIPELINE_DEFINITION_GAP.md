@@ -1,6 +1,6 @@
 # Pipeline Definition Gap — markdown-only pipelines
 
-> Status: known gap, 2026-06-07. This is what blocks plan **step 1 ("package the rest")**.
+> Status: **RESOLVED 2026-06-07** — the 5 *defined* pipelines below now have machine-readable YAML defs + stage contracts + built, validated packages (`packages/INDEX.yaml` = 6 packages). The procedure in this doc now applies only to the 5 catalog **candidate** pipelines (content / data_processing / model_inference / customer_support / business_strategy), which remain undefined.
 
 ## What
 Only **`sdlc_pipeline`** has a machine-readable definition (`configs/nexus-ai/sdlc_pipeline.yaml` + `configs/nexus-ai/stages/sdlc/*.yaml`) and therefore a built `.pipeline` package.

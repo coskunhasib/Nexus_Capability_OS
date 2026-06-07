@@ -1,0 +1,15 @@
+required_gates:
+  always:
+  - intake_metadata_complete
+  - provenance_seed_recorded
+  - source_trust_tier_assigned
+  - sensitivity_classified
+  - summary_grounded_in_source
+  - validity_window_present
+  - update_bound_to_validity_window
+  - sensitivity_exposure_consistent
+  - expiration_outcome_recorded
+  - team_lead_cannot_self_approve_or_bypass_gate
+  conditional:
+  - redaction_applied_if_required
+  - expired_memory_retired_from_retrieval

@@ -1,0 +1,83 @@
+# Activation Pipeline — Stage Contract
+# Stage #1: activation_intake
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.1.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# owner_agent is a snake_case Agent role under activation_team (md §2 boundary note); a Core
+#   Ability is NEVER an owner_agent. activation_team_lead is a pipeline-specific lead role, NOT Supervisor.
+
+version: draft-0.1
+stage_id: activation_intake
+name: Activation Intake
+purpose: >-
+  Capture the activation request; confirm the target is an SDLC release candidate
+  (or higher) with required evidence; define activation scope, target cohorts, and
+  the rollback owner. Establishes which staged scope (preview / pilot / public) is
+  being requested.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_manager_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+
+uses_skills:
+  - gap-audit         # surface missing scope / cohorts / release-candidate evidence
+  - prompt-fidelity   # keep the captured request faithful to the stated activation intent
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader   # confirm SDLC release-candidate evidence is present
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - activation_evidence_schema       # evidence (decision proof)
+  - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - preview_context_pack
+
+inputs:
+  - ACTIVATION_REQUEST_INTENT
+  - SDLC_RELEASE_CANDIDATE_EVIDENCE
+
+outputs:
+  - ACTIVATION_REQUEST
+
+evidence:
+  - ACTIVATION_REQUEST
+
+trace:
+  - activation_transition_trace
+  - stage_gate_decision_trace
+
+gates:
+  - release_candidate_evidence_present
+  - activation_scope_defined
+  - rollback_owner_assigned
+
+on_pass: superadmin_preview
+on_fail: activation_intake
+rework_route: activation_intake
+
+blocking_conditions:
+  - missing_release_candidate_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

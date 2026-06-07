@@ -1,0 +1,78 @@
+team_lead_id: activation_team_lead
+team_id: activation_team
+pipeline_id: activation_pipeline
+mission: 'Orchestrate the staged Activation Pipeline (preview -> pilot -> public)
+  for an already release-candidate artifact: assign stage owners, enforce that the
+  pilot-evidence reviewer and the owner-decision recorder are distinct from the pilot
+  owner (no self-approval), and require a validated rollback plan and a recorded owner
+  decision before any public activation completes — without owning a stage, writing
+  the activation artifact, or bypassing a gate.'
+responsibilities:
+- Confirm the target is an SDLC release candidate (or higher) with required evidence
+  before activation.
+- Assign each activation stage to its owner Agent and select staged scope (preview/pilot/public).
+- Enforce the preview -> pilot -> public ordering gates and the rollback-readiness
+  gate.
+- Ensure the public activation decision is recorded by the owner-decision Agent and
+  is not self-approved.
+- Route rework along allowed routes (e.g. pilot_activation, rollback_readiness) and
+  assemble completion evidence.
+may_assign_agents:
+- activation_manager_agent
+- pilot_activation_agent
+- activation_reviewer_agent
+- activation_owner_decision_agent
+- rollback_readiness_agent
+may_call_direct_sub_agents: []
+may_use_core_abilities:
+- Supervisor
+- Memory
+- OS
+may_use_skills:
+- sentinel
+- calibrate
+- gap-audit
+may_call_tools:
+- evidence_reader
+- policy_query
+- artifact_writer
+- evidence_writer
+uses_governance_profiles:
+- activation_pipeline_governance
+- preview_required_gate
+- pilot_evidence_gate
+- rollback_required_gate
+- owner_activation_decision_gate
+- no_self_approval
+- evidence_required
+uses_audit_schemas:
+- activation_evidence_schema
+- activation_decision_evidence_schema
+- rollback_readiness_evidence_schema
+- activation_transition_trace_schema
+- stage_gate_trace_schema
+uses_context_memory_profiles:
+- activation_run_context
+- preview_context_pack
+- pilot_evidence_context_pack
+- activation_decision_context_pack
+forbidden_actions:
+- - cannot_author_then_approve_same_artifact
+  - cannot_bypass_a_failed_governance_gate
+  - cannot_mutate_an_artifact_it_reviews
+  - cannot_act_as_the_supervisor_core_ability
+  - cannot_be_listed_as_a_core_ability
+  - cannot_implement_or_write_product_code
+  - cannot_read_secrets
+  - cannot_perform_production_deploy_or_destructive_tool_actions
+  - cannot_reintroduce_a_plugin_concept
+- cannot_self_approve_an_activation_decision
+- cannot_authorize_public_activation_without_a_validated_rollback_plan
+- cannot_authorize_public_activation_without_a_recorded_owner_decision
+blocking_limits:
+- - cannot_close_a_run_with_an_open_blocking_gate
+  - cannot_advance_past_a_stage_whose_required_evidence_is_missing
+  - cannot_skip_a_mandatory_stage_or_gate_for_the_pipeline
+  - cannot_route_rework_outside_the_pipeline_allowed_rework_routes
+- cannot_begin_pilot_without_a_passing_superadmin_preview
+- cannot_complete_public_activation_without_pilot_evidence_and_validated_rollback

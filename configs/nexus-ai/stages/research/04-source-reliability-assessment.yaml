@@ -1,0 +1,65 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #4 of 10: source_reliability_assessment
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.4.
+# Field set mirrors configs/nexus-ai/stages/sdlc/ stage contracts.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+version: draft-0.1
+stage_id: source_reliability_assessment
+name: Source Reliability Assessment
+purpose: >-
+  Score each candidate source for reliability (authority, independence, recency,
+  corroboration, bias signals) under research_source_governance. calibrate keeps
+  reliability scores rationale-backed rather than asserted.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: source_reliability_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+uses_skills:
+  - calibrate   # keep reliability scores rationale-backed, not asserted
+  - gap-audit
+uses_tools:
+  - source_reliability_checker
+  - evidence_writer
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - source_evaluation_model
+uses_context_memory_profiles:
+  - research_run_context
+  - source_corpus_context_pack
+
+inputs:
+  - SOURCE_INVENTORY
+outputs:
+  - SOURCE_RELIABILITY_REPORT
+
+evidence:
+  - SOURCE_RELIABILITY_REPORT
+trace:
+  - agent_invocation_trace
+  - source_reliability_checker_tool_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - every_candidate_source_scored
+  - reliability_rationale_present
+  - low_reliability_sources_flagged
+
+on_pass: claim_extraction
+on_fail: source_discovery
+rework_route: source_reliability_assessment
+
+blocking_conditions: []
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

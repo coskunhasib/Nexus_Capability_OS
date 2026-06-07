@@ -1,0 +1,44 @@
+id: skill_semantic_extraction_model
+name: Skill Semantic Extraction Model
+type: model_provider_profile
+status: candidate
+purpose: Extract skill semantics, capabilities and misuse warnings from a skill package
+  in the skill governance pipeline.
+owner_domain: skill_governance
+provider_type: reasoning_llm
+model_family: semantic_extraction_reasoning
+capability_scope:
+- skill_semantic_extraction
+- capability_and_misuse_inference
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: skill_governance_reasoning_profile
+governance_profiles:
+- skill_semantic_required_gate
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- skill semantic extraction in the skill governance pipeline
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  stages:
+  - skill_semantic_extraction
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: null
+  recommendation: Loosely related to the SDLC skill_semantic_extraction stage (which
+    uses sdlc_reasoning_profile). Consider reusing sdlc_reasoning_profile, or keep
+    as a specialised extractor. Decide in Phase E.
+notes: Beyond the task's explicit NEW list; present in pipeline-catalog-review §4.4
+  and skill-governance-pipeline.md §1. Candidate; flagged in open_questions.

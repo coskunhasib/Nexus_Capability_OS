@@ -1,0 +1,35 @@
+id: severity_classifier_tool
+name: Severity Classifier Tool
+type: tool
+category: tool
+status: candidate
+purpose: Assign an incident severity with blast-radius and customer/safety impact
+  and confidence.
+owner_domain: operations_reliability
+provided_by_core_ability: null
+input_schema:
+  incident_record: object
+  blast_radius_signals: object
+output_schema:
+  severity_classification: object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- severity_classification_agent
+allowed_usage:
+- Produce SEVERITY_CLASSIFICATION_REPORT (severity_classification).
+forbidden_usage:
+- Proceeding to mitigation without a recorded severity (incident_severity_required_gate).
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.severity_classification
+notes: NEW (operations) per review §4.3.

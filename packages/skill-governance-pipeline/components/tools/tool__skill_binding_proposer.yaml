@@ -1,0 +1,40 @@
+id: skill_binding_proposer
+name: Skill Binding Proposer
+type: tool
+category: tool
+status: candidate
+purpose: Propose (not decide) which agents/sub-agents and stages a skill may bind
+  to (allowed_as_subskill_of, used_by_agents, used_in_stages).
+owner_domain: skill_governance
+provided_by_core_ability: null
+input_schema:
+  skill_semantic_extract: object
+  script_audit_findings: object
+  misuse_warnings: object
+output_schema:
+  skill_binding_proposal_ref: string
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- skill_librarian_agent
+allowed_usage:
+- Produce SKILL_BINDING_PROPOSAL (skill_binding_proposal) after semantics+audit+misuse-warnings
+  exist.
+forbidden_usage:
+- Binding without semantics (skill_binding_proposal_gate; anti-pattern: binding_proposed_without_semantics).
+- Making the activation decision (that is the separate skill_activation_decision stage;
+  no_self_approval_policy).
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  pipeline_stages:
+  - skill_governance_pipeline.skill_binding_proposal
+notes: NEW (skill governance) per review §4.3. Produces a proposal only; activation
+  decision is a distinct owner.

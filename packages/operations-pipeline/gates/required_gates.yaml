@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - incident_record_present
+  - affected_capability_identified
+  - severity_assigned
+  - mitigation_plan_present
+  - rollback_or_fix_executed
+  - runbook_or_rollback_evidence_present
+  - operational_learning_record_present
+  - no_blocking_policy_failure
+  conditional:
+  - postmortem_present_if_required_severity

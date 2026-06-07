@@ -1,0 +1,56 @@
+id: skill_binding_decision_schema
+name: Skill Binding Decision Schema
+type: decision_record_schema
+status: candidate
+purpose: Decision-record (decision proof) for the skill stage-binding proposal and
+  the skill activation decision (SKILL_STAGE_BINDING_PROPOSAL → activation). Evidence
+  family, NOT trace.
+owner_domain: skill_governance
+allowed_usage:
+- Record the skill binding proposal and the activation decision as a decision-proof
+  record.
+forbidden_usage:
+- Used to record process history (that is skill_governance_trace_schema).
+- Self-approved by the proposer (review independence; no_self_approval).
+governance_profiles:
+- evidence_required_policy
+- no_self_approval_policy
+- skill_binding_proposal_gate
+- skill_activation_decision_gate
+audit_schemas:
+- skill_governance_evidence_schema
+- skill_governance_trace_schema
+notes: NEW (skill governance). type decision_record_schema = a recorded decision PROOF
+  (Evidence family), distinct from the trace. Proposal owned by skill_librarian_agent
+  (stage skill_binding_proposal); activation decision adjudicated by skill_runtime_safety_agent
+  (stage skill_activation_decision) — reviewer != proposer.
+applies_to:
+- skill_governance_pipeline
+- skill_governance_stage:skill_binding_proposal
+- skill_governance_stage:skill_activation_decision
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- related_gate
+- skill_id
+- proposed_bindings
+- decision
+- decision_rationale
+- status
+- created_at
+producer: skill_runtime_safety_agent
+consumer: skill_governance_team_lead
+retention: retain_with_skill_registry_entry
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  stages:
+  - skill_binding_proposal
+  - skill_activation_decision
+  agents:
+  - skill_librarian_agent
+  - skill_runtime_safety_agent

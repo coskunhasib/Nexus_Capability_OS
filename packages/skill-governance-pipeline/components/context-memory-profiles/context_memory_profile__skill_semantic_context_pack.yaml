@@ -1,0 +1,50 @@
+id: skill_semantic_context_pack
+name: Skill Semantic Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Working context for skill semantic extraction: the candidate skill package
+  inventory (SKILL.md, scripts/**, references/**, metadata), its canonical_source/version/hash,
+  the locked-semantics rules (prism = divergence, verification-loop = bug/defect finding),
+  and the draft semantic extract. Consumed by SDLC stage 03 (skill_semantic_extraction)
+  and by the Skill Governance Pipeline''s semantic-extraction stage.'
+owner_domain: skill_governance
+allowed_usage:
+- read_during_skill_semantic_extraction_for_one_candidate_package
+- carry_the_locked_semantics_rules_and_draft_extract
+forbidden_usage:
+- read_for_binding_before_semantics_are_complete
+- used_to_change_locked_prism_or_verification_loop_semantics
+- execute_scripts_found_in_the_candidate_package
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- candidate_skill_package
+- locked_skill_semantics_rules
+- skill_governance_run_context
+- durable_memory_prior_skill_extracts
+retention: run_scoped
+validity_window: until_skill_version_or_hash_changes
+retrieval_rules:
+- scoped_to_one_candidate_skill_package
+- locked_semantics_rules_are_authoritative_and_immutable
+- binding_context_must_not_be_read_before_semantics_complete
+redaction_rules:
+- no_raw_secrets
+- flag_secrets_or_unsafe_calls_found_in_scripts_do_not_execute
+governance_profiles:
+- skill_semantic_required_gate
+- locked_semantics_enforcement_policy
+- context_access_governance
+audit_schemas:
+- skill_semantic_extract_schema
+- context_usage_trace_schema
+used_by:
+- stage:skill_semantic_extraction
+- skill_governance_pipeline
+- stage:skill_semantic_extraction@skill_governance_pipeline
+aliases: []
+notes: Bridge pack shared by SDLC stage 03 and the Skill Governance Pipeline. Registered
+  candidate because SDLC stage 03 flags the name as NON-CANONICAL vs the locked context
+  list; the Skill Governance Pipeline (draft) is the ratifying owner. Distinct from
+  skill_registry_context_pack (which is the broader registry view, not a single package's
+  semantics).

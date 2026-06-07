@@ -1,0 +1,86 @@
+# Activation Pipeline — Stage Contract
+# Stage #3: pilot_activation
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.3.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
+# Pilot must run against a defined cohort with rollback reachable at all times (md §2.3).
+
+version: draft-0.1
+stage_id: pilot_activation
+name: Pilot Activation
+purpose: >-
+  Activate the target for a bounded pilot cohort selected via the cohort selector.
+  Collect real-usage telemetry and incident signals under controlled exposure.
+  Pilot must run against a defined cohort with rollback reachable at all times.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: pilot_activation_agent
+sub_agents: []
+
+uses_core_abilities:
+  - OS                # execute the pilot activation under controlled exposure
+  - Memory
+  - Web
+
+uses_skills:
+  - sentinel          # premortem/foresight on pilot exposure risk
+  - gap-audit         # confirm pilot telemetry coverage
+
+uses_tools:
+  - activation_flag_controller
+  - cohort_selector              # select the bounded pilot cohort
+  - rollback_executor            # keep rollback reachable during the pilot
+  - telemetry_reader             # collect real-usage telemetry and incident signals
+  - artifact_writer
+  - evidence_writer
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - activation_evidence_schema       # evidence (decision proof)
+  - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+  - risk_analysis_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - pilot_evidence_context_pack
+
+inputs:
+  - PREVIEW_RESULT
+
+outputs:
+  - PILOT_RESULT
+
+evidence:
+  - PILOT_RESULT
+
+trace:
+  - pilot_activation_trace
+  - stage_gate_decision_trace
+
+gates:
+  - pilot_cohort_bounded
+  - pilot_telemetry_collected
+  - rollback_reachable_during_pilot
+
+on_pass: pilot_evidence_review
+on_fail: pilot_activation
+rework_route: pilot_activation
+
+blocking_conditions:
+  - public_activation_attempted_without_pilot_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

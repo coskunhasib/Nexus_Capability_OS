@@ -1,0 +1,38 @@
+id: research_source_governance
+name: Research Source Governance
+type: pipeline_governance_profile
+status: candidate
+purpose: Rules for what counts as an acceptable source, minimum reliability/diversity,
+  and how low-reliability sources may be used in the Research Pipeline (research-pipeline.md
+  §3). Source reliability scoring is mandatory; uncertainty must be explicit (03 §4).
+owner_domain: research_and_knowledge
+allowed_usage:
+- Govern source admissibility, minimum reliability score, and source diversity in
+  research.
+- Bind at research pipeline level and re-show under source_reliability_assessment.
+forbidden_usage:
+- Used outside the Research Pipeline.
+- Used as a citation gate (that is the separate citation_required_gate).
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- source_evidence_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- research_pipeline
+- source_discovery
+- source_reliability_assessment
+- claim_extraction
+severity_default: blocker
+used_by:
+- research_pipeline
+- source_reliability_assessment
+- research_reasoning_profile
+aliases:
+- research_pipeline_governance
+notes: NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Pairs with citation_required_gate.
+  model_provider_profiles.yaml refers to the research umbrella as `research_pipeline_governance`
+  (consistent with the activation/operations/skill `*_pipeline_governance` naming);
+  recorded as an alias here since the authoritative markdown umbrella id is `research_source_governance`.

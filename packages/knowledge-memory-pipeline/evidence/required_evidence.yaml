@@ -1,0 +1,15 @@
+required_evidence:
+- MEMORY_INTAKE_RECORD
+- SOURCE_CLASSIFICATION_REPORT
+- MEMORY_SUMMARY
+- VALIDITY_WINDOW_DECISION
+- RETRIEVAL_PROFILE_UPDATE_REPORT
+- MEMORY_EXPIRATION_REVIEW_REPORT
+- MEMORY_PROVENANCE_RECORD
+required_trace:
+- memory_intake_trace
+- source_classification_trace
+- summary_generation_skill_activation_trace
+- validity_window_assignment_trace
+- retrieval_profile_update_trace
+- memory_expiration_review_trace

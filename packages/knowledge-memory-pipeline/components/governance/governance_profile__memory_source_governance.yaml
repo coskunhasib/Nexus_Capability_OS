@@ -1,0 +1,46 @@
+id: memory_source_governance
+name: Memory Source Governance
+type: pipeline_governance_profile
+status: candidate
+purpose: Govern source admissibility, trust tiers, and sensitivity handling across
+  the Knowledge / Memory lifecycle (knowledge-memory-pipeline.md §3.2). Curates what
+  the Memory Core Ability is allowed to remember and how it is classified — does NOT
+  turn Memory into an agent.
+owner_domain: knowledge_management
+allowed_usage:
+- Govern source/trust-tier/sensitivity classification across the knowledge lifecycle.
+- Bind at the Knowledge/Memory Pipeline level and re-show under memory_intake/classification
+  stages.
+forbidden_usage:
+- Used outside the Knowledge/Memory Pipeline.
+- Used to promote the Memory Core Ability into an agent/owner.
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- memory_provenance_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- knowledge_memory_pipeline
+- memory_intake
+- source_classification
+- summary_generation
+- retrieval_profile_update
+- memory_expiration_review
+severity_default: blocker
+used_by:
+- knowledge_memory_pipeline
+- memory_intake
+- source_classification
+- summary_generation
+- retrieval_profile_update
+- memory_expiration_review
+aliases:
+- memory_governance_profile
+notes: NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. The pre-R9 catalog-YAML
+  definition_contract used the divergent name `memory_governance_profile` (F-1); markdown
+  `memory_source_governance` is canonical-source. After R9 collapsed pipeline_catalog.yaml
+  into a summary-only catalog (no per-pipeline definition_contract blocks), the authoritative
+  per-pipeline source is the markdown definition_doc; the divergent name is retained
+  under aliases only as the historical reconciliation record.

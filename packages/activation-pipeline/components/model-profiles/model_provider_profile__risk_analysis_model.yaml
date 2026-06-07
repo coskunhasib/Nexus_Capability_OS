@@ -1,0 +1,49 @@
+id: risk_analysis_model
+name: Risk Analysis Model
+type: model_provider_profile
+status: candidate
+purpose: Risk / blast-radius / rollback-readiness reasoning for activation decisions
+  (assessing the risk of activating a capability to a wider cohort).
+owner_domain: activation_and_release_operations
+provider_type: reasoning_llm
+model_family: risk_reasoning
+capability_scope:
+- activation_risk_assessment
+- blast_radius_reasoning
+- rollback_readiness_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: activation_reasoning_model
+governance_profiles:
+- activation_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- activation risk / blast-radius / rollback-readiness reasoning
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - activation_pipeline
+  stages:
+  - risk_assessment
+  - pilot
+  - activation_decision
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: security_analysis_model
+  recommendation: OVERLAP with canonical security_analysis_model (which already owns
+    risk/blast-radius and adversarial reasoning in the SDLC; note the legacy `risk_reasoning_model`
+    alias also folded into sdlc_reasoning_profile). Recommend REUSE of security_analysis_model
+    for activation risk unless the activation risk domain is materially non-security
+    (operational/business risk). If kept distinct, scope it explicitly to operational
+    activation risk to avoid duplicating the security profile. Resolve in Phase E.
+notes: Task doc 17 explicitly calls out this overlap (risk_analysis_model vs security_analysis_model).

@@ -1,0 +1,88 @@
+# Activation Pipeline — Stage Contract
+# Stage #4: pilot_evidence_review
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.4.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# Separate-owner review: the reviewer is NOT the pilot owner -> no_self_approval (md §2.4).
+# Enforces pilot_evidence_gate: public activation is impossible without sufficient pilot evidence.
+
+version: draft-0.1
+stage_id: pilot_evidence_review
+name: Pilot Evidence Review
+purpose: >-
+  Independently review pilot evidence (telemetry, error rates, incidents, user
+  signal) against activation acceptance thresholds. This is a separate-owner review
+  — the reviewer is not the pilot owner (no self-approval). Enforces
+  pilot_evidence_gate: public activation is impossible without sufficient pilot
+  evidence.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_reviewer_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+
+uses_skills:
+  - llm-council       # multi-perspective independent review of pilot evidence
+  - gap-audit         # surface unresolved pilot blockers / missing evidence
+  - calibrate         # calibrate evidence against acceptance thresholds
+
+uses_tools:
+  - evidence_reader              # read pilot evidence for independent review
+  - telemetry_reader
+  - artifact_writer
+  - evidence_writer
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - pilot_evidence_gate
+
+uses_audit_schemas:
+  - activation_evidence_schema       # evidence (decision proof)
+  - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+  - risk_analysis_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - pilot_evidence_context_pack
+
+inputs:
+  - PILOT_RESULT
+
+outputs:
+  - PILOT_EVIDENCE_REVIEW_REPORT
+
+evidence:
+  - PILOT_EVIDENCE_REVIEW_REPORT
+
+trace:
+  - pilot_activation_trace
+  - stage_gate_decision_trace
+
+gates:
+  - pilot_evidence_gate
+  - pilot_acceptance_thresholds_met
+  - no_unresolved_pilot_blocker
+
+on_pass: public_activation_decision
+on_fail: pilot_activation
+rework_route: pilot_activation
+
+blocking_conditions:
+  - public_activation_attempted_without_pilot_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,0 +1,51 @@
+id: incident_context_pack
+name: Incident Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'Incident working context: the normalized INCIDENT_RECORD (deduped/correlated
+  signals, timeline anchor, affected capability, observations), severity classification
+  with blast radius, and the mitigation/rollback-or-fix execution context. Consumed
+  by incident intake, severity classification, mitigation planning, and rollback_or_fix.'
+owner_domain: operations_reliability
+allowed_usage:
+- read_by_intake_severity_mitigation_and_rollback_or_fix
+- carry_the_normalized_incident_record_and_severity
+forbidden_usage:
+- mix_multiple_incidents_into_one_pack
+- drive_mitigation_before_severity_is_recorded
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_incident_signals
+- operations_run_context
+- sdlc_operations_artifacts
+retention: incident_scoped
+validity_window: single_incident_lifecycle
+retrieval_rules:
+- scoped_to_one_incident
+- duplicate_signals_collapsed_into_one_incident
+- mitigation_requires_recorded_severity
+redaction_rules:
+- no_raw_secrets
+- redact_customer_pii_from_incident_signals
+- mask_infra_credentials
+governance_profiles:
+- incident_severity_required_gate
+- mitigation_plan_required_gate
+- rollback_runbook_evidence_gate
+- operations_pipeline_governance
+- context_access_governance
+audit_schemas:
+- incident_evidence_schema
+- severity_classification_evidence_schema
+- mitigation_plan_evidence_schema
+- rollback_fix_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- operations_pipeline
+- stage:incident_intake@operations_pipeline
+- stage:severity_classification@operations_pipeline
+- stage:mitigation_plan@operations_pipeline
+- stage:rollback_or_fix@operations_pipeline
+aliases: []
+notes: New (draft-0.1, operations-pipeline.md §2.1-§2.4).

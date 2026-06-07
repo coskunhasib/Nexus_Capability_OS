@@ -1,0 +1,36 @@
+id: locked_semantics_enforcement_policy
+name: Locked Semantics Enforcement Policy
+type: skill_governance_policy
+status: candidate
+purpose: 'Enforce the LOCKED skill semantics: prism = brainstorming/divergence ONLY;
+  verification-loop = bug/defect finding ONLY. Any extraction/binding that alters
+  these semantics fails (skill-governance-pipeline.md §3.2; sdlc_pipeline_runtime_rules.yaml
+  prism_as_non_divergence guard + verification_loop_replaces_test_execution anti-pattern).'
+owner_domain: skill_governance
+allowed_usage:
+- Block any skill semantic record that reclassifies prism or verification-loop.
+- Bind in the Skill Governance Pipeline (semantic_extraction + activation_decision
+  stages).
+forbidden_usage:
+- Using prism for bug-finding/readiness; using verification-loop as a readiness checklist
+  or test replacement.
+governance_profiles:
+- skill_governance_pipeline_governance
+- evidence_required
+audit_schemas:
+- skill_semantic_extract_schema
+- skill_governance_trace_schema
+scope: skill
+applies_to:
+- prism
+- verification-loop
+- skill_semantic_extraction
+- skill_activation_decision
+severity_default: blocker
+used_by:
+- skill_governance_pipeline
+- skill_semantic_extraction
+- skill_activation_decision
+notes: NEW (pipeline-catalog-review.md §4.1). The repo-wide locked semantics expressed
+  as an enforceable governance policy. Cross-referenced by sdlc_pipeline_runtime_rules.yaml
+  guards.

@@ -1,0 +1,83 @@
+# Operations Pipeline — Stage Contract
+# Stage #2: severity_classification
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.2.
+# Severity classification is MANDATORY before any mitigation work may begin (satisfies
+#   incident_severity_required_gate). owner_agent is an Agent role under operations_team.
+
+version: draft-0.1
+stage_id: severity_classification
+name: Severity Classification
+purpose: >-
+  Assign a severity level using failure-mode reasoning and blast-radius analysis.
+  Severity classification is mandatory before any mitigation work may begin. Produces
+  SEVERITY_CLASSIFICATION_REPORT with severity, blast radius, customer/safety impact,
+  and confidence.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: severity_classification_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Web
+
+uses_skills:
+  - fmea             # failure-mode and effect reasoning
+  - sentinel         # adversarial blast-radius foresight
+  - bayesian-update  # revise severity as evidence arrives
+  - calibrate        # confidence calibration of the severity estimate
+
+uses_tools:
+  - severity_classifier_tool
+  - monitoring_query_tool
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - incident_severity_required_gate
+  - operations_pipeline_governance
+
+uses_audit_schemas:
+  - severity_classification_evidence_schema   # evidence (decision proof)
+  - stage_gate_trace_schema                   # trace (operation history)
+
+uses_model_provider_profiles:
+  - incident_triage_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - incident_context_pack
+
+inputs:
+  - INCIDENT_RECORD
+
+outputs:
+  - SEVERITY_CLASSIFICATION_REPORT
+
+evidence:
+  - SEVERITY_CLASSIFICATION_REPORT
+
+trace:
+  - severity_classification_trace
+  - stage_gate_decision_trace
+
+gates:
+  - severity_assigned               # blocker — satisfies incident_severity_required_gate
+  - blast_radius_estimated
+  - severity_confidence_recorded
+
+on_pass: mitigation_plan
+on_fail: incident_intake
+rework_route: incident_intake
+
+blocking_conditions:
+  - missing_severity_classification
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

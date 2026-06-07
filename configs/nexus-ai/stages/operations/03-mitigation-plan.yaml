@@ -1,0 +1,88 @@
+# Operations Pipeline — Stage Contract
+# Stage #3: mitigation_plan
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.3.
+# A mitigation plan is required for any active (non-resolved) incident (satisfies
+#   mitigation_plan_required_gate). evidence_reader reads the SDLC RUNBOOK / ROLLBACK_PLAN.
+
+version: draft-0.1
+stage_id: mitigation_plan
+name: Mitigation Plan
+purpose: >-
+  Produce an actionable MITIGATION_PLAN for the classified incident: candidate
+  containment/mitigation options, chosen option with rationale, the rollback-vs-fix
+  recommendation, and the runbook reference(s) to be executed. A mitigation plan is
+  required for any active (non-resolved) incident.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: mitigation_planning_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Supervisor
+  - Memory
+
+uses_skills:
+  - sentinel         # premortem the mitigation before committing
+  - fmea             # rank options by failure mode
+  - gap-audit        # plan completeness vs runbook coverage
+
+uses_tools:
+  - mitigation_plan_builder
+  - runbook_executor   # dry-run / readiness check only at this stage
+  - evidence_reader    # reads SDLC RUNBOOK / ROLLBACK_PLAN
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - mitigation_plan_required_gate
+  - operations_pipeline_governance
+  - no_self_approval_policy
+
+uses_audit_schemas:
+  - mitigation_plan_evidence_schema   # evidence (decision proof)
+  - stage_gate_trace_schema           # trace (operation history)
+
+uses_model_provider_profiles:
+  - operations_analysis_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - operations_context_pack
+
+inputs:
+  - INCIDENT_RECORD
+  - SEVERITY_CLASSIFICATION_REPORT
+  - RUNBOOK
+  - ROLLBACK_PLAN
+
+outputs:
+  - MITIGATION_PLAN
+
+evidence:
+  - MITIGATION_PLAN
+
+trace:
+  - mitigation_plan_trace
+  - stage_gate_decision_trace
+
+gates:
+  - mitigation_plan_present            # blocker — satisfies mitigation_plan_required_gate
+  - rollback_or_fix_decision_recommended
+  - runbook_reference_resolved
+
+on_pass: rollback_or_fix
+on_fail: severity_classification
+rework_route: severity_classification
+
+blocking_conditions:
+  - missing_mitigation_plan_for_active_incident
+  - self_approved_resolution
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

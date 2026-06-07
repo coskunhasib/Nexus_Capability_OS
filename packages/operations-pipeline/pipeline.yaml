@@ -1,0 +1,187 @@
+# Operations Pipeline — Pipeline Definition Contract (machine-readable)
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §1.
+# Format mirrors configs/nexus-ai/sdlc_pipeline.yaml (Pipeline Definition Contract field set).
+# Top structure: Nexus AI Orchestration Model. Operations is ONE pipeline under it.
+# Scope: live-operations lifecycle (incident handling, monitoring, runbook execution,
+#   rollback/fix decisions, postmortem, operational learning) for already-released capabilities.
+# Boundary: consumes SDLC operations-readiness artifacts (RUNBOOK, ROLLBACK_PLAN,
+#   OBSERVABILITY_PLAN, INCIDENT_RESPONSE_PLAN); does NOT regenerate the SDLC Pipeline.
+# All uses_* ids verified to exist in the Shared Registry (governance *_policy aliases resolve).
+
+version: draft-0.1
+pipeline_id: operations_pipeline
+name: Operations Pipeline
+purpose: >-
+  Live-operations lifecycle for released Nexus AI capabilities: detect and intake
+  incidents, classify severity, build a mitigation plan, decide and execute
+  rollback-or-fix, run a mandatory postmortem, and feed operational learning back
+  into memory and the SDLC. Consumes SDLC operations-readiness artifacts
+  (RUNBOOK, ROLLBACK_PLAN, OBSERVABILITY_PLAN, INCIDENT_RESPONSE_PLAN); does not
+  regenerate the SDLC Pipeline.
+status: draft
+owner_domain: operations_reliability
+required_team_type: operations_team
+required_team_lead_role: operations_team_lead
+
+# Product/problem domains this pipeline applies to (md §1).
+applicable_domains:
+  - software_product
+  - saas
+  - ai_agent_product
+  - api_service
+  - web_app
+  - internal_tool
+
+# Risk/severity profiles this pipeline can operate under (md §1).
+risk_profiles:
+  - low_severity_incident
+  - degraded_service
+  - major_incident
+  - critical_outage_or_safety_event
+
+# Conditions that must hold before the pipeline may start (md §1 entry_criteria).
+entry_criteria:
+  - incident_signal_received
+  - target_capability_is_released
+  - operations_team_assigned
+  - operations_team_lead_assigned
+
+# Conditions that mark the pipeline complete (md §1 exit_criteria).
+exit_criteria:
+  - incident_resolved_or_mitigated
+  - severity_classification_recorded
+  - rollback_or_fix_outcome_recorded
+  - postmortem_completed_for_qualifying_incidents
+  - operational_learning_recorded
+  - no_blocking_policy_failure
+
+# Pipeline-level conditions that block progression (md §1 blocking_conditions).
+blocking_conditions:
+  - missing_severity_classification
+  - missing_mitigation_plan_for_active_incident
+  - rollback_or_fix_lacks_runbook_or_rollback_evidence
+  - postmortem_missing_for_required_severity
+  - self_approved_resolution
+  - missing_required_evidence
+
+# Permitted rework routes (md §1 allowed_rework_routes).
+allowed_rework_routes:
+  - severity_classification -> incident_intake
+  - mitigation_plan -> severity_classification
+  - rollback_or_fix -> mitigation_plan
+  - postmortem -> rollback_or_fix
+  - learning_update -> postmortem
+
+# Evidence artifacts the pipeline must produce (md §1 required_evidence).
+# Evidence = decision proof, DISTINCT from trace.
+required_evidence:
+  - INCIDENT_RECORD
+  - SEVERITY_CLASSIFICATION_REPORT
+  - MITIGATION_PLAN
+  - ROLLBACK_OR_FIX_REPORT
+  - POSTMORTEM_REPORT
+  - OPERATIONAL_LEARNING_RECORD
+
+# Trace records the pipeline must produce (md §1 required_trace).
+# Trace = operation/decision history, DISTINCT from evidence.
+required_trace:
+  - incident_intake_trace
+  - severity_classification_trace
+  - mitigation_plan_trace
+  - rollback_or_fix_trace
+  - postmortem_trace
+  - learning_update_trace
+  - stage_gate_decision_trace
+
+stages:
+  - incident_intake
+  - severity_classification
+  - mitigation_plan
+  - rollback_or_fix
+  - postmortem
+  - learning_update
+
+uses_core_abilities:
+  - Supervisor
+  - Memory
+  - OS
+  - Web
+  - Coder
+
+uses_skills:
+  - sentinel
+  - fmea
+  - gap-audit
+  - refraction
+  - bayesian-update
+  - calibrate
+
+uses_tools:
+  - incident_intake_tool
+  - monitoring_query_tool
+  - alert_correlator
+  - severity_classifier_tool
+  - runbook_executor
+  - rollback_executor
+  - mitigation_plan_builder
+  - postmortem_builder
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader
+  - memory_write
+  - policy_query
+
+uses_governance_profiles:
+  - operations_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - incident_severity_required_gate
+  - mitigation_plan_required_gate
+  - rollback_runbook_evidence_gate
+  - postmortem_required_gate
+
+uses_audit_schemas:
+  - incident_evidence_schema
+  - severity_classification_evidence_schema
+  - mitigation_plan_evidence_schema
+  - rollback_fix_evidence_schema
+  - postmortem_evidence_schema
+  - operational_learning_evidence_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - supervisor_routing_model
+  - incident_triage_model
+  - operations_analysis_model
+  - postmortem_reasoning_model
+  - learning_reflection_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - incident_context_pack
+  - operations_context_pack
+  - postmortem_context_pack
+  - learning_context_pack
+
+# Required gates for this pipeline. Transcribed from the md §1 governance gates +
+# §2 per-stage "Key gates" + the §1 conditional note. `always` = gates that must hold
+# for every operations run; `conditional` = applicability/severity-gated (the
+# postmortem requirement is mandatory for major_incident / critical_outage_or_safety_event
+# and required-when severity >= major OR rollback_executed == true; md §1 conditional note).
+required_gates:
+  always:
+    - incident_record_present
+    - affected_capability_identified
+    - severity_assigned
+    - mitigation_plan_present
+    - rollback_or_fix_executed
+    - runbook_or_rollback_evidence_present
+    - operational_learning_record_present
+    - no_blocking_policy_failure
+  conditional:
+    - postmortem_present_if_required_severity
+
+canonical_docs:
+  - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md

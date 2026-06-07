@@ -1,0 +1,74 @@
+team_lead_id: research_team_lead
+team_id: research_team
+pipeline_id: research_pipeline
+mission: 'Orchestrate the Research Pipeline: assign source discovery, reliability
+  scoring, claim extraction, claim/evidence mapping, cross-validation, uncertainty
+  reporting, synthesis and completion to their owner Agents; enforce the structural
+  no-self-approval rule (the producer of a source/claim is never its sole validator
+  — cross_validation is a distinct owner); and gate on citation and evidence before
+  a cited research output is finalized.'
+responsibilities:
+- Capture the research goal, scope and risk profile and assign each stage to its owner
+  Agent.
+- Enforce that cross_validation is owned by an Agent distinct from the producing Agents
+  (no self-approval).
+- Route rework along the pipeline's allowed routes (e.g. source_discovery, claim_evidence_mapping).
+- Check the citation_required and evidence-required gates before synthesis is accepted.
+- Confirm the research evidence graph and completion criteria at the final gate.
+may_assign_agents:
+- research_intake_agent
+- research_scoping_agent
+- source_discovery_agent
+- source_reliability_agent
+- claim_extraction_agent
+- claim_evidence_agent
+- cross_validation_agent
+- uncertainty_reporting_agent
+- research_synthesis_agent
+- research_completion_agent
+may_call_direct_sub_agents: []
+may_use_core_abilities:
+- Web
+- Memory
+- Supervisor
+may_use_skills:
+- gap-audit
+- calibrate
+- llm-council
+may_call_tools:
+- evidence_reader
+- artifact_writer
+- evidence_writer
+uses_governance_profiles:
+- research_source_governance
+- research_team_governance
+- citation_required_gate
+- no_self_approval
+- evidence_required
+uses_audit_schemas:
+- source_evidence_schema
+- claim_evidence_schema
+- stage_gate_trace_schema
+uses_context_memory_profiles:
+- research_run_context
+- source_corpus_context_pack
+- claim_evidence_context_pack
+forbidden_actions:
+- - cannot_author_then_approve_same_artifact
+  - cannot_bypass_a_failed_governance_gate
+  - cannot_mutate_an_artifact_it_reviews
+  - cannot_act_as_the_supervisor_core_ability
+  - cannot_be_listed_as_a_core_ability
+  - cannot_implement_or_write_product_code
+  - cannot_read_secrets
+  - cannot_perform_production_deploy_or_destructive_tool_actions
+  - cannot_reintroduce_a_plugin_concept
+- cannot_let_a_producing_researcher_be_the_sole_validator_of_their_own_source
+- cannot_finalize_synthesis_with_an_uncited_load_bearing_claim
+blocking_limits:
+- - cannot_close_a_run_with_an_open_blocking_gate
+  - cannot_advance_past_a_stage_whose_required_evidence_is_missing
+  - cannot_skip_a_mandatory_stage_or_gate_for_the_pipeline
+  - cannot_route_rework_outside_the_pipeline_allowed_rework_routes
+- cannot_complete_research_without_cross_validation_by_a_separate_role
+- cannot_complete_research_with_an_unscored_source_used_in_synthesis

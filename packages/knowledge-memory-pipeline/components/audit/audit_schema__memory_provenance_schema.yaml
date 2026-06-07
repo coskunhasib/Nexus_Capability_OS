@@ -1,0 +1,70 @@
+id: memory_provenance_schema
+name: Memory Provenance Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for a memory item's provenance, validity window, and
+  retrieval/redaction outcome across the knowledge/memory lifecycle.
+owner_domain: knowledge_management
+allowed_usage:
+- Record per-memory-item provenance + validity + redaction decision-proof evidence
+  across all knowledge/memory stages.
+forbidden_usage:
+- Used to record gate-evaluation process history (that is stage_gate_trace_schema).
+governance_profiles:
+- evidence_required_policy
+- memory_source_governance
+- validity_window_required_gate
+- redaction_required_gate
+audit_schemas:
+- stage_gate_trace_schema
+notes: NEW (knowledge/memory). The single NEW evidence schema for the knowledge_memory
+  pipeline; reused across intake, source_classification, summary_generation, validity_window_assignment,
+  retrieval_profile_update, memory_expiration_review. Memory is a Core Ability (capability
+  layer) — it is never the producer/consumer here.
+aliases:
+- memory_ingestion_evidence_schema
+- memory_validity_evidence_schema
+applies_to:
+- knowledge_memory_pipeline
+- knowledge_memory_stage:memory_intake
+- knowledge_memory_stage:source_classification
+- knowledge_memory_stage:summary_generation
+- knowledge_memory_stage:validity_window_assignment
+- knowledge_memory_stage:retrieval_profile_update
+- knowledge_memory_stage:memory_expiration_review
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- memory_item_id
+- source_provenance
+- validity_window
+- retrieval_profile_ref
+- redaction_applied
+- status
+- created_at
+producer: knowledge_intake_agent
+consumer: retrieval_profile_agent
+retention: bounded_by_validity_window
+redaction_rules:
+- no_raw_secret_exposure
+- raw_credential_redaction
+- redact_pii_before_memory_write
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  stages:
+  - memory_intake
+  - source_classification
+  - summary_generation
+  - validity_window_assignment
+  - retrieval_profile_update
+  - memory_expiration_review
+  agents:
+  - knowledge_intake_agent
+  - source_classification_agent
+  - memory_summarization_agent
+  - validity_window_agent
+  - retrieval_profile_agent
+  - memory_expiration_agent

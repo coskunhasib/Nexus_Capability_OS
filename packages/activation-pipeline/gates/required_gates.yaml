@@ -1,0 +1,15 @@
+required_gates:
+  always:
+  - release_candidate_evidence_present
+  - activation_scope_defined
+  - rollback_owner_assigned
+  - preview_required_gate
+  - preview_behaves_as_expected
+  - telemetry_observable_in_preview
+  - activation_evidence_complete
+  - all_required_gates_passed
+  - no_blocking_policy_failure
+  conditional:
+  - pilot_evidence_gate_if_public_scope
+  - owner_activation_decision_gate_if_public_scope
+  - rollback_required_gate_if_public_scope

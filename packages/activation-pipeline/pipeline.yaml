@@ -1,0 +1,186 @@
+# Activation Pipeline — Pipeline Definition Contract (machine-readable)
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §1.
+# Format mirrors configs/nexus-ai/sdlc_pipeline.yaml (Pipeline Definition Contract field set).
+# Top structure: Nexus AI Orchestration Model. Activation is ONE pipeline under it.
+# Scope: staged activation of a feature / capability / pipeline through
+#   preview -> pilot -> public, with rollback readiness and an owner decision gate.
+# Boundary: promotes an already release-candidate artifact produced by the SDLC Pipeline;
+#   does NOT regenerate the SDLC Pipeline. team_lead is the pipeline-specific
+#   activation_team_lead role, distinct from the Supervisor Core Ability.
+# All uses_* ids verified to exist in the Shared Registry (governance *_policy aliases resolve).
+
+version: draft-0.1
+pipeline_id: activation_pipeline
+name: Activation Pipeline
+purpose: >-
+  Staged activation of a feature, capability, or pipeline through
+  preview -> pilot -> public, with mandatory rollback readiness and a
+  human/owner decision gate before any public activation. Promotes an
+  already release-candidate artifact (produced by the SDLC Pipeline) into
+  progressively wider exposure under no-self-approval governance.
+status: draft
+owner_domain: activation_and_release_operations
+required_team_type: activation_team
+required_team_lead_role: activation_team_lead
+
+# Product/problem domains this pipeline applies to (md §1).
+applicable_domains:
+  - feature_activation
+  - capability_activation
+  - pipeline_activation
+  - saas
+  - ai_agent_product
+  - api_service
+  - web_app
+  - internal_tool
+
+# Risk profiles this pipeline can operate under (md §1).
+risk_profiles:
+  - internal_preview
+  - limited_pilot
+  - public_general_availability
+  - regulated_or_high_risk
+
+# Conditions that must hold before the pipeline may start (md §1 entry_criteria).
+entry_criteria:
+  - target_artifact_is_release_candidate_or_higher
+  - sdlc_release_candidate_evidence_present
+  - activation_scope_defined
+  - target_cohorts_defined
+  - rollback_owner_assigned
+
+# Conditions that mark the pipeline complete (md §1 exit_criteria).
+exit_criteria:
+  - requested_activation_stage_reached
+  - activation_evidence_complete
+  - rollback_plan_validated
+  - owner_activation_decision_recorded_for_public_scope
+  - no_blocking_policy_failure
+
+# Pipeline-level conditions that block progression / release (md §1 blocking_conditions).
+blocking_conditions:
+  - pilot_activation_attempted_without_superadmin_preview_pass
+  - public_activation_attempted_without_pilot_evidence
+  - public_activation_attempted_without_validated_rollback_plan
+  - public_activation_without_owner_decision
+  - self_approval_of_activation_decision
+  - missing_release_candidate_evidence
+
+# Permitted rework routes (md §1 allowed_rework_routes). Each entry is
+# <failure_condition> -> <target_stage_id>.
+allowed_rework_routes:
+  - preview_failure -> superadmin_preview
+  - pilot_failure -> pilot_activation
+  - insufficient_pilot_evidence -> pilot_evidence_review
+  - rollback_not_ready -> rollback_readiness
+  - owner_decision_rejected -> pilot_evidence_review
+  - scope_or_intake_gap -> activation_intake
+
+# Evidence artifacts the pipeline must produce (md §1 required_evidence).
+# Evidence = decision proof, DISTINCT from trace.
+required_evidence:
+  - ACTIVATION_REQUEST
+  - PREVIEW_RESULT
+  - PILOT_RESULT
+  - PILOT_EVIDENCE_REVIEW_REPORT
+  - ROLLBACK_PLAN
+  - ROLLBACK_READINESS_REPORT
+  - ACTIVATION_DECISION
+  - ACTIVATION_COMPLETION_REPORT
+
+# Trace records the pipeline must produce (md §1 required_trace).
+# Trace = operation/decision history, DISTINCT from evidence.
+required_trace:
+  - activation_transition_trace
+  - preview_activation_trace
+  - pilot_activation_trace
+  - rollback_drill_trace
+  - owner_decision_trace
+  - policy_evaluation_trace
+
+stages:
+  - activation_intake
+  - superadmin_preview
+  - pilot_activation
+  - pilot_evidence_review
+  - public_activation_decision
+  - rollback_readiness
+  - activation_completion
+
+uses_core_abilities:
+  - Supervisor
+  - Memory
+  - OS
+  - Web
+
+uses_skills:
+  - sentinel
+  - gap-audit
+  - llm-council
+  - calibrate
+  - prompt-fidelity
+  - refraction
+
+uses_tools:
+  - activation_flag_controller
+  - cohort_selector
+  - rollback_executor
+  - telemetry_reader
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - preview_required_gate
+  - pilot_evidence_gate
+  - rollback_required_gate
+  - owner_activation_decision_gate
+
+uses_audit_schemas:
+  - activation_evidence_schema
+  - activation_decision_evidence_schema
+  - rollback_readiness_evidence_schema
+  - stage_gate_trace_schema
+  - activation_transition_trace_schema
+
+uses_model_provider_profiles:
+  - supervisor_routing_model
+  - activation_reasoning_model
+  - risk_analysis_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - preview_context_pack
+  - pilot_evidence_context_pack
+  - activation_decision_context_pack
+
+# Required gates for this pipeline. Transcribed from the md §1 governance gate-style
+# profiles + §2 per-stage "Key gates". `always` = gates that must hold for every
+# activation run regardless of requested scope; `conditional` = gates that apply only
+# when public (general-availability) scope is requested (md §2.5/§2.6: the owner
+# decision gate and validated rollback plan are mandatory before public activation,
+# while preview/pilot precede any external exposure).
+required_gates:
+  always:
+    - release_candidate_evidence_present
+    - activation_scope_defined
+    - rollback_owner_assigned
+    - preview_required_gate
+    - preview_behaves_as_expected
+    - telemetry_observable_in_preview
+    - activation_evidence_complete
+    - all_required_gates_passed
+    - no_blocking_policy_failure
+  conditional:
+    - pilot_evidence_gate_if_public_scope
+    - owner_activation_decision_gate_if_public_scope
+    - rollback_required_gate_if_public_scope
+
+canonical_docs:
+  - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md
+  - docs/nexus-ai-orchestration-model/legacy/05-shared-registry-and-usage-mapping.md

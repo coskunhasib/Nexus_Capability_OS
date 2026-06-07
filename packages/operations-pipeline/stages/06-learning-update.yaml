@@ -1,0 +1,82 @@
+# Operations Pipeline — Stage Contract
+# Stage #6: learning_update (terminal -> done)
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.6.
+# refraction is the canonical learning/reflection skill. learning_update is NOT an
+#   incident-resolution blocker (the incident is already mitigated by this point), but the
+#   OPERATIONAL_LEARNING_RECORD evidence item must exist for clean pipeline exit. Hands
+#   corrective actions back toward the SDLC Pipeline as a future-improvement backlog
+#   (referencing SDLC, not regenerating it).
+
+version: draft-0.1
+stage_id: learning_update
+name: Learning Update
+purpose: >-
+  Convert the postmortem into durable operational learning: update memory with lessons
+  learned, propose runbook/rollback/observability improvements, and hand corrective
+  actions back toward the SDLC Pipeline as a future-improvement backlog (referencing
+  SDLC, not regenerating it). Produces OPERATIONAL_LEARNING_RECORD.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: operational_learning_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+
+uses_skills:
+  - refraction       # canonical learning/reflection skill
+  - bayesian-update  # update priors on incident likelihood
+  - calibrate        # calibrate future severity/effort estimates
+
+uses_tools:
+  - memory_write
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - operations_pipeline_governance
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - operational_learning_evidence_schema   # evidence (decision proof)
+  - stage_gate_trace_schema                # trace (operation history)
+
+uses_model_provider_profiles:
+  - learning_reflection_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - learning_context_pack
+
+inputs:
+  - POSTMORTEM_REPORT
+
+outputs:
+  - OPERATIONAL_LEARNING_RECORD
+
+evidence:
+  - OPERATIONAL_LEARNING_RECORD
+
+trace:
+  - learning_update_trace
+  - stage_gate_decision_trace
+
+gates:
+  - operational_learning_record_present
+  - improvement_backlog_handed_off
+
+on_pass: done
+on_fail: postmortem
+rework_route: postmortem
+
+blocking_conditions:
+  - missing_required_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

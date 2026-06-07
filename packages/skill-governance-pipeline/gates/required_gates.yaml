@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - skill_intake_inventory_complete
+  - skill_semantic_required_gate
+  - locked_semantics_enforcement_policy
+  - script_reference_audit_gate
+  - reference_index_complete
+  - misuse_warning_required_gate
+  - skill_binding_proposal_gate
+  - skill_activation_decision_gate
+  conditional:
+  - skill_deprecation_required_gate

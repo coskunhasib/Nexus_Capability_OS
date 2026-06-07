@@ -1,0 +1,38 @@
+id: monitoring_query_tool
+name: Monitoring Query Tool
+type: tool
+category: tool
+status: candidate
+purpose: Query monitoring systems for metrics/alerts/recovery signals during incident
+  handling.
+owner_domain: operations_reliability
+provided_by_core_ability: null
+input_schema:
+  query: object
+output_schema:
+  monitoring_result: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- incident_intake_agent
+- severity_classification_agent
+- incident_response_agent
+allowed_usage:
+- Read-only monitoring queries for intake
+- severity
+- and recovery confirmation.
+forbidden_usage:
+- Mutating monitoring configuration.
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.incident_intake
+  - operations_pipeline.severity_classification
+  - operations_pipeline.rollback_or_fix
+notes: NEW (operations) per review §4.3. Read-only.

@@ -41,7 +41,7 @@ rules:
       any_domain: [skill]
       any_target_output: [skill_change]
       contains_any: [skill, yetenek, "semantic extraction", binding, deprecation, "skill audit", "skill keşf"]
-    select: { pipeline_id: skill_governance_pipeline, package: null }
+    select: { pipeline_id: skill_governance_pipeline, package: packages/skill-governance-pipeline }
     rationale: Skill discovery / semantic extraction / safety audit / binding → Skill Governance pipeline.
 
   - id: rule_research
@@ -50,7 +50,7 @@ rules:
       any_domain: [research]
       any_target_output: [research_report]
       contains_any: [araştır, araştırma, research, kaynak, claim, kanıt, evidence, literatür, inceleme, rapor, survey]
-    select: { pipeline_id: research_pipeline, package: null }
+    select: { pipeline_id: research_pipeline, package: packages/research-pipeline }
     rationale: Sourced research / claim-evidence mapping → Research pipeline.
 
   - id: rule_operations
@@ -60,7 +60,7 @@ rules:
       any_target_output: [incident_resolution]
       contains_any: [incident, olay, arıza, monitoring, izleme, runbook, rollback, postmortem,
                      alarm, alert, ops, kesinti, outage]
-    select: { pipeline_id: operations_pipeline, package: null }
+    select: { pipeline_id: operations_pipeline, package: packages/operations-pipeline }
     rationale: Incident / monitoring / runbook / postmortem → Operations pipeline.
 
   - id: rule_activation
@@ -70,7 +70,7 @@ rules:
       any_target_output: [activation_rollout]
       contains_any: [aktivasyon, activation, rollout, preview, pilot, public, yayına, "feature flag",
                      kademeli, staged, canlıya]
-    select: { pipeline_id: activation_pipeline, package: null }
+    select: { pipeline_id: activation_pipeline, package: packages/activation-pipeline }
     rationale: Staged feature / capability activation (preview→pilot→public) → Activation pipeline.
 
   - id: rule_knowledge_memory
@@ -80,7 +80,7 @@ rules:
       any_target_output: [memory_change]
       contains_any: [memory, hafıza, knowledge, bilgi, ingestion, retrieval, "context pack",
                      summarization, özetleme, validity, expiration]
-    select: { pipeline_id: knowledge_memory_pipeline, package: null }
+    select: { pipeline_id: knowledge_memory_pipeline, package: packages/knowledge-memory-pipeline }
     rationale: Memory / knowledge ingestion, validity, retrieval → Knowledge/Memory pipeline.
 
 # Tie-breakers, applied in order.
@@ -98,13 +98,14 @@ default:
 
 # Packaging reality (so selection never promises a package that doesn't exist yet).
 packaging_status:
-  packaged: [sdlc_pipeline]
-  defined_markdown_only_not_yet_packaged:
+  packaged:
+    - sdlc_pipeline
     - research_pipeline
     - activation_pipeline
     - operations_pipeline
     - skill_governance_pipeline
     - knowledge_memory_pipeline
+  defined_markdown_only_not_yet_packaged: []
   candidate_not_defined:
     - content_pipeline
     - data_processing_pipeline

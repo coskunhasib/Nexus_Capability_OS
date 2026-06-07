@@ -1,0 +1,46 @@
+id: script_audit_evidence_schema
+name: Script Audit Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for the skill script/reference static-safety audit.
+owner_domain: skill_governance
+allowed_usage:
+- Record script/reference static-analysis decision-proof evidence (verification-loop
+  defect sweep over scripts).
+forbidden_usage:
+- Used to record process history (that is skill_governance_trace_schema).
+governance_profiles:
+- evidence_required_policy
+- script_reference_audit_gate
+audit_schemas:
+- skill_governance_evidence_schema
+- skill_governance_trace_schema
+notes: NEW (skill governance). Stage script_reference_audit; owner skill_runtime_safety_agent.
+aliases:
+- skill_safety_evidence_schema
+applies_to:
+- skill_governance_pipeline
+- skill_governance_stage:script_reference_audit
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- skill_id
+- script_findings
+- source_artifacts
+- status
+- created_at
+producer: skill_runtime_safety_agent
+consumer: skill_librarian_agent
+retention: retain_with_skill_registry_entry
+redaction_rules:
+- no_raw_secret_exposure
+- redact_secrets_in_script_snippets
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  stages:
+  - script_reference_audit
+  agents:
+  - skill_runtime_safety_agent

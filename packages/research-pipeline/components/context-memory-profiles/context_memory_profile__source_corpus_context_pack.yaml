@@ -1,0 +1,45 @@
+id: source_corpus_context_pack
+name: Source Corpus Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'The scored source corpus working context: every candidate source with provenance
+  (URL, publisher, date, access timestamp) and its reliability score + rationale.
+  Consumed by source discovery, source-reliability assessment, claim extraction, and
+  cross-validation.'
+owner_domain: research_and_knowledge
+allowed_usage:
+- read_by_source_discovery_reliability_claim_extraction_and_cross_validation
+- carry_per_source_provenance_and_reliability_score
+forbidden_usage:
+- admit_an_unscored_source_into_synthesis
+- drop_source_provenance
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_source_inventory
+- web_fetched_source_content
+- research_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_scored_source_corpus
+- unscored_source_must_not_enter_synthesis
+- source_provenance_required_for_every_entry
+redaction_rules:
+- no_raw_secrets
+- preserve_source_provenance
+- redact_pii_from_fetched_content
+governance_profiles:
+- research_source_governance
+- context_access_governance
+audit_schemas:
+- source_evidence_schema
+- context_usage_trace_schema
+used_by:
+- research_pipeline
+- stage:source_discovery@research_pipeline
+- stage:source_reliability_assessment@research_pipeline
+- stage:claim_extraction@research_pipeline
+- stage:cross_validation@research_pipeline
+aliases: []
+notes: New (draft-0.1, research-pipeline.md §2.3-§2.7).

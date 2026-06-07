@@ -1,0 +1,48 @@
+id: postmortem_reasoning_model
+name: Postmortem Reasoning Model
+type: model_provider_profile
+status: candidate
+purpose: 'Blameless postmortem reasoning: timeline reconstruction, root-cause analysis
+  and corrective-action derivation after an operations incident.'
+owner_domain: operations_reliability
+provider_type: reasoning_llm
+model_family: general_reasoning
+capability_scope:
+- timeline_reconstruction
+- root_cause_analysis
+- corrective_action_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: large
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: operations_analysis_model
+governance_profiles:
+- operations_pipeline_governance
+- postmortem_required_gate
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- postmortem timeline/root-cause/corrective-action reasoning in the operations pipeline
+forbidden_usage:
+- self-approving its own postmortem (no_self_approved_postmortem gate applies)
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - operations_pipeline
+  stages:
+  - postmortem
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: sdlc_reasoning_profile
+  recommendation: Postmortem reasoning is general reflective reasoning; overlaps sdlc_reasoning_profile
+    (which absorbed the analogous SDLC learning_reflection step). Recommend reuse
+    of a shared general/reflective reasoning profile unless the postmortem governance
+    gate warrants a distinct profile. Decide in Phase E.
+notes: Markdown operations-pipeline.md §1 + §2.5 (postmortem stage). Postmortem is
+  mandatory for qualifying severities.

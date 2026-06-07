@@ -1,0 +1,50 @@
+id: claim_evidence_schema
+name: Claim Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for a claim→evidence mapping (claim, supporting/ contradicting
+  evidence, support strength, confidence).
+owner_domain: research_and_knowledge
+allowed_usage:
+- Record claim→evidence mapping decision proofs in the research pipeline.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required_policy
+- research_source_governance
+- citation_required_gate
+audit_schemas:
+- source_evidence_schema
+- stage_gate_trace_schema
+notes: NEW (research). Each claim must map to supporting/contradicting evidence with
+  a confidence value.
+applies_to:
+- research_pipeline
+- research_stage:claim_evidence_mapping
+- research_stage:cross_validation
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- claim_id
+- supporting_evidence
+- contradicting_evidence
+- support_strength
+- confidence
+- status
+- created_at
+producer: claim_evidence_agent
+consumer: research_synthesis_agent
+retention: retain_with_research_report
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - research_pipeline
+  stages:
+  - claim_evidence_mapping
+  - cross_validation
+  agents:
+  - claim_evidence_agent
+  - cross_validation_agent

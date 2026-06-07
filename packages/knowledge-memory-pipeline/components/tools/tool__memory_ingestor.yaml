@@ -1,0 +1,37 @@
+id: memory_ingestor
+name: Memory Ingestor
+type: tool
+category: tool
+status: candidate
+purpose: Normalize a candidate memory item plus its origin reference into a candidate
+  record (MEMORY_INTAKE_RECORD).
+owner_domain: knowledge_management
+provided_by_core_ability: Memory
+input_schema:
+  candidate_item: object
+  origin_reference: object
+output_schema:
+  memory_intake_record_ref: string
+side_effects: writes_memory_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- knowledge_intake_agent
+allowed_usage:
+- Ingest a candidate memory item at memory_intake.
+forbidden_usage:
+- Ingesting without an origin reference / provenance seed.
+used_by:
+  pipelines:
+  - knowledge_memory_pipeline
+  pipeline_stages:
+  - knowledge_memory_pipeline.memory_intake
+notes: NEW (knowledge/memory) per review §4.3. Sub-operation of Memory (D-014); Memory
+  stays a Core Ability.

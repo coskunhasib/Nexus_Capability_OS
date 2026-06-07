@@ -1,0 +1,44 @@
+id: script_safety_analysis_model
+name: Script Safety Analysis Model
+type: model_provider_profile
+status: candidate
+purpose: Static safety analysis of skill scripts / referenced code (script_reference_audit)
+  in the skill governance pipeline.
+owner_domain: skill_governance
+provider_type: reasoning_llm
+model_family: security_reasoning
+capability_scope:
+- script_static_safety_analysis
+- dangerous_call_detection
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: security_analysis_model
+governance_profiles:
+- script_reference_audit_gate
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- static safety analysis of skill scripts in the skill governance pipeline
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  stages:
+  - script_reference_audit
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: security_analysis_model
+  recommendation: Overlaps canonical security_analysis_model (static safety / dangerous-call
+    reasoning is a security task). Recommend REUSE of security_analysis_model for
+    script safety. Decide in Phase E.
+notes: Beyond the task's explicit NEW list; present in pipeline-catalog-review §4.4
+  and skill-governance-pipeline.md §1. Candidate; flagged in open_questions.

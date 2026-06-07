@@ -1,0 +1,44 @@
+id: research_run_context
+name: Research Run Context
+type: run_context
+status: candidate
+scope: run
+purpose: 'Whole-run working context for a Research Pipeline run: research goal, bounded
+  research questions (load-bearing flagged), risk profile, the research evidence graph
+  spine, and which stages/gates have been evaluated. Lets synthesis/completion confirm
+  every question is addressed and every load-bearing claim has mapped evidence.'
+owner_domain: research_and_knowledge
+allowed_usage:
+- read_as_run_level_backbone_by_any_research_stage
+- confirm_every_question_addressed_and_every_load_bearing_claim_mapped
+forbidden_usage:
+- used_to_let_a_producer_be_the_sole_validator_of_its_own_source
+- shared_across_different_research_runs
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_research_evidence_graph
+- current_run_stage_outputs
+- durable_memory_prior_research
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- readable_by_all_research_stages
+- run_scoped_isolation: true
+- load_bearing_claims_must_resolve_to_mapped_evidence
+redaction_rules:
+- no_raw_secrets
+- preserve_source_provenance
+- redact_pii_from_quoted_source_material
+governance_profiles:
+- research_source_governance
+- context_access_governance
+- no_self_approval_policy
+audit_schemas:
+- source_evidence_schema
+- claim_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- research_pipeline
+aliases: []
+notes: New (draft-0.1, research-pipeline.md §1). Cross-validation independence (producer
+  != sole validator) is enforced via governance, not by collapsing roles in this context.

@@ -1,0 +1,57 @@
+id: activation_evidence_schema
+name: Activation Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for activation lifecycle artifacts (PREVIEW_RESULT,
+  PILOT_RESULT, ACTIVATION_DECISION, ROLLBACK_PLAN). (doc 03 §13)
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Record preview/pilot/activation decision-proof evidence.
+forbidden_usage:
+- Used to record activation stage-transition history (that is activation_transition_trace_schema).
+governance_profiles:
+- evidence_required_policy
+- activation_pipeline_governance
+- preview_required_gate
+- pilot_evidence_gate
+audit_schemas:
+- activation_decision_evidence_schema
+- rollback_readiness_evidence_schema
+- activation_transition_trace_schema
+- stage_gate_trace_schema
+notes: NEW (activation). Base activation evidence; superadmin preview required before
+  pilot, pilot evidence required before public activation.
+aliases:
+- pilot_evidence_schema
+applies_to:
+- activation_pipeline
+- activation_stage:superadmin_preview
+- activation_stage:pilot_activation
+- activation_stage:pilot_evidence_review
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- activation_phase
+- source_artifacts
+- summary
+- status
+- created_at
+producer: activation_manager_agent
+consumer: activation_owner_decision_agent
+retention: retain_with_activation_record
+redaction_rules:
+- no_raw_secret_exposure
+- redact_cohort_user_identifiers
+used_by:
+  pipelines:
+  - activation_pipeline
+  stages:
+  - superadmin_preview
+  - pilot_activation
+  - pilot_evidence_review
+  agents:
+  - activation_manager_agent
+  - pilot_activation_agent
+  - activation_reviewer_agent

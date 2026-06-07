@@ -1,0 +1,93 @@
+# Operations Pipeline — Stage Contract
+# Stage #5: postmortem
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.5.
+# Postmortem is MANDATORY (always required for major_incident / critical_outage_or_safety_event;
+#   a lightweight POSTMORTEM_REPORT is still produced for lower severities so learning_update
+#   always has an input). postmortem_present is a blocker for required severities
+#   (satisfies postmortem_required_gate). no_self_approved_postmortem enforces no_self_approval.
+
+version: draft-0.1
+stage_id: postmortem
+name: Postmortem
+purpose: >-
+  Run a blameless postmortem: reconstruct the timeline, identify root cause(s) and
+  contributing failure modes, and produce corrective/preventive actions. Postmortem is
+  mandatory (always required for major_incident and critical_outage_or_safety_event; a
+  lightweight POSTMORTEM_REPORT is still produced for lower severities so learning_update
+  always has an input).
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: postmortem_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory
+  - Supervisor
+
+uses_skills:
+  - fmea             # root-cause / failure-mode analysis
+  - gap-audit        # completeness of timeline, causes, and corrective actions
+  - calibrate        # confidence on root-cause claims
+
+uses_tools:
+  - postmortem_builder
+  - evidence_reader
+  - artifact_writer
+  - evidence_writer
+
+uses_governance_profiles:
+  - postmortem_required_gate
+  - operations_pipeline_governance
+  - no_self_approval_policy
+
+uses_audit_schemas:
+  - postmortem_evidence_schema   # evidence (decision proof)
+  - stage_gate_trace_schema      # trace (operation history)
+
+uses_model_provider_profiles:
+  - postmortem_reasoning_model
+
+uses_context_memory_profiles:
+  - operations_run_context
+  - postmortem_context_pack
+
+inputs:
+  - INCIDENT_RECORD
+  - SEVERITY_CLASSIFICATION_REPORT
+  - ROLLBACK_OR_FIX_REPORT
+
+outputs:
+  - POSTMORTEM_REPORT
+
+evidence:
+  - POSTMORTEM_REPORT
+
+trace:
+  - postmortem_trace
+  - stage_gate_decision_trace
+
+gates:
+  - postmortem_present              # blocker for required severities — satisfies postmortem_required_gate
+  - root_cause_identified
+  - corrective_actions_defined
+  - no_self_approved_postmortem
+
+on_pass: learning_update
+on_fail: rollback_or_fix
+rework_route: rollback_or_fix
+
+blocking_conditions:
+  - postmortem_missing_for_required_severity
+  - self_approved_resolution
+
+optional_conditions: []
+
+# Postmortem is always-required for major_incident / critical_outage_or_safety_event, and
+# required-when severity >= major OR rollback_executed == true (md §1 conditional note).
+conditional_required_gates:
+  - postmortem_present_if_required_severity
+
+max_iterations: 3

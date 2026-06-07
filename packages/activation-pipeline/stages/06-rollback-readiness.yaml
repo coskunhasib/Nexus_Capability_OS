@@ -1,0 +1,86 @@
+# Activation Pipeline — Stage Contract
+# Stage #6: rollback_readiness
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
+# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.6.
+# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
+# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
+# Enforces rollback_required_gate: public activation cannot complete without a validated rollback path.
+
+version: draft-0.1
+stage_id: rollback_readiness
+name: Rollback Readiness
+purpose: >-
+  Before completing public activation, validate that the rollback plan is real and
+  executable: rollback owner assigned, rollback executor wired, rollback drill/dry-run
+  performed, and recovery signals observable. Enforces rollback_required_gate —
+  public activation cannot complete without a validated rollback path.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: rollback_readiness_agent
+sub_agents: []
+
+uses_core_abilities:
+  - OS                # perform the rollback drill / dry-run
+  - Memory
+
+uses_skills:
+  - sentinel          # premortem the rollback path before completion
+  - gap-audit         # confirm rollback readiness coverage (owner, executor, drill, signals)
+
+uses_tools:
+  - rollback_executor            # wire and exercise the rollback path
+  - telemetry_reader             # confirm recovery signals are observable
+  - artifact_writer
+  - evidence_writer
+  - policy_query
+
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - evidence_required_policy
+  - rollback_required_gate
+
+uses_audit_schemas:
+  - rollback_readiness_evidence_schema   # rollback-readiness record (decision proof)
+  - stage_gate_trace_schema              # trace (operation history) — kept distinct from evidence
+
+uses_model_provider_profiles:
+  - activation_reasoning_model
+  - risk_analysis_model
+
+uses_context_memory_profiles:
+  - activation_run_context
+  - activation_decision_context_pack
+
+inputs:
+  - ACTIVATION_DECISION
+  - ROLLBACK_PLAN
+
+outputs:
+  - ROLLBACK_READINESS_REPORT
+
+evidence:
+  - ROLLBACK_READINESS_REPORT
+
+trace:
+  - rollback_drill_trace
+  - stage_gate_decision_trace
+
+gates:
+  - rollback_required_gate
+  - rollback_plan_validated
+  - rollback_drill_passed
+
+on_pass: activation_completion
+on_fail: rollback_readiness
+rework_route: rollback_readiness
+
+blocking_conditions:
+  - public_activation_attempted_without_validated_rollback_plan
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

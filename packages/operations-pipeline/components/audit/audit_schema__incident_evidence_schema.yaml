@@ -1,0 +1,45 @@
+id: incident_evidence_schema
+name: Incident Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for an incident intake (incident record, signal sources,
+  initial scope).
+owner_domain: operations_reliability
+allowed_usage:
+- Record incident-intake decision-proof evidence in the operations pipeline.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required_policy
+- operations_pipeline_governance
+audit_schemas:
+- severity_classification_evidence_schema
+- stage_gate_trace_schema
+notes: NEW (operations). Stage incident_intake.
+applies_to:
+- operations_pipeline
+- operations_stage:incident_intake
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- incident_id
+- signal_sources
+- initial_scope
+- source_artifacts
+- status
+- created_at
+producer: incident_intake_agent
+consumer: severity_classification_agent
+retention: retain_with_postmortem
+redaction_rules:
+- no_raw_secret_exposure
+- redact_pii_in_incident_signals
+used_by:
+  pipelines:
+  - operations_pipeline
+  stages:
+  - incident_intake
+  agents:
+  - incident_intake_agent

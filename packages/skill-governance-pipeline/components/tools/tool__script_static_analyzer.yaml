@@ -1,0 +1,38 @@
+id: script_static_analyzer
+name: Script Static Analyzer
+type: tool
+category: tool
+status: candidate
+purpose: Statically analyze scripts/** and references/** for dangerous side-effects,
+  hidden tool calls, sandbox-escape, or policy-bypass risk (defect/bug-finding sweep).
+owner_domain: skill_governance
+provided_by_core_ability: Coder
+input_schema:
+  scripts: object
+  references: object
+output_schema:
+  script_audit_findings:
+  - object
+side_effects: none
+risk_level: medium
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- skill_runtime_safety_agent
+allowed_usage:
+- Static (non-executing) safety analysis of skill scripts/references.
+forbidden_usage:
+- Executing the analyzed scripts (analysis is static; execution would be a side-effecting
+  runner).
+- Passing script_reference_audit_gate with unmitigated unsafe scripts.
+used_by:
+  pipelines:
+  - skill_governance_pipeline
+  pipeline_stages:
+  - skill_governance_pipeline.script_reference_audit
+notes: NEW (skill governance) per review §4.3. Static analysis -> requires_sandbox:false
+  (no code is executed). Emits SCRIPT_REFERENCE_AUDIT_REPORT (evidence).

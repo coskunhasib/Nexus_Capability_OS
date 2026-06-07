@@ -1,0 +1,52 @@
+id: activation_reasoning_model
+name: Activation Reasoning Model
+type: model_provider_profile
+status: candidate
+purpose: Reasoning over preview/pilot evidence and activation transitions in the activation
+  pipeline (preview -> pilot -> public activation decisioning support).
+owner_domain: activation_and_release_operations
+provider_type: reasoning_llm
+model_family: general_reasoning
+capability_scope:
+- activation_evidence_reasoning
+- preview_pilot_assessment
+- activation_transition_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: supervisor_routing_model
+governance_profiles:
+- activation_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- activation pipeline reasoning stages
+forbidden_usage:
+- making the public-activation decision autonomously (that is an owner/human decision
+  gate per activation §2.5 / pipeline-catalog-review F-4)
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - activation_pipeline
+  stages:
+  - preview
+  - pilot
+  - activation_decision
+  core_abilities: []
+aliases:
+- activation_reasoning_profile
+overlap:
+  overlaps_with: sdlc_reasoning_profile
+  recommendation: Overlaps the general_reasoning family. Recommend reusing a shared
+    general reasoning profile unless activation needs distinct governance (owner-gate
+    sensitivity). Decide in Phase E.
+notes: Markdown activation-pipeline.md §1 lists `activation_reasoning_model`; the
+  pre-R9 pipeline_catalog.yaml definition_contract used the `activation_reasoning_profile`
+  variant (recorded as alias per F-1). R9 has since made pipeline_catalog.yaml summary-only;
+  the authoritative per-pipeline source is the markdown definition_doc.

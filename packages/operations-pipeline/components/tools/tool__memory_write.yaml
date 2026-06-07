@@ -1,0 +1,40 @@
+id: memory_write
+name: Memory Write
+type: tool
+category: tool
+status: canonical
+purpose: Write durable operational/knowledge learning into the Memory ability's store.
+owner_domain: knowledge_management
+provided_by_core_ability: Memory
+input_schema:
+  memory_item: object
+  validity_window: object
+  provenance: object
+output_schema:
+  memory_ref: string
+side_effects: writes_memory_store
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- operational_learning_agent
+allowed_usage:
+- Persist lessons-learned into memory at operations learning_update.
+forbidden_usage:
+- Writing unredacted sensitive content; writing without a validity window/provenance.
+used_by:
+  pipelines:
+  - operations_pipeline
+  pipeline_stages:
+  - operations_pipeline.learning_update
+notes: Sub-operation of the Memory Core Ability (D-014); Memory stays a Core Ability,
+  not an agent. memory_write is an exposed_tool of the canonical Memory ability in
+  core_abilities.yaml, so it is canonical for the same reason memory_search/memory_summarize/context_recall
+  are (R7). The knowledge_memory_pipeline curates memory via dedicated tools (memory_ingestor
+  etc.) rather than this raw writer.
