@@ -1,19 +1,54 @@
-# Operations Pipeline — Stage Contract
-# Stage #3: mitigation_plan
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.3.
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #3 of 7: mitigation_plan
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4.
+# Field set + rigor ENRICHED to the professional-grade bar (research-pipeline calibration exemplar /
+#   configs/nexus-ai/stages/sdlc/04-requirements.yaml depth).
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.3.
 # A mitigation plan is required for any active (non-resolved) incident (satisfies
-#   mitigation_plan_required_gate). evidence_reader reads the SDLC RUNBOOK / ROLLBACK_PLAN.
-
+#   mitigation_plan_required_gate). owner_agent is an Agent role under operations_team
+#   (agent_roles.yaml: mitigation_planning_agent, reviewed_by operations_team_lead). evidence_reader
+#   reads the SDLC RUNBOOK / ROLLBACK_PLAN (consumes SDLC operations-readiness artifacts; does NOT
+#   regenerate the SDLC Pipeline).
+#
+# PROFESSIONAL-GRADE COVERAGE folded in here (comms + escalation + mitigation-vs-fix + rollback drill):
+#   1. STAKEHOLDER COMMUNICATION / NOTIFICATION. A professional incident process notifies affected
+#      stakeholders per a comms policy as part of active handling. No comms/notification TOOL exists in
+#      the Shared Registry, so this is modelled WITHOUT inventing one: the notification is an AUTHORED
+#      artifact (STAKEHOLDER_COMMS_RECORD via artifact_writer) whose audience/cadence is read from
+#      policy-as-data (policy_query). Gate stakeholder_notification_dispatched enforces it. (See REPORT:
+#      a dedicated incident-comms tool is a flagged missing registry capability.)
+#   2. ESCALATION when the plan cannot meet the SLA. Consumes SLA_AND_RESPONSE_TARGET + ESCALATION_DECISION
+#      from #2; if the chosen mitigation cannot meet the target, escalation must be (re)triggered. Gate
+#      escalation_triggered_if_sla_at_risk.
+#   3. MITIGATION vs PERMANENT-FIX distinction (the load-bearing coverage gap). A professional process
+#      separates temporary CONTAINMENT (stop the bleeding) from the PERMANENT fix, and tracks residual
+#      risk until the permanent fix lands. The plan must classify the chosen action as containment-only
+#      or permanent, and if containment-only, name the required follow-up permanent fix. Gate
+#      mitigation_vs_permanent_fix_classified. This sets up corrective_action_tracking (#6) to verify
+#      the permanent-fix action item is tracked.
+#   4. ROLLBACK DRILL / PATH VALIDATION. The rollback path is dry-run/validated (runbook_executor
+#      readiness check) BEFORE rollback_or_fix commits to it. Gate rollback_path_validated.
+#
+# Depth / reconciliation notes:
+#   - sentinel = premortem the mitigation before committing; fmea = rank options by failure mode;
+#     gap-audit = plan completeness vs runbook coverage and vs the comms/escalation policy.
+#   - No-self-approval: mitigation_planning_agent MAY NOT execute the rollback/fix itself (agent_roles.yaml
+#     forbidden_actions: execute_the_rollback_or_fix_itself) — execution is owned by incident_response_agent
+#     (#4); the plan is reviewed by operations_team_lead. This is a real producer!=executor separation.
+#   - on_fail routes to severity_classification (plan cannot be formed at the recorded severity);
+#     internal re-planning is re-run in place (rework_route = self).
 version: draft-0.1
 stage_id: mitigation_plan
 name: Mitigation Plan
 purpose: >-
-  Produce an actionable MITIGATION_PLAN for the classified incident: candidate
-  containment/mitigation options, chosen option with rationale, the rollback-vs-fix
-  recommendation, and the runbook reference(s) to be executed. A mitigation plan is
-  required for any active (non-resolved) incident.
+  Produce an actionable MITIGATION_PLAN for the classified incident: candidate containment/mitigation
+  options, the chosen option with rationale, an explicit temporary-containment-vs-permanent-fix
+  classification, the rollback-vs-fix recommendation with a validated (dry-run) rollback path, the
+  runbook reference(s) to be executed, a stakeholder communication record dispatched per comms policy,
+  and an escalation (re)trigger if the plan cannot meet the SLA. A mitigation plan is required for any
+  active (non-resolved) incident.
 
 owner_team: operations_team
 team_lead: operations_team_lead
@@ -21,33 +56,29 @@ owner_agent: mitigation_planning_agent
 sub_agents: []
 
 uses_core_abilities:
-  - Supervisor
-  - Memory
-
+  - Supervisor   # route option selection / escalation decisions within the team
+  - Memory       # recall prior mitigations for this capability and what worked
 uses_skills:
   - sentinel         # premortem the mitigation before committing
   - fmea             # rank options by failure mode
-  - gap-audit        # plan completeness vs runbook coverage
-
+  - gap-audit        # plan completeness vs runbook coverage and vs comms/escalation policy
 uses_tools:
-  - mitigation_plan_builder
-  - runbook_executor   # dry-run / readiness check only at this stage
-  - evidence_reader    # reads SDLC RUNBOOK / ROLLBACK_PLAN
-  - artifact_writer
-  - evidence_writer
-
+  - mitigation_plan_builder   # assemble candidate options + chosen plan
+  - runbook_executor          # DRY-RUN / readiness check only at this stage (rollback-path drill)
+  - policy_query              # read comms-audience / escalation policy-as-data (side-effect-free)
+  - evidence_reader           # read SDLC RUNBOOK / ROLLBACK_PLAN (consume, do not regenerate SDLC)
+  - artifact_writer           # write MITIGATION_PLAN / STAKEHOLDER_COMMS_RECORD (side-effect: governance + trace)
+  - evidence_writer           # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - mitigation_plan_required_gate
   - operations_pipeline_governance
   - no_self_approval_policy
-
+  - evidence_required_policy
 uses_audit_schemas:
   - mitigation_plan_evidence_schema   # evidence (decision proof)
   - stage_gate_trace_schema           # trace (operation history)
-
 uses_model_provider_profiles:
   - operations_analysis_model
-
 uses_context_memory_profiles:
   - operations_run_context
   - operations_context_pack
@@ -55,29 +86,49 @@ uses_context_memory_profiles:
 inputs:
   - INCIDENT_RECORD
   - SEVERITY_CLASSIFICATION_REPORT
-  - RUNBOOK
-  - ROLLBACK_PLAN
+  - SLA_AND_RESPONSE_TARGET        # the restore/response target the plan must meet (from #2)
+  - ESCALATION_DECISION            # current escalation state, for the SLA-at-risk re-trigger (from #2)
+  - INCIDENT_CONDITIONAL_FLAGS     # customer_facing / regulated raise comms scope + strictness (from #1)
+  - RUNBOOK                        # SDLC operations-readiness artifact (read-only)
+  - ROLLBACK_PLAN                  # SDLC operations-readiness artifact (read-only)
 
 outputs:
-  - MITIGATION_PLAN
+  - MITIGATION_PLAN                       # options, chosen option, rollback-vs-fix recommendation, runbook refs
+  - MITIGATION_TYPE_CLASSIFICATION        # temporary-containment vs permanent-fix; if containment, required follow-up
+  - ROLLBACK_PATH_VALIDATION              # dry-run/drill result confirming the rollback path is executable
+  - STAKEHOLDER_COMMS_RECORD              # the notification dispatched to affected stakeholders per comms policy
+  - MITIGATION_PLAN_GATE_RESULT           # binary gate result for this stage
 
 evidence:
   - MITIGATION_PLAN
-
+  - MITIGATION_TYPE_CLASSIFICATION
+  - STAKEHOLDER_COMMS_RECORD
+  - MITIGATION_PLAN_GATE_RESULT
 trace:
   - mitigation_plan_trace
+  - rollback_path_validation_trace    # the dry-run/drill of the rollback path
+  - stakeholder_comms_trace           # the notification-dispatch decision lineage
+  - policy_query_tool_trace           # comms-audience / escalation policy-as-data read
   - stage_gate_decision_trace
 
 gates:
-  - mitigation_plan_present            # blocker — satisfies mitigation_plan_required_gate
+  - mitigation_plan_present                # blocker — satisfies mitigation_plan_required_gate
   - rollback_or_fix_decision_recommended
   - runbook_reference_resolved
+  - mitigation_vs_permanent_fix_classified # temporary containment vs permanent fix is explicit
+  - rollback_path_validated                # rollback path dry-run/drilled before execution commits
+  - stakeholder_notification_dispatched    # affected stakeholders notified per comms policy
+  - escalation_triggered_if_sla_at_risk    # escalation (re)triggered when the plan cannot meet the SLA
 
 on_pass: rollback_or_fix
 on_fail: severity_classification
-rework_route: severity_classification
+rework_route: mitigation_plan
 
 blocking_conditions:
+  - mitigation_plan_absent
+  - runbook_reference_unresolved
+  - mitigation_type_unclassified
+  - stakeholder_notification_not_dispatched_for_customer_facing_incident
   - missing_mitigation_plan_for_active_incident
   - self_approved_resolution
 

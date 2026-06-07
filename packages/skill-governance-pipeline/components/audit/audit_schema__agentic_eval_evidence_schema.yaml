@@ -1,0 +1,44 @@
+id: agentic_eval_evidence_schema
+name: Agentic Safety Evaluation Evidence Schema
+type: evidence_schema
+status: canonical
+purpose: Decision-proof record for AI-agent safety evaluation (AGENTIC_SAFETY_EVAL_REPORT,
+  TOOL_MISUSE_TEST_REPORT, CONTEXT_POISONING_TEST_REPORT).
+owner_domain: sdlc
+allowed_usage:
+- Record agentic-safety evaluation decision-proof evidence.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required
+- tool_misuse_governance
+- context_safety_governance
+audit_schemas:
+- prompt_injection_test_schema
+- evidence_integrity_report_schema
+- stage_gate_trace_schema
+notes: Stage 18 evidence schema.
+applies_to:
+- sdlc_stage:ai_agent_safety_evaluation
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- source_artifacts
+- summary
+- status
+- created_at
+producer: ai_safety_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- redact_injection_payload_secrets
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - ai_agent_safety_evaluation
+  agents:
+  - ai_safety_agent

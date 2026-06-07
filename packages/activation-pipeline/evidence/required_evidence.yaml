@@ -1,16 +1,26 @@
 required_evidence:
 - ACTIVATION_REQUEST
+- ABORT_CRITERIA
+- BLAST_RADIUS_LIMIT
 - PREVIEW_RESULT
+- HEALTH_BASELINE
 - PILOT_RESULT
+- CANARY_HEALTH_REPORT
 - PILOT_EVIDENCE_REVIEW_REPORT
 - ROLLBACK_PLAN
 - ROLLBACK_READINESS_REPORT
+- ROLLBACK_DRILL_REPORT
 - ACTIVATION_DECISION
 - ACTIVATION_COMPLETION_REPORT
+- POST_ACTIVATION_MONITORING_REPORT
 required_trace:
 - activation_transition_trace
 - preview_activation_trace
 - pilot_activation_trace
+- pilot_evidence_review_handoff_trace
 - rollback_drill_trace
 - owner_decision_trace
+- post_activation_monitoring_trace
+- gate_aggregation_decision_trace
+- stage_gate_decision_trace
 - policy_evaluation_trace

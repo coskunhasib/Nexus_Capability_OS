@@ -1,0 +1,35 @@
+id: rollback_required_gate
+name: Rollback Required Gate
+type: stage_gate_profile
+status: candidate
+purpose: A validated, executable rollback path is mandatory before a risky transition
+  completes. Introduced by the Activation Pipeline (rollback_readiness, activation-pipeline.md
+  §2.6) and ALSO bound in two SDLC stages (data_migration 22, backup_restore_dr 26)
+  as a tested-rollback requirement.
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Gate that a validated rollback path exists before public activation / risky migration
+  completes.
+- Be re-shown under each stage that requires a tested rollback.
+forbidden_usage:
+- Completing a risky transition without a validated rollback path.
+governance_profiles:
+- high_risk_action_default_deny
+- evidence_required
+audit_schemas:
+- rollback_readiness_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- rollback_readiness
+- data_migration_validation_if_applicable
+- backup_restore_dr_validation_if_applicable
+severity_default: blocker
+used_by:
+- rollback_readiness
+- data_migration_validation_if_applicable
+- backup_restore_dr_validation_if_applicable
+notes: Listed in pipeline-catalog-review.md §4.1 as a NEW activation profile, but
+  the SAME id is already a canonical SDLC stage gate (stages 22 + 26). Registered
+  once, status candidate (pending Phase E ratification of the cross-pipeline shared
+  definition); SDLC usages are canonical bindings. Flagged in open_questions.

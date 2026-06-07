@@ -54,22 +54,22 @@ routing_terminals:
 #   name would be a dangling edge: present in required_gates, resolving to nothing). This block
 #   resolves that edge for every operations required gate (always + conditional).
 #
-# SCOPE: ALL operations required gates — required_gates.always (8) + required_gates.conditional (1).
-#   The 7 always gates that map by name to a single producing stage, the 1 always-on cross-cutting
-#   POLICY gate (no_blocking_policy_failure) that has NO single producing stage, and the 1 conditional
-#   severity-gated postmortem gate.
+# SCOPE: ALL operations required gates — required_gates.always (13) + required_gates.conditional (2).
+#   The 12 always gates that map by name to a single producing stage, the 1 always-on cross-cutting
+#   POLICY gate (no_blocking_policy_failure) that has NO single producing stage, and the 2 conditional
+#   severity-gated postmortem gates (presence + independent review).
 #
 # CHECKER CONTRACT (how to verify): for each entry, assert
 #   (a) `gate` ∈ operations_pipeline.yaml required_gates.always (or .conditional for the
 #       conditional postmortem gate),
-#   (b) `producing_stage` ∈ the canonical operations 6-stage set (or `pipeline` for a policy gate
+#   (b) `producing_stage` ∈ the canonical operations 7-stage set (or `pipeline` for a policy gate
 #       with no single producing stage),
 #   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
 #       stage's uses_governance_profiles (N/A for the pipeline-level policy gate),
 #   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
 # Any unmet assertion = a dangling required-gate edge.
 required_gate_producers:
-  scope: operations_required_gates_all   # all 9 required gates (8 always + 1 conditional); not a subset
+  scope: operations_required_gates_all   # all 15 required gates (13 always + 2 conditional); not a subset
   note: >-
     Each gate in operations_pipeline.yaml required_gates is SATISFIED BY the producing stage's gate
     decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
@@ -89,6 +89,18 @@ required_gate_producers:
       satisfied_by_stage_gates:
         - affected_capability_identified
 
+    - gate: signal_validated_not_false_positive         # required_gates.always (NEW — intake/detection validation)
+      tier: always
+      producing_stage: incident_intake                  # stage #1
+      producing_rule: evidence_required_policy           # governance_profiles.yaml; in incident_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - signal_validated_not_false_positive
+      note: >-
+        Professional-grade addition: a reliable incident process must not start a severity clock on a
+        bad signal. incident_intake screens flapping/test/self-inflicted-by-deploy alerts and
+        corroborates against monitoring (gates signal_validated_not_false_positive +
+        monitoring_corroboration_attempted) before triage.
+
     - gate: severity_assigned                           # required_gates.always
       tier: always
       producing_stage: severity_classification          # stage #2
@@ -99,6 +111,18 @@ required_gate_producers:
         Blocker gate: severity_assigned satisfies incident_severity_required_gate. Severity
         classification is mandatory before any mitigation work may begin (stage #2).
 
+    - gate: sla_and_response_target_assigned            # required_gates.always (NEW — SLA + escalation classification)
+      tier: always
+      producing_stage: severity_classification          # stage #2
+      producing_rule: incident_severity_required_gate    # governance_profiles.yaml; in severity_classification.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - sla_and_response_target_assigned
+      note: >-
+        Professional-grade addition: severity is bound to a restore/response-time target AND an
+        escalation threshold (gates sla_and_response_target_assigned + escalation_threshold_defined),
+        read from policy-as-data via policy_query. SLA/escalation is a facet of classification, so it
+        is folded into stage #2 rather than a padded new stage.
+
     - gate: mitigation_plan_present                      # required_gates.always
       tier: always
       producing_stage: mitigation_plan                  # stage #3
@@ -108,6 +132,20 @@ required_gate_producers:
       note: >-
         Blocker gate: mitigation_plan_present satisfies mitigation_plan_required_gate. Required for
         any active (non-resolved) incident (stage #3).
+
+    - gate: mitigation_vs_permanent_fix_classified      # required_gates.always (NEW — mitigation vs permanent-fix distinction)
+      tier: always
+      producing_stage: mitigation_plan                  # stage #3
+      producing_rule: mitigation_plan_required_gate      # governance_profiles.yaml; in mitigation_plan.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - mitigation_vs_permanent_fix_classified
+      note: >-
+        Professional-grade addition: the plan must classify the chosen action as temporary containment
+        vs a permanent fix and, if containment-only, name the required permanent-fix follow-up. Pairs
+        with rollback_or_fix resolution_type_recorded (#4) and corrective_action_tracking (#6), which
+        verifies the permanent-fix item is tracked. mitigation_plan #3 also dispatches stakeholder
+        comms (stakeholder_notification_dispatched), drills the rollback path (rollback_path_validated),
+        and re-triggers escalation if the plan cannot meet the SLA (escalation_triggered_if_sla_at_risk).
 
     - gate: rollback_or_fix_executed                    # required_gates.always
       tier: always
@@ -125,6 +163,36 @@ required_gate_producers:
       note: >-
         Blocker gate: runbook_or_rollback_evidence_present satisfies rollback_runbook_evidence_gate.
         Either path (rollback OR forward fix) must be backed by runbook or rollback evidence (stage #4).
+
+    - gate: resolution_type_recorded                    # required_gates.always (NEW — temporary vs permanent resolution)
+      tier: always
+      producing_stage: rollback_or_fix                  # stage #4
+      producing_rule: rollback_runbook_evidence_gate     # governance_profiles.yaml; in rollback_or_fix.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - resolution_type_recorded
+      note: >-
+        Professional-grade addition: the executed action is recorded as a TEMPORARY mitigation/
+        containment or a PERMANENT resolution; a temporary resolution emits a residual-risk record + a
+        required permanent-fix action item (gate residual_risk_recorded_if_temporary). Recovery is
+        confirmed with monitoring evidence (service_recovery_confirmed backed by SERVICE_RECOVERY_EVIDENCE),
+        not an assertion. This is the execution-side half of the mitigation-vs-permanent-fix control.
+
+    - gate: all_corrective_actions_registered           # required_gates.always (NEW — prevention close-the-loop, stage #6)
+      tier: always
+      producing_stage: corrective_action_tracking       # stage #6 (NEW stage)
+      producing_rule: evidence_required_policy           # governance_profiles.yaml; in corrective_action_tracking.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - all_corrective_actions_registered
+      note: >-
+        Professional-grade addition + the ONE new stage. corrective_action_tracking (#6) registers
+        every postmortem corrective/preventive action with an owner + verification handle and verifies
+        none is untracked before exit (component gates: all_corrective_actions_registered,
+        every_action_item_has_owner, every_action_item_has_verification_handle,
+        permanent_fix_action_tracked_if_temporary, contributing_factors_mapped_to_actions). Producer !=
+        validator: the tracker (operational_learning_agent) did NOT author the actions (postmortem_agent
+        did). NO single dedicated tracking governance profile exists in the registry; the stage binds
+        operations_pipeline_governance + no_self_approval_policy + evidence_required_policy, and the
+        action register must EXIST as evidence — hence producing_rule evidence_required_policy.
 
     - gate: operational_learning_record_present          # required_gates.always
       tier: always
@@ -165,8 +233,26 @@ required_gate_producers:
         Conditional severity-gated gate. The stage-5 component gate postmortem_present is a blocker
         for required severities and satisfies postmortem_required_gate; postmortem_present_if_required_severity
         is the stage's conditional_required_gates entry (operations_pipeline.yaml required_gates.conditional).
-        A lightweight POSTMORTEM_REPORT is still produced for lower severities so learning_update always
-        has an input.
+        A lightweight POSTMORTEM_REPORT is still produced for lower severities so corrective_action_tracking
+        and learning_update always have an input.
+
+    - gate: postmortem_independently_reviewed_if_required_severity   # required_gates.conditional (NEW — producer != validator)
+      tier: conditional
+      producing_stage: postmortem                       # stage #5
+      producing_rule: no_self_approval_policy            # governance_profiles.yaml (alias of no_self_approval); in postmortem.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - postmortem_independently_reviewed
+      conditional_required_when: >-
+        severity >= major (major_incident or critical_outage_or_safety_event) OR
+        rollback_executed == true
+      note: >-
+        Professional-grade addition — the structural producer != validator keystone of this pipeline.
+        The postmortem MUST be reviewed by a role that did NOT execute the response: postmortem_agent
+        (#5 author) is distinct from incident_response_agent (#4 executor) and the review is signed off
+        by operations_team_lead (agent_roles.yaml: postmortem_agent.reviewed_by; forbidden_action
+        postmortem_an_incident_response_it_executed_as_sole_approver). The stage-5 component gate
+        postmortem_independently_reviewed is always evaluated; this rollup gate makes it a REQUIRED
+        exit condition for the same severities that require the postmortem itself.
 
   invariants:
     - Every `gate` MUST exist in configs/nexus-ai/operations_pipeline.yaml required_gates
@@ -183,17 +269,21 @@ required_gate_producers:
 # =====================================================================================
 rework_routing_table:
 
-  # -- Authoritative per-stage routes (complete; covers all 6 canonical operations stages) -------
+  # -- Authoritative per-stage routes (complete; covers all 7 canonical operations stages) -------
   # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
-  # Values copied from each stage's own canonical on_fail / rework_route in
-  # configs/nexus-ai/stages/operations/*.yaml. on_fail == rework_route for every operations stage.
+  # Values copied from each stage's own canonical on_fail in configs/nexus-ai/stages/operations/*.yaml.
+  # NOTE: on_fail == rework_route for stages whose internal rework is the upstream stage; for stages
+  # whose rework_route is SELF (re-run in place) the on_fail (upstream) is the authoritative cross-stage
+  # route used here. incident_intake self-loops; corrective_action_tracking (#6, NEW) reworks to
+  # postmortem; learning_update (#7) reworks to corrective_action_tracking.
   by_stage:
     incident_intake: incident_intake
     severity_classification: incident_intake
     mitigation_plan: severity_classification
     rollback_or_fix: mitigation_plan
     postmortem: rollback_or_fix
-    learning_update: postmortem
+    corrective_action_tracking: postmortem
+    learning_update: corrective_action_tracking
 
   # -- Definition-level allowed rework routes (operations_pipeline.yaml allowed_rework_routes) ----
   # The pipeline def states permitted rework edges as "<from_artifact_stage> -> <to_stage>". These
@@ -203,12 +293,16 @@ rework_routing_table:
     - mitigation_plan -> severity_classification
     - rollback_or_fix -> mitigation_plan
     - postmortem -> rollback_or_fix
-    - learning_update -> postmortem
+    - corrective_action_tracking -> postmortem
+    - learning_update -> corrective_action_tracking
   allowed_rework_routes_note: >-
     operations_pipeline.yaml allowed_rework_routes omits the incident_intake -> incident_intake
-    self-loop that the stage-1 file declares (on_fail/rework_route: incident_intake); both are
-    carried here — by_stage is authoritative per-stage, allowed_rework_routes_from_def mirrors the
-    def verbatim. The five def edges match by_stage for stages #2–#6 exactly.
+    self-loop that the stage-1 file declares (on_fail: incident_intake); both are carried here —
+    by_stage is authoritative per-stage, allowed_rework_routes_from_def mirrors the def verbatim. The
+    six def edges match by_stage for stages #2–#7 exactly. The two NEW edges are
+    `corrective_action_tracking -> postmortem` (a tracking gap means the postmortem under-specified an
+    action) and `learning_update -> corrective_action_tracking` (learning cannot be distilled until the
+    action register is complete).
 
   routing_invariants:
     - All routing targets MUST be a known canonical stage_id (configs/nexus-ai/operations_pipeline.yaml

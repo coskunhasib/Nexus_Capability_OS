@@ -1,0 +1,117 @@
+# Skill Governance Pipeline — Stage Contract 08: skill_deprecation_update
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.7)
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/30-release-candidate.yaml-style rollback/
+#   revocation contracts (rollback gates, populated blocking_conditions, annotated chained I/O).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #8 of 8. Stage class: CONDITIONAL —
+#   runs only when deprecation_or_update is active in risk_profiles OR version/hash changed
+#   OR the activation decision (#7) was deprecate/hold.
+#
+# PROFESSIONAL-GRADE COVERAGE ADDED IN THIS STAGE (revocation + rollback — folded here, not a padded
+# stage, because lifecycle teardown is exactly this stage's job):
+#   The prior contract only "updated inventory" — it relabeled a skill but never REVOKED an active
+#   binding or ROLLED BACK an activation. For no-human governance a deprecated/failed/superseded skill
+#   that stays bound is a live risk. Added, as GATES:
+#     1. skill_revocation_executed (blocker) — on deprecate, the active binding/activation flag is
+#        actually revoked (activation_flag_controller), not just marked deprecated.
+#     2. activation_rollback_validated (blocker) — the rollback to the prior safe state is executed and
+#        VALIDATED (rollback_executor + rollback_validator), so revocation cannot leave a broken state.
+#   On version/hash change, skill_semantic_required_gate is re-triggered against the NEW pinned hash
+#   (carried from the catalog) — the deprecation re-validation anchor set at intake (#1).
+#   Renumbered from stage #7 to #8.
+version: draft-0.1
+stage_id: skill_deprecation_update
+name: Skill Deprecation Update
+purpose: >-
+  Mevcut/aktif skill'lerin deprecation veya sürüm güncellemesini yönetir; deprecate kararında
+  aktif binding/aktivasyonu GERÇEKTEN revoke eder ve önceki güvenli duruma rollback'i yürütüp
+  DOĞRULAR (sadece etiketlemez). Sürüm/hash değişiminde semantik yeniden doğrulama gerekip
+  gerekmediğine karar verir (yeni pinlenen hash'e karşı) ve registry tutarlılığını korur.
+  Conditional stage: yalnız risk_profiles içinde deprecation_or_update aktifse, version_or_hash
+  değiştiyse veya aktivasyon kararı deprecate/hold ise çalışır.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_librarian_agent
+sub_agents: []
+
+# Conditional stage applicability (md §2.7, extended for the activation-deprecate route).
+applicability_decision:
+  conditional_required_when: >-
+    deprecation_or_update == true or version_or_hash_changed == true or
+    activation_decision in {deprecate, hold}
+
+uses_core_abilities:
+  - Memory   # recall the prior safe state / active bindings to revoke and roll back to
+  - OS       # execute the revocation / rollback against the registry binding surface
+
+uses_skills:
+  - gap-audit   # detect registry inconsistency / missing re-validation on version/hash change
+  - calibrate   # confidence that the rollback restored a consistent, safe state
+
+uses_tools:
+  - activation_flag_controller   # revoke the active binding/activation flag (trace: skill_activation_decision_trace)
+  - rollback_executor            # execute rollback to the prior safe state
+  - rollback_validator           # validate the rollback restored a consistent state
+  - artifact_writer              # write SKILL_DEPRECATION_RECORD / updated SKILL_INVENTORY_ENTRY (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - skill_deprecation_required_gate       # major — version/hash change re-triggers skill_semantic_required_gate
+  - rollback_required_gate                # rollback must be executed on revocation
+  - rollback_runbook_evidence_gate        # rollback execution must be evidenced
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_governance_evidence_schema      # evidence schema: updated inventory / deprecation record
+  - rollback_readiness_evidence_schema    # evidence schema: rollback readiness
+  - rollback_validation_schema            # evidence schema: rollback validation result
+  - skill_activation_trace_schema         # trace schema: the revocation state transition
+  - skill_governance_trace_schema         # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_ACTIVATION_DECISION   # the activate/hold/deprecate decision driving lifecycle action
+  - SKILL_PROVENANCE_RECORD     # the (possibly new) pinned version/hash to re-validate against
+outputs:
+  - SKILL_INVENTORY_ENTRY       # updated lifecycle/version state
+  - SKILL_DEPRECATION_RECORD    # deprecation + revocation + rollback-validation record
+
+evidence:
+  - SKILL_INVENTORY_ENTRY
+  - SKILL_DEPRECATION_RECORD
+trace:
+  - skill_package_read_trace
+  - gate_evaluation_trace
+
+# key gates:
+#   skill_deprecation_required_gate (major) — if version/hash changed, skill_semantic_required_gate is
+#     re-triggered (conditional_required_gates below);
+#   skill_revocation_executed (blocker) — on deprecate, the active binding/flag is actually revoked;
+#   activation_rollback_validated (blocker) — rollback to the prior safe state executed AND validated.
+gates:
+  - skill_deprecation_required_gate
+  - skill_revocation_executed
+  - activation_rollback_validated
+
+# on_pass: pipeline exit (lifecycle updated; binding revoked + rolled back if deprecated)
+on_pass: done
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - registry_inconsistency_unresolved
+  - active_binding_not_revoked_on_deprecation    # skill deprecated but its binding/flag stays active
+  - rollback_unvalidated_or_failed                # revocation left a broken / unverified state
+optional_conditions: []
+conditional_required_gates:
+  - skill_semantic_required_gate   # re-triggered when version_or_hash_changed == true (against the new pinned hash)
+
+max_iterations: 3

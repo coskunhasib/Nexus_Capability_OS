@@ -10,40 +10,40 @@ packages:
   package_schema_version: '0.1'
   path: packages/activation-pipeline
   components: 39
-  gates_always: 9
-  gates_conditional: 3
-  stages: 7
-  source_commit: 9ed30f2
+  gates_always: 17
+  gates_conditional: 4
+  stages: 8
+  source_commit: 383a28c
 - pipeline_id: knowledge_memory_pipeline
   name: Knowledge / Memory Pipeline
   package_version: 1.0.0
   package_schema_version: '0.1'
   path: packages/knowledge-memory-pipeline
   components: 30
-  gates_always: 10
-  gates_conditional: 2
-  stages: 6
-  source_commit: 9ed30f2
+  gates_always: 18
+  gates_conditional: 4
+  stages: 7
+  source_commit: 383a28c
 - pipeline_id: operations_pipeline
   name: Operations Pipeline
   package_version: 1.0.0
   package_schema_version: '0.1'
   path: packages/operations-pipeline
   components: 50
-  gates_always: 8
-  gates_conditional: 1
-  stages: 6
-  source_commit: 9ed30f2
+  gates_always: 13
+  gates_conditional: 2
+  stages: 7
+  source_commit: 383a28c
 - pipeline_id: research_pipeline
   name: Research Pipeline
   package_version: 1.0.0
   package_schema_version: '0.1'
   path: packages/research-pipeline
   components: 30
-  gates_always: 9
-  gates_conditional: 0
-  stages: 10
-  source_commit: 9ed30f2
+  gates_always: 13
+  gates_conditional: 1
+  stages: 11
+  source_commit: cf6d4a9
 - pipeline_id: sdlc_pipeline
   name: SDLC Pipeline
   package_version: 1.0.0
@@ -59,8 +59,8 @@ packages:
   package_version: 1.0.0
   package_schema_version: '0.1'
   path: packages/skill-governance-pipeline
-  components: 43
-  gates_always: 8
-  gates_conditional: 1
-  stages: 7
-  source_commit: 9ed30f2
+  components: 73
+  gates_always: 14
+  gates_conditional: 2
+  stages: 8
+  source_commit: 383a28c

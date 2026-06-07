@@ -1,0 +1,36 @@
+id: package_reputation_checker
+name: Package Reputation Checker
+type: tool
+category: tool
+status: candidate
+purpose: Assess package provenance/reputation risk for resolved dependencies (provenance/typosquat/abandonment
+  signals).
+owner_domain: security
+provided_by_core_ability: null
+input_schema:
+  packages:
+  - object
+output_schema:
+  reputation_findings:
+  - object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- supply_chain_agent
+allowed_usage:
+- Read-only reputation/provenance risk assessment of dependencies.
+forbidden_usage:
+- Blocking a dependency without recorded reputation evidence.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - supply_chain_sbom_license
+notes: NON-CANONICAL (legacy doc 04) per 17-supply-chain-sbom-license.yaml. Candidate
+  for Phase E ratification; may be folded into dependency_scanner if not ratified
+  standalone.

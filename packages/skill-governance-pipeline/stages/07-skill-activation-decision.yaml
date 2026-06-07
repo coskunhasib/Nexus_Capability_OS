@@ -1,0 +1,118 @@
+# Skill Governance Pipeline — Stage Contract 07: skill_activation_decision
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.6)
+# Field set + rigor mirror configs/nexus-ai/stages/research/08-cross-validation.yaml (the no-self-
+#   approval keystone stage: distinct decider role, structural validator!=producer gate) +
+#   configs/nexus-ai/stages/sdlc/29-development-completion.yaml (a rollup/decision stage).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #7 of 8. Stage class: always-on.
+#
+# NO-SELF-APPROVAL (STRUCTURAL — load-bearing): owner_agent is skill_runtime_safety_agent, a DISTINCT
+#   role from the binding PROPOSER skill_librarian_agent (agent_roles.yaml: the librarian's
+#   skill_governance also_serves binding is reviewed_by: skill_runtime_safety_agent). The decider may
+#   NOT have proposed the binding it approves. Enforced by no_self_approval_policy + the
+#   activation_decider_distinct_from_binding_proposer gate. The Team Lead cannot self-approve either
+#   (skill-governance-pipeline.md §3.1).
+#
+# PROFESSIONAL-GRADE ENRICHMENT:
+#   - Binds skill_activation_governance (the registry's activation-decision governance) alongside
+#     skill_activation_decision_gate, and decides explicitly across activate / hold / deprecate.
+#   - Activation is gated on the FULL upstream evidence chain (provenance pin -> semantics -> script
+#     audit -> red-team -> misuse warnings -> binding), and locked semantics are RE-EVALUATED here.
+#   - Records the decision via activation_flag_controller so an activate decision is an auditable
+#     state transition (and a deprecate decision routes to stage #8 for revocation/rollback).
+#   - Renumbered from stage #6 to #7.
+version: draft-0.1
+stage_id: skill_activation_decision
+name: Skill Activation Decision
+purpose: >-
+  Skill'in aktive edileceğine, beklemeye alınacağına (hold) veya deprecate/update edileceğine
+  dair kararı kaydeder. Karar TÜM upstream evidence zincirine dayanır (provenance pin ->
+  semantics -> script audit -> red-team -> misuse warnings -> binding) ve self-approval
+  yapılamaz; öneren (skill_librarian_agent) ile karar veren (skill_runtime_safety_agent)
+  ayrışır (no_self_approval_policy). Locked semantics burada yeniden değerlendirilir. Karar
+  denetlenebilir bir state transition olarak kaydedilir.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_runtime_safety_agent   # DISTINCT from the binding proposer skill_librarian_agent (no self-approval)
+sub_agents: []
+
+uses_core_abilities:
+  - Memory       # recall the full upstream evidence chain to base the decision on
+  - Supervisor   # route multi-perspective adjudication of the decision (llm-council)
+
+uses_skills:
+  - calibrate     # rationale-backed confidence on the activate/hold/deprecate decision
+  - llm-council   # multi-perspective review of the activation decision
+  - gap-audit     # detect any missing/inconsistent upstream evidence before deciding
+
+uses_tools:
+  - activation_flag_controller   # record activate/hold/deprecate as an auditable state transition (trace: skill_activation_decision_trace)
+  - artifact_writer              # write SKILL_ACTIVATION_DECISION (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - skill_activation_decision_gate        # blocker — missing evidence or self-approval fails
+  - skill_activation_governance           # activation-decision governance (activate/hold/deprecate)
+  - locked_semantics_enforcement_policy   # RE-EVALUATED here (second binding stage for the locked-semantics policy)
+  - no_self_approval_policy               # STRUCTURAL: decider role distinct from binding proposer
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_binding_decision_schema       # evidence schema: the binding the decision adjudicates
+  - activation_decision_evidence_schema # evidence schema: the activate/hold/deprecate decision record
+  - skill_activation_trace_schema       # trace schema: the activation state transition
+  - skill_governance_trace_schema       # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+  - supervisor_routing_model
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_BINDING_PROPOSAL          # the proposal under review (authored by the distinct librarian role)
+  - SKILL_SEMANTIC_EXTRACT          # locked semantics re-evaluated here
+  - SKILL_PROVENANCE_RECORD         # confirm the activated bytes match the audited pin
+  - SCRIPT_REFERENCE_AUDIT_REPORT   # confirm script safety cleared
+  - SKILL_MISUSE_REDTEAM_REPORT     # confirm no open abuse path
+  - SKILL_MISUSE_WARNINGS           # confirm warnings authored
+outputs:
+  - SKILL_ACTIVATION_DECISION       # activate / hold / deprecate, with rationale + evidence references
+
+evidence:
+  - SKILL_ACTIVATION_DECISION
+trace:
+  - skill_activation_decision_trace
+  - gate_evaluation_trace
+
+# key gates:
+#   skill_activation_decision_gate (blocker) — cannot pass with missing evidence;
+#   activation_decider_distinct_from_binding_proposer (blocker) — STRUCTURAL no-self-approval;
+#   activation_evidence_chain_complete (blocker) — full upstream chain present + consistent + pin matches;
+#   locked_semantics_enforcement_policy (blocker) — locked semantics re-confirmed at activation.
+gates:
+  - skill_activation_decision_gate
+  - activation_decider_distinct_from_binding_proposer
+  - activation_evidence_chain_complete
+  - locked_semantics_enforcement_policy
+
+# on_pass: skill_deprecation_update (lifecycle tracking / when decision == deprecate or update) OR
+#          pipeline exit (when decision == activate and exit_criteria are met). Deprecate/update routes
+#          forward to #8 for revocation + rollback.
+on_pass: skill_deprecation_update
+on_fail: skill_binding_proposal
+rework_route: skill_binding_proposal
+
+blocking_conditions:
+  - self_approval_of_activation_decision
+  - required_evidence_missing_or_inconsistent
+  - activated_bytes_do_not_match_pinned_hash   # would activate something other than what was audited
+  - locked_semantics_violation
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,15 +1,20 @@
 required_evidence:
 - SKILL_INVENTORY_ENTRY
+- SKILL_PROVENANCE_RECORD
 - SKILL_SEMANTIC_EXTRACT
 - SCRIPT_REFERENCE_AUDIT_REPORT
 - SKILL_REFERENCE_INDEX
+- SKILL_PERMISSION_SCOPE_MAP
+- SKILL_MISUSE_REDTEAM_REPORT
 - SKILL_MISUSE_WARNINGS
 - SKILL_BINDING_PROPOSAL
 - SKILL_ACTIVATION_DECISION
+- SKILL_DEPRECATION_RECORD
 required_trace:
 - skill_package_read_trace
 - skill_semantic_extraction_trace
 - script_static_analysis_trace
+- skill_misuse_redteam_trace
 - misuse_warning_generation_trace
 - skill_binding_proposal_trace
 - skill_activation_decision_trace

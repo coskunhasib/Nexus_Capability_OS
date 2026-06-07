@@ -1,20 +1,43 @@
-# Activation Pipeline — Stage Contract
-# Stage #7: activation_completion
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.7.
-# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
-# Captures activation lessons for memory (refraction) so future activations are calibrated (md §2.7).
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #7 of 8: activation_completion   (execute the authorized activation + assemble evidence)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.7.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/29-development-completion.yaml (assemble +
+#   attest an evidence package) — but in the upgraded flow this stage EXECUTES the activation and then
+#   hands off to post_activation_monitoring (#8), which is the terminal aggregate gate.
+# Pipeline: activation_pipeline. owner_agent is a snake_case Agent role under activation_team.
+#
+# FLOW CHANGE (professional-grade): the catalog made activation_completion the terminal stage
+#   (on_pass: done). Reliability practice says an activation is NOT "done" the instant it executes — it
+#   must SOAK cleanly under observation first. So activation_completion now (a) executes the authorized
+#   activation at the approved scope, (b) assembles the full activation evidence package + traceability,
+#   (c) confirms the per-stage activation gates passed and the activation evidence is complete, then
+#   on_pass routes to post_activation_monitoring (#8). The cross-cutting final rollups
+#   all_required_gates_passed / no_blocking_policy_failure move to the TERMINAL stage (#8), which can
+#   only pass once the post-activation window is clean AND every required gate (this stage included)
+#   passed. This keeps a single authoritative terminal rollup.
+#
+# Depth notes:
+#   - refraction captures activation lessons for memory so future activations are calibrated (md §2.7);
+#     gap-audit confirms the evidence package + traceability are complete; prompt-fidelity confirms the
+#     executed activation matches the authorized scope (no scope drift between decision and execution).
+#   - on_fail routes to the relevant failed stage (e.g. rollback_readiness or pilot_evidence_review) per
+#     the def allowed_rework_routes (relevant_failed_stage).
+#   - uses_* are a SUBSET of activation_manager_agent's declared capabilities (agent_roles.yaml):
+#     skills [gap-audit, prompt-fidelity, refraction]; tools [activation_flag_controller,
+#     telemetry_reader, artifact_writer, evidence_writer, evidence_reader, policy_query];
+#     core [Supervisor, Memory, OS, Web].
 
 version: draft-0.1
 stage_id: activation_completion
 name: Activation Completion
 purpose: >-
-  Execute the authorized activation at the approved scope, assemble the full
-  activation evidence package and traceability, confirm all gates passed, and record
-  completion. Captures activation lessons for memory (refraction) so future
-  activations are calibrated.
+  Execute the authorized activation at the approved scope, assemble the full activation evidence
+  package and traceability, confirm the per-stage activation gates passed and the activation evidence
+  is complete, and record completion of the execution step. Capture activation lessons for memory
+  (refraction). On pass, hand off to the post-activation monitoring window (#8) — the activation is not
+  finalized until it has soaked cleanly.
 
 owner_team: activation_team
 team_lead: activation_team_lead
@@ -22,65 +45,67 @@ owner_agent: activation_manager_agent
 sub_agents: []
 
 uses_core_abilities:
-  - OS                # execute the authorized activation at the approved scope
-  - Memory            # capture activation lessons back into memory
-  - Web
-
+  - OS       # execute the authorized activation at the approved scope (toggle the flag)
+  - Memory   # capture activation lessons back into memory (refraction) for future calibration
+  - Web      # reference the live activation/telemetry surface while assembling evidence
 uses_skills:
-  - refraction        # capture activation lessons for memory / future calibration
-  - calibrate         # calibrate future activations from this run's outcome
-  - gap-audit         # confirm the evidence package and traceability are complete
-
+  - refraction        # capture activation lessons for memory / future calibration (md §2.7)
+  - prompt-fidelity   # confirm the executed activation matches the authorized scope (no drift)
+  - gap-audit         # confirm the evidence package and traceability are complete (no orphan artifact)
 uses_tools:
   - activation_flag_controller   # execute the authorized activation at the approved scope
-  - telemetry_reader
-  - artifact_writer
-  - evidence_writer
-  - evidence_reader
-  - policy_query
-
+  - telemetry_reader             # confirm post-execution signals are flowing before the soak window
+  - evidence_reader              # read all upstream evidence + gate results to assemble the package
+  - artifact_writer              # write ACTIVATION_COMPLETION_REPORT (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence / gate result (side-effect: governance + trace)
+  - policy_query                 # confirm no blocking policy failure before executing (side-effect-free)
 uses_governance_profiles:
   - activation_pipeline_governance
   - evidence_required_policy
-
 uses_audit_schemas:
   - activation_evidence_schema           # full activation evidence package (decision proof)
   - activation_transition_trace_schema   # trace (stage transitions) — kept distinct from evidence
   - stage_gate_trace_schema              # trace (gate decisions) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
-
 uses_context_memory_profiles:
   - activation_run_context
   - activation_decision_context_pack
 
 inputs:
-  - ACTIVATION_DECISION
-  - ROLLBACK_READINESS_REPORT
+  - ACTIVATION_DECISION            # from the owner decision (#5): authorized scope
+  - ROLLBACK_READINESS_REPORT      # from rollback readiness (#6): validated rollback path
+  - ALL_STAGE_GATE_RESULTS         # every upstream *_GATE_RESULT, for the evidence-completeness check
 
 outputs:
-  - ACTIVATION_COMPLETION_REPORT
+  - ACTIVATION_COMPLETION_REPORT   # executed scope + assembled evidence package + per-gate rollup
+  - ACTIVATION_EVIDENCE_PACKAGE    # the consolidated activation evidence consumed/audited by #8
+  - ACTIVATION_COMPLETION_GATE_RESULT  # binary gate result for the execution/assembly stage
 
 evidence:
   - ACTIVATION_COMPLETION_REPORT
+  - ACTIVATION_EVIDENCE_PACKAGE
+  - ACTIVATION_COMPLETION_GATE_RESULT
 
 trace:
   - activation_transition_trace
   - stage_gate_decision_trace
+  - policy_evaluation_trace
 
 gates:
-  - activation_evidence_complete
-  - all_required_gates_passed
-  - no_blocking_policy_failure
+  - activation_executed_at_authorized_scope   # executed scope == the scope the owner authorized (#5)
+  - activation_evidence_complete               # the full activation evidence package is assembled + present
+  - rollback_validated_before_completion       # rollback readiness (#6) passed before execution completed
 
-on_pass: done
+on_pass: post_activation_monitoring
 on_fail: relevant_failed_stage
 rework_route: relevant_failed_stage
 
+# Real failure conditions that hard-block completion (no empty load-bearing field).
 blocking_conditions:
-  - missing_release_candidate_evidence
-  - self_approval_of_activation_decision
+  - activation_scope_exceeds_authorized_scope   # executed wider than the owner authorized (scope drift)
+  - activation_evidence_incomplete              # a required activation evidence item is missing
+  - rollback_not_validated_before_completion    # completion attempted before rollback_readiness passed
 
 optional_conditions: []
 

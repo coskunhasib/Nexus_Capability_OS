@@ -1,80 +1,125 @@
 # Skill Governance Pipeline — Stage Contract 03: script_reference_audit
-# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.3)
-# Format mirror: configs/nexus-ai/stages/sdlc/04-requirements.yaml
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.3)
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/16-security-validation.yaml +
+#   configs/nexus-ai/stages/sdlc/17-supply-chain-sbom-license.yaml (a producer agent with multiple
+#   blocker gates, supply-chain + permission controls, populated blocking_conditions, annotated uses_*).
 # Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
-# Pipeline: skill_governance_pipeline. Stage #3 of 7. Stage class: always-on.
-# verification-loop used here ONLY with defect/bug-finding semantics (script defect sweep).
+# Pipeline: skill_governance_pipeline. Stage #3 of 8. Stage class: always-on.
+# verification-loop used here ONLY with defect/bug-finding semantics (script defect sweep) — LOCKED.
+#
+# PROFESSIONAL-GRADE COVERAGE ADDED IN THIS STAGE (two facets of script safety, folded as GATES — not
+# padded stages — because both are intrinsic to "is this skill's executable surface safe to run"):
+#   1. SUPPLY-CHAIN SCREENING of a script-bearing skill. Static analysis caught dangerous side-effects
+#      but never screened the skill's DECLARED dependencies / package reputation — an unvetted
+#      transitive dependency is a real activation risk. Added gate skill_supply_chain_screened
+#      (package_reputation_checker + dependency_scanner + sbom_generator), governed by
+#      supply_chain_governance. Applicable only to script/dependency-bearing skills (conditional).
+#   2. SANDBOX / LEAST-PRIVILEGE PERMISSION SCOPING. Nothing previously required the skill's scripts to
+#      be sandbox-confined or scoped to least privilege. Added gates script_sandbox_scoped +
+#      least_privilege_permission_scoped (agent_permission_auditor), governed by
+#      sandbox_execution_governance + high_risk_action_default_deny. Produces SKILL_PERMISSION_SCOPE_MAP.
+# The audit runs against the intake-pinned bytes (SKILL_PROVENANCE_RECORD) so what is audited is what is
+# activated. Reference files are indexed (SKILL_REFERENCE_INDEX) as before.
 version: draft-0.1
 stage_id: script_reference_audit
 name: Script Reference Audit
 purpose: >-
   scripts/** ve references/** üzerinde statik güvenlik/yan-etki denetimi yapar;
-  tehlikeli side-effect, gizli tool çağrısı, sandbox-dışı yürütme veya policy
-  bypass riskini çıkarır. verification-loop burada yalnız defect/bug-finding
-  semantiğiyle (script defect sweep) kullanılır; fmea ile script failure mode'ları
-  çıkarılır. Reference dosyaları indekslenir (SKILL_REFERENCE_INDEX).
+  tehlikeli side-effect, gizli tool çağrısı, sandbox-dışı yürütme veya policy bypass
+  riskini çıkarır. Ek olarak skill'in beyan ettiği bağımlılıkları supply-chain açısından
+  tarar (paket reputation + dependency + SBOM) ve scriptlerin sandbox içinde, least-privilege
+  ile scope'landığını denetler. verification-loop burada YALNIZ defect/bug-finding
+  semantiğiyle (script defect sweep) kullanılır; fmea ile script failure mode'ları çıkarılır.
+  Denetim intake'te pinlenen baytlara karşı yapılır; reference dosyaları indekslenir
+  (SKILL_REFERENCE_INDEX).
 owner_team: skill_governance_team
 team_lead: skill_governance_team_lead
 owner_agent: skill_runtime_safety_agent
 sub_agents: []
 
 uses_core_abilities:
-  - OS
-  - Coder
+  - OS       # execute the static analyzer / dependency scanner over the pinned package
+  - Coder    # reason over script side-effects, hidden tool calls, sandbox-escape patterns
+  - Web      # consult package-reputation / advisory signals for declared dependencies
 
 uses_skills:
-  - verification-loop   # LOCKED: defect/bug-finding semantics only (script defect sweep)
-  - fmea                # derive script failure modes
+  - verification-loop   # LOCKED defect/bug-finding semantics only (script defect sweep)
+  - fmea                # derive script failure modes (unsafe side-effect / escape / bypass)
+  - calibrate           # calibrate finding severity / false-positive rate of the audit
 
 uses_tools:
-  - script_static_analyzer
-  - reference_index_builder
-  - artifact_writer
-  - evidence_writer
+  - script_static_analyzer       # static security / side-effect sweep over scripts/** (trace: script_static_analysis_trace)
+  - reference_index_builder      # build SKILL_REFERENCE_INDEX over references/** (side-effect: governance + trace)
+  - dependency_scanner           # screen declared/transitive dependencies of a script-bearing skill
+  - package_reputation_checker   # reputation/advisory check on declared dependencies
+  - sbom_generator               # emit the skill's dependency SBOM as supply-chain evidence
+  - agent_permission_auditor     # audit script permission surface vs least-privilege + sandbox confinement
+  - artifact_writer              # write SCRIPT_REFERENCE_AUDIT_REPORT / SKILL_PERMISSION_SCOPE_MAP (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence (side-effect: governance + trace)
 
 uses_governance_profiles:
   - skill_governance_pipeline_governance
-  - script_reference_audit_gate
+  - script_reference_audit_gate      # blocker — unsafe_skill_script_unmitigated fails
+  - supply_chain_governance          # governs dependency/reputation/SBOM screening
+  - sandbox_execution_governance     # scripts must be sandbox-confined
+  - high_risk_action_default_deny    # least-privilege default-deny for the script permission surface
   - evidence_required_policy
 
 uses_audit_schemas:
-  - script_audit_evidence_schema
-  - skill_governance_trace_schema
+  - script_audit_evidence_schema    # evidence schema: the static-audit findings
+  - supply_chain_evidence_schema    # evidence schema: dependency/reputation/SBOM findings
+  - skill_governance_trace_schema   # trace schema (distinct from evidence)
 
 uses_model_provider_profiles:
-  - script_safety_analysis_model
+  - script_safety_analysis_model    # dedicated script-safety reasoning profile
 
 uses_context_memory_profiles:
   - skill_governance_run_context
   - skill_registry_context_pack
 
 inputs:
-  - SKILL_INVENTORY_ENTRY
-  - SKILL_SEMANTIC_EXTRACT
+  - SKILL_INVENTORY_ENTRY      # which package parts exist (scripts/**, references/**)
+  - SKILL_SEMANTIC_EXTRACT     # declared purpose/side-effects to audit declared-vs-actual behaviour against
+  - SKILL_PROVENANCE_RECORD    # the pinned version/hash — audit binds to the exact bytes that will be activated
 outputs:
-  - SCRIPT_REFERENCE_AUDIT_REPORT
-  - SKILL_REFERENCE_INDEX
+  - SCRIPT_REFERENCE_AUDIT_REPORT   # static security/side-effect findings + supply-chain findings, with mitigation status
+  - SKILL_REFERENCE_INDEX           # index of references/** files
+  - SKILL_PERMISSION_SCOPE_MAP      # least-privilege permission surface + sandbox-confinement decision for the scripts
 
 evidence:
   - SCRIPT_REFERENCE_AUDIT_REPORT
   - SKILL_REFERENCE_INDEX
+  - SKILL_PERMISSION_SCOPE_MAP
 trace:
   - script_static_analysis_trace
   - gate_evaluation_trace
 
-# key gates: script_reference_audit_gate (blocker) — fail if unsafe_skill_script_unmitigated;
-# reference_index_complete (major).
+# key gates:
+#   script_reference_audit_gate (blocker) — fail if unsafe_skill_script_unmitigated;
+#   reference_index_complete (major);
+#   skill_supply_chain_screened (blocker; conditional on script/dependency-bearing skill);
+#   script_sandbox_scoped (blocker) — scripts confined to sandbox;
+#   least_privilege_permission_scoped (blocker) — permission surface scoped least-privilege (default-deny).
 gates:
   - script_reference_audit_gate
   - reference_index_complete
+  - skill_supply_chain_screened
+  - script_sandbox_scoped
+  - least_privilege_permission_scoped
 
-on_pass: misuse_warning_generation
+on_pass: skill_misuse_redteam
 on_fail: skill_semantic_extraction
 rework_route: skill_semantic_extraction
 
 blocking_conditions:
   - unsafe_skill_script_unmitigated
-optional_conditions: []
+  - unvetted_skill_dependency_unmitigated      # declared/transitive dependency failed supply-chain screening
+  - script_not_sandbox_confined                 # scripts can execute outside the sandbox
+  - over_privileged_script_permission_scope     # permission surface exceeds least-privilege (default-deny breached)
+optional_conditions:
+  - skill_has_scripts        # supply-chain + sandbox gates apply to script-bearing skills
+  - skill_has_dependencies   # supply-chain screening applies when dependencies are declared
 conditional_required_gates: []
 
 max_iterations: 3

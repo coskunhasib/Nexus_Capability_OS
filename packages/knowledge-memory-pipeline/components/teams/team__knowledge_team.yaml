@@ -13,6 +13,7 @@ agents:
 - knowledge_intake_agent
 - source_classification_agent
 - memory_summarization_agent
+- knowledge_reconciliation_agent
 - validity_window_agent
 - retrieval_profile_agent
 - memory_expiration_agent

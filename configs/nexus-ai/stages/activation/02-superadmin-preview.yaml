@@ -1,81 +1,100 @@
-# Activation Pipeline — Stage Contract
-# Stage #2: superadmin_preview
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.2.
-# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
-# Enforces preview_required_gate: no pilot may begin without a passing preview (md §2.2).
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #2 of 8: superadmin_preview
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.2.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/27-operations-readiness.yaml.
+# Pipeline: activation_pipeline. owner_agent is a snake_case Agent role under activation_team; a Core
+#   Ability is NEVER an owner_agent. Enforces preview_required_gate: no pilot may begin without a
+#   passing superadmin/internal-only preview (md §2.2).
+#
+# PROFESSIONAL-GRADE COVERAGE folded into preview (staged-activation reliability):
+#   PRE-ACTIVATION HEALTH BASELINE. The catalog preview smoke-checked behavior + telemetry wiring but
+#   captured NO health baseline. Without a baseline of the steady-state health metrics (error rate,
+#   latency, saturation, key business signals) taken in the restricted internal-only context BEFORE
+#   external exposure, the pilot canary gate (#3) and the post-activation monitoring window (#8) have
+#   nothing to compare live telemetry against — "did activation degrade anything?" becomes unprovable.
+#   Added gate: health_baseline_captured. Added output: HEALTH_BASELINE (consumed by #3 and #8). This
+#   is the natural place to capture it: preview already wires + reads telemetry under controlled,
+#   non-customer-facing conditions. Genuine reliability control, not padding.
 
 version: draft-0.1
 stage_id: superadmin_preview
 name: Superadmin Preview
 purpose: >-
-  Activate the target in a restricted superadmin/internal-only context to confirm
-  it behaves as expected before any external exposure. Smoke-checks behavior,
-  telemetry wiring, and that the activation flag is controllable. Enforces
-  preview_required_gate — no pilot may begin without a passing preview.
+  Activate the target in a restricted superadmin/internal-only context to confirm it behaves as
+  expected before any external exposure: smoke-check behavior, confirm telemetry is observable and the
+  activation flag is controllable, and capture the steady-state HEALTH_BASELINE (error rate, latency,
+  saturation, key signals) that the pilot canary gate and the post-activation monitoring window check
+  live telemetry against. Enforces preview_required_gate — no pilot may begin without a passing preview.
 
 owner_team: activation_team
 team_lead: activation_team_lead
 owner_agent: activation_manager_agent
 sub_agents: []
 
+# uses_* are a SUBSET of activation_manager_agent's declared capabilities (agent_roles.yaml).
 uses_core_abilities:
-  - OS                # exercise the target in the restricted preview context
-  - Memory
-
+  - OS       # exercise the target in the restricted preview context; toggle the activation flag
+  - Memory   # recall prior preview baselines / behavior expectations for this target
+  - Web      # reference the live telemetry/observability surface during the preview
 uses_skills:
-  - gap-audit         # confirm preview coverage (behavior + telemetry wiring)
-  - calibrate         # calibrate preview observations before promoting to pilot
-
+  - gap-audit         # confirm preview coverage: behavior + telemetry wiring + baseline completeness
+  - prompt-fidelity   # confirm observed preview behavior matches the stated activation intent (no drift)
 uses_tools:
-  - activation_flag_controller   # confirm the activation flag is controllable
-  - telemetry_reader             # confirm telemetry is observable in preview
-  - artifact_writer
-  - evidence_writer
-  - policy_query
-
+  - activation_flag_controller   # confirm the activation flag is controllable in the preview scope
+  - telemetry_reader             # confirm telemetry is observable AND capture the HEALTH_BASELINE
+  - artifact_writer              # write PREVIEW_RESULT + HEALTH_BASELINE (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence / gate result (side-effect: governance + trace)
+  - policy_query                 # query preview/telemetry policy-as-data (side-effect-free)
 uses_governance_profiles:
   - activation_pipeline_governance
   - evidence_required_policy
   - preview_required_gate
-
 uses_audit_schemas:
   - activation_evidence_schema       # evidence (decision proof)
   - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
-
 uses_context_memory_profiles:
   - activation_run_context
   - preview_context_pack
 
 inputs:
-  - ACTIVATION_REQUEST
+  - ACTIVATION_REQUEST           # from intake (#1): target + requested scope + cohorts
+  - ABORT_CRITERIA               # from intake (#1): baseline must cover every abort-criterion signal
 
 outputs:
-  - PREVIEW_RESULT
+  - PREVIEW_RESULT               # preview behavior + telemetry-wiring + flag-controllability verdict
+  - HEALTH_BASELINE              # steady-state metrics captured pre-exposure; consumed by #3 and #8
+  - PREVIEW_GATE_RESULT          # binary gate result for the preview stage
 
 evidence:
   - PREVIEW_RESULT
+  - HEALTH_BASELINE
+  - PREVIEW_GATE_RESULT
 
 trace:
   - preview_activation_trace
   - stage_gate_decision_trace
+  - policy_evaluation_trace
 
 gates:
-  - preview_required_gate
-  - preview_behaves_as_expected
-  - telemetry_observable_in_preview
+  - preview_required_gate             # no pilot may begin without a passing preview (blocking)
+  - preview_behaves_as_expected       # smoke-check passes in the restricted internal-only context
+  - telemetry_observable_in_preview   # telemetry/observability confirmed wired and readable
+  - health_baseline_captured          # steady-state baseline recorded for every abort-criterion signal
 
 on_pass: pilot_activation
 on_fail: superadmin_preview
 rework_route: superadmin_preview
 
+# Real failure conditions that hard-block preview (no empty load-bearing field).
 blocking_conditions:
-  - pilot_activation_attempted_without_superadmin_preview_pass
+  - pilot_activation_attempted_without_superadmin_preview_pass   # def blocking_condition
+  - preview_behavior_unexpected                                  # target misbehaves in preview
+  - telemetry_not_observable_in_preview                          # cannot observe -> cannot canary later
+  - health_baseline_incomplete_for_abort_criteria                # a baseline signal needed by abort criteria is missing
 
 optional_conditions: []
 

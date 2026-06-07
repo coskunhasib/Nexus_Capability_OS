@@ -1,13 +1,44 @@
 # Nexus AI Orchestration Model — Knowledge / Memory Pipeline (pipeline definition)
-# Machine-readable transcription of the catalog entry. Field set mirrors
+# Machine-readable transcription of the catalog entry, ENRICHED to professional-grade reliability
+# (the sdlc / research_pipeline calibration bar). Field set mirrors
 # configs/nexus-ai/sdlc_pipeline.yaml exactly.
-# Source of truth (transcribed, not invented):
+# Source of truth (transcribed, then enriched — not invented):
 #   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
 #   §1 Pipeline Definition Contract (the YAML fields) + §2 Per-stage definitions.
 # Top structure is the Nexus AI Orchestration Model; Knowledge / Memory is ONE pipeline under it.
 # Locked notes (md §"Locked-decision notes"): Memory stays a Core Ability and is NEVER promoted to
 #   an agent; owner_agent is always a snake_case Agent role; the team lead is the pipeline-specific
 #   knowledge_team_lead role (NOT Supervisor). Skill != Tool, Governance != Audit, Evidence != Trace.
+#   Claimed skills stay the catalog set [gap-audit, calibrate, refraction, bayesian-update]; prism and
+#   verification-loop are intentionally NOT claimed (md §Locked notes).
+#
+# PROFESSIONAL-GRADE UPGRADE. The catalog's original 6-stage flow was brought to SDLC-level rigor.
+# Coverage changes (each closes a control the md named in prose but did not gate, or a control the
+# md did not address at all — no padding):
+#   - ADDED stage knowledge_conflict_resolution (#4): reconcile the candidate against the EXISTING
+#     corpus (dedup + contradiction) and record a disposition (supersede/merge/coexist/reject) BEFORE
+#     a validity window is assigned or retrieval exposure is granted. The md addressed neither dedup
+#     nor conflict; silently ingesting duplicate/contradictory knowledge is the biggest real hole.
+#     It is the ONE new stage (it must precede validity/retrieval to be meaningful).
+#   - ADDED gates inside existing stages: PII / sensitive-content DETECTION (source_classification #2,
+#     making the existing redaction gate meaningful), GROUNDING / no-unsupported-claim
+#     (summary_generation #3), SUPERSEDED-memory removal from retrieval (retrieval_profile_update #6),
+#     on-demand DELETION / right-to-be-forgotten (memory_expiration_review #7, conditional), and a
+#     terminal PROVENANCE-COMPLETENESS rollup (memory_expiration_review #7).
+#   => 7 stages. No-self-approval / no-bypass preserved (team_lead_cannot_self_approve_or_bypass_gate;
+#     knowledge_reconciliation_agent and memory_expiration_agent judge artifacts they did not author).
+#
+# REPORTED registry needs (NOT edited here — shared registries are owned by parallel agents):
+#   - NEW Agent role: knowledge_reconciliation_agent (knowledge_team; owns knowledge_conflict_resolution;
+#     reviewed_by knowledge_team_lead).
+#   - NEW sub-agents: sensitive_content_detection_subagent (parent source_classification_agent),
+#     corpus_conflict_detection_subagent (parent knowledge_reconciliation_agent),
+#     memory_lifecycle_audit_subagent (parent memory_expiration_agent).
+#   - provenance_recorder.allowed_callers must add knowledge_reconciliation_agent.
+#   - MISSING shared capability: no knowledge-callable conflict/consistency tool
+#     (evidence_consistency_checker is SDLC-locked) and no right-to-be-forgotten / deletion governance
+#     gate or knowledge-callable deletion tool (deletion_flow_checker + data_retention_gate are
+#     SDLC-stage-19-locked).
 version: draft-0.1
 pipeline_id: knowledge_memory_pipeline
 name: Knowledge / Memory Pipeline
@@ -42,57 +73,84 @@ entry_criteria:
   - candidate_origin_reference_present
   - target_knowledge_scope_declared
 
-# Conditions that mark the pipeline complete (md §1 exit_criteria).
+# Conditions that mark the pipeline complete (md §1 exit_criteria + the professional-grade controls:
+# corpus reconciliation, sensitive-content detection, grounding, and a complete provenance chain).
 exit_criteria:
   - source_classification_complete
+  - sensitive_content_detected_and_redacted_if_required   # detection ran; redaction applied where required (#2)
   - summary_generated_and_calibrated
+  - summary_grounded_no_unsupported_claims                 # every summary claim grounded in source (#3)
+  - corpus_conflicts_and_duplicates_resolved               # reconciliation disposition recorded (#4)
   - validity_window_assigned
   - retrieval_profile_updated_or_explicitly_skipped
+  - superseded_memory_removed_from_retrieval_if_any         # supersede decision enforced at retrieval (#6)
   - expiration_review_outcome_recorded
+  - deletion_request_honored_if_requested                   # RTBF / on-demand deletion honored (#7)
   - memory_provenance_evidence_complete
 
-# Pipeline-level conditions that block progression / release (md §1 blocking_conditions).
+# Pipeline-level conditions that block progression / release (md §1 blocking_conditions + the new
+# professional-grade failure conditions surfaced by the added gates).
 blocking_conditions:
   - source_classification_missing
+  - sensitive_content_scan_not_run                          # detection must actually run (#2)
   - unredacted_sensitive_content_detected
+  - unsupported_claim_in_summary                            # no-hallucination (#3)
+  - contradiction_left_unresolved                           # reconciliation (#4)
+  - duplicate_left_undispositioned                          # reconciliation (#4)
   - validity_window_missing
   - provenance_record_missing
   - retrieval_profile_update_without_validity_window
+  - superseded_memory_left_in_retrieval                     # supersede not enforced (#6)
+  - deletion_requested_but_not_honored                      # RTBF not honored (#7)
 
-# Permitted rework routes (md §1 allowed_rework_routes). Each value is "source -> target",
-# where both endpoints are known stage_ids (transcribed verbatim from the md).
+# Permitted rework routes (md §1 allowed_rework_routes + the new routes for knowledge_conflict_resolution
+# #4). Each value is "source -> target", where both endpoints are known stage_ids. Each must match the
+# producing stage's own on_fail/rework_route.
 allowed_rework_routes:
   - source_classification -> memory_intake
   - summary_generation -> source_classification
+  - knowledge_conflict_resolution -> summary_generation
   - validity_window_assignment -> source_classification
   - retrieval_profile_update -> validity_window_assignment
   - memory_expiration_review -> validity_window_assignment
 
-# Evidence artifacts the pipeline must produce (md §1 required_evidence).
-# Evidence = decision proof, DISTINCT from trace.
+# Evidence artifacts the pipeline must produce (md §1 required_evidence + the new decision-proof
+# artifacts the professional-grade controls produce). Evidence = decision proof, DISTINCT from trace.
 required_evidence:
   - MEMORY_INTAKE_RECORD
   - SOURCE_CLASSIFICATION_REPORT
+  - SENSITIVE_CONTENT_DETECTION_REPORT    # PII / secrets / regulated-content findings (#2)
   - MEMORY_SUMMARY
+  - SUMMARY_GROUNDING_REPORT              # per-claim grounding to source spans (#3)
+  - CONFLICT_RESOLUTION_REPORT            # dedup / contradiction dispositions (#4)
   - VALIDITY_WINDOW_DECISION
   - RETRIEVAL_PROFILE_UPDATE_REPORT
   - MEMORY_EXPIRATION_REVIEW_REPORT
+  - MEMORY_LIFECYCLE_PROVENANCE_AUDIT     # end-to-end provenance-chain completeness audit (#7)
   - MEMORY_PROVENANCE_RECORD
 
-# Trace records the pipeline must produce (md §1 required_trace).
+# Trace records the pipeline must produce (md §1 required_trace + the new stage/sub-agent traces).
 # Trace = operation/decision log, DISTINCT from evidence.
 required_trace:
   - memory_intake_trace
   - source_classification_trace
+  - sensitive_content_detection_trace          # sub-agent detection (#2)
   - summary_generation_skill_activation_trace
+  - knowledge_conflict_resolution_trace        # reconciliation (#4)
+  - corpus_conflict_detection_trace            # sub-agent detection (#4)
   - validity_window_assignment_trace
   - retrieval_profile_update_trace
   - memory_expiration_review_trace
+  - lifecycle_provenance_audit_trace           # sub-agent provenance rollup (#7)
 
+# Canonical stage set (7). knowledge_conflict_resolution (#4) was ADDED for professional-grade
+# reliability; order is load-bearing — reconciliation must precede validity_window_assignment and
+# retrieval_profile_update.
 stages:
   - memory_intake
   - source_classification
   - summary_generation
+  - knowledge_conflict_resolution
   - validity_window_assignment
   - retrieval_profile_update
   - memory_expiration_review
@@ -140,25 +198,37 @@ uses_context_memory_profiles:
   - retrieval_profile_context_pack
 
 # Required gates. The md does not define a dedicated D-016-style canonical gate set; the
-# always-required gates here are the md's per-stage blocker gates (§2) that are unconditional,
-# plus the no-self-approval structural gate from §3.1. The two applicability-gated blocker gates
-# (§2.2 redaction_applied_if_required; §2.6 expired_memory_retired_from_retrieval) are listed
-# under `conditional`.
+# always-required gates here are the md's per-stage blocker gates (§2) that are unconditional, plus
+# the no-self-approval structural gate from §3.1, PLUS the professional-grade rollup gates added for
+# the calibration upgrade (sensitive-content detection, no-unsupported-claim grounding, corpus
+# reconciliation, provenance completeness). `conditional` carries the applicability-gated blocker
+# gates — see required_gate_producers in knowledge_memory_pipeline_runtime_rules.yaml for the
+# gate -> producing-stage map.
 required_gates:
   always:
     - intake_metadata_complete
     - provenance_seed_recorded
+    - target_scope_declared                          # NEW: producing_stage memory_intake (#1)
     - source_trust_tier_assigned
     - sensitivity_classified
+    - sensitive_content_detection_complete           # NEW: producing_stage source_classification (#2)
     - summary_grounded_in_source
+    - no_unsupported_claim_in_summary                # NEW: producing_stage summary_generation (#3)
+    - corpus_conflict_scan_complete                  # NEW: producing_stage knowledge_conflict_resolution (#4)
+    - duplicate_resolution_recorded                  # NEW: producing_stage knowledge_conflict_resolution (#4)
+    - contradiction_resolution_recorded              # NEW: producing_stage knowledge_conflict_resolution (#4)
+    - no_unresolved_contradiction_admitted           # NEW: producing_stage knowledge_conflict_resolution (#4)
     - validity_window_present
     - update_bound_to_validity_window
     - sensitivity_exposure_consistent
     - expiration_outcome_recorded
+    - memory_provenance_evidence_complete            # NEW: producing_stage memory_expiration_review (#7)
     - team_lead_cannot_self_approve_or_bypass_gate
   conditional:
     - redaction_applied_if_required
+    - superseded_memory_removed_from_retrieval       # NEW: producing_stage retrieval_profile_update (#6)
     - expired_memory_retired_from_retrieval
+    - right_to_be_forgotten_honored_if_requested     # NEW: producing_stage memory_expiration_review (#7)
 
 canonical_docs:
   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md

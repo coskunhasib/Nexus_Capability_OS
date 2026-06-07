@@ -1,0 +1,33 @@
+id: agent_permission_auditor
+name: Agent Permission Auditor
+type: tool
+category: tool
+status: canonical
+purpose: Audit an agent's tool-permission scope against least-privilege expectations.
+owner_domain: ai_safety
+provided_by_core_ability: null
+input_schema:
+  agent_permission_map: object
+  least_privilege_baseline: object
+output_schema:
+  permission_findings:
+  - object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- agentic_safety_agent
+allowed_usage:
+- Read-only audit of permission scope vs least-privilege.
+forbidden_usage:
+- Granting or modifying permissions (audit only).
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - ai_agent_safety_evaluation
+notes: Read-only auditor (Audit family is read/observe; Governance grants/denies).

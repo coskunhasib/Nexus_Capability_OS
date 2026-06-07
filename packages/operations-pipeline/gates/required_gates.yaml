@@ -2,11 +2,17 @@ required_gates:
   always:
   - incident_record_present
   - affected_capability_identified
+  - signal_validated_not_false_positive
   - severity_assigned
+  - sla_and_response_target_assigned
   - mitigation_plan_present
+  - mitigation_vs_permanent_fix_classified
   - rollback_or_fix_executed
   - runbook_or_rollback_evidence_present
+  - resolution_type_recorded
+  - all_corrective_actions_registered
   - operational_learning_record_present
   - no_blocking_policy_failure
   conditional:
   - postmortem_present_if_required_severity
+  - postmortem_independently_reviewed_if_required_severity

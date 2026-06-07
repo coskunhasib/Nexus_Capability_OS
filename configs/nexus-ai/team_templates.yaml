@@ -763,10 +763,15 @@ team_templates:
       - knowledge_intake_agent             # owns: memory_intake
       - source_classification_agent        # owns: source_classification
       - memory_summarization_agent         # owns: summary_generation
+      - knowledge_reconciliation_agent     # owns: knowledge_conflict_resolution (NEW)
       - validity_window_agent              # owns: validity_window_assignment
       - retrieval_profile_agent            # owns: retrieval_profile_update
       - memory_expiration_agent            # owns: memory_expiration_review
-    direct_sub_agents: []   # knowledge pipeline defines no sub-agents
+    # The knowledge pipeline's sub-agents are all PARENTED to a knowledge_team agent (no orphans):
+    #   sensitive_content_detection_subagent -> source_classification_agent     (source_classification #2)
+    #   corpus_conflict_detection_subagent   -> knowledge_reconciliation_agent  (knowledge_conflict_resolution #4)
+    #   memory_lifecycle_audit_subagent      -> memory_expiration_agent         (memory_expiration_review #7)
+    direct_sub_agents: []   # every knowledge sub-agent is parented (no team-lead-direct-call)
     uses_core_abilities:
       - Memory               # USED by the agents; never the owner / never an agent
       - Supervisor

@@ -20,14 +20,27 @@
 #   governance profile listed in that stage's uses_governance_profiles, each a first-class item in
 #   configs/nexus-ai/governance_profiles.yaml (so every rule id below resolves — no dangling edge).
 #
+# PROFESSIONAL-GRADE UPGRADE carried here (derived from the enriched definition + stage contracts):
+#   - 8 stages now (skill_misuse_redteam #4 added — the one new stage; an adversarial abuse/misuse
+#     red-team that precedes misuse_warning_generation and grounds it).
+#   - New always rollup gates: skill_provenance_verified + skill_version_hash_pinned (#1),
+#     script_sandbox_scoped + least_privilege_permission_scoped (#3), skill_misuse_redteam_gate (#4),
+#     activation_decider_distinct_from_binding_proposer (#7). New conditional gates:
+#     skill_supply_chain_screened (#3, script/dependency-bearing skills) + skill_deprecation_required_gate (#8).
+#
 # LOCKED-DECISION compliance baked into this pipeline (carried, not re-invented here):
 #   - Skill semantics LOCKED: prism = brainstorming/divergence only; verification-loop = bug/defect
-#     finding only. Enforced by locked_semantics_enforcement_policy at skill_semantic_extraction and
-#     re-evaluated at skill_activation_decision.
+#     finding only. Enforced by locked_semantics_enforcement_policy at skill_semantic_extraction (#2)
+#     and re-evaluated at skill_activation_decision (#7); also re-checked adversarially under coercion
+#     at skill_misuse_redteam (#4, locked_semantics_resist_coercion).
 #   - Binding never precedes semantics (anti-pattern blocked): skill_binding_proposal requires the
-#     upstream semantic + script-audit + misuse-warning evidence (skill_binding_proposal_gate).
-#   - No self-approval: the activation decider (skill_runtime_safety_agent) differs from the proposer
-#     (skill_librarian_agent); enforced in the stage contract by no_self_approval_policy.
+#     upstream semantic + script-audit + red-team + misuse-warning evidence (skill_binding_proposal_gate
+#     + skill_must_have_semantic_extraction_before_binding).
+#   - No self-approval: the activation decider (skill_runtime_safety_agent) differs from the binding
+#     proposer (skill_librarian_agent); enforced in the stage contract by no_self_approval_policy and
+#     the activation_decider_distinct_from_binding_proposer gate (#7).
+#   - Provenance + pin: the audited bytes are the activated bytes (skill_version_hash_pinned #1 ->
+#     activated_bytes_do_not_match_pinned_hash guard #7); deprecation re-validates against the new pin.
 #   - Core Abilities [Supervisor, Memory, OS, Coder, Web] are abilities only: none appears as an
 #     owner or a routing target here (routing targets are pipeline stage_ids / canonical terminals).
 
@@ -62,23 +75,26 @@ routing_terminals:
 #   uses_governance_profiles, so a checker can prove each required gate has a real producer (no
 #   dangling edge: present in required_gates, resolving to nothing).
 #
-# SCOPE: every gate in skill_governance_pipeline.yaml required_gates (8 always + 1 conditional).
+# SCOPE: every gate in skill_governance_pipeline.yaml required_gates (14 always + 2 conditional).
 #   Gates that are themselves first-class governance profiles (skill_semantic_required_gate,
 #   script_reference_audit_gate, misuse_warning_required_gate, skill_binding_proposal_gate,
 #   skill_activation_decision_gate, skill_deprecation_required_gate, locked_semantics_enforcement_policy)
 #   map directly; component gates that are NOT standalone governance profiles
-#   (skill_intake_inventory_complete, reference_index_complete) are produced by their stage and
-#   carried by that stage's gate-bearing governance rule (recorded as producing_rule).
+#   (skill_intake_inventory_complete, skill_provenance_verified, skill_version_hash_pinned,
+#   reference_index_complete, script_sandbox_scoped, least_privilege_permission_scoped,
+#   skill_misuse_redteam_gate, activation_decider_distinct_from_binding_proposer,
+#   skill_supply_chain_screened) are produced by their stage and carried by a gate-bearing governance
+#   rule in that stage's uses_governance_profiles (recorded as producing_rule).
 #
 # CHECKER CONTRACT (how to verify): for each entry, assert
 #   (a) `gate` ∈ skill_governance_pipeline.yaml required_gates.always (or .conditional),
-#   (b) `producing_stage` ∈ the canonical 7-stage set (or `pipeline` for cross-cutting policy gates),
+#   (b) `producing_stage` ∈ the canonical 8-stage set (or `pipeline` for cross-cutting policy gates),
 #   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
 #       stage's uses_governance_profiles,
 #   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
 # Any unmet assertion = a dangling required-gate edge.
 required_gate_producers:
-  scope: skill_governance_required_gates_all   # all 9 required gates (8 always + 1 conditional)
+  scope: skill_governance_required_gates_all   # all 16 required gates (14 always + 2 conditional)
   note: >-
     Each gate in skill_governance_pipeline.yaml required_gates is SATISFIED BY the producing stage's
     gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
@@ -96,6 +112,30 @@ required_gate_producers:
         a standalone governance profile, so its gate-bearing rule is the stage-bound
         skill_governance_pipeline_governance.
 
+    - gate: skill_provenance_verified                   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: skill_intake                     # stage #1
+      producing_rule: supply_chain_governance            # governance_profiles.yaml; in skill_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_provenance_verified
+      note: >-
+        Blocker component gate — canonical_source resolves and is attributable (provenance_recorder).
+        Not a standalone governance profile, so its gate-bearing rule is supply_chain_governance, which
+        the stage binds. Pipeline blocking_condition skill_provenance_unverified guards it.
+
+    - gate: skill_version_hash_pinned                   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: skill_intake                     # stage #1
+      producing_rule: supply_chain_governance            # governance_profiles.yaml; in skill_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_version_hash_pinned
+      note: >-
+        Blocker component gate — an immutable version + content hash is recorded so every later stage
+        (audit/redteam/binding/activation) and the deprecation re-validation pin to the SAME bytes.
+        This is the anchor for activated_bytes_do_not_match_pinned_hash (#7) and the version/hash
+        re-validation at skill_deprecation_update (#8). Pipeline blocking_condition
+        skill_version_or_hash_unpinned guards it.
+
     - gate: skill_semantic_required_gate                # required_gates.always
       tier: always
       producing_stage: skill_semantic_extraction        # stage #2
@@ -105,7 +145,8 @@ required_gate_producers:
       note: >-
         MANDATORY stage that must precede any binding (anti-pattern: binding without semantics).
         Blocker gate: semantic_category, primary_purpose, not_for, used_by_agents, used_in_stages and
-        confidence >= threshold required.
+        confidence >= threshold required. The stage also carries the two locked-semantics binding gates
+        (prism_bound_as_divergence, verification_loop_bound_as_bug_finding) + semantic_confidence_above_threshold.
 
     - gate: locked_semantics_enforcement_policy         # required_gates.always
       tier: always
@@ -115,10 +156,11 @@ required_gate_producers:
         - locked_semantics_enforcement_policy
       note: >-
         Cross-cutting LOCKED-semantics policy gate (prism = divergence only; verification-loop =
-        bug/defect finding only). It is bound and evaluated at MORE THAN ONE stage — produced at
-        skill_semantic_extraction (stage #2) and RE-EVALUATED at skill_activation_decision (stage #6)
-        — so it has no single producing stage. producing_stage: pipeline. Both stages list it in
-        gates and in uses_governance_profiles.
+        bug/defect finding only). Bound and evaluated at MORE THAN ONE stage — produced at
+        skill_semantic_extraction (#2), re-checked adversarially under coercion at skill_misuse_redteam
+        (#4, locked_semantics_resist_coercion) and RE-EVALUATED at skill_activation_decision (#7) — so
+        it has no single producing stage. producing_stage: pipeline. Stages #2 and #7 list it in gates
+        and in uses_governance_profiles (and bind it at #4/#5 too).
 
     - gate: script_reference_audit_gate                 # required_gates.always
       tier: always
@@ -141,58 +183,137 @@ required_gate_producers:
         not a standalone governance profile, so its gate-bearing rule is the stage's
         script_reference_audit_gate.
 
+    - gate: script_sandbox_scoped                       # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: script_reference_audit           # stage #3
+      producing_rule: sandbox_execution_governance       # governance_profiles.yaml; in script_reference_audit.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - script_sandbox_scoped
+      note: >-
+        Blocker component gate — the skill's scripts are confined to a sandbox (agent_permission_auditor).
+        Carried by sandbox_execution_governance. Pipeline blocking_condition script_not_sandbox_confined
+        guards it. Produces SKILL_PERMISSION_SCOPE_MAP.
+
+    - gate: least_privilege_permission_scoped           # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: script_reference_audit           # stage #3
+      producing_rule: high_risk_action_default_deny      # governance_profiles.yaml; in script_reference_audit.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - least_privilege_permission_scoped
+      note: >-
+        Blocker component gate — the script permission surface is scoped least-privilege (default-deny).
+        Carried by high_risk_action_default_deny. Pipeline blocking_condition
+        over_privileged_script_permission_scope guards it. The binding stage (#6,
+        binding_scope_within_permission_scope) re-checks proposed bindings against this scope.
+
+    - gate: skill_misuse_redteam_gate                   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: skill_misuse_redteam             # stage #4 (NEW)
+      producing_rule: agentic_safety_governance          # governance_profiles.yaml; in skill_misuse_redteam.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - locked_semantics_resist_coercion
+        - no_unsafe_tool_delegation_via_skill
+        - skill_injection_resistance_pass
+      note: >-
+        Rollup gate for the ADDED adversarial abuse/misuse red-team stage (#4). Satisfied by the stage's
+        three blocker component gates (semantics hold under coercion; no unsafe tool delegation; resists
+        injection/poisoning). Carried by agentic_safety_governance (the stage also binds
+        tool_misuse_governance + context_safety_governance). Pipeline blocking_conditions
+        locked_semantics_coercion_succeeded + unsafe_tool_delegation_via_skill guard it. Its findings
+        ground the misuse warnings authored at #5 (redteam_findings_covered_by_warnings).
+
     - gate: misuse_warning_required_gate                # required_gates.always
       tier: always
-      producing_stage: misuse_warning_generation        # stage #4
+      producing_stage: misuse_warning_generation        # stage #5
       producing_rule: misuse_warning_required_gate       # governance_profiles.yaml; in misuse_warning_generation.uses_governance_profiles
       satisfied_by_stage_gates:
         - misuse_warning_required_gate
       note: >-
         Blocker gate — cannot pass with empty/missing misuse-warning; at least one not_for warning
-        required for each locked-semantics skill. Precondition for binding + activation.
+        required for each locked-semantics skill. The stage also carries
+        redteam_findings_covered_by_warnings (every demonstrated abuse path has a not_for warning).
+        Precondition for binding + activation.
 
     - gate: skill_binding_proposal_gate                 # required_gates.always
       tier: always
-      producing_stage: skill_binding_proposal           # stage #5
+      producing_stage: skill_binding_proposal           # stage #6
       producing_rule: skill_binding_proposal_gate        # governance_profiles.yaml; in skill_binding_proposal.uses_governance_profiles
       satisfied_by_stage_gates:
         - skill_binding_proposal_gate
       note: >-
         Blocker gate — fail if binding_proposed_without_semantics (cannot pass without upstream
-        semantic/audit/misuse evidence). Produces a PROPOSAL, not a decision.
+        semantic/audit/redteam/misuse evidence). The stage also binds the dedicated anti-pattern guard
+        skill_must_have_semantic_extraction_before_binding and carries
+        binding_scope_within_permission_scope + binding_targets_have_no_unmitigated_redteam_finding.
+        Produces a PROPOSAL, not a decision.
 
     - gate: skill_activation_decision_gate              # required_gates.always
       tier: always
-      producing_stage: skill_activation_decision         # stage #6
+      producing_stage: skill_activation_decision         # stage #7
       producing_rule: skill_activation_decision_gate     # governance_profiles.yaml; in skill_activation_decision.uses_governance_profiles
       satisfied_by_stage_gates:
         - skill_activation_decision_gate
       note: >-
-        Blocker gate — cannot pass with missing evidence or self_approval_of_activation_decision.
-        Review independence: decider (skill_runtime_safety_agent) != proposer (skill_librarian_agent),
-        enforced by no_self_approval_policy bound at this stage.
+        Blocker gate — cannot pass with missing evidence or self_approval_of_activation_decision. The
+        stage also carries activation_evidence_chain_complete and re-evaluates
+        locked_semantics_enforcement_policy.
+
+    - gate: activation_decider_distinct_from_binding_proposer   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: skill_activation_decision         # stage #7
+      producing_rule: no_self_approval_policy            # governance_profiles.yaml (alias of no_self_approval); in skill_activation_decision.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - activation_decider_distinct_from_binding_proposer
+      note: >-
+        STRUCTURAL no-self-approval gate — the activation decider (skill_runtime_safety_agent) is a
+        DISTINCT role from the binding proposer (skill_librarian_agent; agent_roles.yaml records the
+        librarian's skill_governance also_serves binding as reviewed_by: skill_runtime_safety_agent).
+        Carried by no_self_approval_policy. Pipeline blocking_condition self_approval_of_activation_decision
+        guards it. This is the producer!=validator edge of this pipeline.
+
+    # --- conditional (applicability-gated) ------------------------------------------------------
+    - gate: skill_supply_chain_screened                 # required_gates.conditional (NEW — professional-grade)
+      tier: conditional
+      producing_stage: script_reference_audit           # stage #3
+      producing_rule: supply_chain_governance            # governance_profiles.yaml; in script_reference_audit.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_supply_chain_screened
+      conditional_required_when: >-
+        skill_has_scripts == true or skill_has_dependencies == true (script/dependency-bearing skill;
+        the stage's optional_conditions). When the skill declares no scripts/dependencies the gate
+        evaluates to pass_if_not_applicable and does not block.
+      note: >-
+        Conditional gate. Screens declared/transitive dependencies (package_reputation_checker +
+        dependency_scanner + sbom_generator) and emits SUPPLY_CHAIN evidence. Pipeline blocking_condition
+        unvetted_skill_dependency_unmitigated guards the applicable case. Mirrors the SDLC conditional-
+        gate pattern (a gate required only when its applicability condition holds).
 
     - gate: skill_deprecation_required_gate             # required_gates.conditional
       tier: conditional
-      producing_stage: skill_deprecation_update          # stage #7 (CONDITIONAL)
+      producing_stage: skill_deprecation_update          # stage #8 (CONDITIONAL)
       producing_rule: skill_deprecation_required_gate     # governance_profiles.yaml; in skill_deprecation_update.uses_governance_profiles
       satisfied_by_stage_gates:
         - skill_deprecation_required_gate
       conditional_required_when: >-
-        deprecation_or_update == true or version_or_hash_changed == true
+        deprecation_or_update == true or version_or_hash_changed == true or
+        activation_decision in {deprecate, hold}
       note: >-
-        Conditional gate (major). Stage #7 runs only when deprecation_or_update is active in
-        risk_profiles OR version/hash changed. On version/hash change, skill_semantic_required_gate
-        is re-triggered (the stage's conditional_required_gates).
+        Conditional gate (major). Stage #8 runs only when deprecation_or_update is active in
+        risk_profiles, version/hash changed, OR the activation decision (#7) was deprecate/hold. The
+        stage also carries the blocker gates skill_revocation_executed + activation_rollback_validated
+        (revoke the active binding/flag and validate rollback to the prior safe state). On version/hash
+        change, skill_semantic_required_gate is re-triggered (the stage's conditional_required_gates),
+        re-validated against the new pinned hash.
 
   invariants:
     - Every `gate` MUST exist in configs/nexus-ai/skill_governance_pipeline.yaml required_gates
       (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
     - Every `producing_stage` MUST be a canonical stage_id in
       configs/nexus-ai/skill_governance_pipeline.yaml, OR `pipeline` for a cross-cutting policy gate
-      that has no single producing stage (locked_semantics_enforcement_policy).
-    - "Every `producing_rule` MUST resolve to a governance profile id in configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles (for producing_stage pipeline, in the uses_governance_profiles of every stage that binds it)."
-    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/skill-governance/*.yaml); for producing_stage: pipeline, in the gates list of at least one binding stage."
+      that has no single producing stage (locked_semantics_enforcement_policy, bound at #2/#4/#7).
+    - "Every `producing_rule` MUST resolve to a governance profile id in configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles (for producing_stage pipeline, in the uses_governance_profiles of every stage that binds it). The _policy-suffixed ids no_self_approval_policy / evidence_required_policy are registered aliases of canonical no_self_approval / evidence_required."
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/skill-governance/*.yaml); for producing_stage: pipeline, in the gates list of at least one binding stage. A rollup gate (skill_misuse_redteam_gate) names its producing stage's component gates."
+    - "A conditional gate's satisfied_by_stage_gates names the un-suffixed component gate on the producing stage; when its conditional_required_when does not hold (e.g. a skill with no scripts/dependencies for skill_supply_chain_screened) it evaluates to pass_if_not_applicable and does not block."
     - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change skill_governance_pipeline.yaml."
 
 # =====================================================================================
@@ -200,7 +321,7 @@ required_gate_producers:
 # =====================================================================================
 rework_routing_table:
 
-  # -- Authoritative per-stage routes (complete; covers all 7 canonical stages) ----------
+  # -- Authoritative per-stage routes (complete; covers all 8 canonical stages) ----------
   # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
   # Values copied from each stage's own canonical `on_fail` / `rework_route` in
   # configs/nexus-ai/stages/skill-governance/*.yaml (on_fail == rework_route for every stage).
@@ -208,7 +329,8 @@ rework_routing_table:
     skill_intake: skill_intake
     skill_semantic_extraction: skill_intake
     script_reference_audit: skill_semantic_extraction
-    misuse_warning_generation: script_reference_audit
+    skill_misuse_redteam: skill_semantic_extraction      # NEW stage #4 (on_fail = skill_semantic_extraction)
+    misuse_warning_generation: skill_misuse_redteam       # now reworks to the red-team (#4), not the static audit
     skill_binding_proposal: skill_semantic_extraction
     skill_activation_decision: skill_binding_proposal
     skill_deprecation_update: skill_semantic_extraction
@@ -217,11 +339,13 @@ rework_routing_table:
   # Copied verbatim from skill_governance_pipeline.yaml `allowed_rework_routes`. Each per-stage
   # route above MUST be one of these permitted edges (the contract is the allow-list).
   allowed_rework_routes:
-    - skill_binding_proposal -> skill_semantic_extraction
-    - misuse_warning_generation -> script_reference_audit
-    - script_reference_audit -> skill_semantic_extraction
-    - skill_activation_decision -> skill_binding_proposal
     - skill_semantic_extraction -> skill_intake
+    - script_reference_audit -> skill_semantic_extraction
+    - skill_misuse_redteam -> skill_semantic_extraction
+    - misuse_warning_generation -> skill_misuse_redteam
+    - skill_binding_proposal -> skill_semantic_extraction
+    - skill_activation_decision -> skill_binding_proposal
+    - skill_deprecation_update -> skill_semantic_extraction
 
   routing_invariants:
     - All routing targets MUST be a known canonical stage_id
@@ -233,7 +357,8 @@ rework_routing_table:
       improvise a different target (pipeline is a deterministic stage graph, not agent chatter).
     - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
       unre-evaluated gates (notably, no binding/activation may be re-reached without re-passing
-      skill_semantic_extraction — binding never precedes semantics).
+      skill_semantic_extraction — binding never precedes semantics; and no misuse warnings may be
+      re-authored without re-passing skill_misuse_redteam — warnings stay red-team-grounded).
     - block_and_report is reached only via the iteration_policy limit below, never as a normal
       stage rework target.
 

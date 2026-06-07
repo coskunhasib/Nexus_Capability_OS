@@ -1,0 +1,52 @@
+id: skill_must_have_semantic_extraction_before_binding
+name: Skill Must Have Semantic Extraction Before Binding
+type: skill_governance_policy
+status: candidate
+purpose: 'Skill-class policy: a skill may only be bound to a stage AFTER its semantic
+  extraction has run (no_unread_skill_binding, 06 §3). The standing skill-class default
+  applied to every skill in the Skills Registry, independent of any single stage.
+  Skill != Tool (locked).'
+owner_domain: skill_governance
+allowed_usage:
+- Block any skill binding that lacks a completed semantic-extraction record.
+- Bind as a skill-class default across the entire Skills Registry (skill_class_defaults).
+forbidden_usage:
+- Binding/activating a skill with no semantic extraction (anti-pattern).
+- Used as a tool-call permission profile (Skill != Tool).
+governance_profiles:
+- skill_governance
+- locked_semantics_enforcement_policy
+- evidence_required
+audit_schemas:
+- skill_semantic_extract_schema
+- skill_governance_trace_schema
+scope: skill
+applies_to:
+- all_skills
+severity_default: blocker
+used_by:
+- prism
+- verification-loop
+- sentinel
+- llm-council
+- fmea
+- adr-builder
+- gap-audit
+- prompt-fidelity
+- calibrate
+- refraction
+- fermi-decompose
+- bayesian-update
+- skill-architect
+- handoff-designer
+- context-pack-builder
+- scanner-result-normalizer
+- evidence-graph-builder
+- release-readiness-judge
+aliases: []
+notes: NEW (reconciliation). The 06 §3 no_unread_skill_binding rule expressed as a
+  standing skill-class policy (referenced in skills_registry.yaml skill_class_defaults
+  + each skill's governance_profiles). The SDLC stage-03 gate `skill_semantic_extraction_gate`
+  (which already carries the `no_unread_skill_binding` alias) is the stage-scope ENFORCER
+  of this skill-class policy — kept distinct (gate vs policy) to avoid a duplicate
+  alias key. Ratify in Phase E.

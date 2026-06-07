@@ -839,22 +839,446 @@ sub_agents:
       - broken_evidence_chain_link
       - inconsistent_research_evidence_graph
 
+  # ---------------------------------------------------------------------------
+  # 12) activation_health_watch_subagent
+  #     ACTIVATION stage #8 (post_activation_monitoring, owner: activation_manager_agent).
+  #     NEW (activation professional-grade calibration): decomposes live health-signal evaluation
+  #     over the soak window from the terminal gate decision. Watches post-activation telemetry vs
+  #     HEALTH_BASELINE + ABORT_CRITERIA and returns a health verdict; the parent decides the gate.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: activation_health_watch_subagent
+    parent_agent: activation_manager_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Over the bounded post-activation monitoring/soak window, watch the activated target's live
+      telemetry against the pre-exposure HEALTH_BASELINE and the pre-registered ABORT_CRITERIA:
+      compute health-vs-baseline deltas, detect any abort-criterion breach, and judge whether the
+      activation held stable for the full window. Hands a HEALTH_WATCH_VERDICT up to
+      activation_manager_agent, which decides the terminal gate (and, on regression/breach, routes to
+      rollback_readiness). This sub-agent observes and reports a verdict; it never decides the gate and
+      never finalizes the activation.
+    activation_conditions:
+      - parent_agent_invokes_during_post_activation_monitoring
+      - activation_executed_and_baseline_and_abort_criteria_available
+    inputs:
+      - ACTIVATION_COMPLETION_REPORT
+      - HEALTH_BASELINE
+      - ABORT_CRITERIA
+    outputs:
+      - HEALTH_WATCH_VERDICT          # soak-window health-vs-baseline + abort-breach + stability verdict
+    uses_core_abilities:
+      - OS       # observe the live activated target / drive the monitoring window
+      - Memory   # recall the baseline and abort criteria to compare live signals against
+    uses_skills:
+      - gap-audit   # detect unobserved abort signals or incomplete soak coverage
+      - calibrate   # keep the stability verdict rationale-backed against the baseline/window
+    uses_tools:
+      - telemetry_reader   # read live telemetry and compute health-vs-baseline deltas
+      - evidence_reader    # read the activation evidence package to ground the watch
+      - artifact_writer    # write HEALTH_WATCH_VERDICT (side-effect: governance + trace)
+      - evidence_writer    # write watch evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - activation_pipeline_governance   # activation-layer governance
+      - evidence_required                # canonical (stage contract uses the _policy variant)
+      - no_self_approval                 # canonical (verdict is independent of the gate decision)
+    uses_audit_schemas:
+      - activation_evidence_schema       # evidence schema (the health-watch verdict)
+      - stage_gate_trace_schema          # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - risk_analysis_model              # evaluate post-activation signals as risk, not just raw metrics
+    uses_context_memory_profiles:
+      - activation_run_context
+      - activation_decision_context_pack
+    permissions:
+      - observe_live_telemetry_over_the_soak_window
+      - compute_health_vs_baseline_and_detect_abort_breach
+      - author_health_watch_verdict
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_post_activation_monitoring_gate   # gate decision belongs to activation_manager_agent
+      - finalize_or_close_the_activation                       # terminal closure is the parent's gate
+      - trigger_rollback_itself                                # rollback execution is rollback_readiness's owned action
+      - mutate_the_activation_evidence_package
+      - bypass_a_blocking_governance_gate
+    returns_to: activation_manager_agent
+    blocks_when:
+      - post_activation_health_regressed_beyond_baseline
+      - post_activation_abort_criterion_breached
+      - activation_unstable_during_monitoring_window
+
+  # ---------------------------------------------------------------------------
+  # 13) blast_radius_assessment_subagent
+  #     OPERATIONS stage #2 (severity_classification, owner: severity_classification_agent).
+  #     NEW (operations professional-grade calibration): decomposes customer/safety/data blast-radius
+  #     impact analysis from the core severity scoring. Authors the IMPACT_ASSESSMENT_REPORT; the
+  #     parent agent decides the severity and the gate.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: blast_radius_assessment_subagent
+    parent_agent: severity_classification_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Decompose the customer / safety / data blast-radius impact of the incident — who and what is
+      affected, worst-credible impact, and the spread surface — and author an IMPACT_ASSESSMENT_REPORT
+      with rationale that grounds the severity estimate. Hands the impact assessment up to
+      severity_classification_agent, which assigns the severity level, binds the SLA/escalation, and
+      decides the gate. This sub-agent assesses and reports impact; it does not assign severity and
+      does not decide the gate.
+    activation_conditions:
+      - parent_agent_invokes_during_severity_classification
+      - incident_record_and_initial_observations_available_for_impact_analysis
+    inputs:
+      - INCIDENT_RECORD
+      - AFFECTED_CAPABILITY_REF
+      - INITIAL_OBSERVATIONS
+      - INCIDENT_CONDITIONAL_FLAGS     # safety_sensitive / customer_facing / regulated raise impact strictness
+    outputs:
+      - IMPACT_ASSESSMENT_REPORT       # decomposed customer/safety/data blast-radius impact handed to the parent
+    uses_core_abilities:
+      - Memory   # recall prior incidents on this capability and their realized impact
+      - Web      # consult external blast-radius signals (dependency status, customer-facing surface)
+    uses_skills:
+      - fmea             # failure-mode and effect reasoning over the impact surface
+      - sentinel         # adversarial blast-radius foresight (worst-credible-impact)
+      - bayesian-update  # revise impact estimate as evidence arrives
+    uses_tools:
+      - monitoring_query_tool   # quantify current blast radius from live monitoring (side-effect: governance + trace)
+      - evidence_reader         # read the incident record / observations to ground the assessment
+      - artifact_writer         # write IMPACT_ASSESSMENT_REPORT (side-effect: governance + trace)
+      - evidence_writer         # write assessment evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - operations_pipeline_governance   # operations-layer governance
+      - evidence_required                # canonical (stage contract uses the _policy variant)
+      - no_self_approval                 # canonical (impact assessment independent of the severity decision)
+    uses_audit_schemas:
+      - severity_classification_evidence_schema   # evidence schema (the impact assessment)
+      - stage_gate_trace_schema                   # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - incident_triage_model
+    uses_context_memory_profiles:
+      - operations_run_context
+      - incident_context_pack
+    permissions:
+      - read_incident_record_and_observations
+      - assess_customer_safety_and_data_blast_radius
+      - author_impact_assessment_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - assign_the_severity_level                       # severity is the parent's owned decision
+      - approve_or_block_the_severity_classification_gate   # gate decision belongs to severity_classification_agent
+      - bind_the_sla_or_escalation_threshold            # the parent binds SLA/escalation from policy
+      - mutate_the_incident_record
+      - bypass_a_blocking_governance_gate
+    returns_to: severity_classification_agent
+    blocks_when:
+      - blast_radius_not_estimated_for_the_incident
+      - customer_or_safety_impact_unassessed_for_a_customer_facing_or_safety_sensitive_incident
+
+  # ---------------------------------------------------------------------------
+  # 14) skill_abuse_redteam_subagent
+  #     SKILL_GOVERNANCE stage #4 (skill_misuse_redteam, owner: skill_runtime_safety_agent).
+  #     NEW (skill_governance professional-grade calibration): decomposes the adversarial abuse-probe
+  #     sweep from the gate decision. Runs prompt-injection / tool-misuse / context-poisoning /
+  #     locked-semantics-coercion probes and returns findings; the parent decides the gate.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: skill_abuse_redteam_subagent
+    parent_agent: skill_runtime_safety_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Adversarially probe the skill's runtime surface — can it be coerced outside its locked semantics
+      (prism driven to a decision/readiness gate, verification-loop driven to a release guarantee),
+      coerced into unsafe/over-privileged tool delegation, or used as a prompt-injection /
+      context-poisoning vector — running the abuse-path defect sweep under verification-loop's LOCKED
+      defect-finding discipline, and author a SKILL_MISUSE_REDTEAM_REPORT of findings with severity.
+      Hands the findings up to skill_runtime_safety_agent, which decides the gate. This sub-agent
+      red-teams and reports; it does not decide the gate.
+    activation_conditions:
+      - parent_agent_invokes_during_skill_misuse_redteam
+      - skill_semantics_and_permission_scope_available_for_adversarial_probing
+    inputs:
+      - SKILL_SEMANTIC_EXTRACT          # the locked semantics / not_for to attack
+      - SCRIPT_REFERENCE_AUDIT_REPORT   # static findings that scope the abuse surface
+      - SKILL_PERMISSION_SCOPE_MAP      # the least-privilege scope the probes test against
+    outputs:
+      - SKILL_MISUSE_REDTEAM_REPORT     # adversarial findings: coercion / injection / tool-misuse / poisoning, with severity
+    uses_core_abilities:
+      - Coder        # drive injection / tool-misuse / poisoning probes against the skill surface
+      - OS           # execute the eval / probe harness
+      - Memory       # recall the threat surface, semantics and permission scope
+      - Supervisor   # reason over the tool-delegation / multi-step abuse surface
+    uses_skills:
+      - verification-loop   # LOCKED bug/defect-finding: adversarial abuse-path defect sweep (NOT readiness)
+      - sentinel            # premortem the skill against misuse / coercion / privilege-escalation paths
+      - llm-council         # multi-perspective adjudication of finding severity / exploitability
+      - calibrate           # calibrate finding severity / false-positive rate of the abuse probes
+    uses_tools:
+      - prompt_injection_tester   # probe: can the skill be prompt-injected past its semantics (side-effect: governance + trace)
+      - tool_misuse_tester        # probe: can the skill be coerced into unsafe / over-privileged tool use (side-effect: governance + trace)
+      - context_poisoning_tester  # probe: can the skill be used as a context-poisoning vector (side-effect: governance + trace)
+      - agent_permission_auditor  # confirm probes respect / expose the audited permission scope
+      - eval_runner               # run the adversarial misuse eval suite (side-effect: governance + trace)
+      - artifact_writer           # write SKILL_MISUSE_REDTEAM_REPORT (side-effect: governance + trace)
+      - evidence_writer           # write stage evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - skill_governance_pipeline_governance   # skill-governance-layer governance
+      - agentic_safety_governance              # adversarial agent/skill-behaviour safety
+      - tool_misuse_governance                 # stage-specific tool-misuse gate profile
+      - context_safety_governance              # stage-specific context-safety gate profile
+      - locked_semantics_enforcement_policy    # re-checked adversarially: semantics must hold under coercion
+      - evidence_required                      # canonical (stage contract uses the _policy variant)
+      - no_self_approval                       # canonical (red-team findings independent of the gate decision)
+    uses_audit_schemas:
+      - agentic_eval_evidence_schema    # evidence schema: adversarial eval findings
+      - prompt_injection_test_schema    # evidence schema: injection/coercion probe results
+      - skill_governance_trace_schema   # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - script_safety_analysis_model    # adversarial safety reasoning over the skill surface
+    uses_context_memory_profiles:
+      - skill_governance_run_context
+      - skill_semantic_context_pack
+    permissions:
+      - run_adversarial_abuse_probes_against_the_skill_surface
+      - reproduce_and_triage_abuse_path_defects
+      - author_skill_misuse_redteam_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - use_verification_loop_as_a_readiness_checklist   # LOCKED semantic boundary
+      - approve_or_block_the_skill_misuse_redteam_gate   # gate decision belongs to skill_runtime_safety_agent
+      - record_the_skill_activation_decision             # activation is the parent's owned decision (separate stage)
+      - run_adversarial_probes_against_production_or_non_sandboxed_targets
+      - bypass_a_blocking_governance_gate
+    returns_to: skill_runtime_safety_agent
+    blocks_when:
+      - locked_semantics_coercion_succeeded        # skill could be driven outside its locked semantics
+      - unsafe_tool_delegation_via_skill            # skill coerced into unsafe / over-privileged tool use
+      - skill_injection_or_poisoning_vector_found
+
+  # ---------------------------------------------------------------------------
+  # 15) sensitive_content_detection_subagent
+  #     KNOWLEDGE/MEMORY stage #2 (source_classification, owner: source_classification_agent).
+  #     NEW (knowledge professional-grade calibration): decomposes PII/secret/regulated-content
+  #     detection from the classification decision. Detects + reports; the parent decides the gate
+  #     (and applies redaction where detection requires it).
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: sensitive_content_detection_subagent
+    parent_agent: source_classification_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Scan the candidate memory for sensitive content — personally identifiable information, secrets /
+      credentials, and regulated content — and author a SENSITIVE_CONTENT_DETECTION_REPORT identifying
+      the redactable spans and the sensitivity that each finding implies. Hands the detection up to
+      source_classification_agent, which sets the sensitivity classification, applies redaction where
+      required, and decides the gate. This sub-agent detects and reports; it does not set the
+      classification, does not apply redaction, and does not decide the gate.
+    activation_conditions:
+      - parent_agent_invokes_during_source_classification
+      - candidate_memory_available_for_sensitive_content_scan
+    inputs:
+      - MEMORY_INTAKE_RECORD       # the normalized candidate from intake (#1)
+      - TARGET_KNOWLEDGE_SCOPE     # regulated scope -> stricter detection
+      - INTAKE_SENSITIVITY_HINT    # the first-pass sensitivity signal from intake; pre-warns the detector
+    outputs:
+      - SENSITIVE_CONTENT_DETECTION_REPORT   # PII / secrets / regulated-content findings handed to the parent
+    uses_core_abilities:
+      - Memory   # recall the candidate record and prior sensitivity determinations of this source
+      - Web      # consult origin / publisher signals that bear on regulated-content classification
+    uses_skills:
+      - gap-audit   # find candidate content lacking a sensitivity determination / undetected sensitive spans
+    uses_tools:
+      - source_classifier     # surface origin/sensitivity signals to ground detection (side-effect: governance + trace)
+      - redaction_tool         # detect redactable spans (detection only; the parent applies redaction) (side-effect: governance + trace)
+      - provenance_recorder    # record the detection result in the item's provenance chain (side-effect: governance + trace)
+      - evidence_writer        # write detection evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - memory_source_governance   # corpus admissibility / sensitivity rules
+      - redaction_required_gate    # detection feeds the conditional redaction requirement
+      - evidence_required          # canonical
+      - no_self_approval           # canonical (detection independent of the classification decision)
+    uses_audit_schemas:
+      - memory_provenance_schema   # evidence schema (the detection attaches to provenance)
+      - stage_gate_trace_schema    # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - knowledge_reasoning_profile
+    uses_context_memory_profiles:
+      - knowledge_run_context
+      - memory_candidate_context_pack
+    permissions:
+      - scan_candidate_memory_for_pii_secrets_and_regulated_content
+      - author_sensitive_content_detection_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - set_the_sensitivity_classification          # classification is the parent's owned decision
+      - apply_or_finalize_redaction                 # the parent applies redaction when required
+      - approve_or_block_the_source_classification_gate   # gate decision belongs to source_classification_agent
+      - mutate_the_memory_intake_record
+      - bypass_a_blocking_governance_gate
+    returns_to: source_classification_agent
+    blocks_when:
+      - sensitive_content_scan_not_run_for_a_candidate
+      - undetected_sensitive_span_in_a_candidate_admitted_downstream
+
+  # ---------------------------------------------------------------------------
+  # 16) corpus_conflict_detection_subagent
+  #     KNOWLEDGE/MEMORY stage #4 (knowledge_conflict_resolution, owner: knowledge_reconciliation_agent).
+  #     NEW (knowledge professional-grade calibration): decomposes duplicate/contradiction detection
+  #     against the existing corpus from the disposition decision. Detects + reports the conflict set;
+  #     the parent decides the disposition (supersede/merge/coexist/reject) and the gate.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: corpus_conflict_detection_subagent
+    parent_agent: knowledge_reconciliation_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Compare the classified, redacted, summarized candidate against the memory the curated corpus
+      already holds and detect duplicate or contradictory existing memories — overlapping coverage,
+      double-counted evidence, and mutually-contradictory facts — authoring a CORPUS_CONFLICT_SET of
+      the detected duplicates/contradictions with rationale. Hands the conflict set up to
+      knowledge_reconciliation_agent, which decides each disposition (supersede / merge / coexist /
+      reject) and the gate. This sub-agent detects and reports; it does not decide the disposition and
+      does not decide the gate.
+    activation_conditions:
+      - parent_agent_invokes_during_knowledge_conflict_resolution
+      - candidate_summary_and_existing_corpus_available_for_comparison
+    inputs:
+      - MEMORY_SUMMARY                 # the grounded summary from summary_generation (#3)
+      - SOURCE_CLASSIFICATION_REPORT   # trust tier / sensitivity inform which source could win a conflict
+      - MEMORY_PROVENANCE_RECORD       # the candidate's provenance to compare lineage against the corpus
+    outputs:
+      - CORPUS_CONFLICT_SET            # the duplicate/contradictory existing memories detected, handed to the parent
+    uses_core_abilities:
+      - Memory   # recall the existing curated corpus + this candidate to compare them
+      - Web      # corroborate which of two conflicting sources is current/authoritative (independence signals)
+    uses_skills:
+      - gap-audit         # detect duplicate / overlapping / contradictory coverage against the corpus
+      - bayesian-update   # weigh corroboration/recency/trust signals on each detected conflict (evidence, not decision)
+    uses_tools:
+      - provenance_recorder   # record the detection in the item's provenance chain (side-effect: governance + trace)
+      - artifact_writer       # write CORPUS_CONFLICT_SET (side-effect: governance + trace)
+      - evidence_writer       # write detection evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - memory_source_governance   # corpus admissibility + trust-tier rules frame what counts as a conflict
+      - evidence_required          # canonical
+      - no_self_approval           # canonical (detection independent of the disposition decision)
+    uses_audit_schemas:
+      - memory_provenance_schema   # evidence schema (the detected conflict set attaches to provenance)
+      - stage_gate_trace_schema    # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - knowledge_reasoning_profile
+    uses_context_memory_profiles:
+      - knowledge_run_context
+      - memory_candidate_context_pack
+      - retrieval_profile_context_pack   # the corpus/profile the candidate is compared against
+    permissions:
+      - compare_candidate_against_the_existing_corpus
+      - detect_duplicate_and_contradictory_memories
+      - author_corpus_conflict_set
+      - write_evidence_and_trace
+    forbidden_actions:
+      - decide_the_conflict_disposition             # supersede/merge/coexist/reject is the parent's owned decision
+      - approve_or_block_the_conflict_resolution_gate   # gate decision belongs to knowledge_reconciliation_agent
+      - retire_or_supersede_an_existing_memory       # acting on a disposition is the parent's / downstream's role
+      - mutate_an_existing_corpus_memory
+      - bypass_a_blocking_governance_gate
+    returns_to: knowledge_reconciliation_agent
+    blocks_when:
+      - corpus_conflict_scan_not_run
+      - duplicate_or_contradiction_detected_but_unreported
+
+  # ---------------------------------------------------------------------------
+  # 17) memory_lifecycle_audit_subagent
+  #     KNOWLEDGE/MEMORY stage #7 (memory_expiration_review, owner: memory_expiration_agent).
+  #     NEW (knowledge professional-grade calibration): the knowledge analogue of the SDLC
+  #     evidence_trace_subagent — assembles + integrity-audits the item's end-to-end provenance chain
+  #     and hands the audit up to memory_expiration_agent (which decides the terminal gate).
+  #     Evidence/trace assembly + integrity audit, NOT a defect sweep.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: memory_lifecycle_audit_subagent
+    parent_agent: memory_expiration_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Assemble the item's end-to-end provenance chain — intake -> classification (+sensitive-content
+      detection) -> grounded summary -> conflict disposition -> validity window -> retrieval update ->
+      expiration/deletion outcome — and audit it for completeness and integrity: no broken link, no
+      missing lifecycle event, every disposition and window recorded. Author a
+      MEMORY_LIFECYCLE_PROVENANCE_AUDIT and hand it up to memory_expiration_agent, which decides the
+      terminal gate. This is provenance-chain assembly and integrity auditing — NOT defect finding and
+      NOT a re-decision of any prior lifecycle outcome; the sub-agent assembles and reports.
+    activation_conditions:
+      - parent_agent_invokes_during_memory_expiration_review
+      - item_lifecycle_history_and_provenance_record_available
+    inputs:
+      - MEMORY_PROVENANCE_RECORD          # the cumulative provenance chain to finalize / audit
+      - MEMORY_EXPIRATION_REVIEW_REPORT   # the per-item outcome whose evidence the audit closes over
+      - VALIDITY_WINDOW_DECISION          # the window whose horizon triggered review
+    outputs:
+      - MEMORY_LIFECYCLE_PROVENANCE_AUDIT   # the end-to-end provenance-chain completeness/integrity audit
+    uses_core_abilities:
+      - Memory   # recall the item's full lifecycle history and all stage evidence
+      - OS       # invoke the provenance/evidence readers to walk and check the chain
+    uses_skills:
+      - gap-audit   # detect a broken provenance link, a missing lifecycle event or an orphan record
+    uses_tools:
+      - provenance_recorder   # finalize / annotate the audited provenance chain (side-effect: governance + trace)
+      - evidence_reader       # read the full lifecycle evidence to assemble and check the chain
+      - evidence_writer       # write audit evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - memory_source_governance   # corpus/provenance governance
+      - evidence_required          # canonical
+      - no_self_approval           # canonical (author != the terminal gate decider)
+    uses_audit_schemas:
+      - memory_provenance_schema   # evidence schema (the assembled/audited provenance chain)
+      - stage_gate_trace_schema    # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - knowledge_reasoning_profile
+    uses_context_memory_profiles:
+      - knowledge_run_context
+      - retrieval_profile_context_pack
+    permissions:
+      - read_all_lifecycle_evidence_for_the_item
+      - assemble_and_integrity_audit_the_provenance_chain
+      - author_memory_lifecycle_provenance_audit
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_expiration_review_gate   # gate decision belongs to memory_expiration_agent
+      - re_decide_any_prior_lifecycle_outcome         # classification/disposition/window/expiry are not re-opened here
+      - fabricate_or_alter_recorded_provenance_events  # may finalize/annotate; must not mutate recorded history
+      - bypass_a_blocking_governance_gate
+    returns_to: memory_expiration_agent
+    blocks_when:
+      - provenance_chain_incomplete
+      - broken_provenance_link_detected
+      - missing_lifecycle_event_in_the_chain
+
 # ---------------------------------------------------------------------------------------------------
 # Coverage / invariant summary (for the catalog reviewer):
-#   - 11 distinct sub-agents: the 8 SDLC sub-agents referenced across the 31 SDLC stage YAMLs
+#   - 17 distinct sub-agents: the 8 SDLC sub-agents referenced across the 31 SDLC stage YAMLs
 #     (stages 3, 6 [x2], 8, 13, 15, 16, 28; skill_governance reuses skill_semantic_extractor_subagent)
-#     PLUS 3 NEW research sub-agents added for professional-grade research calibration:
+#     PLUS 3 research sub-agents added for professional-grade research calibration:
 #       source_bias_screening_subagent (research #5, parent source_reliability_agent),
 #       independent_replication_subagent (research #8, parent cross_validation_agent),
-#       research_evidence_graph_subagent (research #11, parent research_completion_agent).
-#     The activation / operations / knowledge-memory pipelines still declare no sub-agents.
+#       research_evidence_graph_subagent (research #11, parent research_completion_agent),
+#     PLUS 6 NEW sub-agents for the activation / operations / skill_governance / knowledge-memory
+#     pipeline upgrades:
+#       activation_health_watch_subagent (activation #8, parent activation_manager_agent),
+#       blast_radius_assessment_subagent (operations #2, parent severity_classification_agent),
+#       skill_abuse_redteam_subagent (skill_governance #4, parent skill_runtime_safety_agent),
+#       sensitive_content_detection_subagent (knowledge #2, parent source_classification_agent),
+#       corpus_conflict_detection_subagent (knowledge #4, parent knowledge_reconciliation_agent),
+#       memory_lifecycle_audit_subagent (knowledge #7, parent memory_expiration_agent).
 #   - No orphans: every entry has a parent_agent and team_lead_direct_call_allowed: false.
 #   - Every parent_agent is an agent_roles entry (SDLC: skill_librarian_agent, architecture_agent,
 #     security_privacy_agent, qa_agent, security_validation_agent, evidence_graph_agent; RESEARCH:
-#     source_reliability_agent, cross_validation_agent, research_completion_agent) — none is a Core
-#     Ability, none is a Team Lead.
+#     source_reliability_agent, cross_validation_agent, research_completion_agent; ACTIVATION:
+#     activation_manager_agent; OPERATIONS: severity_classification_agent; SKILL_GOVERNANCE:
+#     skill_runtime_safety_agent; KNOWLEDGE: source_classification_agent, knowledge_reconciliation_agent,
+#     memory_expiration_agent) — none is a Core Ability, none is a Team Lead. knowledge_reconciliation_agent
+#     is the NEW knowledge_team Agent added to agent_roles.yaml alongside these.
 #   - No Core Ability appears as a sub_agent. Skill != Tool, Governance != Audit, Evidence != Trace.
-#   - No sub-agent decides a gate or approves its own work; each returns_to its parent_agent. The new
+#   - No sub-agent decides a gate or approves its own work; each returns_to its parent_agent. The
 #     research sub-agents preserve producer != validator: the bias screener does not validate its own
 #     screening (cross_validation re-checks), the replication sub-agent produces nothing it later
 #     validates, and the evidence-graph sub-agent assembles but does not decide the completion gate.
+#     The 6 new sub-agents are likewise analysts/authors: the health watcher returns a verdict (parent
+#     decides the terminal gate and rollback), the blast-radius assessor reports impact (parent assigns
+#     severity), the abuse red-team reports findings (parent decides the gate; verification-loop stays
+#     defect-finding-only), the sensitive-content + corpus-conflict detectors detect+report (parents
+#     classify / decide disposition), and the lifecycle auditor assembles+audits the provenance chain
+#     (parent decides the terminal gate).

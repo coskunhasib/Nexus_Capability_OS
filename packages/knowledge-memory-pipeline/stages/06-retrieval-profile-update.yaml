@@ -1,0 +1,100 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Stage #6 of 7: retrieval_profile_update
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.5,
+#   then ENRICHED to professional-grade reliability (sdlc / research_pipeline bar). RENUMBERED to #6
+#   (the new knowledge_conflict_resolution stage shifted the back half by one).
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+# Pipeline: knowledge_memory_pipeline. owner_agent is a snake_case Agent role under knowledge_team.
+#
+# COVERAGE ADDITION folded in here (professional-grade calibration — retrieval-side effect of
+# reconciliation):
+#   SUPERSEDED-MEMORY REMOVAL FROM RETRIEVAL. Reconciliation (#4) can decide a candidate SUPERSEDES an
+#   existing memory; that superseded memory must be REMOVED from the active retrieval profile at the
+#   same time the new one is exposed, or both the old and new (contradictory) memories stay
+#   retrievable. Added: superseded_memory_removed_from_retrieval CONDITIONAL gate (required_when a
+#   superseded set exists) so the supersede decision is actually enforced at the retrieval boundary.
+#   This is the retrieval-safety counterpart of the #4 disposition.
+#
+# Depth / reconciliation notes:
+#   - owner_agent kept as canonical retrieval_profile_agent (agent_roles.yaml; owned_stages:
+#     [retrieval_profile_update]; reviewed_by: knowledge_team_lead).
+#   - gap-audit detects retrieval coverage gaps or conflicts after the update (md §2.5).
+#     retrieval_profile_writer is caller-locked to [retrieval_profile_agent, memory_expiration_agent].
+#   - update_bound_to_validity_window mirrors the retrieval_profile_update_without_validity_window
+#     blocking condition; sensitivity_exposure_consistent enforces exposure <= classified sensitivity.
+#   - Evidence != Trace kept distinct.
+version: draft-0.1
+stage_id: retrieval_profile_update
+name: Retrieval Profile Update
+purpose: >-
+  Update the affected retrieval profile / context pack so the curated memory becomes retrievable
+  under the right scope, with exposure bounded by its sensitivity and validity window, and so any
+  memory this candidate supersedes is removed from the active profile in the same update. No update
+  is written for a memory without a validity window, and exposure never exceeds classified sensitivity.
+
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: retrieval_profile_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the validity decision, sensitivity classification and superseded set
+uses_skills:
+  - gap-audit   # detect retrieval coverage gaps or residual conflicts after the update
+uses_tools:
+  - retrieval_profile_writer   # add the curated memory / remove superseded items (allowed_callers: retrieval_profile_agent, memory_expiration_agent)
+  - provenance_recorder        # extend provenance with the retrieval change (side-effect: governance + trace)
+  - evidence_writer            # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - memory_source_governance
+  - validity_window_required_gate
+uses_audit_schemas:
+  - memory_provenance_schema   # evidence schema (the retrieval change attaches to provenance)
+  - stage_gate_trace_schema    # trace schema (distinct from evidence)
+uses_model_provider_profiles:
+  - knowledge_reasoning_profile
+uses_context_memory_profiles:
+  - retrieval_profile_context_pack
+
+inputs:
+  - VALIDITY_WINDOW_DECISION       # binds the update to a window
+  - SOURCE_CLASSIFICATION_REPORT   # sensitivity bounds the exposure scope
+  - SUPERSEDED_MEMORY_SET          # items to remove from the active profile in this update
+  - SUPERSEDED_WINDOW_CLOSURE      # confirms the superseded windows were closed at #5
+
+outputs:
+  - RETRIEVAL_PROFILE_UPDATE_REPORT    # what became retrievable, under what scope, and what was removed
+  - SUPERSEDED_RETRIEVAL_REMOVAL_LOG   # the superseded items removed from retrieval
+  - RETRIEVAL_PROFILE_GATE_RESULT      # binary gate result for this stage
+
+evidence:
+  - RETRIEVAL_PROFILE_UPDATE_REPORT
+  - RETRIEVAL_PROFILE_GATE_RESULT
+trace:
+  - retrieval_profile_update_trace
+  - gate_decision_trace
+
+# md §2.5 key gates (both blockers) + the added superseded-removal conditional gate.
+gates:
+  - update_bound_to_validity_window           # no profile update for a memory without a validity window
+  - sensitivity_exposure_consistent           # retrieval exposure does not exceed classified sensitivity
+  - superseded_memory_removed_from_retrieval   # CONDITIONAL — when a superseded set exists
+
+on_pass: memory_expiration_review
+on_fail: validity_window_assignment
+rework_route: validity_window_assignment
+
+blocking_conditions:
+  - retrieval_profile_update_without_validity_window
+  - sensitivity_exposure_inconsistent
+  - superseded_memory_left_in_retrieval
+optional_conditions: []
+conditional_required_gates:
+  # When reconciliation produced a non-empty superseded set, those memories MUST be removed from the
+  # active retrieval profile in this update; otherwise the gate evaluates to pass_if_applicable.
+  - gate_id: superseded_memory_removed_from_retrieval
+    required_when: >-
+      superseded_memory_set_non_empty == true
+
+max_iterations: 3

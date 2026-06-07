@@ -1,0 +1,36 @@
+id: eval_runner
+name: Eval Runner
+type: tool
+category: tool
+status: canonical
+purpose: Run the agentic safety eval suite and aggregate AGENTIC_SAFETY_EVAL_REPORT
+  results.
+owner_domain: ai_safety
+provided_by_core_ability: null
+input_schema:
+  eval_suite: object
+  target: object
+output_schema:
+  eval_results: object
+side_effects: executes_evals_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- agentic_safety_agent
+allowed_usage:
+- Execute the agentic safety eval suite inside the sandbox.
+forbidden_usage:
+- Running evals against production agents/state.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - ai_agent_safety_evaluation
+notes: Orchestrates the injection/misuse/poisoning testers' suite at stage 18.

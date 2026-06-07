@@ -1,5 +1,6 @@
 # Activation Pipeline — Pipeline Definition Contract (machine-readable)
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §1.
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §1,
+# then ENRICHED to professional-grade reliability (the SDLC/research calibration bar).
 # Format mirrors configs/nexus-ai/sdlc_pipeline.yaml (Pipeline Definition Contract field set).
 # Top structure: Nexus AI Orchestration Model. Activation is ONE pipeline under it.
 # Scope: staged activation of a feature / capability / pipeline through
@@ -8,6 +9,33 @@
 #   does NOT regenerate the SDLC Pipeline. team_lead is the pipeline-specific
 #   activation_team_lead role, distinct from the Supervisor Core Ability.
 # All uses_* ids verified to exist in the Shared Registry (governance *_policy aliases resolve).
+#
+# PROFESSIONAL-GRADE UPGRADE (matches the research_pipeline calibration exemplar). The catalog's
+# original 7-stage flow was brought to SDLC-level rigor for reliable staged activation under no-human
+# governance. Coverage changes:
+#   - ADDED stage post_activation_monitoring (#8): a bounded post-go-live monitoring/soak window that
+#     watches live health vs the pre-exposure baseline + abort criteria, can trigger rollback, and is
+#     the new TERMINAL aggregate gate. It is a genuine distinct phase (must follow execution, precede
+#     final closure); the ONE new stage. => 8 stages.
+#   - ADDED gates inside existing stages (the staged-activation safety envelope, all under the existing
+#     activation_pipeline_governance / evidence_required profiles — no new governance profile):
+#       * activation_intake (#1): blast_radius_limit_defined, abort_criteria_defined (pre-register the
+#         exposure ceiling + machine-checkable auto-rollback thresholds before any exposure).
+#       * superadmin_preview (#2): health_baseline_captured (steady-state baseline before exposure, so
+#         the canary + post-activation gates have a bar to compare against).
+#       * pilot_activation (#3): blast_radius_within_limit, pilot_health_within_canary_thresholds,
+#         no_abort_condition_breached (canary/blast-radius/abort enforcement during the pilot).
+#       * rollback_readiness (#6): rollback_recovery_within_rto, rollback_drill_exercises_abort_criteria
+#         (make the rollback drill RTO-bound and abort-criteria-linked, not a checkbox).
+#   - Producer != validator preserved at pilot_evidence_review (#4, separate-owner review) and the
+#     human/owner gate public_activation_decision (#5).
+#   - Tool reconciliation: removed rollback_executor from pilot_activation (its allowed_callers exclude
+#     pilot_activation_agent; the pilot keeps rollback REACHABLE, the rollback_readiness stage executes
+#     it) — eliminates a dangling caller edge. Every stage's uses_* is a subset of its owner_agent's
+#     agent_roles.yaml declaration.
+#   - One NEW sub-agent is named (post_activation_monitoring): activation_health_watch_subagent (parent
+#     activation_manager_agent). It is NOT yet in sub_agent_roles.yaml and is REPORTED for registration
+#     (the shared registry is not edited here).
 
 version: draft-0.1
 pipeline_id: activation_pipeline
@@ -49,15 +77,20 @@ entry_criteria:
   - target_cohorts_defined
   - rollback_owner_assigned
 
-# Conditions that mark the pipeline complete (md §1 exit_criteria).
+# Conditions that mark the pipeline complete (md §1 exit_criteria + the professional-grade controls:
+# pre-registered abort criteria, a captured health baseline, and a clean post-activation soak window).
 exit_criteria:
   - requested_activation_stage_reached
   - activation_evidence_complete
   - rollback_plan_validated
   - owner_activation_decision_recorded_for_public_scope
+  - abort_criteria_pre_registered                       # blast-radius + abort thresholds set at intake (#1)
+  - health_baseline_captured_before_exposure            # steady-state baseline captured in preview (#2)
+  - post_activation_monitoring_window_clean             # post-go-live soak clean vs baseline + abort criteria (#8)
   - no_blocking_policy_failure
 
-# Pipeline-level conditions that block progression / release (md §1 blocking_conditions).
+# Pipeline-level conditions that block progression / release (md §1 blocking_conditions + the new
+# professional-grade failure conditions surfaced by the added safety-envelope gates).
 blocking_conditions:
   - pilot_activation_attempted_without_superadmin_preview_pass
   - public_activation_attempted_without_pilot_evidence
@@ -65,39 +98,66 @@ blocking_conditions:
   - public_activation_without_owner_decision
   - self_approval_of_activation_decision
   - missing_release_candidate_evidence
+  - abort_criteria_not_pre_registered == true                 # no machine-checkable auto-rollback thresholds (#1)
+  - blast_radius_limit_not_defined == true                    # no exposure ceiling pre-registered (#1)
+  - health_baseline_not_captured_before_exposure == true      # no baseline -> canary/post-activation unprovable (#2)
+  - abort_condition_breached_without_rollback == true         # an abort threshold tripped but rollback not exercised (#3/#8)
+  - blast_radius_exceeded_during_pilot == true                # exposure widened past the pre-registered ceiling (#3)
+  - rollback_recovery_exceeds_rto == true                     # validated rollback cannot recover within RTO (#6)
+  - activation_finalized_without_clean_monitoring_window == true  # finalized before the post-activation soak passed (#8)
 
-# Permitted rework routes (md §1 allowed_rework_routes). Each entry is
-# <failure_condition> -> <target_stage_id>.
+# Permitted rework routes (md §1 allowed_rework_routes + the new professional-grade routes for the
+# canary/abort safety envelope and the post-activation monitoring window). Each entry is
+# <failure_condition> -> <target_stage_id>; every target is a known stage_id.
 allowed_rework_routes:
   - preview_failure -> superadmin_preview
   - pilot_failure -> pilot_activation
+  - pilot_unsafe -> rollback_readiness                 # canary/abort breach during pilot -> exercise rollback first (#3 -> #6)
   - insufficient_pilot_evidence -> pilot_evidence_review
   - rollback_not_ready -> rollback_readiness
   - owner_decision_rejected -> pilot_evidence_review
+  - post_activation_breach -> rollback_readiness        # health regression / abort breach during soak -> rollback (#8 -> #6)
   - scope_or_intake_gap -> activation_intake
 
-# Evidence artifacts the pipeline must produce (md §1 required_evidence).
-# Evidence = decision proof, DISTINCT from trace.
+# Evidence artifacts the pipeline must produce (md §1 required_evidence + the new decision-proof
+# artifacts the professional-grade controls produce). Evidence = decision proof, DISTINCT from trace.
 required_evidence:
   - ACTIVATION_REQUEST
+  - ABORT_CRITERIA                       # pre-registered auto-rollback thresholds (activation_intake #1)
+  - BLAST_RADIUS_LIMIT                   # pre-registered exposure ceiling (activation_intake #1)
   - PREVIEW_RESULT
+  - HEALTH_BASELINE                      # pre-exposure steady-state baseline (superadmin_preview #2)
   - PILOT_RESULT
+  - CANARY_HEALTH_REPORT                 # pilot health vs baseline (pilot_activation #3)
   - PILOT_EVIDENCE_REVIEW_REPORT
   - ROLLBACK_PLAN
   - ROLLBACK_READINESS_REPORT
+  - ROLLBACK_DRILL_REPORT                # RTO-bound, abort-criteria-linked drill (rollback_readiness #6)
   - ACTIVATION_DECISION
   - ACTIVATION_COMPLETION_REPORT
+  - POST_ACTIVATION_MONITORING_REPORT    # soak-window health/abort/stability verdict (post_activation_monitoring #8)
 
-# Trace records the pipeline must produce (md §1 required_trace).
-# Trace = operation/decision history, DISTINCT from evidence.
+# Trace records the pipeline must produce (md §1 required_trace + the trace records emitted by the
+# added gate decisions and the new monitoring stage). Trace = operation/decision history, DISTINCT
+# from evidence. (stage_gate_decision_trace is the per-stage gate-decision log written by every stage
+# under stage_gate_trace_schema; gate_aggregation_decision_trace is the terminal aggregate rollup log.)
 required_trace:
   - activation_transition_trace
   - preview_activation_trace
   - pilot_activation_trace
+  - pilot_evidence_review_handoff_trace   # producer(pilot)->validator(reviewer) handoff (#4)
   - rollback_drill_trace
   - owner_decision_trace
+  - post_activation_monitoring_trace      # soak-window observation activity (#8)
+  - gate_aggregation_decision_trace       # terminal aggregate go/finalize rollup over all stage gates (#8)
+  - stage_gate_decision_trace             # per-stage gate-decision log (all stages)
   - policy_evaluation_trace
 
+# Canonical stage set (8). post_activation_monitoring (#8) was ADDED for professional-grade
+# reliability: a bounded post-go-live soak/monitoring window that becomes the terminal aggregate gate
+# (the one new stage; the other professional controls are gates inside existing stages). Order is
+# load-bearing — monitoring must FOLLOW activation_completion's execution and is the last stage before
+# the terminal `done`.
 stages:
   - activation_intake
   - superadmin_preview
@@ -106,6 +166,7 @@ stages:
   - public_activation_decision
   - rollback_readiness
   - activation_completion
+  - post_activation_monitoring
 
 uses_core_abilities:
   - Supervisor
@@ -158,27 +219,39 @@ uses_context_memory_profiles:
   - pilot_evidence_context_pack
   - activation_decision_context_pack
 
-# Required gates for this pipeline. Transcribed from the md §1 governance gate-style
-# profiles + §2 per-stage "Key gates". `always` = gates that must hold for every
-# activation run regardless of requested scope; `conditional` = gates that apply only
-# when public (general-availability) scope is requested (md §2.5/§2.6: the owner
-# decision gate and validated rollback plan are mandatory before public activation,
-# while preview/pilot precede any external exposure).
+# Required gates for this pipeline. Transcribed from the md §1 governance gate-style profiles + §2
+# per-stage "Key gates", PLUS the professional-grade safety-envelope rollup gates added for reliable
+# staged activation (blast-radius limit, abort criteria, health baseline, pilot canary, RTO-bound
+# rollback drill, post-activation soak). `always` = gates that must hold for every activation run
+# regardless of requested scope; `conditional` = gates that apply only when public (general-
+# availability) scope is requested (md §2.5/§2.6: the owner decision gate and validated rollback plan
+# are mandatory before public activation; preview/pilot precede any external exposure; public scope
+# additionally warrants an extended post-activation soak). See required_gate_producers in
+# activation_pipeline_runtime_rules.yaml for the gate -> producing-stage map.
 required_gates:
   always:
     - release_candidate_evidence_present
     - activation_scope_defined
     - rollback_owner_assigned
+    - blast_radius_limit_defined            # NEW: producing_stage activation_intake (#1)
+    - abort_criteria_defined                # NEW: producing_stage activation_intake (#1)
     - preview_required_gate
     - preview_behaves_as_expected
     - telemetry_observable_in_preview
-    - activation_evidence_complete
-    - all_required_gates_passed
-    - no_blocking_policy_failure
+    - health_baseline_captured              # NEW: producing_stage superadmin_preview (#2)
+    - blast_radius_within_limit             # NEW: producing_stage pilot_activation (#3)
+    - pilot_health_within_canary_thresholds # NEW: producing_stage pilot_activation (#3)
+    - no_abort_condition_breached           # NEW: producing_stage pilot_activation (#3)
+    - activation_evidence_complete          # producing_stage activation_completion (#7)
+    - post_activation_health_within_baseline   # NEW: producing_stage post_activation_monitoring (#8)
+    - activation_stable_over_monitoring_window # NEW: producing_stage post_activation_monitoring (#8)
+    - all_required_gates_passed             # cross-cutting rollup (terminal #8)
+    - no_blocking_policy_failure            # cross-cutting policy (terminal #8)
   conditional:
     - pilot_evidence_gate_if_public_scope
     - owner_activation_decision_gate_if_public_scope
     - rollback_required_gate_if_public_scope
+    - extended_monitoring_window_if_public_scope   # NEW: producing_stage post_activation_monitoring (#8)
 
 canonical_docs:
   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md

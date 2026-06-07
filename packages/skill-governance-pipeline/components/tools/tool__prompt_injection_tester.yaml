@@ -1,0 +1,36 @@
+id: prompt_injection_tester
+name: Prompt Injection Tester
+type: tool
+category: tool
+status: canonical
+purpose: Probe the agent/system for prompt-injection susceptibility; emit PROMPT_INJECTION_TEST_REPORT.
+owner_domain: ai_safety
+provided_by_core_ability: null
+input_schema:
+  target_agent_or_system: object
+  attack_suite: object
+output_schema:
+  injection_findings:
+  - object
+side_effects: executes_adversarial_probes_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- agentic_safety_agent
+allowed_usage:
+- Run injection probes against the target inside the sandbox.
+forbidden_usage:
+- Running adversarial probes against production/non-sandboxed targets.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - ai_agent_safety_evaluation
+notes: Part of the agentic safety eval suite (stage 18).

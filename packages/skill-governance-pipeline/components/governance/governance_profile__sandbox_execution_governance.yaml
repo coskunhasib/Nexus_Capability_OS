@@ -1,0 +1,28 @@
+id: sandbox_execution_governance
+name: Sandbox Execution Governance
+type: tool_governance_profile
+status: candidate
+purpose: 'Usage governance for execution tools such as shell_exec (03 §9): sandbox
+  required, timeout required, trace required. The tool-scope expression of the global
+  high-risk-default-deny + trace-required posture.'
+owner_domain: nexus_tools
+allowed_usage:
+- Govern sandboxed execution tools (sandbox + timeout + trace mandatory).
+- Be re-shown under each execution tool in the Tools Registry.
+forbidden_usage:
+- Running an execution tool outside a sandbox or without a timeout/trace.
+governance_profiles:
+- high_risk_action_default_deny
+- trace_required
+- no_secret_exposure
+audit_schemas:
+- stage_gate_trace_schema
+scope: tool
+applies_to:
+- shell_exec
+severity_default: blocker
+used_by:
+- shell_exec
+notes: CANDIDATE — 03 §9 example. Bind to concrete execution tools in tools_registry.yaml
+  (Phase C); ratify in Phase E. The runbook_executor / rollback_executor operations
+  tools inherit this posture.

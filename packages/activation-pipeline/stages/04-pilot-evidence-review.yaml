@@ -1,85 +1,114 @@
-# Activation Pipeline — Stage Contract
-# Stage #4: pilot_evidence_review
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.4.
-# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# Separate-owner review: the reviewer is NOT the pilot owner -> no_self_approval (md §2.4).
-# Enforces pilot_evidence_gate: public activation is impossible without sufficient pilot evidence.
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #4 of 8: pilot_evidence_review   (NO-SELF-APPROVAL keystone — separate-owner review)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.4.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml and the research
+#   no-self-approval keystone configs/nexus-ai/stages/research/08-cross-validation.yaml.
+# Pipeline: activation_pipeline. owner_agent is a snake_case Agent role under activation_team.
+#
+# NO-SELF-APPROVAL (STRUCTURAL — load-bearing invariant of this pipeline):
+#   owner_agent is a DISTINCT activation_reviewer_agent, separate from pilot_activation_agent
+#   (agent_roles.yaml: pilot_activation_agent.reviewed_by = activation_reviewer_agent;
+#   activation_reviewer_agent.reviewed_by = activation_team_lead; its forbidden_actions include
+#   review_pilot_evidence_for_a_pilot_it_owned and mutate_the_pilot_result_under_review). The reviewer
+#   is NOT the pilot owner. Enforced by the no_self_approval_policy governance profile + the
+#   pilot_evidence_gate. This is the producer!=validator edge recorded in
+#   activation_pipeline_runtime_rules.yaml required_gate_producers (pilot_evidence_gate_if_public_scope).
+#
+# Depth notes:
+#   - llm-council provides multi-perspective INDEPENDENT review of the pilot evidence (telemetry,
+#     error rates, incidents, user signal, the canary health report). calibrate keeps the
+#     accept/reject verdict calibrated against the pre-registered acceptance thresholds.
+#   - This review now also independently re-checks the CANARY_HEALTH_REPORT (#3) — confirming the
+#     pilot owner's canary verdict against the baseline, rather than taking it on trust.
+#   - on_fail / rework route to pilot_activation (#3) for insufficient/failing evidence (need more data
+#     or remediation), per the def allowed_rework_routes (insufficient_pilot_evidence ->
+#     pilot_evidence_review is the failure-type label; the stage routes the failed review back to the
+#     pilot to regenerate evidence).
 
 version: draft-0.1
 stage_id: pilot_evidence_review
 name: Pilot Evidence Review
 purpose: >-
-  Independently review pilot evidence (telemetry, error rates, incidents, user
-  signal) against activation acceptance thresholds. This is a separate-owner review
-  — the reviewer is not the pilot owner (no self-approval). Enforces
-  pilot_evidence_gate: public activation is impossible without sufficient pilot
-  evidence.
+  Independently review pilot evidence (telemetry, error rates, incidents, user signal, and the canary
+  health report) against the pre-registered activation acceptance thresholds, by a DIFFERENT role than
+  the pilot owner. Confirm the canary verdict against the HEALTH_BASELINE, surface any unresolved pilot
+  blocker, and decide whether the pilot evidence is sufficient to proceed toward a public-activation
+  decision. Enforces pilot_evidence_gate: public activation is impossible without sufficient,
+  independently-reviewed pilot evidence (no self-approval — reviewer != pilot owner).
 
 owner_team: activation_team
 team_lead: activation_team_lead
 owner_agent: activation_reviewer_agent
 sub_agents: []
 
+# uses_* are a SUBSET of activation_reviewer_agent's declared capabilities (agent_roles.yaml):
+#   skills [llm-council, calibrate, gap-audit]; tools [telemetry_reader, evidence_reader,
+#   artifact_writer, evidence_writer, policy_query]; core [Supervisor, Memory, Web].
 uses_core_abilities:
-  - Memory
-  - Web
-
+  - Memory   # recall the acceptance thresholds, the baseline and prior pilot reviews
+  - Web      # independently consult the live telemetry/incident surface to confirm the pilot signal
 uses_skills:
-  - llm-council       # multi-perspective independent review of pilot evidence
-  - gap-audit         # surface unresolved pilot blockers / missing evidence
-  - calibrate         # calibrate evidence against acceptance thresholds
-
+  - llm-council       # multi-perspective INDEPENDENT review of pilot evidence + canary report
+  - gap-audit         # surface unresolved pilot blockers / missing or thin evidence
+  - calibrate         # calibrate the accept/reject verdict against acceptance thresholds
 uses_tools:
-  - evidence_reader              # read pilot evidence for independent review
-  - telemetry_reader
-  - artifact_writer
-  - evidence_writer
-  - policy_query
-
+  - telemetry_reader   # independently re-read pilot telemetry to confirm the reported signal
+  - evidence_reader    # read PILOT_RESULT + CANARY_HEALTH_REPORT for independent review
+  - artifact_writer    # write PILOT_EVIDENCE_REVIEW_REPORT (side-effect: governance + trace)
+  - evidence_writer    # write stage evidence / gate result (side-effect: governance + trace)
+  - policy_query       # query acceptance-threshold policy-as-data (side-effect-free)
 uses_governance_profiles:
   - activation_pipeline_governance
-  - no_self_approval_policy
+  - no_self_approval_policy           # STRUCTURAL: reviewer role distinct from the pilot owner
   - evidence_required_policy
   - pilot_evidence_gate
-
 uses_audit_schemas:
   - activation_evidence_schema       # evidence (decision proof)
   - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
   - risk_analysis_model
-
 uses_context_memory_profiles:
   - activation_run_context
   - pilot_evidence_context_pack
 
 inputs:
-  - PILOT_RESULT
+  - PILOT_RESULT             # from pilot (#3): the pilot evidence under review
+  - CANARY_HEALTH_REPORT     # from pilot (#3): the canary verdict to independently re-check
+  - HEALTH_BASELINE          # from preview (#2): the bar the canary verdict is checked against
 
 outputs:
-  - PILOT_EVIDENCE_REVIEW_REPORT
+  - PILOT_EVIDENCE_REVIEW_REPORT   # independent accept/reject verdict + thresholds met/unmet + blockers
+  - PILOT_EVIDENCE_GATE_RESULT     # binary gate result for this review stage
 
 evidence:
   - PILOT_EVIDENCE_REVIEW_REPORT
+  - PILOT_EVIDENCE_GATE_RESULT
 
 trace:
   - pilot_activation_trace
+  - pilot_evidence_review_handoff_trace   # records the producer(pilot)->validator(reviewer) role handoff
   - stage_gate_decision_trace
+  - policy_evaluation_trace
 
 gates:
-  - pilot_evidence_gate
-  - pilot_acceptance_thresholds_met
-  - no_unresolved_pilot_blocker
+  - pilot_evidence_gate                    # sufficient pilot evidence exists (separate-owner review)
+  - reviewer_role_distinct_from_pilot_owner # STRUCTURAL no-self-approval: reviewer != pilot owner
+  - pilot_acceptance_thresholds_met        # pilot evidence meets the pre-registered acceptance thresholds
+  - no_unresolved_pilot_blocker            # no open blocker from the pilot remains unresolved
 
 on_pass: public_activation_decision
 on_fail: pilot_activation
 rework_route: pilot_activation
 
+# Real failure conditions that hard-block the review (no empty load-bearing field).
 blocking_conditions:
-  - public_activation_attempted_without_pilot_evidence
+  - public_activation_attempted_without_pilot_evidence   # def blocking_condition
+  - reviewer_is_pilot_owner                              # self-approval: reviewer owned the pilot
+  - pilot_acceptance_thresholds_unmet                    # evidence falls short of acceptance thresholds
+  - unresolved_pilot_blocker                             # an open pilot blocker is unresolved
 
 optional_conditions: []
 

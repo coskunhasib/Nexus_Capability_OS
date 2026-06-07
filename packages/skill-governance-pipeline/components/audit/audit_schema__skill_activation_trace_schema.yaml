@@ -1,0 +1,54 @@
+id: skill_activation_trace_schema
+name: Skill Activation Trace Schema
+type: trace_schema
+status: candidate
+purpose: Trace record shape for a skill activation — the operation history of which
+  Skill was activated, by whom, with what inputs/outputs (doc 03 §12 "skill activation
+  trace"). Process history, never decision proof. Skill != Tool.
+owner_domain: nexus_global_governance
+allowed_usage:
+- Record skill-activation provenance for any Skill activation across any pipeline.
+- Serve as the trace requirement attached by every skill registry item (skill_class_defaults
+  bind it so EVERY skill activation emits this).
+forbidden_usage:
+- Used as a decision proof (that is an evidence_schema record).
+- Merged with any evidence_schema record (Evidence != Trace).
+- Treated as a tool_call_trace_schema (Skill != Tool).
+governance_profiles:
+- global_trace_required_policy
+- skill_activation_governance
+audit_schemas:
+- stage_gate_trace_schema
+notes: 'Field set binds to configs/nexus-ai/schemas/trace_item.schema.json (related_skill
+  populated). Bound by EVERY item in configs/nexus-ai/ skills_registry.yaml and governance/skill/skills.yaml.
+  Skill != Tool is preserved: this is distinct from tool_call_trace_schema.'
+applies_to:
+- all_pipelines
+- skill_activation_provenance
+required_fields:
+- trace_id
+- type
+- actor
+- action
+- related_skill
+- input_refs
+- output_refs
+- status
+- timestamp
+producer: activating_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  registries:
+  - skills_registry
+  agents:
+  - all_skill_activating_agents

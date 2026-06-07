@@ -7,33 +7,41 @@
 # its Team Lead orchestrator) must obey — it does NOT redefine per-stage contracts (those live in
 # configs/nexus-ai/stages/activation/*.yaml).
 #
-# Mirrors the structure of configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml so the two pipelines
-# are at parity: header, routing_terminals, required_gate_producers (+ invariants),
-# rework_routing_table (by_stage), iteration_policy, canonical_docs.
+# Mirrors the structure of configs/nexus-ai/research_pipeline_runtime_rules.yaml and
+# configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml so the pipelines are at parity: header,
+# routing_terminals, required_gate_producers (+ invariants), rework_routing_table (by_stage +
+# by_failure_condition + routing_invariants), iteration_policy, canonical_docs.
 #
 # Source of truth (everything below is DERIVED, nothing invented):
 #   - configs/nexus-ai/activation_pipeline.yaml
 #       required_gates.always / required_gates.conditional   -> required_gate_producers.gates
-#       allowed_rework_routes                                -> rework_routing_table.by_stage (cross-check)
+#       allowed_rework_routes                                -> rework_routing_table.by_failure_condition
 #   - configs/nexus-ai/stages/activation/*.yaml
 #       each stage's `gates:`                                -> satisfied_by_stage_gates / producing_stage
 #       each stage's `uses_governance_profiles:`             -> producing_rule
 #       each stage's on_fail / rework_route                  -> rework_routing_table.by_stage (authoritative)
 #   - configs/nexus-ai/governance_profiles.yaml
-#       every producing_rule id resolves here (no dangling edge).
+#       every producing_rule id resolves here (no dangling edge; *_policy aliases resolve).
 #
-# Boundary preserved from activation_pipeline.yaml: this pipeline promotes an already
-# release-candidate artifact produced by the SDLC Pipeline; it does NOT regenerate SDLC.
-# team_lead is the pipeline-specific activation_team_lead role, DISTINCT from the Supervisor
-# Core Ability (Core Abilities are abilities only; never owners or routing targets here).
+# PROFESSIONAL-GRADE UPGRADE (kept consistent with activation_pipeline.yaml): the flow is now 8 stages
+# (added post_activation_monitoring #8, the terminal aggregate soak gate) and the required-gate set
+# grew to 17 always + 4 conditional with the staged-activation safety envelope (blast-radius limit,
+# abort criteria, health baseline, pilot canary, RTO-bound rollback drill, post-activation soak). This
+# file is updated to map every new gate to its producing stage and to route the two new failure types
+# (pilot_unsafe, post_activation_breach) to rollback_readiness.
+#
+# Boundary preserved from activation_pipeline.yaml: this pipeline promotes an already release-candidate
+# artifact produced by the SDLC Pipeline; it does NOT regenerate SDLC. team_lead is the pipeline-
+# specific activation_team_lead role, DISTINCT from the Supervisor Core Ability (Core Abilities are
+# abilities only; never owners or routing targets here).
 
 version: draft-0.1
 rules_id: activation_pipeline_runtime_rules
 pipeline_id: activation_pipeline
 applies_to_pipeline_version: draft-0.1
 purpose: >-
-  Formalize the Activation Pipeline cross-stage runtime rules — which required gate is produced by
-  which stage (so every rollup gate has a real producer), where a failed stage reworks to, and how
+  Formalize the Activation Pipeline cross-stage runtime rules — which producing stage satisfies each
+  required gate (so every rollup gate has a real producer), where a failed stage reworks to, and how
   many iterations are allowed before the run is hard-blocked — under no-self-approval governance.
   Documentation/blueprint only; no runtime code.
 status: draft
@@ -41,9 +49,9 @@ owner_team: activation_team
 team_lead: activation_team_lead
 
 # Canonical routing terminals these rules may point to (besides any pipeline stage_id).
-# These mirror configs/nexus-ai/stages/activation/*.yaml on_fail/rework_route usage.
+# These mirror configs/nexus-ai/stages/activation/*.yaml on_pass/on_fail/rework_route usage.
 routing_terminals:
-  - done                    # pipeline reached its terminal success node (after activation_completion)
+  - done                    # pipeline reached its terminal success node (after post_activation_monitoring)
   - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
   - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
 
@@ -51,64 +59,89 @@ routing_terminals:
 # Required-gate → producer map  (make the rollup gates machine-checkable)
 # =====================================================================================
 # PURPOSE: configs/nexus-ai/activation_pipeline.yaml `required_gates` lists gate IDs the run must
-#   satisfy, but several of them are SATISFIED BY a specific upstream stage's gate decision rather
-#   than being a free-standing check. Without an explicit map a checker cannot prove each required
-#   gate has a real producer (the gate name would be a dangling edge: present in required_gates,
-#   resolving to nothing). This block resolves that edge for every required gate.
+#   satisfy, but several are SATISFIED BY a specific upstream stage's gate decision rather than being a
+#   free-standing check. Without an explicit map a checker cannot prove each required gate has a real
+#   producer (the gate name would be a dangling edge: present in required_gates, resolving to nothing).
+#   This block resolves that edge for every required gate.
 #
-# SCOPE: all 12 required activation gates — 9 always + 3 conditional (public-scope-only). Each
-#   always gate maps by name to the single stage whose `gates:` list contains it; each conditional
-#   gate maps to the stage that enforces its base gate. The two cross-cutting policy rollups
-#   (all_required_gates_passed, no_blocking_policy_failure) have no single producing stage and are
-#   recorded with producing_stage: pipeline + a note.
+# SCOPE: all 21 required activation gates — 17 always + 4 conditional (public-scope-only). Each gate
+#   maps by name to the single stage whose `gates:` (or conditional_required_gates) list contains it;
+#   the two cross-cutting policy rollups (all_required_gates_passed, no_blocking_policy_failure) have
+#   no single producing stage and are recorded with producing_stage: pipeline + a note (they are
+#   carried at the terminal stage post_activation_monitoring).
 #
 # AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/activation/*.yaml; the
-#   producing_rule is the stage-specific gate-bearing governance profile in that stage's
-#   `uses_governance_profiles`, each a first-class item in configs/nexus-ai/governance_profiles.yaml
-#   (so every rule id below resolves — no new dangling edge).
+#   producing_rule is a gate-bearing governance profile in that stage's `uses_governance_profiles`,
+#   each a first-class item in configs/nexus-ai/governance_profiles.yaml (so every rule id below
+#   resolves — *_policy variants resolve via the canonical aliases; no new dangling edge).
 #
 # CHECKER CONTRACT (how to verify): for each entry, assert
 #   (a) `gate` ∈ activation_pipeline.yaml required_gates.always (tier=always)
 #       or required_gates.conditional (tier=conditional),
-#   (b) `producing_stage` ∈ the canonical 7-stage activation set (or `pipeline` for policy rollups),
+#   (b) `producing_stage` ∈ the canonical 8-stage activation set (or `pipeline` for policy rollups),
 #   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
 #       stage's uses_governance_profiles,
-#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list (or conditional_required_gates).
 # Any unmet assertion = a dangling required-gate edge.
 required_gate_producers:
-  scope: activation_required_gates_all   # all 12 required gates (9 always + 3 conditional)
+  scope: activation_required_gates_all   # all 21 required gates (17 always + 4 conditional)
   note: >-
     Each gate in activation_pipeline.yaml required_gates is SATISFIED BY the producing stage's gate
     decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
     redefine any stage gate and does NOT alter activation_pipeline.yaml (which stays schema-valid).
   gates:
+    # --- always: activation_intake (#1) -------------------------------------------------------
     - gate: release_candidate_evidence_present          # required_gates.always
       tier: always
       producing_stage: activation_intake                # stage #1
-      producing_rule: evidence_required_policy           # governance_profiles.yaml; in activation_intake.uses_governance_profiles
+      producing_rule: evidence_required_policy           # governance_profiles.yaml (alias of evidence_required); in activation_intake.uses_governance_profiles
       satisfied_by_stage_gates:
         - release_candidate_evidence_present
       note: >-
         Confirms the target is an SDLC release candidate (or higher) with required evidence present;
-        this is the pipeline entry guard (blocking_condition: missing_release_candidate_evidence).
+        the pipeline entry guard (blocking_condition: missing_release_candidate_evidence).
 
     - gate: activation_scope_defined                    # required_gates.always
       tier: always
       producing_stage: activation_intake                # stage #1
-      producing_rule: activation_pipeline_governance     # governance_profiles.yaml; in activation_intake.uses_governance_profiles
+      producing_rule: activation_pipeline_governance     # in activation_intake.uses_governance_profiles
       satisfied_by_stage_gates:
         - activation_scope_defined
 
     - gate: rollback_owner_assigned                     # required_gates.always
       tier: always
       producing_stage: activation_intake                # stage #1
-      producing_rule: activation_pipeline_governance     # governance_profiles.yaml; in activation_intake.uses_governance_profiles
+      producing_rule: activation_pipeline_governance     # in activation_intake.uses_governance_profiles
       satisfied_by_stage_gates:
         - rollback_owner_assigned
       note: >-
-        Intake assigns the rollback owner; rollback_readiness (stage #6) later validates the
-        rollback path itself via rollback_required_gate.
+        Intake assigns the rollback owner; rollback_readiness (#6) later validates the rollback path
+        itself via rollback_required_gate.
 
+    - gate: blast_radius_limit_defined                  # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: activation_intake                # stage #1
+      producing_rule: activation_pipeline_governance     # in activation_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - blast_radius_limit_defined
+      note: >-
+        Pre-registers the maximum blast radius (cohort %/scope ceiling) BEFORE exposure; the pilot
+        gate blast_radius_within_limit (#3) enforces it. Pipeline blocking_condition
+        blast_radius_limit_not_defined guards the absence.
+
+    - gate: abort_criteria_defined                      # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: activation_intake                # stage #1
+      producing_rule: activation_pipeline_governance     # in activation_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - abort_criteria_defined
+      note: >-
+        Pre-registers explicit machine-checkable abort/stop thresholds that auto-trigger rollback. The
+        pilot gate no_abort_condition_breached (#3), the rollback drill (#6) and the post-activation
+        soak (#8) all check against these. Pipeline blocking_condition abort_criteria_not_pre_registered
+        guards the absence.
+
+    # --- always: superadmin_preview (#2) ------------------------------------------------------
     - gate: preview_required_gate                       # required_gates.always
       tier: always
       producing_stage: superadmin_preview               # stage #2
@@ -122,65 +155,136 @@ required_gate_producers:
     - gate: preview_behaves_as_expected                 # required_gates.always
       tier: always
       producing_stage: superadmin_preview               # stage #2
-      producing_rule: preview_required_gate              # governance_profiles.yaml; in superadmin_preview.uses_governance_profiles
+      producing_rule: preview_required_gate              # in superadmin_preview.uses_governance_profiles
       satisfied_by_stage_gates:
         - preview_behaves_as_expected
 
     - gate: telemetry_observable_in_preview             # required_gates.always
       tier: always
       producing_stage: superadmin_preview               # stage #2
-      producing_rule: preview_required_gate              # governance_profiles.yaml; in superadmin_preview.uses_governance_profiles
+      producing_rule: preview_required_gate              # in superadmin_preview.uses_governance_profiles
       satisfied_by_stage_gates:
         - telemetry_observable_in_preview
 
+    - gate: health_baseline_captured                    # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: superadmin_preview               # stage #2
+      producing_rule: activation_pipeline_governance     # in superadmin_preview.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - health_baseline_captured
+      note: >-
+        Captures the steady-state HEALTH_BASELINE in the internal-only preview BEFORE any exposure, so
+        the pilot canary gate (#3) and the post-activation soak (#8) have a comparison bar. Pipeline
+        blocking_condition health_baseline_not_captured_before_exposure guards the absence.
+
+    # --- always: pilot_activation (#3) --------------------------------------------------------
+    - gate: blast_radius_within_limit                   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: pilot_activation                 # stage #3
+      producing_rule: activation_pipeline_governance     # in pilot_activation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - blast_radius_within_limit
+      note: >-
+        Enforces the pre-registered blast-radius ceiling (#1) during the pilot. Pipeline
+        blocking_condition blast_radius_exceeded_during_pilot guards the breach.
+
+    - gate: pilot_health_within_canary_thresholds       # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: pilot_activation                 # stage #3
+      producing_rule: activation_pipeline_governance     # in pilot_activation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - pilot_health_within_canary_thresholds
+      note: >-
+        The live canary gate: pilot health must not regress the HEALTH_BASELINE (#2) beyond thresholds.
+        Distinct from the separate-owner acceptance review at #4. A breach routes to rollback_readiness
+        (pilot_unsafe -> rollback_readiness), not forward.
+
+    - gate: no_abort_condition_breached                 # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: pilot_activation                 # stage #3
+      producing_rule: activation_pipeline_governance     # in pilot_activation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - no_abort_condition_breached
+      note: >-
+        No pre-registered abort criterion (#1) tripped during the pilot. Pipeline blocking_condition
+        abort_condition_breached_without_rollback guards a breach that did not exercise rollback.
+
+    # --- always: activation_completion (#7) ---------------------------------------------------
     - gate: activation_evidence_complete                # required_gates.always
       tier: always
       producing_stage: activation_completion            # stage #7
-      producing_rule: evidence_required_policy           # governance_profiles.yaml; in activation_completion.uses_governance_profiles
+      producing_rule: evidence_required_policy           # in activation_completion.uses_governance_profiles
       satisfied_by_stage_gates:
         - activation_evidence_complete
       note: >-
-        The full activation evidence package is assembled and confirmed complete at the terminal
-        stage (activation_completion), which is the authoritative producer of evidence completeness.
+        The full activation evidence package is assembled and confirmed complete at the execution/
+        assembly stage (#7). The cross-cutting rollups below are then evaluated at the terminal
+        post_activation_monitoring stage (#8).
 
+    # --- always: post_activation_monitoring (#8) ----------------------------------------------
+    - gate: post_activation_health_within_baseline      # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: post_activation_monitoring       # stage #8
+      producing_rule: activation_pipeline_governance     # in post_activation_monitoring.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - post_activation_health_within_baseline
+      note: >-
+        Post-go-live soak gate: live health does not regress the baseline beyond thresholds over the
+        monitoring window. A regression routes to rollback_readiness (post_activation_breach ->
+        rollback_readiness). Decomposed to activation_health_watch_subagent (returns a verdict; does
+        not decide the gate).
+
+    - gate: activation_stable_over_monitoring_window    # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: post_activation_monitoring       # stage #8
+      producing_rule: activation_pipeline_governance     # in post_activation_monitoring.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - activation_stable_over_monitoring_window
+      note: >-
+        The activation held stable for the full soak window (no abort breach, no instability). Pipeline
+        blocking_condition activation_unstable_during_monitoring_window guards the failure.
+
+    # --- always: cross-cutting policy rollups (terminal #8; no single producing stage) --------
     - gate: all_required_gates_passed                   # required_gates.always
       tier: always
       producing_stage: pipeline                         # cross-cutting rollup — no single producing stage
-      producing_rule: activation_pipeline_governance     # governance_profiles.yaml; pipeline-level governance
+      producing_rule: activation_pipeline_governance     # pipeline-level governance
       satisfied_by_stage_gates:
         - all_required_gates_passed
       note: >-
-        Policy ROLLUP gate with no single producing stage: it asserts that every other required gate
-        (always + applicable conditional) has passed. It is evaluated/rolled up at activation_completion
-        (stage #7, whose gates list it) over the whole run, so producing_stage is recorded as
-        `pipeline`. Listed here for completeness; not a per-stage component gate.
+        Policy ROLLUP gate with no single producing stage: it asserts every other required gate
+        (always + applicable conditional) passed. It is evaluated/rolled up at the TERMINAL stage
+        post_activation_monitoring (#8, whose gates list it) over the whole run, so producing_stage is
+        recorded as `pipeline`.
 
     - gate: no_blocking_policy_failure                  # required_gates.always
       tier: always
       producing_stage: pipeline                         # cross-cutting policy — no single producing stage
-      producing_rule: activation_pipeline_governance     # governance_profiles.yaml; pipeline-level governance
+      producing_rule: activation_pipeline_governance     # pipeline-level governance
       satisfied_by_stage_gates:
         - no_blocking_policy_failure
       note: >-
         Cross-cutting policy gate (mirrors the SDLC no_blocking_policy_failure policy): it asserts no
         blocking_conditions fired anywhere in the run. It has no single producing stage; it is
-        evaluated at activation_completion (stage #7, whose gates list it) across the whole run, so
-        producing_stage is recorded as `pipeline`.
+        evaluated at the TERMINAL post_activation_monitoring stage (#8, whose gates list it) across the
+        whole run, so producing_stage is recorded as `pipeline`.
 
+    # --- conditional (public-scope-only) ------------------------------------------------------
     - gate: pilot_evidence_gate_if_public_scope         # required_gates.conditional
       tier: conditional
       producing_stage: pilot_evidence_review            # stage #4
       producing_rule: pilot_evidence_gate                # governance_profiles.yaml; in pilot_evidence_review.uses_governance_profiles
       satisfied_by_stage_gates:
         - pilot_evidence_gate
+        - reviewer_role_distinct_from_pilot_owner
         - pilot_acceptance_thresholds_met
         - no_unresolved_pilot_blocker
       conditional_required_when: >-
         requested_activation_scope == public  (general-availability); public activation is impossible
         without sufficient, independently-reviewed pilot evidence.
       note: >-
-        Conditional gate — required only when public scope is requested. Produced by the
-        separate-owner pilot evidence review (no self-approval; reviewer != pilot owner).
+        Conditional gate — required only when public scope is requested. Produced by the separate-owner
+        pilot evidence review (no self-approval; reviewer != pilot owner — the producer!=validator edge).
 
     - gate: owner_activation_decision_gate_if_public_scope   # required_gates.conditional
       tier: conditional
@@ -191,8 +295,8 @@ required_gate_producers:
         - no_self_approval_policy
         - rollback_plan_present
       conditional_required_when: >-
-        requested_activation_scope == public  (general-availability); the human/owner decision must
-        be recorded as evidence before broad activation is executed.
+        requested_activation_scope == public  (general-availability); the human/owner decision must be
+        recorded as evidence before broad activation is executed.
       note: >-
         Conditional gate — required only when public scope is requested. The authorizing actor is the
         human owner; the decision cannot be self-approved by any stage-owning agent
@@ -206,19 +310,40 @@ required_gate_producers:
         - rollback_required_gate
         - rollback_plan_validated
         - rollback_drill_passed
+        - rollback_recovery_within_rto
+        - rollback_drill_exercises_abort_criteria
       conditional_required_when: >-
-        requested_activation_scope == public  (general-availability); public activation cannot
-        complete without a validated, drill-tested rollback path.
+        requested_activation_scope == public  (general-availability); public activation cannot complete
+        without a validated, drill-tested rollback path that recovers within the declared RTO.
       note: >-
-        Conditional gate — required only when public scope is requested
-        (blocking_condition: public_activation_attempted_without_validated_rollback_plan).
+        Conditional gate — required only when public scope is requested (blocking_condition:
+        public_activation_attempted_without_validated_rollback_plan). The professional-grade additions
+        rollback_recovery_within_rto + rollback_drill_exercises_abort_criteria make the drill RTO-bound
+        and abort-criteria-linked.
+
+    - gate: extended_monitoring_window_if_public_scope  # required_gates.conditional (NEW — professional-grade)
+      tier: conditional
+      producing_stage: post_activation_monitoring       # stage #8
+      producing_rule: activation_pipeline_governance     # in post_activation_monitoring.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - extended_monitoring_window_completed
+      conditional_required_when: >-
+        requested_activation_scope == public  (general-availability); public (GA) scope warrants a
+        longer/stricter post-activation soak than an internal preview/pilot.
+      note: >-
+        Conditional gate carried on post_activation_monitoring.conditional_required_gates (gate:
+        extended_monitoring_window_if_public_scope, satisfied_by: extended_monitoring_window_completed).
+        When the run is NOT public scope the gate evaluates pass_if_not_applicable and does not block.
+        Mirrors the research/SDLC conditional-gate pattern (a *_if_* gate satisfied by an un-suffixed
+        component check).
 
   invariants:
     - Every `gate` MUST exist in configs/nexus-ai/activation_pipeline.yaml required_gates
       (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
     - "Every `producing_stage` MUST be a canonical stage_id in configs/nexus-ai/activation_pipeline.yaml, OR the literal `pipeline` for cross-cutting policy rollups that have no single producing stage."
-    - "Every `producing_rule` MUST resolve to a governance profile id in configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles (for producing_stage `pipeline`, producing_rule is the pipeline-level activation_pipeline_governance)."
-    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/activation/*.yaml); for producing_stage: pipeline the rollup gate is listed on the terminal stage activation_completion."
+    - "Every `producing_rule` MUST resolve to a governance profile id in configs/nexus-ai/governance_profiles.yaml (the *_policy variants resolve via the canonical aliases) AND appear in that stage's uses_governance_profiles (for producing_stage `pipeline`, producing_rule is the pipeline-level activation_pipeline_governance)."
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/activation/*.yaml); for the conditional gate extended_monitoring_window_if_public_scope it is the component check named in that stage's conditional_required_gates.satisfied_by; for producing_stage: pipeline the rollup gate is listed on the terminal stage post_activation_monitoring."
+    - "A conditional gate's satisfied_by_stage_gates names the un-suffixed component gate(s) on the producing stage; when not applicable it evaluates to pass_if_not_applicable and does not block."
     - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change activation_pipeline.yaml."
 
 # =====================================================================================
@@ -226,29 +351,37 @@ required_gate_producers:
 # =====================================================================================
 rework_routing_table:
 
-  # -- Authoritative per-stage routes (complete; covers all 7 canonical activation stages) ------
+  # -- Authoritative per-stage routes (complete; covers all 8 canonical activation stages) ------
   # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
   # Values copied VERBATIM from each stage's own canonical `rework_route` in
   # configs/nexus-ai/stages/activation/*.yaml. Cross-checked against activation_pipeline.yaml
   # allowed_rework_routes (each <failure_condition> -> <target_stage_id> resolves to one of these).
   by_stage:
-    activation_intake: activation_intake                 # stage #1 on_fail/rework_route: activation_intake
-    superadmin_preview: superadmin_preview               # stage #2 on_fail/rework_route: superadmin_preview
-    pilot_activation: pilot_activation                   # stage #3 on_fail/rework_route: pilot_activation
-    pilot_evidence_review: pilot_activation              # stage #4 on_fail/rework_route: pilot_activation
-    public_activation_decision: pilot_evidence_review    # stage #5 on_fail/rework_route: pilot_evidence_review
-    rollback_readiness: rollback_readiness               # stage #6 on_fail/rework_route: rollback_readiness
-    activation_completion: relevant_failed_stage         # stage #7 on_fail/rework_route: relevant_failed_stage
+    activation_intake: activation_intake                 # stage #1 rework_route: activation_intake
+    superadmin_preview: superadmin_preview               # stage #2 rework_route: superadmin_preview
+    pilot_activation: pilot_activation                   # stage #3 rework_route: pilot_activation (UNSAFE pilot -> rollback_readiness via by_failure_condition pilot_unsafe)
+    pilot_evidence_review: pilot_activation              # stage #4 rework_route: pilot_activation
+    public_activation_decision: pilot_evidence_review    # stage #5 rework_route: pilot_evidence_review
+    rollback_readiness: rollback_readiness               # stage #6 rework_route: rollback_readiness
+    activation_completion: relevant_failed_stage         # stage #7 rework_route: relevant_failed_stage
+    post_activation_monitoring: relevant_failed_stage    # stage #8 rework_route: relevant_failed_stage (health/abort breach -> rollback_readiness via by_failure_condition post_activation_breach)
 
   # -- Failure-condition index (the def's allowed_rework_routes contract) ------------------------
   # Verbatim from activation_pipeline.yaml allowed_rework_routes: <failure_condition> -> <stage_id>.
-  # Provided as a convenience index over the same routes recorded in by_stage above.
+  # Provided as a convenience index over the same routes recorded in by_stage above. NOTE: by_stage is
+  # derived from each stage file's own rework_route (the stage that FAILED); by_failure_condition is the
+  # def's allowed_rework_routes (the failure TYPE). They agree on shared routes; by_failure_condition
+  # also names the two cross-stage safety routes pilot_unsafe and post_activation_breach, which both
+  # target rollback_readiness (a canary/abort breach must exercise rollback before any retry/finalize)
+  # even though the failing stage's own self-rework_route is pilot_activation / relevant_failed_stage.
   by_failure_condition:
     preview_failure: superadmin_preview                  # def allowed_rework_routes
     pilot_failure: pilot_activation                      # def allowed_rework_routes
+    pilot_unsafe: rollback_readiness                     # def allowed_rework_routes (NEW — canary/abort breach during pilot)
     insufficient_pilot_evidence: pilot_evidence_review   # def allowed_rework_routes
     rollback_not_ready: rollback_readiness               # def allowed_rework_routes
     owner_decision_rejected: pilot_evidence_review       # def allowed_rework_routes
+    post_activation_breach: rollback_readiness           # def allowed_rework_routes (NEW — health regression / abort breach during soak)
     scope_or_intake_gap: activation_intake               # def allowed_rework_routes
 
   routing_invariants:
@@ -257,16 +390,17 @@ rework_routing_table:
     - A failed stage MUST route to its declared rework target; the Team Lead orchestrator MAY NOT
       improvise a different target (the pipeline is a deterministic stage graph, not agent chatter).
     - relevant_failed_stage MUST resolve to the specific upstream stage whose gate/evidence failed
-      (used by the aggregate terminal stage activation_completion).
+      (used by the aggregate stages activation_completion #7 and post_activation_monitoring #8).
     - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
       unre-evaluated gates.
-    - block_and_report is reached only via the iteration_policy limit below, never as a normal
-      stage rework target.
+    - "A canary/abort/health breach (by_failure_condition pilot_unsafe at #3, post_activation_breach at #8) MUST route to rollback_readiness (#6) so rollback is exercised before any retry or finalization; it MUST NOT route forward to done."
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal stage
+      rework target.
 
 # =====================================================================================
 # Iteration policy
 # =====================================================================================
-# No-human system: infinite loops are forbidden. Mirrors the SDLC iteration policy.
+# No-human system: infinite loops are forbidden. Mirrors the SDLC/research iteration policy.
 iteration_policy:
   default_max_iterations_per_stage: 3      # mirrors per-stage `max_iterations: 3` in every activation stage contract
   max_total_rework_cycles: 8               # ceiling on cumulative rework cycles across the whole run
@@ -279,9 +413,11 @@ iteration_policy:
       overrides this default for that stage only. Every activation stage currently sets max_iterations to 3.
     - max_total_rework_cycles counts every rework hop across the run; reaching it triggers
       on_iteration_limit_exceeded even if no single stage hit its per-stage cap.
-    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
-      report is emitted as run evidence (it records the offending stage, failure condition, route
-      taken, and iteration counts).
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md report is
+      emitted as run evidence (it records the offending stage, failure condition, route taken, and
+      iteration counts). A repeatedly-breaching canary/abort/rollback loop (pilot_unsafe /
+      post_activation_breach / rollback_not_ready) that cannot converge therefore hard-blocks rather
+      than activating, which is the safe default for staged activation under no-human governance.
 
 # Canonical docs this runtime-rules file is bound to.
 canonical_docs:

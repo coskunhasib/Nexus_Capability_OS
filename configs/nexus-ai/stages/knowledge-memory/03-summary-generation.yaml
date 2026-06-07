@@ -1,63 +1,100 @@
 # Nexus AI Orchestration Model — Knowledge / Memory Pipeline
-# Stage #3 of 6: summary_generation
+# Stage #3 of 7: summary_generation
 # Machine-readable stage contract. Transcribed (not invented) from
-#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.3.
-# Field set mirrors configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.3,
+#   then ENRICHED to professional-grade reliability (sdlc / research_pipeline bar).
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml.
 # Pipeline: knowledge_memory_pipeline. owner_agent is a snake_case Agent role under knowledge_team.
-# calibrate is used here for confidence calibration of the summary (md §2.3).
+#
+# COVERAGE HARDENING folded in here (professional-grade calibration — no-hallucination is the core
+# integrity control for a knowledge corpus and was under-specified):
+#   GROUNDING / NO-HALLUCINATION. The md §2.3 has summary_grounded_in_source (blocker) — the summary
+#   must cite/link the classified source with "no unsupported additions". The prior contract carried
+#   the gate but no explicit no-unsupported-claim check or grounding artifact. Added:
+#   no_unsupported_claim_in_summary gate + SUMMARY_GROUNDING_REPORT output (every summary claim maps
+#   to a span in the classified, redacted source; ungrounded claims are listed and block). This makes
+#   "grounded" mechanically checkable rather than asserted, and is what stops a curated memory from
+#   entering the corpus carrying facts the source never supported. calibrate keeps stated confidence
+#   matched to actual support (the existing MAJOR gate).
+#
+# Depth / reconciliation notes:
+#   - owner_agent kept as canonical memory_summarization_agent (agent_roles.yaml; owned_stages:
+#     [summary_generation]; reviewed_by: knowledge_team_lead).
+#   - summarization_model is the dedicated summarizer profile (forbidden_usage already bars
+#     summarising un-redacted sensitive content — redaction_required_gate applies first, satisfied at
+#     #2). summary_writer is caller-locked to memory_summarization_agent.
+#   - calibrate = confidence calibration (md §2.3). gap-audit is NOT added here (summary_writer +
+#     calibrate + the grounding check cover the stage; gap-audit's coverage role is used at
+#     classification/reconciliation/retrieval). Skills stay within the catalog's claimed set.
+#   - Evidence != Trace kept distinct.
 version: draft-0.1
 stage_id: summary_generation
 name: Summary Generation
 purpose: >-
-  Produce a faithful, well-scoped summary of the (already classified, already redacted)
-  memory item, calibrated so that stated confidence matches actual support in the source.
+  Produce a faithful, well-scoped summary of the (already classified, already redacted) memory item
+  in which every claim is grounded in a span of the source — no unsupported additions — and stated
+  confidence matches actual support. Emits the summary plus a grounding report that lists, per claim,
+  the source span it rests on, so grounding is verifiable rather than asserted.
+
 owner_team: knowledge_team
 team_lead: knowledge_team_lead
 owner_agent: memory_summarization_agent
 sub_agents: []
 
 uses_core_abilities:
-  - Memory
+  - Memory   # recall the classified, redacted candidate and its source to ground each claim
 uses_skills:
-  - calibrate   # confidence calibration of the summary
+  - calibrate   # confidence calibration of the summary (stated confidence == actual support)
 uses_tools:
-  - summary_writer
-  - provenance_recorder
-  - artifact_writer
-  - evidence_writer
+  - summary_writer        # author the grounded summary (allowed_callers: memory_summarization_agent)
+  - provenance_recorder   # extend provenance with the summary linkage (side-effect: governance + trace)
+  - artifact_writer       # write MEMORY_SUMMARY / grounding report (side-effect: governance + trace)
+  - evidence_writer       # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - memory_source_governance
 uses_audit_schemas:
-  - memory_provenance_schema
-  - stage_gate_trace_schema
+  - memory_provenance_schema   # evidence schema (summary linkage attaches to provenance)
+  - stage_gate_trace_schema    # trace schema (distinct from evidence)
 uses_model_provider_profiles:
-  - summarization_model
+  - summarization_model        # dedicated summarizer; bars un-redacted sensitive content by policy
 uses_context_memory_profiles:
   - knowledge_run_context
   - memory_candidate_context_pack
 
 inputs:
-  - SOURCE_CLASSIFICATION_REPORT
+  - SOURCE_CLASSIFICATION_REPORT        # the governed classification the summary must respect
+  - SENSITIVE_CONTENT_DETECTION_REPORT  # confirms redaction happened; the summary uses the redacted text
+  - MEMORY_INTAKE_RECORD                # the candidate content to summarize
+
 outputs:
-  - MEMORY_SUMMARY
+  - MEMORY_SUMMARY                  # the faithful, calibrated summary
+  - SUMMARY_GROUNDING_REPORT        # per-claim mapping to a source span; lists any ungrounded claim
+  - SUMMARY_CONFIDENCE_RECORD       # the calibrate outcome (stated vs supported confidence)
+  - SUMMARY_GENERATION_GATE_RESULT  # binary gate result for this stage
 
 evidence:
   - MEMORY_SUMMARY
+  - SUMMARY_GROUNDING_REPORT
+  - SUMMARY_GENERATION_GATE_RESULT
 trace:
   - summary_generation_skill_activation_trace
   - gate_decision_trace
 
-# md §2.3 key gates: summary_grounded_in_source (blocker); summary_confidence_calibrated (major).
+# md §2.3 key gates: summary_grounded_in_source (blocker) + the added no-unsupported-claim blocker;
+# summary_confidence_calibrated is MAJOR (non-blocking) — over/under-confident summaries route back
+# rather than hard-block (recorded under optional_conditions).
 gates:
-  - summary_grounded_in_source
-  - summary_confidence_calibrated
+  - summary_grounded_in_source         # the summary cites/links the classified source
+  - no_unsupported_claim_in_summary    # every claim maps to a source span; no hallucinated addition
+  - summary_confidence_calibrated      # MAJOR: calibrate outcome recorded (non-blocking)
 
-on_pass: validity_window_assignment
-on_fail: source_classification
+on_pass: knowledge_conflict_resolution
+on_fail: source_classification        # a summary that cannot be grounded usually signals a classification/redaction problem
 rework_route: source_classification
 
 blocking_conditions:
   - summary_not_grounded_in_source
+  - unsupported_claim_in_summary
 optional_conditions:
   # md §2.3: summary_confidence_calibrated is a MAJOR (non-blocking) gate; over/under-confident
   # summaries are routed back rather than hard-blocked.

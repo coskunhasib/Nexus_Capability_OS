@@ -1,20 +1,48 @@
-# Operations Pipeline — Stage Contract
-# Stage #4: rollback_or_fix
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.4.
-# Either path (rollback OR forward fix) must be backed by runbook or rollback evidence
-#   (satisfies rollback_runbook_evidence_gate). verification-loop is CONDITIONAL — bound only
-#   when a forward fix is applied (bug/defect confirmation that the fix resolves the incident).
-
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #4 of 7: rollback_or_fix
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4.
+# Field set + rigor ENRICHED to the professional-grade bar (research-pipeline calibration exemplar /
+#   configs/nexus-ai/stages/sdlc/15-verification-loop-bug-finding.yaml conditional-skill depth).
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.4.
+# Either path (rollback OR forward fix) must be backed by runbook or rollback evidence (satisfies
+#   rollback_runbook_evidence_gate). owner_agent is an Agent role under operations_team
+#   (agent_roles.yaml: incident_response_agent, reviewed_by operations_team_lead). verification-loop
+#   is CONDITIONAL — bound only when a forward fix is applied (bug/defect confirmation that the fix
+#   actually resolves the incident defect; LOCKED semantics — NOT a readiness checklist).
+#
+# PROFESSIONAL-GRADE COVERAGE folded in here (resolution-type outcome + residual risk + recovery proof):
+#   1. RESOLUTION-TYPE OUTCOME (mitigation vs permanent fix). The executed action is recorded as a
+#      TEMPORARY mitigation/containment or a PERMANENT resolution, consistent with the
+#      MITIGATION_TYPE_CLASSIFICATION from #3. If the executed action is only temporary, a residual-risk
+#      record and a REQUIRED permanent-fix action item are emitted for corrective_action_tracking (#6).
+#      Gates resolution_type_recorded + residual_risk_recorded_if_temporary. This is the execution-side
+#      half of the mitigation-vs-permanent-fix coverage gap.
+#   2. SERVICE-RECOVERY PROOF. service_recovery_confirmed is tightened to require monitoring evidence
+#      (monitoring_query_tool), not an assertion — the recovery claim must be backed by a recovery
+#      signal so a postmortem cannot later find recovery was illusory.
+#
+# Depth / reconciliation notes:
+#   - verification-loop (CONDITIONAL): only when a forward fix is applied — confirm the fix removes the
+#     incident defect. For a rollback path it is not applicable (optional_conditions records this).
+#   - sentinel = pre-execution premortem of the rollback/fix step.
+#   - No-self-approval / producer!=validator: incident_response_agent EXECUTES; it does NOT author the
+#     postmortem that judges this execution (agent_roles.yaml forbidden_actions:
+#     approve_its_own_resolution_or_postmortem) — the postmortem (#5) is owned by the distinct
+#     postmortem_agent. Execution evidence here is read by #5; the execution is reviewed by
+#     operations_team_lead.
+#   - on_fail routes to mitigation_plan (execution failed or recovery not confirmed; re-plan).
 version: draft-0.1
 stage_id: rollback_or_fix
 name: Rollback or Fix
 purpose: >-
-  Execute the chosen path — roll back to a known-good state via the SDLC ROLLBACK_PLAN,
-  or apply a forward fix via the RUNBOOK — and capture the outcome with execution
-  evidence. Produces ROLLBACK_OR_FIX_REPORT and the decision/outcome record. Either
-  path must be backed by runbook or rollback evidence.
+  Execute the chosen path — roll back to a known-good state via the SDLC ROLLBACK_PLAN, or apply a
+  forward fix via the RUNBOOK — and capture the outcome with execution evidence and monitoring-backed
+  recovery confirmation. Record whether the executed action is a TEMPORARY mitigation/containment or a
+  PERMANENT resolution; if temporary, emit a residual-risk record and the required permanent-fix action
+  item. Produces ROLLBACK_OR_FIX_REPORT and the decision/outcome record. Either path must be backed by
+  runbook or rollback evidence.
 
 owner_team: operations_team
 team_lead: operations_team_lead
@@ -22,67 +50,78 @@ owner_agent: incident_response_agent
 sub_agents: []
 
 uses_core_abilities:
-  - OS
-  - Coder
-  - Memory
-
+  - OS       # drive the rollback/runbook execution against the live environment
+  - Coder    # apply/inspect a forward-fix changeset when the chosen path is a fix
+  - Memory   # recall the validated rollback path and prior execution outcomes
 uses_skills:
   - verification-loop  # CONDITIONAL: only when a forward fix is applied — confirm the fix removes the incident defect
   - sentinel           # pre-execution premortem of the rollback/fix step
-
 uses_tools:
-  - rollback_executor
-  - runbook_executor
-  - monitoring_query_tool   # confirm recovery
-  - artifact_writer
-  - evidence_writer
-
+  - rollback_executor       # execute the rollback to known-good per ROLLBACK_PLAN
+  - runbook_executor        # execute the forward fix per RUNBOOK
+  - monitoring_query_tool   # confirm service recovery with a real recovery signal (not an assertion)
+  - artifact_writer         # write ROLLBACK_OR_FIX_REPORT / residual-risk record (side-effect: governance + trace)
+  - evidence_writer         # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - rollback_runbook_evidence_gate
   - operations_pipeline_governance
   - no_self_approval_policy
-
+  - evidence_required_policy
 uses_audit_schemas:
   - rollback_fix_evidence_schema   # evidence (decision proof)
   - stage_gate_trace_schema        # trace (operation history)
-
 uses_model_provider_profiles:
   - operations_analysis_model
-
 uses_context_memory_profiles:
   - operations_run_context
   - operations_context_pack
 
 inputs:
   - MITIGATION_PLAN
-  - RUNBOOK
-  - ROLLBACK_PLAN
+  - MITIGATION_TYPE_CLASSIFICATION   # the planned temporary-vs-permanent intent (from #3)
+  - ROLLBACK_PATH_VALIDATION         # the dry-run/drill result confirming the path is executable (from #3)
+  - RUNBOOK                          # SDLC operations-readiness artifact (read-only)
+  - ROLLBACK_PLAN                    # SDLC operations-readiness artifact (read-only)
 
 outputs:
-  - ROLLBACK_OR_FIX_REPORT
+  - ROLLBACK_OR_FIX_REPORT           # the executed action, execution evidence, recovery confirmation
+  - RESOLUTION_TYPE_RECORD           # executed action classified: temporary mitigation vs permanent resolution
+  - RESIDUAL_RISK_RECORD             # if temporary: residual risk + the REQUIRED permanent-fix action item
+  - SERVICE_RECOVERY_EVIDENCE        # monitoring-backed proof the incident condition cleared
+  - ROLLBACK_OR_FIX_GATE_RESULT      # binary gate result for this stage
 
 evidence:
   - ROLLBACK_OR_FIX_REPORT
-
+  - RESOLUTION_TYPE_RECORD
+  - SERVICE_RECOVERY_EVIDENCE
+  - ROLLBACK_OR_FIX_GATE_RESULT
 trace:
   - rollback_or_fix_trace
+  - service_recovery_confirmation_trace   # the monitoring-backed recovery-confirmation lineage
+  - forward_fix_verification_trace        # CONDITIONAL: verification-loop activity when a forward fix is applied
   - stage_gate_decision_trace
 
 gates:
   - rollback_or_fix_executed
-  - runbook_or_rollback_evidence_present   # blocker — satisfies rollback_runbook_evidence_gate
-  - service_recovery_confirmed
+  - runbook_or_rollback_evidence_present     # blocker — satisfies rollback_runbook_evidence_gate
+  - service_recovery_confirmed               # backed by SERVICE_RECOVERY_EVIDENCE, not asserted
+  - resolution_type_recorded                 # temporary mitigation vs permanent resolution is explicit
+  - residual_risk_recorded_if_temporary      # temporary resolution carries a residual-risk + follow-up record
 
 on_pass: postmortem
 on_fail: mitigation_plan
-rework_route: mitigation_plan
+rework_route: rollback_or_fix
 
 blocking_conditions:
+  - runbook_or_rollback_evidence_absent
+  - service_recovery_unconfirmed
+  - resolution_type_unrecorded
+  - temporary_resolution_without_residual_risk_record
   - rollback_or_fix_lacks_runbook_or_rollback_evidence
   - self_approved_resolution
 
-# verification-loop bug/defect confirmation is required ONLY when the chosen path is a
-# forward fix (md §2.4); for a rollback path it is not applicable.
+# verification-loop bug/defect confirmation is required ONLY when the chosen path is a forward fix
+# (md §2.4); for a rollback path it is not applicable.
 optional_conditions:
   - forward_fix_defect_confirmation_when_fix_applied
 

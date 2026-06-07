@@ -1,12 +1,19 @@
 required_gates:
   always:
   - skill_intake_inventory_complete
+  - skill_provenance_verified
+  - skill_version_hash_pinned
   - skill_semantic_required_gate
   - locked_semantics_enforcement_policy
   - script_reference_audit_gate
   - reference_index_complete
+  - script_sandbox_scoped
+  - least_privilege_permission_scoped
+  - skill_misuse_redteam_gate
   - misuse_warning_required_gate
   - skill_binding_proposal_gate
   - skill_activation_decision_gate
+  - activation_decider_distinct_from_binding_proposer
   conditional:
+  - skill_supply_chain_screened
   - skill_deprecation_required_gate

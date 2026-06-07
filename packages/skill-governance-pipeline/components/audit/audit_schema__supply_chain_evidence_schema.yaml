@@ -1,0 +1,40 @@
+id: supply_chain_evidence_schema
+name: Supply Chain Evidence Schema
+type: evidence_schema
+status: canonical
+purpose: Decision-proof record for supply-chain artifacts (SBOM, LICENSE_REPORT, DEPENDENCY_RISK_REPORT,
+  SUPPLY_CHAIN_GATE_RESULT).
+owner_domain: sdlc
+allowed_usage:
+- Record SBOM / license / dependency-risk decision-proof evidence.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+notes: Stage 17 evidence schema.
+applies_to:
+- sdlc_stage:supply_chain_sbom_license
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- source_artifacts
+- summary
+- status
+- created_at
+producer: supply_chain_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - supply_chain_sbom_license
+  agents:
+  - supply_chain_agent

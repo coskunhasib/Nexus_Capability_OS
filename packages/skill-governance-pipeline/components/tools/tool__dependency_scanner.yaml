@@ -1,0 +1,38 @@
+id: dependency_scanner
+name: Dependency Scanner
+type: tool
+category: tool
+status: canonical
+purpose: Scan dependencies / lockfiles for known vulnerabilities (SCA findings).
+owner_domain: security
+provided_by_core_ability: null
+input_schema:
+  manifests:
+  - string
+output_schema:
+  vulnerabilities:
+  - object
+side_effects: executes_scanners_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- security_validation_agent
+- supply_chain_agent
+allowed_usage:
+- Scan dependency manifests for known vulnerabilities.
+forbidden_usage:
+- Installing/upgrading dependencies; deploying.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - security_validation
+  - supply_chain_sbom_license
+notes: Shared by security_validation (16) and supply_chain_sbom_license (17).

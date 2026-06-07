@@ -1,12 +1,36 @@
 # Operations Pipeline — Pipeline Definition Contract (machine-readable)
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §1.
-# Format mirrors configs/nexus-ai/sdlc_pipeline.yaml (Pipeline Definition Contract field set).
+# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §1,
+#   then ENRICHED to professional-grade reliability (the same quality bar as the research-pipeline
+#   calibration exemplar and configs/nexus-ai/sdlc_pipeline.yaml). Field set mirrors sdlc_pipeline.yaml.
 # Top structure: Nexus AI Orchestration Model. Operations is ONE pipeline under it.
 # Scope: live-operations lifecycle (incident handling, monitoring, runbook execution,
 #   rollback/fix decisions, postmortem, operational learning) for already-released capabilities.
 # Boundary: consumes SDLC operations-readiness artifacts (RUNBOOK, ROLLBACK_PLAN,
 #   OBSERVABILITY_PLAN, INCIDENT_RESPONSE_PLAN); does NOT regenerate the SDLC Pipeline.
 # All uses_* ids verified to exist in the Shared Registry (governance *_policy aliases resolve).
+#
+# PROFESSIONAL-GRADE UPGRADE (matches the research_pipeline exemplar's discipline). The catalog's
+# original 6-stage flow was brought to SDLC-level rigor so a professional incident process
+# (detect -> triage -> mitigate -> rollback/fix -> postmortem -> track-prevention -> learn) runs
+# reliably under no-human governance. Coverage changes:
+#   - ADDED stage corrective_action_tracking (#6): registers every corrective/preventive action with
+#     an owner + verification handle and verifies none is untracked BEFORE the run can exit (a genuine
+#     close-the-loop phase; the ONE new stage). It must run after postmortem (#5) defines actions and
+#     before learning_update (#7).
+#   - ADDED gates inside existing stages (no padding): intake/detection validation (false-positive
+#     screen + monitoring corroboration, #1); SLA/response-target + escalation-threshold classification
+#     (#2); decomposed blast-radius/impact assessment via a NEW sub-agent (#2); stakeholder
+#     comms/notification + escalation-if-SLA-at-risk + mitigation-vs-permanent-fix classification +
+#     rollback-path drill (#3); resolution-type (temporary vs permanent) + residual-risk + monitoring-
+#     backed recovery proof (#4); blameless + INDEPENDENT review + contributing-factors (#5).
+#   => 7 stages. Producer != validator: rollback_or_fix EXECUTOR (#4) != postmortem AUTHOR (#5);
+#      postmortem AUTHOR (#5) != corrective-action TRACKER (#6); independent postmortem review gate (#5).
+#   - NEW sub_agent requested (named in stage #2 sub_agents; NOT added to the shared registry here —
+#     registries are owned by parallel agents): blast_radius_assessment_subagent
+#     (parent: severity_classification_agent). See the deliverable report for id/parent/purpose.
+#   - REGISTRY CONSISTENCY NOTE (flagged, not edited here): operational_learning_agent now owns TWO
+#     stages (corrective_action_tracking + learning_update); its agent_roles.yaml owned_stages should
+#     gain corrective_action_tracking.
 
 version: draft-0.1
 pipeline_id: operations_pipeline
@@ -46,40 +70,64 @@ entry_criteria:
   - operations_team_assigned
   - operations_team_lead_assigned
 
-# Conditions that mark the pipeline complete (md §1 exit_criteria).
+# Conditions that mark the pipeline complete (md §1 exit_criteria + the professional-grade controls
+# added for the calibration exemplar: validated intake, SLA/escalation, comms, resolution-type,
+# blameless independent postmortem review, and verified corrective-action tracking).
 exit_criteria:
   - incident_resolved_or_mitigated
+  - incident_signal_validated                    # false-positive / monitoring-corroboration screen at intake (#1)
   - severity_classification_recorded
+  - sla_and_escalation_recorded                  # severity bound to an SLA + escalation threshold (#2)
   - rollback_or_fix_outcome_recorded
+  - resolution_type_recorded                     # executed action is temporary mitigation vs permanent (#4)
   - postmortem_completed_for_qualifying_incidents
+  - postmortem_independently_reviewed            # producer (response executor) != postmortem reviewer (#5)
+  - corrective_actions_tracked                   # every corrective/preventive action is owned + verifiable (#6)
   - operational_learning_recorded
   - no_blocking_policy_failure
 
-# Pipeline-level conditions that block progression (md §1 blocking_conditions).
+# Pipeline-level conditions that block progression (md §1 blocking_conditions + the new professional-
+# grade failure conditions surfaced by the added gates).
 blocking_conditions:
   - missing_severity_classification
+  - missing_sla_or_escalation_threshold
   - missing_mitigation_plan_for_active_incident
   - rollback_or_fix_lacks_runbook_or_rollback_evidence
+  - resolution_type_unrecorded
+  - temporary_resolution_without_tracked_permanent_fix
   - postmortem_missing_for_required_severity
+  - postmortem_not_independently_reviewed
+  - required_corrective_action_untracked
   - self_approved_resolution
   - missing_required_evidence
 
-# Permitted rework routes (md §1 allowed_rework_routes).
+# Permitted rework routes (md §1 allowed_rework_routes + the new corrective_action_tracking route for
+# the added stage). Each value is a known stage_id.
 allowed_rework_routes:
   - severity_classification -> incident_intake
   - mitigation_plan -> severity_classification
   - rollback_or_fix -> mitigation_plan
   - postmortem -> rollback_or_fix
-  - learning_update -> postmortem
+  - corrective_action_tracking -> postmortem
+  - learning_update -> corrective_action_tracking
 
-# Evidence artifacts the pipeline must produce (md §1 required_evidence).
-# Evidence = decision proof, DISTINCT from trace.
+# Evidence artifacts the pipeline must produce (md §1 required_evidence + the new decision-proof
+# artifacts the professional-grade controls produce). Evidence = decision proof, DISTINCT from trace.
 required_evidence:
   - INCIDENT_RECORD
+  - INTAKE_VALIDATION_REPORT          # false-positive / monitoring-corroboration screen (incident_intake #1)
   - SEVERITY_CLASSIFICATION_REPORT
+  - IMPACT_ASSESSMENT_REPORT          # decomposed blast-radius/impact (severity_classification #2)
+  - SLA_AND_RESPONSE_TARGET           # severity-bound SLA + escalation threshold (severity_classification #2)
   - MITIGATION_PLAN
+  - MITIGATION_TYPE_CLASSIFICATION    # temporary-containment vs permanent-fix (mitigation_plan #3)
+  - STAKEHOLDER_COMMS_RECORD          # stakeholder notification dispatched per comms policy (mitigation_plan #3)
   - ROLLBACK_OR_FIX_REPORT
+  - RESOLUTION_TYPE_RECORD            # executed action temporary vs permanent (rollback_or_fix #4)
   - POSTMORTEM_REPORT
+  - POSTMORTEM_REVIEW_RECORD          # independent-review sign-off (postmortem #5)
+  - CORRECTIVE_ACTION_REGISTER        # owned + verifiable action items (corrective_action_tracking #6)
+  - ACTION_ITEM_VERIFICATION_REPORT   # verification no required action is untracked (corrective_action_tracking #6)
   - OPERATIONAL_LEARNING_RECORD
 
 # Trace records the pipeline must produce (md §1 required_trace).
@@ -90,15 +138,21 @@ required_trace:
   - mitigation_plan_trace
   - rollback_or_fix_trace
   - postmortem_trace
+  - corrective_action_tracking_trace     # action-item tracking/verification lineage (#6)
   - learning_update_trace
   - stage_gate_decision_trace
 
+# Canonical stage set (7). corrective_action_tracking (#6) was ADDED for professional-grade
+# reliability: it closes the prevention loop (action-item tracking + verification) before the run can
+# exit (the one new stage; the other professional controls are gates inside existing stages). Order is
+# load-bearing — tracking must follow the postmortem and precede learning_update.
 stages:
   - incident_intake
   - severity_classification
   - mitigation_plan
   - rollback_or_fix
   - postmortem
+  - corrective_action_tracking
   - learning_update
 
 uses_core_abilities:
@@ -163,23 +217,31 @@ uses_context_memory_profiles:
   - postmortem_context_pack
   - learning_context_pack
 
-# Required gates for this pipeline. Transcribed from the md §1 governance gates +
-# §2 per-stage "Key gates" + the §1 conditional note. `always` = gates that must hold
-# for every operations run; `conditional` = applicability/severity-gated (the
-# postmortem requirement is mandatory for major_incident / critical_outage_or_safety_event
-# and required-when severity >= major OR rollback_executed == true; md §1 conditional note).
+# Required gates for this pipeline. Transcribed from the md §1 governance gates + §2 per-stage
+# "Key gates" + the §1 conditional note, PLUS the professional-grade rollup gates added for the
+# calibration exemplar. `always` = gates that must hold for every operations run; `conditional` =
+# applicability/severity-gated (the postmortem requirement is mandatory for major_incident /
+# critical_outage_or_safety_event and required-when severity >= major OR rollback_executed == true;
+# md §1 conditional note). See required_gate_producers in operations_pipeline_runtime_rules.yaml for
+# the gate -> producing-stage map (every gate below resolves to a real producing stage).
 required_gates:
   always:
     - incident_record_present
     - affected_capability_identified
+    - signal_validated_not_false_positive    # NEW: producing_stage incident_intake (#1)
     - severity_assigned
+    - sla_and_response_target_assigned        # NEW: producing_stage severity_classification (#2)
     - mitigation_plan_present
+    - mitigation_vs_permanent_fix_classified  # NEW: producing_stage mitigation_plan (#3)
     - rollback_or_fix_executed
     - runbook_or_rollback_evidence_present
+    - resolution_type_recorded                # NEW: producing_stage rollback_or_fix (#4)
+    - all_corrective_actions_registered       # NEW: producing_stage corrective_action_tracking (#6)
     - operational_learning_record_present
     - no_blocking_policy_failure
   conditional:
     - postmortem_present_if_required_severity
+    - postmortem_independently_reviewed_if_required_severity   # NEW: producing_stage postmortem (#5); producer != validator
 
 canonical_docs:
   - docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md

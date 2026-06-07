@@ -1,63 +1,85 @@
 # Skill Governance Pipeline — Stage Contract 02: skill_semantic_extraction
-# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.2)
-# Format mirror: configs/nexus-ai/stages/sdlc/04-requirements.yaml
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.2)
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/03-skill-semantic-extraction.yaml
+#   (the canonical semantic-extraction stage: decomposes to skill_semantic_extractor_subagent, carries
+#   multiple gates incl. the prism/verification-loop locked-semantics binding gates) and the research
+#   exemplars (annotated chained I/O, populated blocking_conditions).
 # Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
-# Pipeline: skill_governance_pipeline. Stage #2 of 7. Stage class: always-on.
-# MANDATORY: this stage must precede any binding (anti-pattern: binding without semantics).
-# Locked semantics verified here: prism = divergence, verification-loop = verification_defect_discovery.
+# Pipeline: skill_governance_pipeline. Stage #2 of 8. Stage class: always-on.
+#
+# MANDATORY: this stage must precede any binding (anti-pattern blocked: binding without semantics).
+# LOCKED semantics verified here: prism = divergence/brainstorming only; verification-loop =
+#   bug/defect finding only. Re-evaluated at skill_activation_decision (#7).
+#
+# PROFESSIONAL-GRADE ENRICHMENT IN THIS STAGE:
+#   - Decomposed extraction to skill_semantic_extractor_subagent (parent: skill_librarian_agent) — the
+#     canonical SDLC sub-agent, reused here (sub_agent_roles.yaml). It produces ANALYSIS ONLY; the
+#     semantic gate decision stays with the owner agent / reviewer (no self-approval at the sub level).
+#   - Decomposed the locked-semantics check into TWO explicit binding gates (mirrors SDLC #3:
+#     prism_bound_as_divergence + verification_loop_bound_as_bug_finding) in addition to the rollup
+#     locked_semantics_enforcement_policy, plus a confidence-threshold gate so semantics are
+#     calibrated, not asserted.
+#   - Pins to the intake hash: extraction runs against the SKILL_PROVENANCE_RECORD pin so the extracted
+#     meaning is bound to the exact audited/activated bytes.
 version: draft-0.1
 stage_id: skill_semantic_extraction
 name: Skill Semantic Extraction
 purpose: >-
   Skill'in primary_purpose, semantic_category, trigger_phrases, not_for,
-  inputs/outputs, explicit/implicit_handoffs ve ilk misuse_warnings taslağını
-  çıkarır. Bu stage zorunludur ve her binding'den önce gelmelidir. prism yalnız
-  brainstorming/divergence amacıyla (kategori/handoff seçenek alanını genişletmek
-  için) kullanılır — karar vermez; calibrate confidence üretir. Locked semantics
-  burada doğrulanır: prism=divergence, verification-loop=verification_defect_discovery
-  olarak kaydedilmelidir.
+  inputs/outputs, explicit/implicit_handoffs ve ilk misuse_warnings taslağını çıkarır
+  ve bir confidence skoru üretir. Bu stage zorunludur ve her binding'den önce gelmelidir.
+  prism YALNIZ brainstorming/divergence amacıyla (kategori/handoff seçenek alanını
+  genişletmek için) kullanılır — karar vermez; calibrate confidence üretir. Locked
+  semantics burada doğrulanır ve iki ayrı binding gate'i ile enforce edilir:
+  prism=divergence, verification-loop=verification_defect_discovery. Çıkarım, intake'te
+  pinlenen sürüm/hash'e karşı yapılır.
 owner_team: skill_governance_team
 team_lead: skill_governance_team_lead
-owner_agent: skill_semantic_extractor_subagent
-parent_agent: skill_librarian_agent
-sub_agents: []
+owner_agent: skill_librarian_agent
+sub_agents:
+  - skill_semantic_extractor_subagent   # canonical SDLC sub-agent (parent: skill_librarian_agent); analysis-only, does not decide the gate
 
 uses_core_abilities:
-  - Memory
-  - OS
+  - Memory   # recall prior skill semantics / registry state to detect drift vs the pinned version
+  - OS       # invoke the semantic extractor over the pinned package files
 
 uses_skills:
-  - prism       # divergence only (expand category/handoff option space), NOT bug finding
-  - calibrate   # produce semantic confidence score
-  - gap-audit   # detect missing semantic fields / missing misuse warnings
+  - prism       # divergence ONLY (expand category/handoff option space); LOCKED, NOT bug finding
+  - calibrate   # produce a rationale-backed semantic confidence score (not asserted)
+  - gap-audit   # detect missing semantic fields / missing draft misuse warnings
 
 uses_tools:
-  - skill_semantic_extractor
-  - artifact_writer
-  - evidence_writer
+  - skill_semantic_extractor   # derive primary_purpose / semantic_category / triggers / not_for (trace: skill_semantic_extraction_trace)
+  - artifact_writer            # write SKILL_SEMANTIC_EXTRACT (side-effect: governance + trace)
+  - evidence_writer            # write semantic evidence (side-effect: governance + trace)
 
 uses_governance_profiles:
   - skill_governance_pipeline_governance
-  - skill_semantic_required_gate
-  - locked_semantics_enforcement_policy
+  - skill_semantic_required_gate          # semantics-before-binding enforcement (blocker)
+  - skill_semantic_extraction_gate        # stage-specific semantic completeness gate profile
+  - locked_semantics_enforcement_policy   # prism=divergence / verification-loop=defect-finding LOCKED (blocker)
+  - brainstorming_skill_governance        # governs prism used strictly as divergence here
   - evidence_required_policy
 
 uses_audit_schemas:
-  - skill_semantic_extract_schema
-  - skill_misuse_warning_schema
-  - skill_governance_trace_schema
+  - skill_semantic_extract_schema   # evidence schema: the extracted-semantics record
+  - skill_misuse_warning_schema     # evidence schema: the draft (not final) misuse warnings
+  - skill_governance_trace_schema   # trace schema (distinct from evidence)
 
 uses_model_provider_profiles:
-  - skill_semantic_extraction_model
+  - skill_semantic_extraction_model   # dedicated semantic-extraction reasoning profile
 
 uses_context_memory_profiles:
   - skill_semantic_context_pack
   - skill_registry_context_pack
 
 inputs:
-  - SKILL_INVENTORY_ENTRY
+  - SKILL_INVENTORY_ENTRY      # inventoried package parts from skill_intake (#1)
+  - SKILL_PROVENANCE_RECORD    # the pinned version/hash — extraction binds meaning to these exact bytes
 outputs:
-  - SKILL_SEMANTIC_EXTRACT
+  - SKILL_SEMANTIC_EXTRACT     # primary_purpose / semantic_category / not_for / used_by_agents / used_in_stages / confidence
+  - SKILL_MISUSE_WARNINGS      # DRAFT only here; the authoritative misuse-warning gate is stage #5
 
 evidence:
   - SKILL_SEMANTIC_EXTRACT
@@ -65,12 +87,16 @@ trace:
   - skill_semantic_extraction_trace
   - gate_evaluation_trace
 
-# key gates: skill_semantic_required_gate (blocker) — semantic_category, primary_purpose,
-# not_for, used_by_agents, used_in_stages and confidence >= threshold required;
-# locked_semantics_enforcement_policy (blocker) — fail if prism/verification-loop semantics changed.
+# key gates: skill_semantic_required_gate (blocker) — semantic_category, primary_purpose, not_for,
+#   used_by_agents, used_in_stages AND confidence >= threshold required; the two locked-semantics
+#   binding gates (prism_bound_as_divergence, verification_loop_bound_as_bug_finding) + the rollup
+#   locked_semantics_enforcement_policy (blocker); semantic_confidence_above_threshold (blocker).
 gates:
   - skill_semantic_required_gate
+  - prism_bound_as_divergence
+  - verification_loop_bound_as_bug_finding
   - locked_semantics_enforcement_policy
+  - semantic_confidence_above_threshold
 
 on_pass: script_reference_audit
 on_fail: skill_intake
@@ -79,6 +105,9 @@ rework_route: skill_intake
 blocking_conditions:
   - skill_semantics_unknown
   - locked_semantics_violation
+  - prism_misclassified_as_bug_finding_or_readiness_gate
+  - verification_loop_misclassified_as_readiness_checklist
+  - semantic_confidence_below_threshold
 optional_conditions: []
 conditional_required_gates: []
 

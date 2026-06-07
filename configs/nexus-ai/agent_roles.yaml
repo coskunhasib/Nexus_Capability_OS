@@ -2033,6 +2033,7 @@ agents:
       - activation_intake
       - superadmin_preview
       - activation_completion
+      - post_activation_monitoring      # NEW terminal soak/monitoring gate (activation #8)
     inputs:
       - ACTIVATION_REQUEST
       - PILOT_EVIDENCE_REVIEW_REPORT
@@ -2042,9 +2043,10 @@ agents:
       - ACTIVATION_REQUEST
       - PREVIEW_RESULT
       - ACTIVATION_COMPLETION_REPORT
-    sub_agents: []
+    sub_agents:
+      - activation_health_watch_subagent   # NEW (post_activation_monitoring) — returns a health verdict; never decides the gate
     uses_core_abilities: [Supervisor, Memory, OS, Web]
-    uses_skills: [gap-audit, prompt-fidelity, refraction]
+    uses_skills: [gap-audit, prompt-fidelity, refraction, calibrate]
     uses_tools:
       - activation_flag_controller
       - telemetry_reader
@@ -2061,8 +2063,8 @@ agents:
       - activation_evidence_schema
       - stage_gate_trace_schema
       - activation_transition_trace_schema
-    uses_model_provider_profiles: [supervisor_routing_model, activation_reasoning_model]
-    uses_context_memory_profiles: [activation_run_context, preview_context_pack]
+    uses_model_provider_profiles: [supervisor_routing_model, activation_reasoning_model, risk_analysis_model]
+    uses_context_memory_profiles: [activation_run_context, preview_context_pack, activation_decision_context_pack]
     permissions:
       - confirm_release_candidate_evidence_and_define_scope
       - run_superadmin_preview_and_control_activation_flag
@@ -2323,7 +2325,8 @@ agents:
       - INCIDENT_RECORD
     outputs:
       - SEVERITY_CLASSIFICATION_REPORT
-    sub_agents: []
+    sub_agents:
+      - blast_radius_assessment_subagent   # NEW — authors IMPACT_ASSESSMENT_REPORT; never decides severity or the gate
     uses_core_abilities: [Memory, Web]
     uses_skills: [fmea, sentinel, bayesian-update, calibrate]
     uses_tools:
@@ -2498,6 +2501,7 @@ agents:
       propose runbook/rollback/observability improvements, and hand a
       future-improvement backlog back toward the SDLC.
     owned_stages:
+      - corrective_action_tracking      # NEW — track/verify postmortem corrective actions (operations #6)
       - learning_update
     inputs:
       - POSTMORTEM_REPORT
@@ -2575,7 +2579,8 @@ agents:
       - SKILL_REFERENCE_INDEX
       - SKILL_MISUSE_WARNINGS
       - SKILL_ACTIVATION_DECISION
-    sub_agents: []
+    sub_agents:
+      - skill_abuse_redteam_subagent   # NEW (skill_misuse_redteam) — runs adversarial abuse probes; returns findings; never decides the gate
     uses_core_abilities: [Coder, OS, Memory, Supervisor]
     uses_skills: [verification-loop, fmea, sentinel, calibrate, llm-council]
     uses_tools:
@@ -2674,7 +2679,8 @@ agents:
       - MEMORY_INTAKE_RECORD
     outputs:
       - SOURCE_CLASSIFICATION_REPORT
-    sub_agents: []
+    sub_agents:
+      - sensitive_content_detection_subagent   # NEW — detects PII/secrets/regulated content; reports; never decides the gate
     uses_core_abilities: [Memory, Web]
     uses_skills: [gap-audit]
     uses_tools:
@@ -2701,6 +2707,66 @@ agents:
       - source_trust_tier_unassigned
       - sensitivity_unclassified
       - redaction_not_applied_when_required
+    reviewed_by: knowledge_team_lead
+
+  # NEW knowledge_team Agent (added for the knowledge_memory pipeline upgrade). Owns the new
+  #   knowledge_conflict_resolution stage (configs/nexus-ai/stages/knowledge-memory/04-knowledge-conflict-resolution.yaml).
+  #   uses_* mirror that stage contract's uses_* (the agent declares what its stage uses).
+  #   Rationale for a new role (not reuse): the 6 existing knowledge agents each own exactly one stage
+  #   with caller-locked tools; cross-corpus reconciliation (compare-against-corpus + disposition) fits
+  #   none of them cleanly. AUTHORING stage reviewed by knowledge_team_lead (no-self-approval): it
+  #   adjudicates candidate-vs-corpus, not the summary it consumes.
+  - agent_id: knowledge_reconciliation_agent
+    team_id: knowledge_team
+    pipeline_id: knowledge_memory_pipeline
+    mission: >-
+      Reconcile the classified, redacted, summarized candidate memory against the existing curated
+      corpus — detect duplicates and contradictions and decide an explicit disposition for each
+      (supersede / merge / coexist / reject) — before any validity window is assigned or retrieval
+      exposure is granted, so the corpus never silently holds duplicate-weighted or
+      mutually-contradictory memories.
+    owned_stages:
+      - knowledge_conflict_resolution
+    inputs:
+      - MEMORY_SUMMARY
+      - SOURCE_CLASSIFICATION_REPORT
+      - MEMORY_PROVENANCE_RECORD
+    outputs:
+      - CONFLICT_RESOLUTION_REPORT
+      - CORPUS_CONFLICT_SET
+      - SUPERSEDED_MEMORY_SET
+      - CONFLICT_RESOLUTION_GATE_RESULT
+    sub_agents:
+      - corpus_conflict_detection_subagent
+    uses_core_abilities: [Memory, Web]
+    uses_skills: [gap-audit, bayesian-update]
+    uses_tools:
+      - provenance_recorder
+      - artifact_writer
+      - evidence_writer
+    uses_governance_profiles:
+      - memory_source_governance
+    uses_audit_schemas:
+      - memory_provenance_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [knowledge_reasoning_profile]
+    uses_context_memory_profiles:
+      - knowledge_run_context
+      - memory_candidate_context_pack
+      - retrieval_profile_context_pack
+    permissions:
+      - compare_candidate_against_the_existing_corpus
+      - decide_supersede_merge_coexist_or_reject_disposition
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - validate_the_summary_it_consumes            # grounding is summary_generation's decision (no self-approval)
+      - admit_an_unresolved_contradiction_to_retrieval
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - corpus_conflict_scan_not_run
+      - duplicate_left_undispositioned
+      - contradiction_left_unresolved
+      - superseding_decision_without_rationale
     reviewed_by: knowledge_team_lead
 
   - agent_id: memory_summarization_agent
@@ -2833,7 +2899,8 @@ agents:
       - VALIDITY_WINDOW_DECISION
     outputs:
       - MEMORY_EXPIRATION_REVIEW_REPORT
-    sub_agents: []
+    sub_agents:
+      - memory_lifecycle_audit_subagent   # NEW — assembles + integrity-audits the provenance chain; reports; parent decides the gate
     uses_core_abilities: [Memory]
     uses_skills: [refraction, bayesian-update]
     uses_tools:
@@ -2876,8 +2943,8 @@ coverage_summary:
   #   cross-bound via its `also_serves` block — no longer a second role. So distinct-id counts changed:
   skill_governance_new_agent_roles: 1  # skill_runtime_safety_agent (skill_librarian_agent is shared from sdlc_team via also_serves)
   skill_governance_shared_agent_roles: 1  # skill_librarian_agent (cross-team; counted under sdlc_agent_roles_emitted)
-  knowledge_agent_roles: 6
-  total_distinct_agent_roles: 52       # R12: was 53 when skill_librarian_agent_skill_governance was a separate role; that id is now an alias of skill_librarian_agent
+  knowledge_agent_roles: 7   # +1: knowledge_reconciliation_agent (NEW, owns knowledge_conflict_resolution)
+  total_distinct_agent_roles: 53       # R12 baseline 52 + 1 NEW knowledge_reconciliation_agent
   shared_cross_team_agent_roles:
     - agent_id: skill_librarian_agent  # sdlc_team (primary) + skill_governance_team (also_serves); alias: skill_librarian_agent_skill_governance
   core_abilities_as_agents: 0
@@ -2891,4 +2958,11 @@ coverage_summary:
     - bug_hunter_subagent                 # parent: qa_agent
     - security_scan_interpreter_subagent  # parent: security_validation_agent
     - evidence_trace_subagent             # parent: evidence_graph_agent
+    # NEW sub-agents for the upgraded non-SDLC pipelines (catalogued in sub_agent_roles.yaml):
+    - activation_health_watch_subagent    # parent: activation_manager_agent (activation #8)
+    - blast_radius_assessment_subagent     # parent: severity_classification_agent (operations #2)
+    - skill_abuse_redteam_subagent         # parent: skill_runtime_safety_agent (skill_governance #4)
+    - sensitive_content_detection_subagent # parent: source_classification_agent (knowledge #2)
+    - corpus_conflict_detection_subagent   # parent: knowledge_reconciliation_agent (knowledge #4)
+    - memory_lifecycle_audit_subagent      # parent: memory_expiration_agent (knowledge #7)
   every_sdlc_stage_has_owner_in_this_file: true   # 29 of 31 stages here; 2 review gates -> sdlc_team_lead (team_lead_roles.yaml)

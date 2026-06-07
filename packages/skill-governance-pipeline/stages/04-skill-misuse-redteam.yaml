@@ -1,0 +1,122 @@
+# Skill Governance Pipeline — Stage Contract 04: skill_misuse_redteam
+# NEW STAGE — professional-grade reliability addition (the ONE new stage in this upgrade).
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/18-ai-agent-safety-evaluation.yaml
+#   (an adversarial validation stage: owner agent drives injection/tool-misuse/poisoning probes,
+#   multiple blocker gates, decomposes to a dedicated sub-agent, populated blocking_conditions).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #4 of 8. Stage class: always-on.
+#
+# WHY THIS STAGE EXISTS (coverage gap closed):
+#   The catalog flow jumped from static script_reference_audit straight to misuse_warning_generation —
+#   which only DOCUMENTS not-for warnings. For no-human governance that is insufficient: a skill can be
+#   syntactically safe yet ADVERSARIALLY coercible — promptable past its locked semantics (e.g. prism
+#   driven to act as a decision/readiness gate, verification-loop driven to assert release-readiness),
+#   used to delegate to over-privileged tools, or used as a context-poisoning vector. This is a
+#   genuinely DISTINCT phase from misuse-warning authoring: it is adversarial EXECUTION-SURFACE testing
+#   (run the abuse), not documentation. Its findings then INFORM the misuse warnings authored next (#5),
+#   so the warnings are evidence-grounded, not guessed. Mirrors the SDLC #18 ai_agent_safety_evaluation
+#   relationship to its threat model.
+#
+# OWNER + NO-SELF-APPROVAL: owner_agent = skill_runtime_safety_agent (already owns the safety surface).
+#   This is a validation/adversarial stage producing its OWN reports; it does not sign off another
+#   author's artifact, so it is no-self-approval compliant. The binding PROPOSER (skill_librarian_agent)
+#   and the activation DECIDER (skill_runtime_safety_agent) separation is unchanged.
+#
+# NEW SUB-AGENT REQUESTED (named here; registry edit handled separately by the registry owner):
+#   skill_abuse_redteam_subagent (parent: skill_runtime_safety_agent) — decomposes the adversarial
+#   abuse-probe campaign (injection / tool-misuse / context-poisoning / locked-semantics-coercion) and
+#   returns findings to its parent, which decides the gate. Analysis-only; does not decide the gate.
+version: draft-0.1
+stage_id: skill_misuse_redteam
+name: Skill Misuse Red-Team
+purpose: >-
+  Skill'in çalışma yüzeyini adversarial olarak test eder: skill locked semantiği dışına
+  zorlanabilir mi (prism'i karar/readiness gate gibi, verification-loop'u release garantisi
+  gibi davranmaya itmek), aşırı yetkili tool delegasyonuna yol açar mı, prompt injection /
+  context poisoning vektörü olur mu? verification-loop burada YALNIZ bug/defect-finding
+  disipliniyle (abuse-path defect avı) kullanılır; sentinel ile misuse/abuse senaryoları
+  premortem edilir. Bulgular bir sonraki stage'in (misuse_warning_generation) ürettiği
+  uyarıları KANITA dayandırır. Karar üretmez; adversarial bulgu raporu üretir.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_runtime_safety_agent
+sub_agents:
+  - skill_abuse_redteam_subagent   # NEW (requested); parent: skill_runtime_safety_agent; analysis-only, does not decide the gate
+
+uses_core_abilities:
+  - Coder        # drive injection / tool-misuse / poisoning probes against the skill surface
+  - OS           # execute the eval / probe harness
+  - Memory       # recall the threat surface, semantics and permission scope
+  - Supervisor   # reason over the tool-delegation / multi-step abuse surface
+
+uses_skills:
+  - verification-loop   # LOCKED bug/defect-finding: adversarial abuse-path defect sweep
+  - sentinel            # premortem the skill against misuse / coercion / privilege-escalation paths
+  - llm-council         # multi-perspective adjudication of finding severity / exploitability
+  - calibrate           # calibrate finding severity / false-positive rate of the abuse probes
+
+uses_tools:
+  - prompt_injection_tester      # probe: can the skill be prompt-injected past its semantics (trace: gate_evaluation_trace)
+  - tool_misuse_tester           # probe: can the skill be coerced into unsafe / over-privileged tool use
+  - context_poisoning_tester     # probe: can the skill be used as a context-poisoning vector
+  - agent_permission_auditor     # confirm probes respect / expose the audited permission scope
+  - eval_runner                  # run the adversarial misuse eval suite
+  - artifact_writer              # write SKILL_MISUSE_REDTEAM_REPORT (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - agentic_safety_governance        # adversarial agent/skill-behaviour safety
+  - tool_misuse_governance           # stage-specific tool-misuse gate profile
+  - context_safety_governance        # stage-specific context-safety gate profile
+  - locked_semantics_enforcement_policy   # re-checked adversarially: semantics must hold under coercion
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - agentic_eval_evidence_schema        # evidence schema: adversarial eval findings
+  - prompt_injection_test_schema        # evidence schema: injection/coercion probe results
+  - skill_governance_trace_schema       # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - script_safety_analysis_model        # adversarial safety reasoning over the skill surface
+  - skill_governance_reasoning_profile
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_semantic_context_pack
+
+inputs:
+  - SKILL_SEMANTIC_EXTRACT          # the locked semantics / not_for to attack
+  - SCRIPT_REFERENCE_AUDIT_REPORT   # static findings that scope the abuse surface
+  - SKILL_PERMISSION_SCOPE_MAP      # the least-privilege scope the probes test against
+outputs:
+  - SKILL_MISUSE_REDTEAM_REPORT     # adversarial findings: coercion / injection / tool-misuse / poisoning, with severity
+
+evidence:
+  - SKILL_MISUSE_REDTEAM_REPORT
+trace:
+  - skill_misuse_redteam_trace
+  - gate_evaluation_trace
+
+# key gates (all blocker):
+#   locked_semantics_resist_coercion — semantics hold under adversarial coercion (prism not driven to a
+#     decision/readiness gate; verification-loop not driven to a readiness assertion);
+#   no_unsafe_tool_delegation_via_skill — skill cannot be coerced into unsafe/over-privileged tool use;
+#   skill_injection_resistance_pass — skill resists prompt-injection / context-poisoning as a vector.
+gates:
+  - locked_semantics_resist_coercion
+  - no_unsafe_tool_delegation_via_skill
+  - skill_injection_resistance_pass
+
+on_pass: misuse_warning_generation
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - locked_semantics_coercion_succeeded        # skill could be driven outside its locked semantics
+  - unsafe_tool_delegation_via_skill            # skill coerced into unsafe / over-privileged tool use
+  - skill_injection_or_poisoning_succeeded      # skill is a viable injection / context-poisoning vector
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

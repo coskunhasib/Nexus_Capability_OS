@@ -1,0 +1,89 @@
+# Skill Governance Pipeline — Stage Contract 05: misuse_warning_generation
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.4)
+# Field set + rigor mirror the research stage exemplars (annotated chained I/O, multiple gates,
+#   populated blocking_conditions, annotated uses_*).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #5 of 8. Stage class: always-on.
+#
+# PROFESSIONAL-GRADE ENRICHMENT: this stage now consumes the SKILL_MISUSE_REDTEAM_REPORT from the new
+#   adversarial stage (#4), so every authored misuse warning is EVIDENCE-GROUNDED in a demonstrated
+#   abuse path rather than guessed. Added a coverage gate (redteam_findings_covered_by_warnings) so a
+#   demonstrated coercion/abuse finding cannot be left without a corresponding not_for warning.
+#   Renumbered from stage #4 to #5 (red-team inserted before it).
+version: draft-0.1
+stage_id: misuse_warning_generation
+name: Misuse Warning Generation
+purpose: >-
+  Semantik çıkarıma, script denetimine VE adversarial red-team bulgularına dayanarak skill
+  için açık misuse_warnings üretir (ör. "prism karar vermez", "verification-loop release
+  garantisi değildir", "bu skill bug-finding için değildir"), ve red-team'de gösterilen her
+  abuse path'i için bir not_for uyarısı bulunmasını sağlar. Bu uyarılar binding ve
+  aktivasyonun ön koşuludur. sentinel ile yanlış-kullanım senaryoları premortem edilir.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_runtime_safety_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the semantics, audit findings and red-team findings to ground each warning
+  - OS       # author/write the warning set
+
+uses_skills:
+  - sentinel    # premortem misuse / abuse scenarios into explicit warnings
+  - gap-audit   # detect demonstrated abuse paths or locked-semantics facets left without a warning
+
+uses_tools:
+  - artifact_writer   # write SKILL_MISUSE_WARNINGS (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - misuse_warning_required_gate          # blocker — cannot pass with empty/missing warnings
+  - locked_semantics_enforcement_policy   # each locked-semantics skill needs a not_for warning
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_misuse_warning_schema     # evidence schema: the authoritative misuse warnings
+  - skill_governance_trace_schema   # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_SEMANTIC_EXTRACT          # the locked semantics + not_for surface to warn about
+  - SCRIPT_REFERENCE_AUDIT_REPORT   # static risks that warrant warnings
+  - SKILL_MISUSE_REDTEAM_REPORT     # demonstrated abuse paths each requiring a not_for warning
+outputs:
+  - SKILL_MISUSE_WARNINGS           # authoritative misuse-warning set (precondition for binding + activation)
+
+evidence:
+  - SKILL_MISUSE_WARNINGS
+trace:
+  - misuse_warning_generation_trace
+  - gate_evaluation_trace
+
+# key gates:
+#   misuse_warning_required_gate (blocker) — cannot pass with empty/missing misuse-warning; at least one
+#     not_for warning required for each locked-semantics skill;
+#   redteam_findings_covered_by_warnings (blocker) — every demonstrated red-team abuse path has a
+#     corresponding not_for warning.
+gates:
+  - misuse_warning_required_gate
+  - redteam_findings_covered_by_warnings
+
+on_pass: skill_binding_proposal
+on_fail: skill_misuse_redteam
+rework_route: skill_misuse_redteam
+
+blocking_conditions:
+  - missing_misuse_warnings
+  - redteam_finding_without_misuse_warning   # a demonstrated abuse path has no corresponding not_for warning
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

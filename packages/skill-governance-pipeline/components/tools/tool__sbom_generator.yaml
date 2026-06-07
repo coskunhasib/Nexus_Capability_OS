@@ -1,0 +1,33 @@
+id: sbom_generator
+name: SBOM Generator
+type: tool
+category: tool
+status: canonical
+purpose: Generate the Software Bill of Materials (SBOM) from resolved dependencies.
+owner_domain: security
+provided_by_core_ability: null
+input_schema:
+  dependency_graph: object
+output_schema:
+  sbom_ref: string
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- supply_chain_agent
+allowed_usage:
+- Generate and persist the SBOM artifact.
+forbidden_usage:
+- Omitting resolved components from the SBOM.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - supply_chain_sbom_license
+notes: Generates a persisted artifact (SBOM).

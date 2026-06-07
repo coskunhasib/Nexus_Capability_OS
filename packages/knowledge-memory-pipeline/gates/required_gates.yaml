@@ -2,14 +2,24 @@ required_gates:
   always:
   - intake_metadata_complete
   - provenance_seed_recorded
+  - target_scope_declared
   - source_trust_tier_assigned
   - sensitivity_classified
+  - sensitive_content_detection_complete
   - summary_grounded_in_source
+  - no_unsupported_claim_in_summary
+  - corpus_conflict_scan_complete
+  - duplicate_resolution_recorded
+  - contradiction_resolution_recorded
+  - no_unresolved_contradiction_admitted
   - validity_window_present
   - update_bound_to_validity_window
   - sensitivity_exposure_consistent
   - expiration_outcome_recorded
+  - memory_provenance_evidence_complete
   - team_lead_cannot_self_approve_or_bypass_gate
   conditional:
   - redaction_applied_if_required
+  - superseded_memory_removed_from_retrieval
   - expired_memory_retired_from_retrieval
+  - right_to_be_forgotten_honored_if_requested

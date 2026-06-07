@@ -1,0 +1,36 @@
+id: high_risk_action_default_deny
+name: High-Risk Action Default Deny
+type: global_governance_policy
+status: canonical
+purpose: High-risk / destructive actions are DENIED by default and require an explicit
+  enabling policy + evidence + gate before they may execute. The default posture for
+  any high-risk action is deny (03 §3 "high-risk action default deny").
+owner_domain: nexus_global_governance
+allowed_usage:
+- Deny destructive/high-risk tool actions unless an explicit policy+gate+evidence
+  permits them.
+- Back stage gates such as rollback_required_gate / disaster_recovery_gate that gate
+  risky ops.
+forbidden_usage:
+- Allowing a destructive tool to run with no explicit policy/gate (see notes).
+governance_profiles: []
+audit_schemas:
+- stage_gate_trace_schema
+scope: global
+applies_to:
+- all_pipelines
+- all_tools
+- high_risk_actions
+severity_default: blocker
+used_by:
+- sdlc_pipeline
+- research_pipeline
+- activation_pipeline
+- operations_pipeline
+- skill_governance_pipeline
+- knowledge_memory_pipeline
+aliases:
+- no_destructive_action_without_gate
+notes: Encompasses 06 §3 `no_destructive_action_without_gate`. Tool-scope expressions
+  (sandbox_execution_governance, etc.) belong in the tools registry; this is the global
+  default.

@@ -1,15 +1,23 @@
 required_evidence:
 - MEMORY_INTAKE_RECORD
 - SOURCE_CLASSIFICATION_REPORT
+- SENSITIVE_CONTENT_DETECTION_REPORT
 - MEMORY_SUMMARY
+- SUMMARY_GROUNDING_REPORT
+- CONFLICT_RESOLUTION_REPORT
 - VALIDITY_WINDOW_DECISION
 - RETRIEVAL_PROFILE_UPDATE_REPORT
 - MEMORY_EXPIRATION_REVIEW_REPORT
+- MEMORY_LIFECYCLE_PROVENANCE_AUDIT
 - MEMORY_PROVENANCE_RECORD
 required_trace:
 - memory_intake_trace
 - source_classification_trace
+- sensitive_content_detection_trace
 - summary_generation_skill_activation_trace
+- knowledge_conflict_resolution_trace
+- corpus_conflict_detection_trace
 - validity_window_assignment_trace
 - retrieval_profile_update_trace
 - memory_expiration_review_trace
+- lifecycle_provenance_audit_trace

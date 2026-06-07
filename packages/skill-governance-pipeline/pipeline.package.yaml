@@ -1,18 +1,20 @@
 package_schema_version: '0.1'
 pipeline_id: skill_governance_pipeline
 name: Skill Governance Pipeline
-description: 'Skill paketlerinin keşfi, zorunlu semantic extraction, script/reference
-  güvenlik denetimi, misuse-warning üretimi, skill-stage binding önerisi, aktivasyon
-  kararı ve deprecation/update yönetimini no-human governance ile yürütmek. Hiçbir
-  skill, semantic extraction tamamlanmadan ve misuse-warning üretilmeden binding''e
-  veya aktivasyona geçemez. prism = brainstorming, verification-loop = bug-finding
-  olarak locked semantics enforce edilir.
+description: 'Skill paketlerinin keşfi ve KAYNAK DOĞRULAMASI (provenance + sürüm/hash
+  pin), zorunlu semantic extraction, script/reference güvenlik denetimi (supply-chain
+  + sandbox/least-privilege scope dahil), adversarial misuse/abuse red-team, misuse-warning
+  üretimi, skill-stage binding önerisi, aktivasyon kararı ve deprecation/revocation/rollback
+  yönetimini no-human governance ile yürütmek. Hiçbir skill, semantic extraction tamamlanmadan,
+  red-team''i geçmeden ve misuse-warning üretilmeden binding''e veya aktivasyona geçemez;
+  binding''i öneren ile aktivasyonu onaylayan ayrışır (no self-approval). prism =
+  brainstorming, verification-loop = bug-finding olarak locked semantics enforce edilir.
 
   '
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: 9ed30f2
+  source_commit: 383a28c
   source_path: configs/nexus-ai/skill_governance_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:
@@ -77,6 +79,10 @@ components:
   version: 1.0.0
   path: components/tools/tool__skill_package_reader.yaml
 - kind: tool
+  id: provenance_recorder
+  version: 1.0.0
+  path: components/tools/tool__provenance_recorder.yaml
+- kind: tool
   id: skill_semantic_extractor
   version: 1.0.0
   path: components/tools/tool__skill_semantic_extractor.yaml
@@ -89,9 +95,53 @@ components:
   version: 1.0.0
   path: components/tools/tool__reference_index_builder.yaml
 - kind: tool
+  id: dependency_scanner
+  version: 1.0.0
+  path: components/tools/tool__dependency_scanner.yaml
+- kind: tool
+  id: package_reputation_checker
+  version: 1.0.0
+  path: components/tools/tool__package_reputation_checker.yaml
+- kind: tool
+  id: sbom_generator
+  version: 1.0.0
+  path: components/tools/tool__sbom_generator.yaml
+- kind: tool
+  id: agent_permission_auditor
+  version: 1.0.0
+  path: components/tools/tool__agent_permission_auditor.yaml
+- kind: tool
+  id: prompt_injection_tester
+  version: 1.0.0
+  path: components/tools/tool__prompt_injection_tester.yaml
+- kind: tool
+  id: tool_misuse_tester
+  version: 1.0.0
+  path: components/tools/tool__tool_misuse_tester.yaml
+- kind: tool
+  id: context_poisoning_tester
+  version: 1.0.0
+  path: components/tools/tool__context_poisoning_tester.yaml
+- kind: tool
+  id: eval_runner
+  version: 1.0.0
+  path: components/tools/tool__eval_runner.yaml
+- kind: tool
   id: skill_binding_proposer
   version: 1.0.0
   path: components/tools/tool__skill_binding_proposer.yaml
+- kind: tool
+  id: activation_flag_controller
+  version: 1.0.0
+  path: components/tools/tool__activation_flag_controller.yaml
+- kind: tool
+  id: rollback_executor
+  version: 1.0.0
+  path: components/tools/tool__rollback_executor.yaml
+- kind: tool
+  id: rollback_validator
+  version: 1.0.0
+  path: components/tools/tool__rollback_validator.yaml
 - kind: tool
   id: artifact_writer
   version: 1.0.0
@@ -109,9 +159,37 @@ components:
   version: 1.0.0
   path: components/governance/governance_profile__skill_semantic_required_gate.yaml
 - kind: governance_profile
+  id: skill_must_have_semantic_extraction_before_binding
+  version: 1.0.0
+  path: components/governance/governance_profile__skill_must_have_semantic_extraction_before_binding.yaml
+- kind: governance_profile
   id: script_reference_audit_gate
   version: 1.0.0
   path: components/governance/governance_profile__script_reference_audit_gate.yaml
+- kind: governance_profile
+  id: supply_chain_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__supply_chain_governance.yaml
+- kind: governance_profile
+  id: sandbox_execution_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__sandbox_execution_governance.yaml
+- kind: governance_profile
+  id: high_risk_action_default_deny
+  version: 1.0.0
+  path: components/governance/governance_profile__high_risk_action_default_deny.yaml
+- kind: governance_profile
+  id: agentic_safety_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__agentic_safety_governance.yaml
+- kind: governance_profile
+  id: tool_misuse_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__tool_misuse_governance.yaml
+- kind: governance_profile
+  id: context_safety_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__context_safety_governance.yaml
 - kind: governance_profile
   id: misuse_warning_required_gate
   version: 1.0.0
@@ -124,6 +202,18 @@ components:
   id: skill_activation_decision_gate
   version: 1.0.0
   path: components/governance/governance_profile__skill_activation_decision_gate.yaml
+- kind: governance_profile
+  id: skill_activation_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__skill_activation_governance.yaml
+- kind: governance_profile
+  id: rollback_required_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__rollback_required_gate.yaml
+- kind: governance_profile
+  id: rollback_runbook_evidence_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__rollback_runbook_evidence_gate.yaml
 - kind: governance_profile
   id: locked_semantics_enforcement_policy
   version: 1.0.0
@@ -143,6 +233,10 @@ components:
   version: 1.0.0
   path: components/audit/audit_schema__skill_governance_evidence_schema.yaml
 - kind: audit_schema
+  id: memory_provenance_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__memory_provenance_schema.yaml
+- kind: audit_schema
   id: skill_semantic_extract_schema
   version: 1.0.0
   path: components/audit/audit_schema__skill_semantic_extract_schema.yaml
@@ -151,6 +245,18 @@ components:
   version: 1.0.0
   path: components/audit/audit_schema__script_audit_evidence_schema.yaml
 - kind: audit_schema
+  id: supply_chain_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__supply_chain_evidence_schema.yaml
+- kind: audit_schema
+  id: agentic_eval_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__agentic_eval_evidence_schema.yaml
+- kind: audit_schema
+  id: prompt_injection_test_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__prompt_injection_test_schema.yaml
+- kind: audit_schema
   id: skill_misuse_warning_schema
   version: 1.0.0
   path: components/audit/audit_schema__skill_misuse_warning_schema.yaml
@@ -158,6 +264,22 @@ components:
   id: skill_binding_decision_schema
   version: 1.0.0
   path: components/audit/audit_schema__skill_binding_decision_schema.yaml
+- kind: audit_schema
+  id: activation_decision_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__activation_decision_evidence_schema.yaml
+- kind: audit_schema
+  id: skill_activation_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__skill_activation_trace_schema.yaml
+- kind: audit_schema
+  id: rollback_readiness_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__rollback_readiness_evidence_schema.yaml
+- kind: audit_schema
+  id: rollback_validation_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__rollback_validation_schema.yaml
 - kind: audit_schema
   id: skill_governance_trace_schema
   version: 1.0.0
@@ -193,6 +315,10 @@ components:
 gates:
 - id: skill_intake_inventory_complete
   set: always
+- id: skill_provenance_verified
+  set: always
+- id: skill_version_hash_pinned
+  set: always
 - id: skill_semantic_required_gate
   set: always
 - id: locked_semantics_enforcement_policy
@@ -201,27 +327,42 @@ gates:
   set: always
 - id: reference_index_complete
   set: always
+- id: script_sandbox_scoped
+  set: always
+- id: least_privilege_permission_scoped
+  set: always
+- id: skill_misuse_redteam_gate
+  set: always
 - id: misuse_warning_required_gate
   set: always
 - id: skill_binding_proposal_gate
   set: always
 - id: skill_activation_decision_gate
   set: always
+- id: activation_decider_distinct_from_binding_proposer
+  set: always
+- id: skill_supply_chain_screened
+  set: conditional
 - id: skill_deprecation_required_gate
   set: conditional
 evidence:
   required_evidence:
   - SKILL_INVENTORY_ENTRY
+  - SKILL_PROVENANCE_RECORD
   - SKILL_SEMANTIC_EXTRACT
   - SCRIPT_REFERENCE_AUDIT_REPORT
   - SKILL_REFERENCE_INDEX
+  - SKILL_PERMISSION_SCOPE_MAP
+  - SKILL_MISUSE_REDTEAM_REPORT
   - SKILL_MISUSE_WARNINGS
   - SKILL_BINDING_PROPOSAL
   - SKILL_ACTIVATION_DECISION
+  - SKILL_DEPRECATION_RECORD
   required_trace:
   - skill_package_read_trace
   - skill_semantic_extraction_trace
   - script_static_analysis_trace
+  - skill_misuse_redteam_trace
   - misuse_warning_generation_trace
   - skill_binding_proposal_trace
   - skill_activation_decision_trace
@@ -230,6 +371,7 @@ stages:
 - skill_intake
 - skill_semantic_extraction
 - script_reference_audit
+- skill_misuse_redteam
 - misuse_warning_generation
 - skill_binding_proposal
 - skill_activation_decision

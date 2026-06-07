@@ -1,0 +1,34 @@
+id: rollback_validator
+name: Rollback Validator
+type: tool
+category: tool
+status: candidate
+purpose: Validate the rollback procedure and emit ROLLBACK_VALIDATION_REPORT.
+owner_domain: operations_readiness
+provided_by_core_ability: null
+input_schema:
+  rollback_plan: object
+output_schema:
+  rollback_validation_report_ref: string
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- operations_readiness_agent
+allowed_usage:
+- Read-only validation of the rollback procedure (stage 26).
+forbidden_usage:
+- Executing a rollback (that is rollback_executor
+- a side-effecting tool).
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - backup_restore_dr_validation_if_applicable
+notes: 'NON-CANONICAL (legacy) per 26-backup-restore-dr-validation-if-applicable.yaml.
+  Candidate. Distinct from rollback_executor: this validates the plan (read-only);
+  rollback_executor performs it.'

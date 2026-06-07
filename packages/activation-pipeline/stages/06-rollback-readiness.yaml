@@ -1,20 +1,42 @@
-# Activation Pipeline — Stage Contract
-# Stage #6: rollback_readiness
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.6.
-# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
-# Enforces rollback_required_gate: public activation cannot complete without a validated rollback path.
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #6 of 8: rollback_readiness
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.6.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/27-operations-readiness.yaml (validate a real,
+#   executable rollback/recovery path before go-live).
+# Pipeline: activation_pipeline. owner_agent is a snake_case Agent role under activation_team.
+#   Enforces rollback_required_gate: public activation cannot complete without a validated rollback path.
+#
+# PROFESSIONAL-GRADE COVERAGE folded into rollback readiness (the rollback-drill control):
+#   The catalog required a rollback drill but did not bind it to a recovery-time objective (RTO) or to
+#   the pre-registered ABORT_CRITERIA. A rollback path that "passes a drill" but cannot recover within
+#   the time the abort criteria assume is not actually safe. Added gates:
+#   rollback_recovery_within_rto (the drill recovers within the declared recovery-time objective) and
+#   rollback_drill_exercises_abort_criteria (the drill is triggered by the same abort conditions that
+#   will fire in production at #3/#8). Added output: ROLLBACK_DRILL_REPORT. These make the rollback
+#   drill an end-to-end, abort-criteria-linked, time-bounded exercise rather than a checkbox.
+#
+# Depth notes:
+#   - This stage is the AUTHORITATIVE rollback executor in the activation pipeline: rollback_executor's
+#     allowed_callers (tools_registry.yaml) = [rollback_readiness_agent, incident_response_agent], so
+#     rollback_readiness_agent (this owner) is the only activation agent permitted to wire/exercise the
+#     rollback path. The pilot (#3) keeps rollback REACHABLE but never executes it here.
+#   - on_fail / rework = self: fix and re-drill the rollback plan; completion (#7) is blocked until the
+#     rollback path is proven (def allowed_rework_routes: rollback_not_ready -> rollback_readiness).
+#   - uses_* are a SUBSET of rollback_readiness_agent's declared capabilities (agent_roles.yaml):
+#     skills [sentinel, gap-audit, calibrate]; tools [rollback_executor, telemetry_reader,
+#     evidence_reader, artifact_writer, evidence_writer]; core [OS, Memory, Supervisor].
 
 version: draft-0.1
 stage_id: rollback_readiness
 name: Rollback Readiness
 purpose: >-
-  Before completing public activation, validate that the rollback plan is real and
-  executable: rollback owner assigned, rollback executor wired, rollback drill/dry-run
-  performed, and recovery signals observable. Enforces rollback_required_gate —
-  public activation cannot complete without a validated rollback path.
+  Before completing public activation, validate that the rollback plan is real and executable end to
+  end: rollback owner assigned, rollback executor wired, a rollback drill/dry-run performed that is
+  triggered by the pre-registered abort criteria and recovers within the declared recovery-time
+  objective, and recovery signals observable. Enforces rollback_required_gate — public activation
+  cannot complete without a validated, drill-tested rollback path.
 
 owner_team: activation_team
 team_lead: activation_team_lead
@@ -22,62 +44,69 @@ owner_agent: rollback_readiness_agent
 sub_agents: []
 
 uses_core_abilities:
-  - OS                # perform the rollback drill / dry-run
-  - Memory
-
+  - OS       # wire and EXERCISE the rollback path (rollback drill / dry-run)
+  - Memory   # recall the rollback plan, the abort criteria and prior drill outcomes
 uses_skills:
-  - sentinel          # premortem the rollback path before completion
-  - gap-audit         # confirm rollback readiness coverage (owner, executor, drill, signals)
-
+  - sentinel    # premortem the rollback path before completion (what would make recovery fail?)
+  - gap-audit   # confirm rollback readiness coverage: owner, executor, drill, RTO, recovery signals
+  - calibrate   # keep the drill-pass verdict rationale-backed (recovery time + signal observability)
 uses_tools:
-  - rollback_executor            # wire and exercise the rollback path
-  - telemetry_reader             # confirm recovery signals are observable
-  - artifact_writer
-  - evidence_writer
-  - policy_query
-
+  - rollback_executor   # wire + exercise the rollback path (ONLY activation caller; side-effect: governance + trace)
+  - telemetry_reader    # confirm recovery signals are observable during/after the drill
+  - evidence_reader     # read the rollback plan + abort criteria the drill must satisfy
+  - artifact_writer     # write ROLLBACK_READINESS_REPORT + ROLLBACK_DRILL_REPORT (side-effect: governance + trace)
+  - evidence_writer     # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - activation_pipeline_governance
   - evidence_required_policy
   - rollback_required_gate
-
 uses_audit_schemas:
   - rollback_readiness_evidence_schema   # rollback-readiness record (decision proof)
   - stage_gate_trace_schema              # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
   - risk_analysis_model
-
 uses_context_memory_profiles:
   - activation_run_context
   - activation_decision_context_pack
 
 inputs:
-  - ACTIVATION_DECISION
-  - ROLLBACK_PLAN
+  - ACTIVATION_DECISION   # from the owner decision (#5): public scope authorized
+  - ROLLBACK_PLAN         # the rollback plan to validate and drill
+  - ABORT_CRITERIA        # from intake (#1): the conditions the drill must be triggered by
 
 outputs:
-  - ROLLBACK_READINESS_REPORT
+  - ROLLBACK_READINESS_REPORT    # owner/executor/drill/RTO/recovery-signal validation verdict
+  - ROLLBACK_DRILL_REPORT        # the drill: trigger condition, recovery time vs RTO, signals observed
+  - ROLLBACK_READINESS_GATE_RESULT  # binary gate result for this stage
 
 evidence:
   - ROLLBACK_READINESS_REPORT
+  - ROLLBACK_DRILL_REPORT
+  - ROLLBACK_READINESS_GATE_RESULT
 
 trace:
   - rollback_drill_trace
   - stage_gate_decision_trace
 
 gates:
-  - rollback_required_gate
-  - rollback_plan_validated
-  - rollback_drill_passed
+  - rollback_required_gate                  # a validated rollback path exists before completion (blocking)
+  - rollback_plan_validated                 # owner assigned + executor wired + plan executable
+  - rollback_drill_passed                   # the rollback drill/dry-run succeeded
+  - rollback_recovery_within_rto            # the drill recovered within the declared recovery-time objective
+  - rollback_drill_exercises_abort_criteria # the drill is triggered by the same abort criteria as production
 
 on_pass: activation_completion
 on_fail: rollback_readiness
 rework_route: rollback_readiness
 
+# Real failure conditions that hard-block rollback readiness (no empty load-bearing field).
 blocking_conditions:
-  - public_activation_attempted_without_validated_rollback_plan
+  - public_activation_attempted_without_validated_rollback_plan   # def blocking_condition
+  - rollback_plan_not_validated                                   # owner/executor/plan not validated
+  - rollback_drill_failed                                         # the drill did not succeed
+  - rollback_recovery_exceeds_rto                                 # recovery slower than the abort criteria assume
+  - recovery_signals_not_observable                               # cannot observe recovery -> rollback unprovable
 
 optional_conditions: []
 

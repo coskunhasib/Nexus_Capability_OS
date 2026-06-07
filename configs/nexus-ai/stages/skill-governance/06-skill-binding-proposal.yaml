@@ -1,0 +1,105 @@
+# Skill Governance Pipeline — Stage Contract 06: skill_binding_proposal
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.5)
+# Field set + rigor mirror configs/nexus-ai/stages/research/07-claim-evidence-mapping.yaml-style
+#   chained-evidence contracts (multiple gates, annotated chained I/O, populated blocking_conditions).
+# Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
+# Pipeline: skill_governance_pipeline. Stage #6 of 8. Stage class: always-on.
+# Produces a PROPOSAL, not a decision. Anti-pattern blocked: binding without semantics.
+#
+# PROFESSIONAL-GRADE ENRICHMENT:
+#   - Binds the explicit skill_must_have_semantic_extraction_before_binding governance profile (the
+#     registry's named anti-pattern guard) ALONGSIDE skill_binding_proposal_gate, so the
+#     semantics-before-binding rule is enforced by the dedicated profile, not implied.
+#   - Now also consumes SKILL_MISUSE_REDTEAM_REPORT + SKILL_PERMISSION_SCOPE_MAP, so the proposal can
+#     only bind a skill to agents/stages whose permission surface fits the audited least-privilege
+#     scope and that survived red-team. Added gates: binding_scope_within_permission_scope and
+#     binding_targets_have_no_unmitigated_redteam_finding.
+#   - prism is used ONLY to multiply candidate binding options (divergence); llm-council reviews the
+#     proposal multi-perspectively. Renumbered from stage #5 to #6.
+version: draft-0.1
+stage_id: skill_binding_proposal
+name: Skill Binding Proposal
+purpose: >-
+  Skill'i hangi agent/sub-agent ve hangi stage'lere bağlanabileceğini önerir
+  (allowed_as_subskill_of, used_by_agents, used_in_stages). Semantik + script audit +
+  red-team + misuse-warning tamamlanmadan binding önerilemez (anti-pattern: binding without
+  semantics). Öneri yalnız audit edilen least-privilege scope'a sığan ve red-team'i geçen
+  hedeflere bağlanabilir. prism YALNIZ aday binding seçeneklerini çoğaltmak (divergence)
+  için kullanılır; llm-council öneriyi çok-perspektifli inceler. Bu stage karar üretmez,
+  öneri üretir.
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+owner_agent: skill_librarian_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory       # recall the semantics, audit, red-team, permission scope and registry binding surface
+  - Supervisor   # route multi-perspective review of candidate bindings (llm-council orchestration)
+
+uses_skills:
+  - prism         # divergence ONLY (multiply candidate binding options); LOCKED, NOT bug finding
+  - llm-council   # multi-perspective review of the proposal
+  - gap-audit     # detect binding targets lacking upstream evidence or exceeding the permission scope
+
+uses_tools:
+  - skill_binding_proposer   # generate candidate agent/stage bindings (trace: skill_binding_proposal_trace)
+  - artifact_writer          # write SKILL_BINDING_PROPOSAL (side-effect: governance + trace)
+  - evidence_writer          # write stage evidence (side-effect: governance + trace)
+
+uses_governance_profiles:
+  - skill_governance_pipeline_governance
+  - skill_binding_proposal_gate                          # blocker — fail if binding_proposed_without_semantics
+  - skill_must_have_semantic_extraction_before_binding   # dedicated anti-pattern guard (semantics-before-binding)
+  - no_self_approval_policy                              # proposer (here) != activation decider (#7)
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - skill_binding_decision_schema   # evidence schema: the binding proposal
+  - skill_governance_trace_schema   # trace schema (distinct from evidence)
+
+uses_model_provider_profiles:
+  - skill_governance_reasoning_profile
+  - supervisor_routing_model
+
+uses_context_memory_profiles:
+  - skill_governance_run_context
+  - skill_registry_context_pack
+
+inputs:
+  - SKILL_SEMANTIC_EXTRACT          # required upstream evidence (binding never precedes semantics)
+  - SCRIPT_REFERENCE_AUDIT_REPORT   # required upstream evidence (script safety)
+  - SKILL_PERMISSION_SCOPE_MAP      # the least-privilege scope a binding must fit within
+  - SKILL_MISUSE_REDTEAM_REPORT     # binding targets must have no unmitigated abuse finding
+  - SKILL_MISUSE_WARNINGS           # required upstream evidence (warnings authored)
+outputs:
+  - SKILL_BINDING_PROPOSAL          # proposed used_by_agents / used_in_stages / allowed_as_subskill_of
+
+evidence:
+  - SKILL_BINDING_PROPOSAL
+trace:
+  - skill_binding_proposal_trace
+  - gate_evaluation_trace
+
+# key gates:
+#   skill_binding_proposal_gate (blocker) — fail if binding_proposed_without_semantics (no upstream
+#     semantic/audit/redteam/misuse evidence);
+#   binding_scope_within_permission_scope (blocker) — proposed bindings fit the audited least-privilege scope;
+#   binding_targets_have_no_unmitigated_redteam_finding (blocker) — no binding to a target with an open abuse path.
+gates:
+  - skill_binding_proposal_gate
+  - binding_scope_within_permission_scope
+  - binding_targets_have_no_unmitigated_redteam_finding
+
+on_pass: skill_activation_decision
+on_fail: skill_semantic_extraction
+rework_route: skill_semantic_extraction
+
+blocking_conditions:
+  - binding_proposed_without_semantics
+  - binding_exceeds_least_privilege_permission_scope   # proposed binding exceeds the audited scope
+  - binding_target_has_unmitigated_redteam_finding      # binding to a target with an open abuse path
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

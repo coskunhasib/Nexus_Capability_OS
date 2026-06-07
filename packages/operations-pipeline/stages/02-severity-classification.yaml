@@ -1,79 +1,122 @@
-# Operations Pipeline — Stage Contract
-# Stage #2: severity_classification
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.2.
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #2 of 7: severity_classification
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4.
+# Field set + rigor ENRICHED to the professional-grade bar (research-pipeline calibration exemplar /
+#   configs/nexus-ai/stages/sdlc/16-security-validation.yaml gate-with-subagent depth).
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.2.
 # Severity classification is MANDATORY before any mitigation work may begin (satisfies
-#   incident_severity_required_gate). owner_agent is an Agent role under operations_team.
-
+#   incident_severity_required_gate). owner_agent is an Agent role under operations_team
+#   (agent_roles.yaml: severity_classification_agent, reviewed_by operations_team_lead).
+#
+# PROFESSIONAL-GRADE COVERAGE folded in here (SLA + escalation + impact assessment):
+#   1. SLA / RESPONSE-TARGET CLASSIFICATION. A professional incident process attaches a severity to a
+#      response/restore-time target and an escalation threshold, not just a label. The prior contract
+#      assigned severity but carried NO SLA clock and NO escalation trigger. Added gates
+#      sla_and_response_target_assigned + escalation_threshold_defined, read from policy-as-data via
+#      policy_query (severity->SLA / on-call / escalation policy). policy_query is canonical and already
+#      lists operations_team_lead among allowed_callers; this stage is owned by an operations agent that
+#      acts under the team lead's policy authority.
+#   2. BLAST-RADIUS / IMPACT ASSESSMENT as an explicit decomposed analysis. blast_radius_estimated
+#      existed as a bare gate; professional triage produces a real customer/safety/data IMPACT
+#      assessment. Added a dedicated blast_radius_assessment_subagent (NEW — load-bearing decomposition,
+#      mirrors research source_bias_screening_subagent) that authors IMPACT_ASSESSMENT_REPORT and hands
+#      it up; the parent severity_classification_agent folds it into severity and decides the gate.
+#
+# Depth / reconciliation notes:
+#   - fmea = failure-mode reasoning; sentinel = adversarial blast-radius foresight; bayesian-update =
+#     revise severity as evidence arrives; calibrate = keep the severity/confidence estimate
+#     rationale-backed, not asserted.
+#   - No-self-approval: the severity decision is reviewed by operations_team_lead (agent_roles.yaml:
+#     severity_classification_agent.reviewed_by). The sub-agent returns analysis to its parent and never
+#     decides the gate.
+#   - on_fail routes to incident_intake (insufficient/unvalidated signal to classify); internal
+#     re-classification is re-run in place (rework_route = self).
 version: draft-0.1
 stage_id: severity_classification
 name: Severity Classification
 purpose: >-
-  Assign a severity level using failure-mode reasoning and blast-radius analysis.
-  Severity classification is mandatory before any mitigation work may begin. Produces
-  SEVERITY_CLASSIFICATION_REPORT with severity, blast radius, customer/safety impact,
-  and confidence.
+  Assign a severity level using failure-mode reasoning and a decomposed blast-radius / customer-safety
+  impact assessment, then bind that severity to an SLA / response-target and an escalation threshold
+  read from policy-as-data. Severity classification is mandatory before any mitigation work may begin.
+  Produces SEVERITY_CLASSIFICATION_REPORT (severity, blast radius, customer/safety impact, confidence),
+  an IMPACT_ASSESSMENT_REPORT from the impact sub-agent, and the SLA / escalation decision that
+  downstream stages enforce.
 
 owner_team: operations_team
 team_lead: operations_team_lead
 owner_agent: severity_classification_agent
-sub_agents: []
+sub_agents:
+  - blast_radius_assessment_subagent   # decomposes customer/safety/data blast-radius impact from core severity scoring
 
 uses_core_abilities:
-  - Memory
-  - Web
-
+  - Memory   # recall prior incidents on this capability and their realized impact
+  - Web      # consult external blast-radius signals (dependency status, customer-facing surface)
 uses_skills:
   - fmea             # failure-mode and effect reasoning
-  - sentinel         # adversarial blast-radius foresight
+  - sentinel         # adversarial blast-radius foresight (worst-credible-impact)
   - bayesian-update  # revise severity as evidence arrives
-  - calibrate        # confidence calibration of the severity estimate
-
+  - calibrate        # confidence calibration of the severity estimate (rationale-backed, not asserted)
 uses_tools:
-  - severity_classifier_tool
-  - monitoring_query_tool
-  - artifact_writer
-  - evidence_writer
-
+  - severity_classifier_tool   # compute/justify the severity level
+  - monitoring_query_tool      # quantify current blast radius from live monitoring
+  - policy_query               # read severity->SLA / on-call / escalation policy-as-data (side-effect-free)
+  - artifact_writer            # write SEVERITY_CLASSIFICATION_REPORT / IMPACT_ASSESSMENT_REPORT (side-effect: governance + trace)
+  - evidence_writer            # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - incident_severity_required_gate
   - operations_pipeline_governance
-
+  - evidence_required_policy
 uses_audit_schemas:
   - severity_classification_evidence_schema   # evidence (decision proof)
   - stage_gate_trace_schema                   # trace (operation history)
-
 uses_model_provider_profiles:
   - incident_triage_model
-
 uses_context_memory_profiles:
   - operations_run_context
   - incident_context_pack
 
 inputs:
   - INCIDENT_RECORD
+  - AFFECTED_CAPABILITY_REF        # the released capability the incident bears on (from #1)
+  - INITIAL_OBSERVATIONS           # first symptoms, for blast-radius reasoning (from #1)
+  - INCIDENT_CONDITIONAL_FLAGS     # safety_sensitive / customer_facing / regulated raise SLA + escalation strictness
 
 outputs:
-  - SEVERITY_CLASSIFICATION_REPORT
+  - SEVERITY_CLASSIFICATION_REPORT     # severity, blast radius, customer/safety impact, confidence
+  - IMPACT_ASSESSMENT_REPORT           # decomposed customer/safety/data blast-radius impact (from the sub-agent)
+  - SLA_AND_RESPONSE_TARGET            # severity-bound restore/response time target + escalation threshold
+  - ESCALATION_DECISION                # whether escalation is triggered now, and to which path
+  - SEVERITY_CLASSIFICATION_GATE_RESULT # binary gate result for this stage
 
 evidence:
   - SEVERITY_CLASSIFICATION_REPORT
-
+  - IMPACT_ASSESSMENT_REPORT
+  - SLA_AND_RESPONSE_TARGET
+  - SEVERITY_CLASSIFICATION_GATE_RESULT
 trace:
   - severity_classification_trace
+  - impact_assessment_trace           # sub-agent blast-radius/impact analysis activity
+  - policy_query_tool_trace           # the SLA / escalation policy-as-data read lineage
   - stage_gate_decision_trace
 
 gates:
-  - severity_assigned               # blocker — satisfies incident_severity_required_gate
+  - severity_assigned                  # blocker — satisfies incident_severity_required_gate
   - blast_radius_estimated
   - severity_confidence_recorded
+  - sla_and_response_target_assigned   # severity bound to a restore/response-time target (policy-as-data)
+  - escalation_threshold_defined       # the threshold + path at which the incident escalates is explicit
 
 on_pass: mitigation_plan
 on_fail: incident_intake
-rework_route: incident_intake
+rework_route: severity_classification
 
 blocking_conditions:
+  - severity_unassigned
+  - blast_radius_unestimated
+  - sla_or_response_target_unassigned
+  - escalation_threshold_undefined
   - missing_severity_classification
 
 optional_conditions: []

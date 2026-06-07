@@ -1,88 +1,109 @@
-# Activation Pipeline — Stage Contract
-# Stage #5: public_activation_decision
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.5.
-# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# Human/owner decision gate: the authorizing actor is the human owner, NOT an autonomous agent.
-# owner_agent activation_owner_decision_agent records and routes the human/owner decision; the
-#   decision is recorded as evidence and cannot be self-approved by any stage-owning agent (md §2.5).
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #5 of 8: public_activation_decision   (HUMAN / OWNER authority gate)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.5.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/30-release-candidate.yaml (a final
+#   authoritative go/no-go decision over an assembled evidence package).
+# Pipeline: activation_pipeline. owner_agent is a snake_case Agent role under activation_team.
+#
+# HUMAN / OWNER authority gate (the one place the pipeline asserts human-in-the-loop):
+#   The authorizing actor is the HUMAN OWNER, NOT an autonomous agent. owner_agent
+#   activation_owner_decision_agent RECORDS and routes the human/owner decision; it cannot self-approve
+#   it (agent_roles.yaml forbidden_actions: autonomously_authorize_public_activation_without_a_human_
+#   owner_decision, self_approve_the_activation_decision). Enforced by owner_activation_decision_gate
+#   (a HUMAN-authority gate, governance_profiles.yaml §owner_activation_decision_gate) layered on
+#   no_self_approval_policy. This is the conditional producer recorded in
+#   activation_pipeline_runtime_rules.yaml (owner_activation_decision_gate_if_public_scope).
+#
+# Depth notes:
+#   - sentinel runs a premortem over residual risk before authorizing public scope; llm-council surfaces
+#     the decision considerations for the owner; calibrate keeps the residual-risk assessment calibrated.
+#   - The decision gate must be satisfied BEFORE broad activation is executed; rollback readiness is
+#     independently re-validated in the next stage (#6) prior to completion, and the post-activation
+#     monitoring window (#8) confirms stability after execution.
+#   - on_fail / rework route to pilot_evidence_review (#4): if the owner rejects or defers, return for
+#     more evidence or remediation before re-deciding (def allowed_rework_routes:
+#     owner_decision_rejected -> pilot_evidence_review).
 
 version: draft-0.1
 stage_id: public_activation_decision
 name: Public Activation Decision
 purpose: >-
-  The human/owner decision gate. The owner reviews pilot evidence, the validated
-  rollback plan, and residual risk, then explicitly decides whether to authorize
-  public (general-availability) activation. This decision is recorded as evidence
-  and cannot be self-approved by any stage-owning agent. The decision gate must be
-  satisfied before broad activation is executed; rollback readiness is confirmed in
-  the next stage prior to completion.
+  The human/owner decision gate. The owner reviews the independently-reviewed pilot evidence, the
+  rollback plan, the residual-risk assessment, and the pre-registered abort criteria, then explicitly
+  authorizes, rejects, or defers public (general-availability) activation. The decision is recorded as
+  evidence and cannot be self-approved by any stage-owning agent. The gate must be satisfied before
+  broad activation is executed; rollback readiness is re-validated next (#6) and stability is confirmed
+  in the post-activation monitoring window (#8).
 
 owner_team: activation_team
 team_lead: activation_team_lead
 owner_agent: activation_owner_decision_agent
 sub_agents: []
 
+# uses_* are a SUBSET of activation_owner_decision_agent's declared capabilities (agent_roles.yaml):
+#   skills [sentinel, llm-council, calibrate]; tools [evidence_reader, artifact_writer, evidence_writer,
+#   policy_query]; core [Supervisor, Memory].
 uses_core_abilities:
-  - Memory
-  - Web
-
+  - Memory   # recall the full pilot/review history and residual-risk context for the owner
 uses_skills:
-  - sentinel          # foresight/premortem on residual risk before authorizing public scope
-  - llm-council       # surface decision considerations for the owner
-  - calibrate         # calibrate residual-risk assessment
-
+  - sentinel       # premortem/foresight on residual risk before authorizing public scope
+  - llm-council    # surface multi-perspective decision considerations for the human owner
+  - calibrate      # calibrate the residual-risk assessment presented with the decision
 uses_tools:
-  - evidence_reader              # read pilot evidence + validated rollback plan
-  - artifact_writer
-  - evidence_writer
-  - policy_query
-
+  - evidence_reader   # read the pilot evidence review + rollback plan to brief the owner
+  - artifact_writer   # write the ACTIVATION_DECISION record (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+  - policy_query      # query owner-decision / public-scope policy-as-data (side-effect-free)
 uses_governance_profiles:
   - activation_pipeline_governance
   - no_self_approval_policy
   - evidence_required_policy
-  - owner_activation_decision_gate
-
+  - owner_activation_decision_gate    # HUMAN/owner authority gate (distinct from autonomous approval)
 uses_audit_schemas:
   - activation_decision_evidence_schema   # decision record (decision proof)
   - stage_gate_trace_schema               # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
   - risk_analysis_model
-
 uses_context_memory_profiles:
   - activation_run_context
   - activation_decision_context_pack
 
 inputs:
-  - PILOT_EVIDENCE_REVIEW_REPORT
-  - ROLLBACK_PLAN
+  - PILOT_EVIDENCE_REVIEW_REPORT   # from the separate-owner review (#4)
+  - ROLLBACK_PLAN                  # the rollback plan whose presence the decision gate requires
+  - ABORT_CRITERIA                 # from intake (#1): residual-risk framing for the owner
 
 outputs:
-  - ACTIVATION_DECISION
+  - ACTIVATION_DECISION            # recorded human/owner authorize/reject/defer decision + rationale
+  - PUBLIC_DECISION_GATE_RESULT    # binary gate result for this decision stage
 
 evidence:
   - ACTIVATION_DECISION
+  - PUBLIC_DECISION_GATE_RESULT
 
 trace:
   - owner_decision_trace
   - stage_gate_decision_trace
+  - policy_evaluation_trace
 
 gates:
-  - owner_activation_decision_gate
-  - no_self_approval_policy
-  - rollback_plan_present
+  - owner_activation_decision_gate   # recorded human/owner decision exists (HUMAN authority)
+  - no_self_approval_policy          # the recording agent is not the authorizer (structural)
+  - rollback_plan_present            # a rollback plan exists before authorizing public scope
 
 on_pass: rollback_readiness
 on_fail: pilot_evidence_review
 rework_route: pilot_evidence_review
 
+# Real failure conditions that hard-block the decision (no empty load-bearing field).
 blocking_conditions:
-  - public_activation_without_owner_decision
-  - self_approval_of_activation_decision
+  - public_activation_without_owner_decision   # def blocking_condition (no recorded human/owner decision)
+  - self_approval_of_activation_decision        # def blocking_condition (agent self-approved)
+  - rollback_plan_absent                        # no rollback plan present to authorize against
+  - owner_decision_rejected_or_deferred         # owner rejected/deferred -> rework to #4 (not a pass)
 
 optional_conditions: []
 

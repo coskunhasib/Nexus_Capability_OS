@@ -3,13 +3,22 @@ required_gates:
   - release_candidate_evidence_present
   - activation_scope_defined
   - rollback_owner_assigned
+  - blast_radius_limit_defined
+  - abort_criteria_defined
   - preview_required_gate
   - preview_behaves_as_expected
   - telemetry_observable_in_preview
+  - health_baseline_captured
+  - blast_radius_within_limit
+  - pilot_health_within_canary_thresholds
+  - no_abort_condition_breached
   - activation_evidence_complete
+  - post_activation_health_within_baseline
+  - activation_stable_over_monitoring_window
   - all_required_gates_passed
   - no_blocking_policy_failure
   conditional:
   - pilot_evidence_gate_if_public_scope
   - owner_activation_decision_gate_if_public_scope
   - rollback_required_gate_if_public_scope
+  - extended_monitoring_window_if_public_scope

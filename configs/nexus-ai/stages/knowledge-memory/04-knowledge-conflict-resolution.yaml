@@ -1,0 +1,144 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Stage #4 of 7: knowledge_conflict_resolution   (NEW — corpus-integrity reconciliation)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# WHY THIS STAGE EXISTS (coverage addition; professional-grade calibration, sdlc bar):
+#   The catalog's original 6-stage flow goes summary_generation -> validity_window_assignment with
+#   NOTHING that checks the candidate against memory the corpus ALREADY holds. Under no-human
+#   governance that is a real corpus-corruption hole: a new item may DUPLICATE an existing memory
+#   (inflating retrieval weight, double-counting "evidence") or CONTRADICT one (two memories asserting
+#   opposite facts, both retrievable, with no recorded winner). Silent ingestion of duplicate /
+#   conflicting knowledge is exactly the failure a governed knowledge lifecycle must prevent. The
+#   md never addresses dedup or conflict; it is the single biggest genuinely-missing control.
+#
+#   This stage reconciles the (classified, redacted, summarized) candidate against the existing
+#   curated corpus BEFORE a validity window is assigned and BEFORE it is exposed in retrieval, and
+#   records an explicit disposition for every conflict/duplicate: SUPERSEDE (new replaces old, old
+#   retired), MERGE (consolidate into one record), COEXIST (both valid under scoped conditions, e.g.
+#   different time/jurisdiction), or REJECT (candidate not admitted). It must precede
+#   validity_window_assignment because the disposition CHANGES the window (a superseding item may
+#   shorten the superseded item's window to "now"; a coexisting item carries a scope predicate) and
+#   precede retrieval_profile_update because an unresolved contradiction must never reach retrieval.
+#   This makes it a genuine distinct phase, not padding — it is the ONE new stage added; the other
+#   professional controls (PII/sensitive detection, grounding hardening, deletion/RTBF, provenance
+#   completeness rollup) are folded as gates inside existing stages.
+#
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/28-evidence-graph-build.yaml (an integrity /
+#   consistency stage that decomposes its work to a dedicated sub-agent) and the research exemplar's
+#   added stage configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# Depth / reconciliation notes (legacy/registry -> this contract):
+#   - owner_agent: knowledge_reconciliation_agent. This is a NEW knowledge_team Agent role NOT yet in
+#     configs/nexus-ai/agent_roles.yaml (agent_roles.yaml is a shared registry edited by parallel
+#     agents and is NOT edited here). It is REPORTED for registry formalization (id /
+#     parent_team=knowledge_team / reviewed_by=knowledge_team_lead / owned_stage=knowledge_conflict_resolution).
+#     Rationale for a new role rather than reuse: the 6 existing knowledge agents each own exactly one
+#     stage and their tools are caller-locked to them; cross-corpus reconciliation is a distinct
+#     curation responsibility (compare-against-corpus + disposition) that fits none of them cleanly.
+#   - NO-SELF-APPROVAL preserved: this is an AUTHORING stage reviewed by knowledge_team_lead. It does
+#     NOT validate the summary it consumes (that grounding decision belongs to summary_generation #3);
+#     it adjudicates candidate-vs-corpus. The structural no-self-approval / no-bypass policy gate
+#     (team_lead_cannot_self_approve_or_bypass_gate) constrains every gate here as elsewhere.
+#   - SUB-AGENT: corpus_conflict_detection_subagent decomposes the "find duplicate / contradictory
+#     existing memories" detection from the disposition decision. The sub-agent detects + reports;
+#     the parent agent decides the disposition and the gate (mirrors the SDLC
+#     security_scan_interpreter_subagent / research source_bias_screening_subagent pattern). REPORTED
+#     for registry formalization (parent_agent = knowledge_reconciliation_agent).
+#   - TOOLS: only registry-real, knowledge-callable tools are used — provenance_recorder (record the
+#     reconciliation in the item's provenance chain; allowed_callers currently lists the 6 existing
+#     knowledge agents, so knowledge_reconciliation_agent must be ADDED to provenance_recorder
+#     allowed_callers — REPORTED, not edited here), artifact_writer + evidence_writer (allowed_callers
+#     = any_stage_owner_agent). A dedicated knowledge_conflict_detector tool does NOT exist in
+#     configs/nexus-ai/tools_registry.yaml; evidence_consistency_checker (the closest analogue) is
+#     SDLC-locked (allowed_callers exclude knowledge_team; used_by pipelines = [sdlc_pipeline]). The
+#     detection here is therefore done by the sub-agent via gap-audit (find duplicate/uncovered/
+#     conflicting coverage) over the corpus recalled by the Memory Core Ability. The missing
+#     knowledge_conflict_detector tool + the consistency-checker caller gap are REPORTED.
+#   - SKILLS (LOCKED to the catalog's claimed set gap-audit/calibrate/refraction/bayesian-update;
+#     prism and verification-loop are intentionally NOT claimed by this pipeline): gap-audit detects
+#     duplicate / contradictory / overlapping coverage; bayesian-update weighs which source should
+#     supersede when two sources conflict (trust tier + recency + corroboration as evidence).
+#   - Evidence != Trace kept distinct.
+version: draft-0.1
+stage_id: knowledge_conflict_resolution
+name: Knowledge Conflict Resolution
+purpose: >-
+  Reconcile the classified, redacted, summarized candidate against the memory the corpus already
+  holds before any validity window is assigned or retrieval exposure is granted: detect duplicates
+  and contradictions, and record an explicit disposition for each — supersede (new replaces old, old
+  retired), merge (consolidate), coexist (both valid under a recorded scope predicate), or reject
+  (candidate not admitted). Ensures the curated corpus never silently holds duplicate-weighted or
+  mutually-contradictory memories, and carries the disposition forward so the validity window and
+  retrieval profile honor it.
+
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: knowledge_reconciliation_agent     # NEW knowledge_team role — REPORTED (not in agent_roles.yaml)
+sub_agents:
+  - corpus_conflict_detection_subagent          # NEW — decomposes duplicate/contradiction detection; REPORTED
+
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty).
+uses_core_abilities:
+  - Memory   # recall the existing curated corpus + this candidate to compare them
+  - Web      # corroborate which of two conflicting sources is current/authoritative (independence signals)
+uses_skills:
+  - gap-audit         # detect duplicate / overlapping / contradictory coverage against the corpus
+  - bayesian-update   # weigh which source supersedes (trust tier + recency + corroboration as evidence)
+uses_tools:
+  - provenance_recorder   # record the reconciliation decision in the item's provenance chain (REPORTED caller add)
+  - artifact_writer       # write CONFLICT_RESOLUTION_REPORT (allowed_callers: any_stage_owner_agent; side-effect: governance + trace)
+  - evidence_writer       # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - memory_source_governance      # corpus admissibility + trust-tier rules govern supersede/merge/coexist/reject
+uses_audit_schemas:
+  - memory_provenance_schema      # evidence schema (the disposition attaches to provenance)
+  - stage_gate_trace_schema       # trace schema (distinct from evidence)
+uses_model_provider_profiles:
+  - knowledge_reasoning_profile
+uses_context_memory_profiles:
+  - knowledge_run_context
+  - memory_candidate_context_pack
+  - retrieval_profile_context_pack   # the corpus/profile the candidate is reconciled against
+
+inputs:
+  - MEMORY_SUMMARY                 # the grounded summary from summary_generation (#3)
+  - SOURCE_CLASSIFICATION_REPORT   # trust tier / sensitivity inform which source wins a conflict
+  - MEMORY_PROVENANCE_RECORD       # the candidate's provenance, extended with the disposition
+
+outputs:
+  - CONFLICT_RESOLUTION_REPORT       # per-conflict/duplicate disposition (supersede/merge/coexist/reject) + rationale
+  - CORPUS_CONFLICT_SET              # the duplicate/contradictory existing memories detected (from the sub-agent)
+  - SUPERSEDED_MEMORY_SET            # existing memories this candidate supersedes (handed to retrieval/expiration)
+  - CONFLICT_RESOLUTION_GATE_RESULT  # binary gate result for this stage
+
+evidence:
+  - CONFLICT_RESOLUTION_REPORT
+  - CORPUS_CONFLICT_SET
+  - CONFLICT_RESOLUTION_GATE_RESULT
+trace:
+  - knowledge_conflict_resolution_trace
+  - corpus_conflict_detection_trace      # sub-agent detection activity
+  - skill_activation_trace
+  - gate_decision_trace
+
+# Key gates. All blockers: an unresolved contradiction or an undispositioned duplicate must not pass
+# to validity/retrieval. corpus_conflict_scan_complete asserts detection actually ran (no silent skip).
+gates:
+  - corpus_conflict_scan_complete          # the candidate was actually compared against the corpus
+  - duplicate_resolution_recorded          # every detected duplicate has an explicit disposition
+  - contradiction_resolution_recorded      # every detected contradiction has an explicit disposition
+  - no_unresolved_contradiction_admitted   # no contradiction is left open for a memory that will be retrievable
+
+on_pass: validity_window_assignment
+on_fail: summary_generation        # a candidate that cannot be reconciled is usually a framing/grounding problem
+rework_route: summary_generation   # matches on_fail + allowed_rework_routes (convention: on_fail == rework_route)
+
+blocking_conditions:
+  - corpus_conflict_scan_not_run
+  - duplicate_left_undispositioned
+  - contradiction_left_unresolved
+  - superseding_decision_without_rationale
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

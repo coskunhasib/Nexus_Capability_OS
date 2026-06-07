@@ -1,0 +1,121 @@
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #6 of 7: corrective_action_tracking   (NEW — prevention / action-item close-the-loop)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# WHY THIS STAGE EXISTS (coverage addition — the ONE new stage, calibration exemplar discipline):
+#   A professional incident process is NOT complete when service recovers. It is complete when the
+#   root cause is permanently addressed and every corrective/preventive action is TRACKED with an owner
+#   and a verification handle so it cannot silently evaporate. The prior 6-stage flow DEFINED corrective
+#   actions in the postmortem and then "handed off a backlog" in learning_update with NO verification
+#   that each action item was actually registered, owned, and verifiable — and no guarantee the
+#   permanent-fix item for a TEMPORARY resolution (#4 RESIDUAL_RISK_RECORD) was tracked. That is the
+#   single biggest reliability gap for running an incident process under no-human governance: prevention
+#   work that is defined-but-untracked is prevention work that never happens. This stage makes
+#   action-item tracking + verification an explicit, gated phase between postmortem (#5) and
+#   learning_update (#7). It is a genuine distinct phase (it must run AFTER the postmortem defines
+#   actions and BEFORE the run can exit), not padding — it is the ONE new stage added; every other
+#   professional control (intake validation, SLA/escalation, comms, blast-radius, mitigation-vs-fix,
+#   rollback drill, blameless independent review) was folded as gates inside existing stages.
+#
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml (a tracking/gate stage
+#   with chained inputs/outputs and populated blocking_conditions) and the research
+#   research_completion (#11) close-the-loop discipline.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = operational_learning_agent (canonical operations_team roster, agent_roles.yaml).
+#     Action-item tracking is adjacent to that agent's existing "hand corrective actions back toward the
+#     SDLC as a future-improvement backlog" responsibility, and it is DOWNSTREAM of and DISTINCT FROM
+#     the postmortem_agent that AUTHORED the actions — so naming operational_learning_agent as owner
+#     PRESERVES producer != validator (author postmortem_agent != tracker operational_learning_agent)
+#     without inventing a role. REGISTRY CONSISTENCY NOTE (flagged in the deliverable, NOT edited here —
+#     shared registries are owned by parallel agents): operational_learning_agent.owned_stages should
+#     gain `corrective_action_tracking` alongside `learning_update`.
+#   - No-self-approval: this stage VERIFIES tracking of actions it did not author; it does not approve
+#     the postmortem and does not invent corrective actions. Reviewed by operations_team_lead.
+#   - gap-audit = detect any required action item that is untracked / unowned / unverifiable;
+#     refraction is intentionally NOT used here (it is the learning/reflection skill, used in #7);
+#     bayesian-update keeps recurrence-risk priors honest when deciding whether an action is required.
+#   - on_fail routes to postmortem (#5): if a required corrective action cannot be tracked because the
+#     postmortem under-specified it, the postmortem must be revised — never skip forward.
+version: draft-0.1
+stage_id: corrective_action_tracking
+name: Corrective Action Tracking
+purpose: >-
+  Register every corrective/preventive action from the postmortem as a tracked item with an explicit
+  owner and a verification handle, confirm the permanent-fix action item required by any temporary
+  resolution (#4 residual risk) is among them, and verify that NO required action item is left
+  untracked, unowned, or unverifiable before the run can exit. Produces the CORRECTIVE_ACTION_REGISTER
+  and the action-item tracking verification that closes the prevention loop under no-human governance.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: operational_learning_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the corrective-action set, residual-risk follow-ups and prior recurrence history
+uses_skills:
+  - gap-audit        # detect any required action item that is untracked / unowned / unverifiable
+  - bayesian-update  # keep recurrence-risk priors honest when judging whether an action is required
+uses_tools:
+  - memory_write      # register tracked action items into durable memory (side-effect: governance + trace)
+  - evidence_reader   # read the postmortem corrective-action set + residual-risk record
+  - artifact_writer   # write CORRECTIVE_ACTION_REGISTER (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - operations_pipeline_governance
+  - no_self_approval_policy      # verifies tracking of actions it did not author (producer != verifier)
+  - evidence_required_policy
+uses_audit_schemas:
+  - operational_learning_evidence_schema   # evidence (decision proof) — action-item tracking is a learning-domain record
+  - stage_gate_trace_schema                # trace (operation history)
+uses_model_provider_profiles:
+  - learning_reflection_model
+uses_context_memory_profiles:
+  - operations_run_context
+  - postmortem_context_pack      # the postmortem + its corrective actions are the input lineage
+
+inputs:
+  - POSTMORTEM_REPORT
+  - CORRECTIVE_ACTION_SET          # the corrective/preventive actions defined by postmortem (#5)
+  - CONTRIBUTING_FACTORS_RECORD    # contributing factors that must each map to a tracked action (#5)
+  - RESIDUAL_RISK_RECORD           # the REQUIRED permanent-fix action item from a temporary resolution (#4)
+
+outputs:
+  - CORRECTIVE_ACTION_REGISTER             # each action: owner + verification handle + open/closed status
+  - PERMANENT_FIX_TRACKING_RECORD          # confirms the temporary-resolution permanent-fix item is tracked
+  - ACTION_ITEM_VERIFICATION_REPORT        # verification that no required action item is untracked/unowned
+  - CORRECTIVE_ACTION_TRACKING_GATE_RESULT # binary gate result for this stage
+
+evidence:
+  - CORRECTIVE_ACTION_REGISTER
+  - ACTION_ITEM_VERIFICATION_REPORT
+  - CORRECTIVE_ACTION_TRACKING_GATE_RESULT
+trace:
+  - corrective_action_tracking_trace
+  - action_item_verification_trace      # the per-action tracked/owned/verifiable verification lineage
+  - stage_gate_decision_trace
+
+gates:
+  - all_corrective_actions_registered        # every postmortem action is in the register
+  - every_action_item_has_owner               # no orphan action without an accountable owner
+  - every_action_item_has_verification_handle # each action is verifiable (closeable), not aspirational
+  - permanent_fix_action_tracked_if_temporary # a temporary resolution's permanent-fix item is tracked
+  - contributing_factors_mapped_to_actions    # each contributing factor maps to at least one tracked action
+
+on_pass: learning_update
+on_fail: postmortem
+rework_route: corrective_action_tracking
+
+blocking_conditions:
+  - required_action_item_untracked
+  - action_item_without_owner
+  - action_item_without_verification_handle
+  - permanent_fix_action_untracked_for_temporary_resolution
+  - missing_required_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

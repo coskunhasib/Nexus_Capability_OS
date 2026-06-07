@@ -1,0 +1,138 @@
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #8 of 8: post_activation_monitoring   (NEW — terminal aggregate soak/monitoring gate)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS (coverage addition — the ONE new activation stage):
+#   Professional staged activation does NOT treat "activation executed" as "activation done". The
+#   highest-density window for activation-induced incidents is the minutes/hours AFTER go-live. The
+#   catalog flow ended at activation_completion (execute -> done) with no bounded soak/monitoring
+#   window: nothing watched live health against the pre-exposure HEALTH_BASELINE (#2) or the
+#   pre-registered ABORT_CRITERIA (#1) after execution, and nothing could TRIGGER rollback if the
+#   activation degraded production post-go-live. This stage adds that window. It is a genuine distinct
+#   phase (it must FOLLOW execution and PRECEDE final closure), not padding — it is the only new stage;
+#   the other professional controls (health baseline, canary gate, blast-radius, abort criteria,
+#   RTO-bound rollback drill) are gates folded into existing stages (#1/#2/#3/#6).
+#
+# TERMINAL AGGREGATE: this stage is now the pipeline terminal (on_pass: done). It carries the
+#   cross-cutting final rollups all_required_gates_passed and no_blocking_policy_failure (moved here
+#   from activation_completion), which can only pass once the soak window is clean AND every required
+#   gate across the run passed. On a post-activation health regression or abort breach it routes to
+#   rollback_readiness (#6) to execute rollback, never to done.
+#
+# NO-SELF-APPROVAL: owner_agent = activation_manager_agent (it already owns activation_completion/
+#   execution; operating + observing its own execution's health is the SAME operational responsibility,
+#   like SDLC operations_readiness_agent operating its own readiness package — NOT approving an upstream
+#   decision). The acceptance of public scope was already INDEPENDENTLY gated upstream by a distinct
+#   reviewer (pilot_evidence_review #4) and the human/owner gate (#5); this stage performs an OBJECTIVE
+#   health/abort check against pre-registered baselines/criteria, not a subjective re-approval. The
+#   health-signal evaluation is decomposed to a dedicated sub-agent that returns a verdict and never
+#   decides the gate (no self-approval).
+#
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/29-development-completion.yaml (terminal
+#   aggregate gate) + the SDLC/research evidence-subagent decomposition pattern.
+
+version: draft-0.1
+stage_id: post_activation_monitoring
+name: Post-Activation Monitoring
+purpose: >-
+  After the activation executes (#7), observe the activated target over a bounded monitoring/soak
+  window: compare live health to the pre-exposure HEALTH_BASELINE, confirm no pre-registered abort
+  criterion is breached, and confirm the activation is stable over the window. Roll up the whole run —
+  assert every required gate passed and no blocking policy failure occurred — and only then finalize
+  (on_pass: done). If post-activation health regresses or an abort criterion trips, route to
+  rollback_readiness (#6) to execute rollback rather than finalizing.
+
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_manager_agent
+# NEW sub-agent (NOT yet in sub_agent_roles.yaml — REPORTED for the owner to register; do not edit the
+#   shared registry). Decomposes live health-signal evaluation from the gate decision.
+sub_agents:
+  - activation_health_watch_subagent   # watches live health vs baseline + abort criteria; returns a verdict
+
+uses_core_abilities:
+  - OS          # observe the live activated target / drive the monitoring window
+  - Memory      # recall the baseline, abort criteria and every upstream gate result for the rollup
+  - Supervisor  # aggregate-decision/routing over all stage gates; pick the rework target on failure
+uses_skills:
+  - gap-audit   # detect any missing required gate, unobserved abort signal, or incomplete soak coverage
+  - calibrate   # keep the stability verdict rationale-backed against the baseline/window, not asserted
+uses_tools:
+  - telemetry_reader   # read live telemetry over the soak window and compute health-vs-baseline deltas
+  - evidence_reader    # read the activation evidence package + all upstream gate results for the rollup
+  - artifact_writer    # write POST_ACTIVATION_MONITORING_REPORT (side-effect: governance + trace)
+  - evidence_writer    # write stage evidence / terminal gate result (side-effect: governance + trace)
+  - policy_query       # confirm no blocking policy failure remains across the run (side-effect-free)
+uses_governance_profiles:
+  - activation_pipeline_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - activation_evidence_schema           # evidence (the monitoring report + terminal rollup)
+  - activation_transition_trace_schema   # trace (terminal transition) — kept distinct from evidence
+  - stage_gate_trace_schema              # trace (gate decisions) — kept distinct from evidence
+uses_model_provider_profiles:
+  - activation_reasoning_model
+  - risk_analysis_model                  # evaluate post-activation signals as risk, not just raw metrics
+uses_context_memory_profiles:
+  - activation_run_context
+  - activation_decision_context_pack
+
+inputs:
+  - ACTIVATION_COMPLETION_REPORT   # from completion (#7): the activation executed at authorized scope
+  - ACTIVATION_EVIDENCE_PACKAGE    # from completion (#7): the consolidated evidence to roll up
+  - HEALTH_BASELINE                # from preview (#2): the post-activation health comparison baseline
+  - ABORT_CRITERIA                 # from intake (#1): the conditions watched over the soak window
+  - ALL_STAGE_GATE_RESULTS         # every upstream *_GATE_RESULT, for the aggregate rollup
+
+outputs:
+  - POST_ACTIVATION_MONITORING_REPORT   # soak-window health-vs-baseline + abort-breach + stability verdict
+  - ACTIVATION_RUN_GATE_ROLLUP          # per-gate pass/fail rollup over the whole run
+  - POST_ACTIVATION_MONITORING_GATE_RESULT  # single binary terminal gate result
+
+evidence:
+  - POST_ACTIVATION_MONITORING_REPORT
+  - ACTIVATION_RUN_GATE_ROLLUP
+  - POST_ACTIVATION_MONITORING_GATE_RESULT
+
+trace:
+  - activation_transition_trace
+  - post_activation_monitoring_trace        # soak-window observation activity (incl. sub-agent watch)
+  - gate_aggregation_decision_trace          # aggregate go/finalize decision lineage over all stage gates
+  - stage_gate_decision_trace
+  - policy_evaluation_trace
+
+gates:
+  - post_activation_health_within_baseline   # live health does not regress the baseline beyond thresholds
+  - no_post_activation_abort_breach           # no pre-registered abort criterion tripped during the window
+  - activation_stable_over_monitoring_window  # the activation held stable for the full soak window
+  - all_required_gates_passed                 # cross-cutting ROLLUP: every required gate across the run passed
+  - no_blocking_policy_failure                # cross-cutting POLICY: no blocking_condition fired anywhere
+
+on_pass: done
+on_fail: relevant_failed_stage
+# A post-activation health regression / abort breach routes to rollback_readiness (#6) to EXECUTE
+# rollback (runtime_rules by_failure_condition: post_activation_breach -> rollback_readiness); a missing
+# upstream gate routes to that relevant_failed_stage. Never finalizes on failure.
+rework_route: relevant_failed_stage
+
+# Real failure conditions that hard-block finalization (no empty load-bearing field).
+blocking_conditions:
+  - post_activation_health_regressed_beyond_baseline   # live health worse than baseline beyond threshold
+  - post_activation_abort_criterion_breached           # an abort criterion tripped after go-live
+  - activation_unstable_during_monitoring_window        # the activation did not hold stable over the soak
+  - required_gate_unpassed_at_rollup                    # some required gate across the run did not pass
+  - blocking_policy_failure_present                     # an unresolved blocking policy failure remains
+
+optional_conditions: []
+
+# Conditional: public (general-availability) scope warrants a longer/stricter soak than an internal
+# preview/pilot. When public scope was authorized (#5), an extended monitoring window is required;
+# otherwise this gate evaluates pass_if_not_applicable and does not block. Mirrors the research
+# conditional-gate pattern (a *_if_* gate satisfied by an un-suffixed component check).
+conditional_required_gates:
+  - gate: extended_monitoring_window_if_public_scope
+    required_when: requested_activation_scope == public   # general-availability
+    severity: blocker
+    satisfied_by: extended_monitoring_window_completed
+
+max_iterations: 3

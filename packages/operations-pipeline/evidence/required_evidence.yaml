@@ -1,9 +1,18 @@
 required_evidence:
 - INCIDENT_RECORD
+- INTAKE_VALIDATION_REPORT
 - SEVERITY_CLASSIFICATION_REPORT
+- IMPACT_ASSESSMENT_REPORT
+- SLA_AND_RESPONSE_TARGET
 - MITIGATION_PLAN
+- MITIGATION_TYPE_CLASSIFICATION
+- STAKEHOLDER_COMMS_RECORD
 - ROLLBACK_OR_FIX_REPORT
+- RESOLUTION_TYPE_RECORD
 - POSTMORTEM_REPORT
+- POSTMORTEM_REVIEW_RECORD
+- CORRECTIVE_ACTION_REGISTER
+- ACTION_ITEM_VERIFICATION_REPORT
 - OPERATIONAL_LEARNING_RECORD
 required_trace:
 - incident_intake_trace
@@ -11,5 +20,6 @@ required_trace:
 - mitigation_plan_trace
 - rollback_or_fix_trace
 - postmortem_trace
+- corrective_action_tracking_trace
 - learning_update_trace
 - stage_gate_decision_trace

@@ -1,0 +1,51 @@
+id: skill_activation_governance
+name: Skill Activation Governance
+type: skill_governance_profile
+status: candidate
+purpose: 'Standing skill-activation governance (03 §8): every Skill activation must
+  be permission-scoped, respect the skill''s locked semantics + misuse-warnings, and
+  emit a skill-activation trace. The skill-scope governance dimension paired with
+  the skill_activation_trace_schema (Governance != Audit: this MANDATES; the schema
+  RECORDS). Skill != Tool (locked).'
+owner_domain: skill_governance
+allowed_usage:
+- Bind as a skill-class default so every skill activation is governed + traced.
+- Enforce locked semantics + misuse-warning presence at activation time.
+forbidden_usage:
+- Activating a skill outside its locked semantics or without a trace.
+- Used as a tool-call governance profile (Skill != Tool).
+governance_profiles:
+- skill_governance
+- locked_semantics_enforcement_policy
+- trace_required
+audit_schemas:
+- skill_activation_trace_schema
+- stage_gate_trace_schema
+scope: skill
+applies_to:
+- all_skills
+severity_default: blocker
+used_by:
+- prism
+- verification-loop
+- sentinel
+- llm-council
+- fmea
+- adr-builder
+- gap-audit
+- prompt-fidelity
+- calibrate
+- refraction
+- fermi-decompose
+- bayesian-update
+- skill-architect
+- handoff-designer
+- context-pack-builder
+- scanner-result-normalizer
+- evidence-graph-builder
+- release-readiness-judge
+- skill_activation_trace_schema
+notes: 'NEW (reconciliation). Standing skill-activation governance referenced by audit_schemas.yaml
+  (Skill Activation Trace Schema). Distinct from the SDLC stage-03 `skill_governance`
+  (semantic extraction stage) and from skill_must_have_semantic_extraction_before_binding
+  (binding-time policy): this governs activation-time. Ratify in Phase E.'

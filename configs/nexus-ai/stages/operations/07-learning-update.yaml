@@ -1,0 +1,111 @@
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #7 of 7: learning_update (terminal -> done)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4.
+# Field set + rigor ENRICHED to the professional-grade bar (research-pipeline calibration exemplar;
+#   the terminal-aggregate discipline mirrors research research_completion #11).
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.6.
+# refraction is the canonical learning/reflection skill. learning_update is NOT an incident-resolution
+#   blocker (the incident is already mitigated by this point), but the OPERATIONAL_LEARNING_RECORD
+#   evidence item must exist for clean pipeline exit. owner_agent is an Agent role under operations_team
+#   (agent_roles.yaml: operational_learning_agent, reviewed_by operations_team_lead).
+#
+# RENUMBERED: this is now stage #7 of 7 (was #6 of 6). corrective_action_tracking (#6) was inserted
+#   BEFORE it as the prevention/action-item close-the-loop phase, so learning_update now consumes the
+#   verified CORRECTIVE_ACTION_REGISTER rather than the raw postmortem actions, and its on_fail routes
+#   to corrective_action_tracking.
+#
+# PROFESSIONAL-GRADE COVERAGE folded in here (verified-backlog handoff + terminal completeness):
+#   1. SDLC HANDOFF IS TRACKED, NOT JUST PROPOSED. The future-improvement backlog handed toward the
+#      SDLC is derived from the VERIFIED CORRECTIVE_ACTION_REGISTER (#6), so every handed-off item is
+#      already owned + verifiable. Gate improvement_backlog_handed_off is paired with
+#      backlog_items_trace_to_tracked_actions.
+#   2. TERMINAL COMPLETENESS. As the terminal stage, it also confirms the run's required evidence chain
+#      is present (no missing required evidence) before on_pass: done — the operational analogue of
+#      research_completion's aggregate exit check.
+#
+# Depth / reconciliation notes:
+#   - refraction = canonical learning/reflection skill; bayesian-update = update priors on incident
+#     likelihood/recurrence; calibrate = calibrate future severity/effort estimates.
+#   - Hands corrective actions back toward the SDLC Pipeline as a future-improvement backlog
+#     (REFERENCING the SDLC, not regenerating it — agent_roles.yaml forbidden_actions:
+#     regenerate_or_mutate_the_sdlc_pipeline).
+#   - on_fail routes to corrective_action_tracking (#6): if durable learning cannot be derived because
+#     the action register is incomplete, fix the tracking — never skip forward.
+version: draft-0.1
+stage_id: learning_update
+name: Learning Update
+purpose: >-
+  Convert the postmortem and the verified corrective-action register into durable operational learning:
+  update memory with lessons learned, propose runbook/rollback/observability improvements, and hand the
+  future-improvement backlog (derived from already-tracked, owned action items) back toward the SDLC
+  Pipeline as a reference (not a regeneration). As the terminal stage, confirm the run's required
+  evidence chain is present before exit. Produces OPERATIONAL_LEARNING_RECORD.
+
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: operational_learning_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # write durable lessons and recurrence priors into memory
+uses_skills:
+  - refraction       # canonical learning/reflection skill
+  - bayesian-update  # update priors on incident likelihood / recurrence
+  - calibrate        # calibrate future severity/effort estimates
+uses_tools:
+  - memory_write      # persist lessons learned + updated priors (side-effect: governance + trace)
+  - evidence_reader   # read the postmortem + corrective-action register to distil learning
+  - artifact_writer   # write OPERATIONAL_LEARNING_RECORD (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - operations_pipeline_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - operational_learning_evidence_schema   # evidence (decision proof)
+  - stage_gate_trace_schema                # trace (operation history)
+uses_model_provider_profiles:
+  - learning_reflection_model
+uses_context_memory_profiles:
+  - operations_run_context
+  - learning_context_pack
+
+inputs:
+  - POSTMORTEM_REPORT
+  - CORRECTIVE_ACTION_REGISTER       # the VERIFIED, owned, tracked action items from corrective_action_tracking (#6)
+  - ROOT_CAUSE_RECORD                # root cause(s), to anchor the durable lesson (from #5)
+
+outputs:
+  - OPERATIONAL_LEARNING_RECORD          # lessons learned + proposed runbook/rollback/observability improvements
+  - SDLC_IMPROVEMENT_BACKLOG_HANDOFF     # future-improvement backlog handed toward SDLC (references, does not regenerate)
+  - LEARNING_UPDATE_GATE_RESULT          # binary gate result for this terminal stage
+
+evidence:
+  - OPERATIONAL_LEARNING_RECORD
+  - SDLC_IMPROVEMENT_BACKLOG_HANDOFF
+  - LEARNING_UPDATE_GATE_RESULT
+trace:
+  - learning_update_trace
+  - sdlc_backlog_handoff_trace      # the references-not-regenerates handoff lineage
+  - stage_gate_decision_trace
+
+gates:
+  - operational_learning_record_present
+  - improvement_backlog_handed_off
+  - backlog_items_trace_to_tracked_actions   # every handed-off item traces to a tracked corrective action (#6)
+
+on_pass: done
+on_fail: corrective_action_tracking
+rework_route: corrective_action_tracking
+
+blocking_conditions:
+  - operational_learning_record_absent
+  - improvement_backlog_not_handed_off
+  - missing_required_evidence
+
+optional_conditions: []
+
+conditional_required_gates: []
+
+max_iterations: 3

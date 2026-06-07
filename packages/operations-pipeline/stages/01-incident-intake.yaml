@@ -1,79 +1,119 @@
-# Operations Pipeline — Stage Contract
-# Stage #1: incident_intake
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.1.
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #1 of 7: incident_intake
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract).
+# Field set + rigor ENRICHED to the professional-grade bar (same depth as the research-pipeline
+#   calibration exemplar and configs/nexus-ai/stages/sdlc/01-intake.yaml): chained named
+#   inputs/outputs that feed the next stage, multiple gates, populated blocking_conditions, annotated
+#   uses_* lines.
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.1.
 # Top structure: Nexus AI Orchestration Model. operations_pipeline is ONE pipeline under it.
-# owner_agent is a snake_case Agent role under operations_team (md boundary note); a Core Ability
-#   is NEVER an owner_agent. operations_team_lead is a pipeline-specific lead role, NOT Supervisor.
+# owner_agent is a snake_case Agent role under operations_team (agent_roles.yaml: incident_intake_agent,
+#   reviewed_by operations_team_lead); a Core Ability is NEVER an owner_agent. operations_team_lead is a
+#   pipeline-specific lead role, NOT the Supervisor Core Ability.
+#
+# PROFESSIONAL-GRADE COVERAGE folded in here (intake/detection validation — gates, not a padded stage):
+#   A reliable incident process must not act on a bad signal. The prior contract correlated duplicates
+#   but did NOT validate that the signal is real (vs a false positive / flapping alert / test alert) or
+#   corroborate it against monitoring before a severity clock starts. Added gates:
+#     - signal_validated_not_false_positive  (screen flapping/test/self-inflicted-by-deploy alerts)
+#     - monitoring_corroboration_attempted    (cross-check the signal against monitoring_query_tool)
+#   plus the INTAKE_VALIDATION_REPORT output and the matching blocking_conditions. These are facets of
+#   intake, so they belong here rather than in a separate stage.
+#
+# Depth / reconciliation notes:
+#   - No-self-approval: incident_intake is an AUTHORING stage (produces INCIDENT_RECORD); its reviewer
+#     is operations_team_lead (agent_roles.yaml: incident_intake_agent.reviewed_by). No self-approval
+#     conflict here; the structural producer!=validator edges live at rollback_or_fix vs postmortem (#4 vs #5)
+#     and at corrective_action_tracking / postmortem independent review.
+#   - Evidence != Trace kept distinct: evidence = INCIDENT_RECORD / INTAKE_VALIDATION_REPORT /
+#     INCIDENT_INTAKE_GATE_RESULT (decision proof); trace = the operation/decision log items.
+#   - Outputs enriched beyond the bare INCIDENT_RECORD so the downstream severity decision and the
+#     conditional applicability flags chain forward: severity_classification consumes
+#     AFFECTED_CAPABILITY_REF + INITIAL_OBSERVATIONS; the conditional flags (safety-sensitive,
+#     customer-facing, regulated) drive heightened downstream checks (SLA strictness, comms scope,
+#     postmortem requirement). Mirrors how SDLC intake seeds CONDITIONAL_GATE_FLAGS.
 
 version: draft-0.1
 stage_id: incident_intake
 name: Incident Intake
 purpose: >-
-  Receive, deduplicate, and normalize an incident signal (alert, monitoring breach,
-  page, or human/agent report) into a single INCIDENT_RECORD with timeline anchor,
-  affected capability, and initial observations. Correlates alerts so duplicate
-  signals collapse into one incident.
+  Receive, validate, deduplicate, and normalize an incident signal (alert, monitoring breach, page,
+  or human/agent report) into a single INCIDENT_RECORD with timeline anchor, affected capability, and
+  initial observations. Screen the signal for false-positive / flapping / test-alert noise, corroborate
+  it against monitoring before a severity clock starts, correlate duplicate signals into one incident,
+  and initialize the conditional-gate flags (safety-sensitive / customer-facing / regulated) that
+  decide which heightened controls downstream stages must enforce.
 
 owner_team: operations_team
 team_lead: operations_team_lead
 owner_agent: incident_intake_agent
 sub_agents: []
 
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty).
 uses_core_abilities:
-  - Memory
-  - OS
-  - Web
-
+  - Memory   # recall prior incidents on this capability / known flapping signatures
+  - OS       # read live signal/monitoring surfaces the alert originated from
+  - Web      # light validation that the affected capability is the live, released one
 uses_skills:
-  - gap-audit         # completeness of the intake record
-
+  - gap-audit   # completeness of the intake record (no missing capability / timeline / observation)
 uses_tools:
-  - incident_intake_tool
-  - monitoring_query_tool
-  - alert_correlator
-  - artifact_writer
-  - evidence_writer
-
+  - incident_intake_tool     # ingest + normalize the raw signal into an INCIDENT_RECORD
+  - monitoring_query_tool    # corroborate the signal against live monitoring (false-positive screen)
+  - alert_correlator         # collapse duplicate signals into one incident
+  - artifact_writer          # write INCIDENT_RECORD / INTAKE_VALIDATION_REPORT (side-effect: governance + trace)
+  - evidence_writer          # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - operations_pipeline_governance
   - evidence_required_policy
-
 uses_audit_schemas:
   - incident_evidence_schema       # evidence (decision proof)
   - stage_gate_trace_schema        # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - incident_triage_model
-
 uses_context_memory_profiles:
   - operations_run_context
   - incident_context_pack
 
 inputs:
-  - INCIDENT_SIGNAL
+  - INCIDENT_SIGNAL          # raw alert / monitoring breach / page / human-or-agent report (entry_criteria: incident_signal_received)
 
 outputs:
-  - INCIDENT_RECORD
+  - INCIDENT_RECORD              # single normalized record: timeline anchor, affected capability, observations
+  - INTAKE_VALIDATION_REPORT     # false-positive / flapping / test-alert screen + monitoring corroboration result
+  - AFFECTED_CAPABILITY_REF      # the released capability the incident bears on (chains to severity #2 / postmortem #5)
+  - INITIAL_OBSERVATIONS         # first signals/symptoms, for severity + blast-radius reasoning (#2)
+  - INCIDENT_CONDITIONAL_FLAGS   # safety_sensitive / customer_facing / regulated — drive downstream strictness
+  - INCIDENT_INTAKE_GATE_RESULT  # binary gate result for this stage
 
 evidence:
   - INCIDENT_RECORD
-
+  - INTAKE_VALIDATION_REPORT
+  - INCIDENT_INTAKE_GATE_RESULT
 trace:
   - incident_intake_trace
+  - intake_validation_trace          # the false-positive screen + monitoring-corroboration decision lineage
   - stage_gate_decision_trace
 
 gates:
   - incident_record_present
   - affected_capability_identified
   - duplicate_signals_correlated
+  - signal_validated_not_false_positive   # flapping/test/self-inflicted-by-deploy alerts screened out
+  - monitoring_corroboration_attempted     # signal cross-checked against live monitoring before triage
+  - conditional_flags_initialized           # safety / customer-facing / regulated flags resolved for downstream
 
 on_pass: severity_classification
 on_fail: incident_intake
 rework_route: incident_intake
 
+# Real failure conditions that hard-block intake (no empty load-bearing field).
 blocking_conditions:
+  - incident_record_absent
+  - affected_capability_unidentified
+  - signal_is_unvalidated_false_positive
+  - conditional_gate_flags_uninitialized
   - missing_required_evidence
 
 optional_conditions: []

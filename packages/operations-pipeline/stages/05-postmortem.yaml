@@ -1,22 +1,46 @@
-# Operations Pipeline — Stage Contract
-# Stage #5: postmortem
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/04-requirements.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.5.
-# Postmortem is MANDATORY (always required for major_incident / critical_outage_or_safety_event;
-#   a lightweight POSTMORTEM_REPORT is still produced for lower severities so learning_update
-#   always has an input). postmortem_present is a blocker for required severities
-#   (satisfies postmortem_required_gate). no_self_approved_postmortem enforces no_self_approval.
-
+# Nexus AI Orchestration Model — Operations Pipeline
+# Stage #5 of 7: postmortem
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4.
+# Field set + rigor ENRICHED to the professional-grade bar (research-pipeline calibration exemplar;
+#   the independent-review pattern mirrors research cross_validation #8 — producer != validator).
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md §2.5.
+# Postmortem is MANDATORY (always required for major_incident / critical_outage_or_safety_event; a
+#   lightweight POSTMORTEM_REPORT is still produced for lower severities so corrective_action_tracking
+#   and learning_update always have an input). postmortem_present is a blocker for required severities
+#   (satisfies postmortem_required_gate). owner_agent is an Agent role under operations_team
+#   (agent_roles.yaml: postmortem_agent, reviewed_by operations_team_lead).
+#
+# PROFESSIONAL-GRADE COVERAGE folded in here (blameless + INDEPENDENT review + contributing factors):
+#   1. INDEPENDENT REVIEW (producer != validator — the structural keystone of this pipeline). The
+#      postmortem MUST be reviewed by a role that did NOT execute the response. postmortem_agent is
+#      already distinct from incident_response_agent (#4), and agent_roles.yaml forbids
+#      postmortem_an_incident_response_it_executed_as_sole_approver; the review is signed off by
+#      operations_team_lead (postmortem_agent.reviewed_by). Gate postmortem_independently_reviewed makes
+#      that producer!=validator edge explicit and machine-checkable (the no_self_approval_policy edge in
+#      operations_pipeline_runtime_rules.yaml required_gate_producers).
+#   2. BLAMELESS guarantee as an explicit gate (postmortem_is_blameless): the report attributes to
+#      systems/process failure modes, not individuals — a professional postmortem invariant.
+#   3. CONTRIBUTING-FACTOR analysis beyond a single root cause (contributing_factors_identified): real
+#      incidents are multi-causal; corrective actions must address contributing factors too.
+#
+# Depth / reconciliation notes:
+#   - fmea = root-cause / failure-mode + contributing-factor analysis; gap-audit = completeness of
+#     timeline, causes, and corrective actions; calibrate = confidence on root-cause claims.
+#   - Corrective/preventive actions are DEFINED here and CONSUMED by corrective_action_tracking (#6),
+#     which verifies each is tracked with an owner + verification handle before pipeline exit.
+#   - on_fail routes to rollback_or_fix (postmortem reveals the incident is not actually mitigated /
+#     recovery was illusory; return to response).
 version: draft-0.1
 stage_id: postmortem
 name: Postmortem
 purpose: >-
-  Run a blameless postmortem: reconstruct the timeline, identify root cause(s) and
-  contributing failure modes, and produce corrective/preventive actions. Postmortem is
-  mandatory (always required for major_incident and critical_outage_or_safety_event; a
-  lightweight POSTMORTEM_REPORT is still produced for lower severities so learning_update
-  always has an input).
+  Run a blameless postmortem: reconstruct the timeline, identify root cause(s) AND contributing failure
+  modes, and produce corrective/preventive actions — reviewed by a role that did not execute the
+  response (producer != validator). Postmortem is mandatory (always required for major_incident and
+  critical_outage_or_safety_event; a lightweight POSTMORTEM_REPORT is still produced for lower
+  severities so corrective_action_tracking and learning_update always have an input).
 
 owner_team: operations_team
 team_lead: operations_team_lead
@@ -24,32 +48,27 @@ owner_agent: postmortem_agent
 sub_agents: []
 
 uses_core_abilities:
-  - Memory
-  - Supervisor
-
+  - Memory      # recall the full incident lineage (intake -> severity -> mitigation -> execution)
+  - Supervisor  # route the independent-review handoff to operations_team_lead
 uses_skills:
-  - fmea             # root-cause / failure-mode analysis
+  - fmea             # root-cause / failure-mode + contributing-factor analysis
   - gap-audit        # completeness of timeline, causes, and corrective actions
-  - calibrate        # confidence on root-cause claims
-
+  - calibrate        # confidence on root-cause claims (rationale-backed, not asserted)
 uses_tools:
-  - postmortem_builder
-  - evidence_reader
-  - artifact_writer
-  - evidence_writer
-
+  - postmortem_builder   # assemble the timeline, causes and corrective/preventive actions
+  - evidence_reader      # read intake/severity/response evidence to reconstruct the incident
+  - artifact_writer      # write POSTMORTEM_REPORT (side-effect: governance + trace)
+  - evidence_writer      # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - postmortem_required_gate
   - operations_pipeline_governance
-  - no_self_approval_policy
-
+  - no_self_approval_policy      # STRUCTURAL: postmortem reviewer distinct from the response executor
+  - evidence_required_policy
 uses_audit_schemas:
   - postmortem_evidence_schema   # evidence (decision proof)
   - stage_gate_trace_schema      # trace (operation history)
-
 uses_model_provider_profiles:
   - postmortem_reasoning_model
-
 uses_context_memory_profiles:
   - operations_run_context
   - postmortem_context_pack
@@ -58,28 +77,46 @@ inputs:
   - INCIDENT_RECORD
   - SEVERITY_CLASSIFICATION_REPORT
   - ROLLBACK_OR_FIX_REPORT
+  - RESOLUTION_TYPE_RECORD         # temporary vs permanent (from #4); drives the contributing-factor + follow-up analysis
+  - SERVICE_RECOVERY_EVIDENCE      # confirm recovery was real before postmortem accepts it as mitigated (from #4)
 
 outputs:
-  - POSTMORTEM_REPORT
+  - POSTMORTEM_REPORT              # timeline, root cause(s), contributing factors, corrective/preventive actions
+  - ROOT_CAUSE_RECORD              # the identified root cause(s) with confidence
+  - CONTRIBUTING_FACTORS_RECORD    # contributing failure modes beyond the single root cause
+  - CORRECTIVE_ACTION_SET          # corrective/preventive actions, consumed by corrective_action_tracking (#6)
+  - POSTMORTEM_REVIEW_RECORD       # the independent-review sign-off (reviewer != response executor)
+  - POSTMORTEM_GATE_RESULT         # binary gate result for this stage
 
 evidence:
   - POSTMORTEM_REPORT
-
+  - ROOT_CAUSE_RECORD
+  - CORRECTIVE_ACTION_SET
+  - POSTMORTEM_REVIEW_RECORD
+  - POSTMORTEM_GATE_RESULT
 trace:
   - postmortem_trace
+  - postmortem_independent_review_trace   # records the producer->independent-reviewer handoff
   - stage_gate_decision_trace
 
 gates:
-  - postmortem_present              # blocker for required severities — satisfies postmortem_required_gate
+  - postmortem_present                 # blocker for required severities — satisfies postmortem_required_gate
   - root_cause_identified
   - corrective_actions_defined
   - no_self_approved_postmortem
+  - postmortem_is_blameless            # attributes to systems/process, not individuals
+  - contributing_factors_identified    # multi-causal analysis, not a single root cause only
+  - postmortem_independently_reviewed  # reviewed by a role that did not execute the response (producer != validator)
 
-on_pass: learning_update
+on_pass: corrective_action_tracking
 on_fail: rollback_or_fix
 rework_route: rollback_or_fix
 
 blocking_conditions:
+  - postmortem_absent_for_required_severity
+  - root_cause_unidentified
+  - postmortem_not_independently_reviewed
+  - postmortem_assigns_individual_blame
   - postmortem_missing_for_required_severity
   - self_approved_resolution
 

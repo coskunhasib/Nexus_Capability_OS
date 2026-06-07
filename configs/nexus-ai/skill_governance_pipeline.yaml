@@ -1,20 +1,39 @@
 # Skill Governance Pipeline — Pipeline Definition Contract (machine-readable)
-# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§1)
-# Format mirror: configs/nexus-ai/sdlc_pipeline.yaml (field set + order)
+# Machine-readable transcription of the catalog entry, ENRICHED to professional-grade reliability
+# (the sdlc/research quality bar; field set mirrors configs/nexus-ai/sdlc_pipeline.yaml exactly).
+# Source of truth (transcribed, then enriched — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§1)
 # Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §2 (Pipeline Definition Contract)
 # Top structure: Nexus AI Orchestration Model. This is ONE pipeline under it (catalog entry, Phase B / doc 16).
 # Anti-pattern blocked: binding without semantics. Locked semantics enforced:
 #   prism = brainstorming/divergence, verification-loop = bug/defect finding.
+#
+# PROFESSIONAL-GRADE UPGRADE. The catalog's original 7-stage flow was brought to SDLC-level rigor so it
+# can govern a skill's FULL lifecycle (discovery -> semantics -> safety -> binding -> activation ->
+# deprecation) under no-human governance. Coverage changes (all backed by real Shared Registry ids):
+#   - ADDED stage skill_misuse_redteam (#4): an ADVERSARIAL abuse/misuse red-team that probes whether a
+#     skill can be coerced past its locked semantics, driven into unsafe tool delegation, or used as an
+#     injection/poisoning vector. It is a genuinely distinct phase (adversarial execution-surface
+#     testing, NOT misuse-warning documentation) and must precede misuse_warning_generation, which it
+#     now grounds. The ONE new stage. Owner: skill_runtime_safety_agent (no self-approval preserved).
+#   - ADDED gates inside existing stages: provenance verification + version/hash PIN (skill_intake #1);
+#     supply-chain dependency screening + sandbox/least-privilege permission scoping (script_reference_
+#     audit #3); permission-scoped + red-team-clean binding (skill_binding_proposal #6); evidence-chain
+#     + decider-distinct-from-proposer (skill_activation_decision #7); REVOCATION + ROLLBACK on
+#     deprecation (skill_deprecation_update #8).
+#   => 8 stages. No-self-approval preserved: binding proposer (skill_librarian_agent) != activation
+#     decider (skill_runtime_safety_agent). Locked semantics enforced at #2 and re-evaluated at #7.
 version: draft-0.1
 pipeline_id: skill_governance_pipeline
 name: Skill Governance Pipeline
 purpose: >
-  Skill paketlerinin keşfi, zorunlu semantic extraction, script/reference güvenlik
-  denetimi, misuse-warning üretimi, skill-stage binding önerisi, aktivasyon kararı ve
-  deprecation/update yönetimini no-human governance ile yürütmek. Hiçbir skill,
-  semantic extraction tamamlanmadan ve misuse-warning üretilmeden binding'e veya
-  aktivasyona geçemez. prism = brainstorming, verification-loop = bug-finding olarak
-  locked semantics enforce edilir.
+  Skill paketlerinin keşfi ve KAYNAK DOĞRULAMASI (provenance + sürüm/hash pin), zorunlu semantic
+  extraction, script/reference güvenlik denetimi (supply-chain + sandbox/least-privilege scope dahil),
+  adversarial misuse/abuse red-team, misuse-warning üretimi, skill-stage binding önerisi, aktivasyon
+  kararı ve deprecation/revocation/rollback yönetimini no-human governance ile yürütmek. Hiçbir skill,
+  semantic extraction tamamlanmadan, red-team'i geçmeden ve misuse-warning üretilmeden binding'e veya
+  aktivasyona geçemez; binding'i öneren ile aktivasyonu onaylayan ayrışır (no self-approval). prism =
+  brainstorming, verification-loop = bug-finding olarak locked semantics enforce edilir.
 status: draft
 owner_domain: skill_governance
 required_team_type: skill_governance_team
@@ -42,56 +61,85 @@ entry_criteria:
   - SKILL_SOURCE_REFERENCE present (canonical_source or candidate package path/hash)
   - skill_governance_team assigned with skill_governance_team_lead
 
-# Conditions that mark the pipeline complete.
+# Conditions that mark the pipeline complete (md §1 exit_criteria + the professional-grade controls:
+# provenance/pin, supply-chain + sandbox/permission scope, adversarial red-team, revocation+rollback).
 exit_criteria:
+  - SKILL_PROVENANCE_RECORD produced and skill_provenance_verified + skill_version_hash_pinned passed   # provenance + pin (#1)
   - SKILL_SEMANTIC_EXTRACT produced and skill_semantic_required_gate passed
   - SCRIPT_REFERENCE_AUDIT_REPORT produced and script_reference_audit_gate passed
+  - SKILL_PERMISSION_SCOPE_MAP produced and script_sandbox_scoped + least_privilege_permission_scoped passed   # sandbox/scope (#3)
+  - SKILL_MISUSE_REDTEAM_REPORT produced and skill_misuse_redteam_gate passed (no open abuse path)   # adversarial red-team (#4)
   - SKILL_MISUSE_WARNINGS produced and misuse_warning_required_gate passed
   - SKILL_BINDING_PROPOSAL produced (binding never precedes semantics)
-  - SKILL_ACTIVATION_DECISION recorded (activate / hold / deprecate) via skill_activation_decision_gate
+  - SKILL_ACTIVATION_DECISION recorded (activate / hold / deprecate) via skill_activation_decision_gate, decider distinct from proposer
+  - SKILL_DEPRECATION_RECORD produced with revocation + validated rollback when the decision is deprecate (#8)
   - EVIDENCE and TRACE complete for every executed stage
 
-# Pipeline-level conditions that block progression / activation.
+# Pipeline-level conditions that block progression / activation (md §1 + the professional-grade
+# failure conditions surfaced by the added gates).
 blocking_conditions:
   - skill_semantics_unknown
+  - skill_provenance_unverified                  # source not resolved / not attributable (#1)
+  - skill_version_or_hash_unpinned                # no immutable pin -> cannot bind audit to activated bytes (#1)
   - binding_proposed_without_semantics
   - unsafe_skill_script_unmitigated
+  - unvetted_skill_dependency_unmitigated         # supply-chain screening failure (#3)
+  - script_not_sandbox_confined                   # scripts can run outside the sandbox (#3)
+  - over_privileged_script_permission_scope       # permission surface exceeds least-privilege (#3)
+  - locked_semantics_coercion_succeeded           # skill coercible past its locked semantics (#4)
+  - unsafe_tool_delegation_via_skill              # skill coercible into unsafe tool use (#4)
   - missing_misuse_warnings
   - locked_semantics_violation
   - self_approval_of_activation_decision
+  - activated_bytes_do_not_match_pinned_hash      # would activate something other than what was audited (#7)
+  - active_binding_not_revoked_on_deprecation     # deprecated skill left bound (#8)
+  - rollback_unvalidated_or_failed                 # revocation left a broken/unverified state (#8)
 
-# Permitted rework routes. Each entry is a known stage_id.
+# Permitted rework routes (md §1 + the new red-team route). Each value is a known stage_id.
 allowed_rework_routes:
-  - skill_binding_proposal -> skill_semantic_extraction
-  - misuse_warning_generation -> script_reference_audit
-  - script_reference_audit -> skill_semantic_extraction
-  - skill_activation_decision -> skill_binding_proposal
   - skill_semantic_extraction -> skill_intake
+  - script_reference_audit -> skill_semantic_extraction
+  - skill_misuse_redteam -> skill_semantic_extraction
+  - misuse_warning_generation -> skill_misuse_redteam
+  - skill_binding_proposal -> skill_semantic_extraction
+  - skill_activation_decision -> skill_binding_proposal
+  - skill_deprecation_update -> skill_semantic_extraction
 
-# Evidence artifacts the pipeline must produce. Evidence = decision proof, DISTINCT from trace.
+# Evidence artifacts the pipeline must produce (md §1 + the new decision-proof artifacts the
+# professional-grade controls produce). Evidence = decision proof, DISTINCT from trace.
 required_evidence:
   - SKILL_INVENTORY_ENTRY
+  - SKILL_PROVENANCE_RECORD          # source attribution + version/hash pin (skill_intake #1)
   - SKILL_SEMANTIC_EXTRACT
   - SCRIPT_REFERENCE_AUDIT_REPORT
   - SKILL_REFERENCE_INDEX
+  - SKILL_PERMISSION_SCOPE_MAP       # least-privilege scope + sandbox decision (script_reference_audit #3)
+  - SKILL_MISUSE_REDTEAM_REPORT      # adversarial abuse/misuse findings (skill_misuse_redteam #4)
   - SKILL_MISUSE_WARNINGS
   - SKILL_BINDING_PROPOSAL
   - SKILL_ACTIVATION_DECISION
+  - SKILL_DEPRECATION_RECORD         # deprecation + revocation + rollback-validation record (skill_deprecation_update #8)
 
 # Trace records the pipeline must produce. Trace = operation/decision log, DISTINCT from evidence.
 required_trace:
   - skill_package_read_trace
   - skill_semantic_extraction_trace
   - script_static_analysis_trace
+  - skill_misuse_redteam_trace        # adversarial red-team probe activity (#4)
   - misuse_warning_generation_trace
   - skill_binding_proposal_trace
   - skill_activation_decision_trace
   - gate_evaluation_trace
 
+# Canonical stage set (8). skill_misuse_redteam (#4) was ADDED for professional-grade reliability: it
+# adversarially probes the skill BEFORE misuse warnings are authored and before any binding (the one new
+# stage; the other professional controls are gates inside existing stages). Order is load-bearing — the
+# red-team must follow the static script audit and precede misuse_warning_generation.
 stages:
   - skill_intake
   - skill_semantic_extraction
   - script_reference_audit
+  - skill_misuse_redteam
   - misuse_warning_generation
   - skill_binding_proposal
   - skill_activation_decision
@@ -115,30 +163,60 @@ uses_skills:
 
 uses_tools:
   - skill_package_reader
+  - provenance_recorder            # resolve+attribute source and record the version/hash pin (#1)
   - skill_semantic_extractor
   - script_static_analyzer
   - reference_index_builder
+  - dependency_scanner             # supply-chain dependency screening (#3)
+  - package_reputation_checker     # dependency reputation/advisory check (#3)
+  - sbom_generator                 # skill dependency SBOM evidence (#3)
+  - agent_permission_auditor       # sandbox + least-privilege permission scoping (#3, #4)
+  - prompt_injection_tester        # adversarial misuse red-team (#4)
+  - tool_misuse_tester             # adversarial misuse red-team (#4)
+  - context_poisoning_tester       # adversarial misuse red-team (#4)
+  - eval_runner                    # run the adversarial misuse eval suite (#4)
   - skill_binding_proposer
+  - activation_flag_controller     # record activation as an auditable transition; revoke on deprecate (#7, #8)
+  - rollback_executor              # execute rollback on revocation (#8)
+  - rollback_validator             # validate the rollback restored a safe state (#8)
   - artifact_writer
   - evidence_writer
 
 uses_governance_profiles:
   - skill_governance_pipeline_governance
   - skill_semantic_required_gate
+  - skill_must_have_semantic_extraction_before_binding   # dedicated semantics-before-binding anti-pattern guard (#6)
   - script_reference_audit_gate
+  - supply_chain_governance               # dependency/reputation/SBOM screening + provenance (#1, #3)
+  - sandbox_execution_governance          # scripts sandbox-confined (#3)
+  - high_risk_action_default_deny         # least-privilege default-deny permission scope (#3)
+  - agentic_safety_governance             # adversarial misuse/abuse red-team (#4)
+  - tool_misuse_governance                # red-team tool-misuse gate profile (#4)
+  - context_safety_governance             # red-team context-safety gate profile (#4)
   - misuse_warning_required_gate
   - skill_binding_proposal_gate
   - skill_activation_decision_gate
+  - skill_activation_governance           # activate/hold/deprecate decision governance (#7)
+  - rollback_required_gate                # revocation rollback on deprecation (#8)
+  - rollback_runbook_evidence_gate        # rollback execution evidenced (#8)
   - locked_semantics_enforcement_policy
   - no_self_approval_policy
   - evidence_required_policy
 
 uses_audit_schemas:
   - skill_governance_evidence_schema
+  - memory_provenance_schema              # source attribution + version/hash pin record (#1)
   - skill_semantic_extract_schema
   - script_audit_evidence_schema
+  - supply_chain_evidence_schema          # dependency/reputation/SBOM findings (#3)
+  - agentic_eval_evidence_schema          # adversarial red-team findings (#4)
+  - prompt_injection_test_schema          # injection/coercion probe results (#4)
   - skill_misuse_warning_schema
   - skill_binding_decision_schema
+  - activation_decision_evidence_schema   # activate/hold/deprecate decision record (#7)
+  - skill_activation_trace_schema         # activation/revocation state-transition trace (#7, #8)
+  - rollback_readiness_evidence_schema    # rollback readiness (#8)
+  - rollback_validation_schema            # rollback validation result (#8)
   - skill_governance_trace_schema
 
 uses_model_provider_profiles:
@@ -153,20 +231,31 @@ uses_context_memory_profiles:
   - skill_registry_context_pack
 
 # Gate set for this pipeline. `always` gates fire on every run; `conditional` gates are
-# applicability-gated (skill_deprecation_update only runs when deprecation_or_update or a
-# version/hash change applies). Source: md §2 per-stage key gates + §3.2 governance placeholders.
+# applicability-gated. Source: md §2 per-stage key gates + §3.2 governance placeholders, PLUS the
+# professional-grade rollup gates added for the lifecycle upgrade (provenance/pin, supply-chain +
+# sandbox/permission scope, adversarial red-team, decider-distinct, revocation+rollback). Each gate
+# resolves to a producing stage in skill_governance_pipeline_runtime_rules.yaml required_gate_producers.
+# `conditional` carries the deprecation gate (and its supply-chain gate is applicability-gated on
+# script/dependency-bearing skills — see the runtime rules' conditional_required_when notes).
 required_gates:
   always:
-    - skill_intake_inventory_complete
-    - skill_semantic_required_gate
-    - locked_semantics_enforcement_policy
-    - script_reference_audit_gate
-    - reference_index_complete
-    - misuse_warning_required_gate
-    - skill_binding_proposal_gate
-    - skill_activation_decision_gate
+    - skill_intake_inventory_complete                        # producing_stage skill_intake (#1)
+    - skill_provenance_verified                              # NEW: producing_stage skill_intake (#1)
+    - skill_version_hash_pinned                              # NEW: producing_stage skill_intake (#1)
+    - skill_semantic_required_gate                           # producing_stage skill_semantic_extraction (#2)
+    - locked_semantics_enforcement_policy                    # cross-cutting: produced #2, re-evaluated #7
+    - script_reference_audit_gate                            # producing_stage script_reference_audit (#3)
+    - reference_index_complete                               # producing_stage script_reference_audit (#3)
+    - script_sandbox_scoped                                  # NEW: producing_stage script_reference_audit (#3)
+    - least_privilege_permission_scoped                      # NEW: producing_stage script_reference_audit (#3)
+    - skill_misuse_redteam_gate                              # NEW: producing_stage skill_misuse_redteam (#4)
+    - misuse_warning_required_gate                           # producing_stage misuse_warning_generation (#5)
+    - skill_binding_proposal_gate                            # producing_stage skill_binding_proposal (#6)
+    - skill_activation_decision_gate                         # producing_stage skill_activation_decision (#7)
+    - activation_decider_distinct_from_binding_proposer      # NEW (no-self-approval): producing_stage skill_activation_decision (#7)
   conditional:
-    - skill_deprecation_required_gate
+    - skill_supply_chain_screened                            # NEW: producing_stage script_reference_audit (#3); required for script/dependency-bearing skills
+    - skill_deprecation_required_gate                        # producing_stage skill_deprecation_update (#8)
 
 canonical_docs:
   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md

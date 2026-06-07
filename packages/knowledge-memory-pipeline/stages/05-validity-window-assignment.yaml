@@ -1,0 +1,89 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Stage #5 of 7: validity_window_assignment
+# Machine-readable stage contract. Transcribed (not invented) from
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.4,
+#   then ENRICHED to professional-grade reliability (sdlc / research_pipeline bar). RENUMBERED to #5
+#   because the new knowledge_conflict_resolution stage (#4) now precedes it.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+# Pipeline: knowledge_memory_pipeline. owner_agent is a snake_case Agent role under knowledge_team.
+#
+# RECONCILIATION WITH THE NEW #4 (knowledge_conflict_resolution):
+#   The validity window now CONSUMES CONFLICT_RESOLUTION_REPORT. The disposition changes the window:
+#   a candidate that SUPERSEDES an existing memory implies the superseded item's window is closed to
+#   "now"; a COEXIST disposition carries a scope predicate the window must respect; a MERGE inherits
+#   the merged record's window basis. This is why reconciliation must precede window assignment.
+#
+# Depth / reconciliation notes:
+#   - owner_agent kept as canonical validity_window_agent (agent_roles.yaml; owned_stages:
+#     [validity_window_assignment]; reviewed_by: knowledge_team_lead).
+#   - bayesian-update updates validity/staleness expectation as evidence accrues (md §2.4).
+#     validity_window_calculator is caller-locked to validity_window_agent.
+#   - validity_rationale_recorded stays MAJOR (non-blocking) per md §2.4 (routed back, not hard-blocked).
+#   - Evidence != Trace kept distinct.
+version: draft-0.1
+stage_id: validity_window_assignment
+name: Validity Window Assignment
+purpose: >-
+  Assign how long this memory is considered valid — a validity window with a start, an expiry/review
+  horizon, and the rationale — from source trust tier, decay expectations, and the conflict
+  disposition (a superseding item closes the superseded window; a coexisting item carries its scope
+  predicate). Every retained memory carries an explicit window; "no window" is never an allowed state.
+
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: validity_window_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the summary, classification, conflict disposition and prior windows for this source
+uses_skills:
+  - bayesian-update   # update validity / staleness expectation as evidence accrues
+uses_tools:
+  - validity_window_calculator   # compute start / expiry / review horizon (allowed_callers: validity_window_agent)
+  - provenance_recorder          # extend provenance with the window decision (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - validity_window_required_gate
+uses_audit_schemas:
+  - memory_provenance_schema   # evidence schema (the window decision attaches to provenance)
+  - stage_gate_trace_schema    # trace schema (distinct from evidence)
+uses_model_provider_profiles:
+  - knowledge_reasoning_profile
+uses_context_memory_profiles:
+  - knowledge_run_context
+
+inputs:
+  - MEMORY_SUMMARY                 # what is being retained
+  - SOURCE_CLASSIFICATION_REPORT   # trust tier / sensitivity drive the decay expectation
+  - CONFLICT_RESOLUTION_REPORT     # the disposition (supersede/merge/coexist) shapes the window
+  - SUPERSEDED_MEMORY_SET          # windows of superseded memories are closed to "now"
+
+outputs:
+  - VALIDITY_WINDOW_DECISION         # start + expiry/review horizon + rationale
+  - SUPERSEDED_WINDOW_CLOSURE        # the closed windows for any superseded memories
+  - VALIDITY_WINDOW_GATE_RESULT      # binary gate result for this stage
+
+evidence:
+  - VALIDITY_WINDOW_DECISION
+  - VALIDITY_WINDOW_GATE_RESULT
+trace:
+  - validity_window_assignment_trace
+  - gate_decision_trace
+
+# md §2.4 key gates: validity_window_present (blocker); validity_rationale_recorded (MAJOR).
+gates:
+  - validity_window_present       # every retained memory has an explicit validity window
+  - validity_rationale_recorded   # MAJOR: the basis for the window is recorded (non-blocking)
+
+on_pass: retrieval_profile_update
+on_fail: source_classification   # an un-assignable window usually means source tier/sensitivity is unresolved
+rework_route: source_classification
+
+blocking_conditions:
+  - validity_window_missing
+optional_conditions:
+  # md §2.4: validity_rationale_recorded is a MAJOR (non-blocking) gate.
+  - validity_rationale_not_recorded
+conditional_required_gates: []
+
+max_iterations: 3

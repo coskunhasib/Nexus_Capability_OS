@@ -10,7 +10,7 @@ description: 'Live-operations lifecycle for released Nexus AI capabilities: dete
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: 9ed30f2
+  source_commit: 383a28c
   source_path: configs/nexus-ai/operations_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:
@@ -221,13 +221,23 @@ gates:
   set: always
 - id: affected_capability_identified
   set: always
+- id: signal_validated_not_false_positive
+  set: always
 - id: severity_assigned
   set: always
+- id: sla_and_response_target_assigned
+  set: always
 - id: mitigation_plan_present
+  set: always
+- id: mitigation_vs_permanent_fix_classified
   set: always
 - id: rollback_or_fix_executed
   set: always
 - id: runbook_or_rollback_evidence_present
+  set: always
+- id: resolution_type_recorded
+  set: always
+- id: all_corrective_actions_registered
   set: always
 - id: operational_learning_record_present
   set: always
@@ -235,13 +245,24 @@ gates:
   set: always
 - id: postmortem_present_if_required_severity
   set: conditional
+- id: postmortem_independently_reviewed_if_required_severity
+  set: conditional
 evidence:
   required_evidence:
   - INCIDENT_RECORD
+  - INTAKE_VALIDATION_REPORT
   - SEVERITY_CLASSIFICATION_REPORT
+  - IMPACT_ASSESSMENT_REPORT
+  - SLA_AND_RESPONSE_TARGET
   - MITIGATION_PLAN
+  - MITIGATION_TYPE_CLASSIFICATION
+  - STAKEHOLDER_COMMS_RECORD
   - ROLLBACK_OR_FIX_REPORT
+  - RESOLUTION_TYPE_RECORD
   - POSTMORTEM_REPORT
+  - POSTMORTEM_REVIEW_RECORD
+  - CORRECTIVE_ACTION_REGISTER
+  - ACTION_ITEM_VERIFICATION_REPORT
   - OPERATIONAL_LEARNING_RECORD
   required_trace:
   - incident_intake_trace
@@ -249,6 +270,7 @@ evidence:
   - mitigation_plan_trace
   - rollback_or_fix_trace
   - postmortem_trace
+  - corrective_action_tracking_trace
   - learning_update_trace
   - stage_gate_decision_trace
 stages:
@@ -257,4 +279,5 @@ stages:
 - mitigation_plan
 - rollback_or_fix
 - postmortem
+- corrective_action_tracking
 - learning_update

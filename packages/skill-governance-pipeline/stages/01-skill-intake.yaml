@@ -1,39 +1,61 @@
 # Skill Governance Pipeline — Stage Contract 01: skill_intake
-# Transcribed from: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.1)
-# Format mirror: configs/nexus-ai/stages/sdlc/01-intake.yaml
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — not invented):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md (§2.1)
+# Field set + rigor mirror configs/nexus-ai/stages/research/01-research-intake.yaml and
+#   configs/nexus-ai/stages/sdlc/01-intake.yaml (annotated chained inputs/outputs, multiple gates,
+#   populated blocking_conditions, annotated uses_* lines).
 # Conforms to: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Stage Contract)
-# Pipeline: skill_governance_pipeline. Stage #1 of 7. Stage class: always-on.
+# Pipeline: skill_governance_pipeline. Stage #1 of 8. Stage class: always-on.
+#
+# PROFESSIONAL-GRADE COVERAGE ADDED IN THIS STAGE (provenance + version/hash pinning):
+#   The md purpose names canonical_source + sürüm/hash, but the prior contract enforced ONLY an
+#   advisory "package readable" gate — provenance and pin were never gated. For no-human governance an
+#   unverified-provenance or unpinned candidate is an injection / supply-chain substitution vector
+#   (the very package audited downstream could differ from the one activated). Added, as GATES of this
+#   stage (not a padded new stage — provenance + pin are intake's job):
+#     1. skill_provenance_verified  — canonical_source resolves and is attributable (provenance_recorder).
+#     2. skill_version_hash_pinned  — an immutable version + content hash is recorded so every later
+#        stage (audit/redteam/binding/activation) and the deprecation re-validation pin to the SAME
+#        bytes. This is the anchor for skill_deprecation_update (#8) version/hash re-validation.
+#   Outputs SKILL_PROVENANCE_RECORD (decision-proof evidence). No new role; skill_librarian_agent owns
+#   intake already.
 version: draft-0.1
 stage_id: skill_intake
 name: Skill Intake
 purpose: >-
-  Aday skill paketini envantere alır, canonical_source, sürüm/hash ve risk
-  profilini kaydeder. SKILL.md dışında scripts/**, references/**, assets/** ve
-  metadata varlığını tespit eder (yalnız envanter; semantik henüz çıkarılmaz).
+  Aday skill paketini envantere alır ve KAYNAĞINI DOĞRULAR: canonical_source'u çözüp
+  attributable olduğunu teyit eder, immutable sürüm + içerik hash'ini PIN'ler ve risk
+  profilini kaydeder. SKILL.md dışında scripts/**, references/**, assets/** ve metadata
+  varlığını tespit eder (yalnız envanter + provenance/pin; semantik henüz çıkarılmaz). Pin
+  edilen hash, sonraki tüm stage'lerin ve deprecation yeniden-doğrulamasının aynı baytlara
+  bağlanmasını sağlar.
 owner_team: skill_governance_team
 team_lead: skill_governance_team_lead
 owner_agent: skill_librarian_agent
 sub_agents: []
 
 uses_core_abilities:
-  - Memory
-  - OS
+  - Memory   # recall prior inventory / registry state to detect re-intake of a known skill
+  - OS       # read the candidate package tree (SKILL.md, scripts/**, references/**, assets/**, metadata)
 
 uses_skills:
-  - gap-audit
+  - gap-audit   # detect missing package parts / unresolved canonical_source / missing pin
 
 uses_tools:
-  - skill_package_reader
-  - artifact_writer
-  - evidence_writer
+  - skill_package_reader   # read SKILL.md / scripts / references / assets / metadata (trace: skill_package_read_trace)
+  - provenance_recorder    # resolve + attribute canonical_source and record the version/content-hash pin (side-effect: governance + trace)
+  - artifact_writer        # write SKILL_INVENTORY_ENTRY / SKILL_PROVENANCE_RECORD (side-effect: governance + trace)
+  - evidence_writer        # write stage evidence (side-effect: governance + trace)
 
 uses_governance_profiles:
   - skill_governance_pipeline_governance
+  - supply_chain_governance      # provenance / source attribution is a supply-chain control at intake
   - evidence_required_policy
 
 uses_audit_schemas:
-  - skill_governance_evidence_schema
-  - skill_governance_trace_schema
+  - skill_governance_evidence_schema   # evidence schema: the inventory entry
+  - memory_provenance_schema           # evidence schema: source attribution + version/hash pin record
+  - skill_governance_trace_schema      # trace schema (distinct from evidence)
 
 uses_model_provider_profiles:
   - skill_governance_reasoning_profile
@@ -43,19 +65,26 @@ uses_context_memory_profiles:
   - skill_registry_context_pack
 
 inputs:
-  - SKILL_SOURCE_REFERENCE
+  - SKILL_SOURCE_REFERENCE         # canonical_source OR candidate package path/hash (entry_criteria)
 outputs:
-  - SKILL_INVENTORY_ENTRY
+  - SKILL_INVENTORY_ENTRY          # inventoried package parts + risk profile
+  - SKILL_PROVENANCE_RECORD        # resolved+attributed source and the immutable version/content-hash pin
 
 evidence:
   - SKILL_INVENTORY_ENTRY
+  - SKILL_PROVENANCE_RECORD
 trace:
   - skill_package_read_trace
   - gate_evaluation_trace
 
-# key gate: skill_intake_inventory_complete (advisory -> blocker if package unreadable)
+# key gates:
+#   skill_intake_inventory_complete (advisory -> blocker if package unreadable);
+#   skill_provenance_verified (blocker) — canonical_source resolves and is attributable;
+#   skill_version_hash_pinned (blocker) — an immutable version + content hash is recorded.
 gates:
   - skill_intake_inventory_complete
+  - skill_provenance_verified
+  - skill_version_hash_pinned
 
 on_pass: skill_semantic_extraction
 on_fail: skill_intake
@@ -64,6 +93,8 @@ rework_route: skill_intake
 blocking_conditions:
   - skill_package_unreadable
   - canonical_source_unresolved
+  - skill_provenance_unverified          # source does not resolve / is not attributable
+  - skill_version_or_hash_unpinned        # no immutable version+hash recorded -> downstream cannot pin to fixed bytes
 optional_conditions: []
 conditional_required_gates: []
 

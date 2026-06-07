@@ -1,0 +1,23 @@
+id: tool_misuse_governance
+name: Tool Misuse Governance
+type: stage_governance_profile
+status: canonical
+purpose: Stage-18 governance over tool-misuse / unsafe tool-call defects found via
+  verification-loop (defect sweep).
+owner_domain: ai_safety
+allowed_usage:
+- Govern tool-misuse defect findings in agentic safety evaluation.
+forbidden_usage:
+- Used outside ai_agent_safety_evaluation.
+governance_profiles:
+- agentic_safety_governance
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- ai_agent_safety_evaluation
+severity_default: blocker
+used_by:
+- ai_agent_safety_evaluation
+notes: Stage 18 sub-profile.

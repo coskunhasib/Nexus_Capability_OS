@@ -53,7 +53,8 @@ routing_terminals:
 #   run must satisfy. Each gate name is SATISFIED BY a specific stage's gate decision; without an
 #   explicit map a checker cannot prove each required gate has a real producer (the gate name would
 #   be a dangling edge: present in required_gates, resolving to nothing). This block resolves that
-#   edge for every gate in required_gates (10 always + 2 conditional).
+#   edge for every gate in required_gates (18 always + 4 conditional after the professional-grade
+#   upgrade: +1 stage knowledge_conflict_resolution and +folded gates).
 #
 # AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/knowledge-memory/*.yaml
 #   (the stage whose `gates:` list contains the gate); the producing_rule is a gate-bearing
@@ -63,20 +64,23 @@ routing_terminals:
 # CHECKER CONTRACT (how to verify): for each entry, assert
 #   (a) `gate` ∈ knowledge_memory_pipeline.yaml required_gates.always (tier=always) or
 #       required_gates.conditional (tier=conditional),
-#   (b) `producing_stage` ∈ the canonical 6-stage set (or `pipeline` for a policy gate),
+#   (b) `producing_stage` ∈ the canonical 7-stage set (or `pipeline` for a policy gate),
 #   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
 #       stage's uses_governance_profiles (policy gates exempt — see note),
 #   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
 # Any unmet assertion = a dangling required-gate edge.
 required_gate_producers:
-  scope: knowledge_memory_required_gates_all   # every gate in required_gates (10 always + 2 conditional)
+  scope: knowledge_memory_required_gates_all   # every gate in required_gates (18 always + 4 conditional)
   note: >-
     Each gate in knowledge_memory_pipeline.yaml required_gates is SATISFIED BY the producing stage's
     gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
     redefine any stage gate and does NOT alter knowledge_memory_pipeline.yaml (which stays
     schema-valid). The one cross-cutting policy gate
     (team_lead_cannot_self_approve_or_bypass_gate) has no single producing stage and is recorded
-    with producing_stage: pipeline.
+    with producing_stage: pipeline. NOTE: right_to_be_forgotten_honored_if_requested resolves to
+    memory_source_governance because no dedicated right-to-be-forgotten / deletion governance profile
+    exists in the shared registry (deletion gates are SDLC-stage-19-locked) — flagged as a missing
+    capability in knowledge_memory_pipeline.yaml.
   gates:
     - gate: intake_metadata_complete                    # required_gates.always
       tier: always
@@ -92,6 +96,16 @@ required_gate_producers:
       satisfied_by_stage_gates:
         - provenance_seed_recorded
 
+    - gate: target_scope_declared                       # required_gates.always (NEW)
+      tier: always
+      producing_stage: memory_intake                    # stage #1
+      producing_rule: memory_source_governance          # in memory_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - target_scope_declared
+      note: >-
+        Added gate: the declared target knowledge scope (md entry_criterion
+        target_knowledge_scope_declared) is checked at intake so no item proceeds unscoped.
+
     - gate: source_trust_tier_assigned                  # required_gates.always
       tier: always
       producing_stage: source_classification            # stage #2
@@ -106,6 +120,17 @@ required_gate_producers:
       satisfied_by_stage_gates:
         - sensitivity_classified
 
+    - gate: sensitive_content_detection_complete        # required_gates.always (NEW)
+      tier: always
+      producing_stage: source_classification            # stage #2
+      producing_rule: redaction_required_gate           # in source_classification.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - sensitive_content_detection_complete
+      note: >-
+        Added gate. PII / secret / regulated-content detection must actually run; this is what makes
+        the conditional redaction_applied_if_required gate meaningful (it fires when detection finds
+        redactable content). Detection decomposed to sensitive_content_detection_subagent.
+
     - gate: summary_grounded_in_source                  # required_gates.always
       tier: always
       producing_stage: summary_generation               # stage #3
@@ -115,6 +140,52 @@ required_gate_producers:
       note: >-
         BLOCKER gate. The stage's other gate, summary_confidence_calibrated, is MAJOR (non-blocking)
         and is NOT in required_gates; it is routed back via rework rather than hard-blocked.
+
+    - gate: no_unsupported_claim_in_summary             # required_gates.always (NEW)
+      tier: always
+      producing_stage: summary_generation               # stage #3
+      producing_rule: memory_source_governance          # in summary_generation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - no_unsupported_claim_in_summary
+      note: >-
+        Added grounding / no-hallucination blocker: every summary claim must map to a source span
+        (SUMMARY_GROUNDING_REPORT). Stops a curated memory entering the corpus with unsupported facts.
+
+    - gate: corpus_conflict_scan_complete               # required_gates.always (NEW)
+      tier: always
+      producing_stage: knowledge_conflict_resolution    # stage #4 (NEW)
+      producing_rule: memory_source_governance          # in knowledge_conflict_resolution.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - corpus_conflict_scan_complete
+      note: >-
+        Added stage gate: the candidate was actually compared against the existing corpus (no silent
+        skip). Detection decomposed to corpus_conflict_detection_subagent.
+
+    - gate: duplicate_resolution_recorded               # required_gates.always (NEW)
+      tier: always
+      producing_stage: knowledge_conflict_resolution    # stage #4 (NEW)
+      producing_rule: memory_source_governance
+      satisfied_by_stage_gates:
+        - duplicate_resolution_recorded
+      note: Every detected duplicate has an explicit disposition (supersede/merge/coexist/reject).
+
+    - gate: contradiction_resolution_recorded           # required_gates.always (NEW)
+      tier: always
+      producing_stage: knowledge_conflict_resolution    # stage #4 (NEW)
+      producing_rule: memory_source_governance
+      satisfied_by_stage_gates:
+        - contradiction_resolution_recorded
+      note: Every detected contradiction has an explicit disposition.
+
+    - gate: no_unresolved_contradiction_admitted        # required_gates.always (NEW)
+      tier: always
+      producing_stage: knowledge_conflict_resolution    # stage #4 (NEW)
+      producing_rule: memory_source_governance
+      satisfied_by_stage_gates:
+        - no_unresolved_contradiction_admitted
+      note: >-
+        No contradiction is left open for a memory that will become retrievable — the load-bearing
+        corpus-integrity blocker of the new reconciliation stage.
 
     - gate: validity_window_present                     # required_gates.always
       tier: always
@@ -145,10 +216,24 @@ required_gate_producers:
 
     - gate: expiration_outcome_recorded                # required_gates.always
       tier: always
-      producing_stage: memory_expiration_review         # stage #6
+      producing_stage: memory_expiration_review         # stage #7 (terminal)
       producing_rule: validity_window_required_gate     # governance_profiles.yaml; in memory_expiration_review.uses_governance_profiles
       satisfied_by_stage_gates:
         - expiration_outcome_recorded
+
+    - gate: memory_provenance_evidence_complete         # required_gates.always (NEW)
+      tier: always
+      producing_stage: memory_expiration_review         # stage #7 (terminal)
+      producing_rule: memory_source_governance          # in memory_expiration_review.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - memory_provenance_evidence_complete
+      note: >-
+        Added terminal rollup gate. Confirms the item's end-to-end provenance chain is unbroken
+        (intake seed -> classification + detection -> summary linkage -> reconciliation disposition ->
+        validity window -> retrieval change -> expiration/deletion outcome), satisfying the pipeline
+        exit_criterion memory_provenance_evidence_complete and the provenance_record_missing blocker.
+        Chain assembly decomposed to memory_lifecycle_audit_subagent; the parent decides the gate
+        (no-self-approval: memory_expiration_agent authored none of the upstream artifacts).
 
     - gate: team_lead_cannot_self_approve_or_bypass_gate  # required_gates.always
       tier: always
@@ -175,18 +260,49 @@ required_gate_producers:
         does not require redaction the gate evaluates to pass_if_applicable; when it does, redaction
         must be applied before source_classification may pass.
 
+    - gate: superseded_memory_removed_from_retrieval    # required_gates.conditional (NEW)
+      tier: conditional
+      producing_stage: retrieval_profile_update         # stage #6
+      producing_rule: memory_source_governance          # in retrieval_profile_update.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - superseded_memory_removed_from_retrieval
+      conditional_required_when: >-
+        superseded_memory_set_non_empty == true
+      note: >-
+        Conditional BLOCKER (stage #6 conditional_required_gates). When reconciliation (#4) produced a
+        non-empty superseded set, those memories must be removed from the active retrieval profile in
+        the same update; otherwise the gate evaluates to pass_if_applicable. Enforces the #4 supersede
+        decision at the retrieval boundary so old and new contradictory memories are not both live.
+
     - gate: expired_memory_retired_from_retrieval       # required_gates.conditional
       tier: conditional
-      producing_stage: memory_expiration_review         # stage #6
+      producing_stage: memory_expiration_review         # stage #7 (terminal)
       producing_rule: validity_window_required_gate     # governance_profiles.yaml; in memory_expiration_review.uses_governance_profiles
       satisfied_by_stage_gates:
         - expired_memory_retired_from_retrieval
       conditional_required_when: >-
         outcome == expired
       note: >-
-        Conditional BLOCKER (stage #6 conditional_required_gates). When the expiration outcome is
+        Conditional BLOCKER (stage #7 conditional_required_gates). When the expiration outcome is
         `expired` the memory must be retired from retrieval before the run may complete; otherwise
         the gate evaluates to pass_if_applicable.
+
+    - gate: right_to_be_forgotten_honored_if_requested  # required_gates.conditional (NEW)
+      tier: conditional
+      producing_stage: memory_expiration_review         # stage #7 (terminal)
+      producing_rule: memory_source_governance          # in memory_expiration_review.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - right_to_be_forgotten_honored_if_requested
+      conditional_required_when: >-
+        deletion_requested == true or right_to_be_forgotten_requested == true
+      note: >-
+        Conditional BLOCKER (stage #7 conditional_required_gates) gated by
+        DELETION_REQUEST_APPLICABILITY_DECISION. When an on-demand deletion / right-to-be-forgotten
+        request is present, the item AND its retrieval exposure AND its derived summaries must be
+        removed with a deletion provenance record; otherwise the gate evaluates to pass_if_applicable.
+        producing_rule is memory_source_governance because NO dedicated right-to-be-forgotten /
+        deletion governance profile exists in the shared registry (deletion gates are
+        SDLC-stage-19-locked) — REPORTED as a missing capability.
 
   invariants:
     - Every `gate` MUST exist in configs/nexus-ai/knowledge_memory_pipeline.yaml required_gates
@@ -205,14 +321,15 @@ required_gate_producers:
 # =====================================================================================
 rework_routing_table:
 
-  # -- Authoritative per-stage routes (complete; covers all 6 canonical stages) ----------
+  # -- Authoritative per-stage routes (complete; covers all 7 canonical stages) ----------
   # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
-  # Values copied from each stage's own canonical `rework_route` in
+  # Values copied from each stage's own canonical `rework_route`/`on_fail` in
   # configs/nexus-ai/stages/knowledge-memory/*.yaml.
   by_stage:
     memory_intake: memory_intake
     source_classification: memory_intake
     summary_generation: source_classification
+    knowledge_conflict_resolution: summary_generation     # NEW stage #4 on_fail target
     validity_window_assignment: source_classification
     retrieval_profile_update: validity_window_assignment
     memory_expiration_review: validity_window_assignment
@@ -223,6 +340,7 @@ rework_routing_table:
   allowed_rework_routes:
     - source_classification -> memory_intake
     - summary_generation -> source_classification
+    - knowledge_conflict_resolution -> summary_generation
     - validity_window_assignment -> source_classification
     - retrieval_profile_update -> validity_window_assignment
     - memory_expiration_review -> validity_window_assignment

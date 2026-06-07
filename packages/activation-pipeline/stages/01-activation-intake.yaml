@@ -1,80 +1,116 @@
-# Activation Pipeline — Stage Contract
-# Stage #1: activation_intake
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.1.
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #1 of 8: activation_intake
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability — the SDLC/research bar):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.1.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml and the research
+#   calibration exemplar configs/nexus-ai/stages/research/01-research-intake.yaml (rich chained
+#   inputs/outputs that seed downstream stages, multiple gates, populated blocking_conditions,
+#   annotated uses_* lines).
+# Pipeline: activation_pipeline (configs/nexus-ai/activation_pipeline.yaml).
+#
 # Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# owner_agent is a snake_case Agent role under activation_team (md §2 boundary note); a Core
-#   Ability is NEVER an owner_agent. activation_team_lead is a pipeline-specific lead role, NOT Supervisor.
+# owner_agent is a snake_case Agent role under activation_team (md §2 boundary note); a Core Ability
+#   is NEVER an owner_agent. activation_team_lead is a pipeline-specific lead role, NOT Supervisor.
+#
+# PROFESSIONAL-GRADE COVERAGE folded into intake (staged-activation reliability):
+#   The catalog's intake captured scope/cohorts/rollback-owner but pre-registered NO blast-radius
+#   ceiling and NO abort criteria. Professional staged activation pre-commits, BEFORE any exposure,
+#   (a) the maximum blast radius (cohort ceiling / scope cap) so pilot exposure cannot silently widen,
+#   and (b) explicit, machine-checkable ABORT_CRITERIA (health/error/incident thresholds that auto-
+#   trigger rollback). These are pre-registered here so the pilot canary gate (#3) and the post-
+#   activation monitoring window (#8) have a fixed bar to check against (auditable, not post-hoc).
+#   Added gates: blast_radius_limit_defined, abort_criteria_defined. Added outputs: BLAST_RADIUS_LIMIT,
+#   ABORT_CRITERIA. This mirrors how research intake (#1) seeds RESEARCH_CONDITIONAL_FLAGS for
+#   downstream if-applicable gates.
+#
+# No-self-approval: activation_intake is an AUTHORING stage (it produces ACTIVATION_REQUEST). Its
+#   reviewer is activation_reviewer_agent (agent_roles.yaml: activation_manager_agent.reviewed_by),
+#   so there is no self-approval conflict here; the structural separate-owner gates live at
+#   pilot_evidence_review (#4) and the human/owner gate public_activation_decision (#5).
 
 version: draft-0.1
 stage_id: activation_intake
 name: Activation Intake
 purpose: >-
-  Capture the activation request; confirm the target is an SDLC release candidate
-  (or higher) with required evidence; define activation scope, target cohorts, and
-  the rollback owner. Establishes which staged scope (preview / pilot / public) is
-  being requested.
+  Capture the activation request; confirm the target is an SDLC release candidate (or higher) with
+  required evidence; define the requested staged scope (preview / pilot / public), target cohorts,
+  the rollback owner, the maximum blast-radius ceiling, and the explicit abort criteria that downstream
+  stages enforce. Emit a faithful ACTIVATION_REQUEST plus the pre-registered safety envelope
+  (blast-radius limit + abort criteria) that the pilot canary gate and post-activation monitoring
+  window check against. Establishes which staged scope is being requested and gates the run's start.
 
 owner_team: activation_team
 team_lead: activation_team_lead
 owner_agent: activation_manager_agent
 sub_agents: []
 
+# Shared Registry + Usage Mapping (all 7 categories present, even if empty).
+# uses_* are a SUBSET of activation_manager_agent's declared capabilities in agent_roles.yaml
+# (no dangling caller edge into the shared Tools/Skills registries).
 uses_core_abilities:
-  - Memory
-  - Web
-
+  - Memory   # recall prior activations of this target / requester context and standing scope conventions
+  - Web      # light validation that the target + its SDLC release-candidate evidence are reachable
 uses_skills:
-  - gap-audit         # surface missing scope / cohorts / release-candidate evidence
-  - prompt-fidelity   # keep the captured request faithful to the stated activation intent
-
+  - gap-audit         # surface missing scope / cohorts / release-candidate evidence / abort criteria
+  - prompt-fidelity   # keep the captured request faithful to the stated activation intent (no scope drift)
 uses_tools:
-  - artifact_writer
-  - evidence_writer
-  - evidence_reader   # confirm SDLC release-candidate evidence is present
-  - policy_query
-
+  - evidence_reader   # confirm SDLC release-candidate evidence is present (read-only)
+  - artifact_writer   # write ACTIVATION_REQUEST + safety envelope (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+  - policy_query      # query activation scope/blast-radius policy-as-data (side-effect-free)
 uses_governance_profiles:
   - activation_pipeline_governance
   - evidence_required_policy
-
 uses_audit_schemas:
   - activation_evidence_schema       # evidence (decision proof)
   - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
-
 uses_context_memory_profiles:
   - activation_run_context
   - preview_context_pack
 
 inputs:
-  - ACTIVATION_REQUEST_INTENT
-  - SDLC_RELEASE_CANDIDATE_EVIDENCE
+  - ACTIVATION_REQUEST_INTENT        # requester's raw ask (target, desired scope, timing)
+  - SDLC_RELEASE_CANDIDATE_EVIDENCE  # entry guard: the upstream RELEASE_EVIDENCE / RC report
 
 outputs:
-  - ACTIVATION_REQUEST
+  - ACTIVATION_REQUEST               # target, requested staged scope, target cohorts, rollback owner
+  - ACTIVATION_SCOPE_DECISION        # resolved preview/pilot/public scope (drives conditional gates)
+  - BLAST_RADIUS_LIMIT               # max cohort %/scope ceiling; consumed by pilot_activation (#3)
+  - ABORT_CRITERIA                   # health/error/incident thresholds that auto-trigger rollback (#3,#8)
+  - ACTIVATION_INTAKE_GATE_RESULT    # binary gate result for the intake stage
 
 evidence:
   - ACTIVATION_REQUEST
+  - ACTIVATION_SCOPE_DECISION
+  - ABORT_CRITERIA
+  - ACTIVATION_INTAKE_GATE_RESULT
 
 trace:
   - activation_transition_trace
   - stage_gate_decision_trace
+  - policy_evaluation_trace          # policy_query side-effect-free policy lookups
 
 gates:
-  - release_candidate_evidence_present
-  - activation_scope_defined
-  - rollback_owner_assigned
+  - release_candidate_evidence_present   # target is an SDLC release candidate (or higher) with evidence
+  - activation_scope_defined             # requested preview/pilot/public scope + cohorts explicit
+  - rollback_owner_assigned              # a named rollback owner exists before any exposure
+  - blast_radius_limit_defined           # max blast radius (cohort/scope ceiling) pre-registered
+  - abort_criteria_defined               # explicit machine-checkable abort/stop thresholds pre-registered
 
 on_pass: superadmin_preview
 on_fail: activation_intake
 rework_route: activation_intake
 
+# Real failure conditions that hard-block intake (no empty load-bearing field).
 blocking_conditions:
-  - missing_release_candidate_evidence
+  - missing_release_candidate_evidence       # def blocking_condition (pipeline entry guard)
+  - activation_scope_undefined               # requested scope / cohorts not stated
+  - rollback_owner_unassigned                # no accountable rollback owner
+  - blast_radius_limit_undefined             # exposure ceiling not pre-registered (uncapped pilot risk)
+  - abort_criteria_undefined                 # no pre-registered auto-rollback thresholds
 
 optional_conditions: []
 

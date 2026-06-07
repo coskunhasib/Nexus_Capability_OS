@@ -1,83 +1,122 @@
-# Activation Pipeline — Stage Contract
-# Stage #3: pilot_activation
-# Format: docs/nexus-ai-orchestration-model/legacy/07-pipeline-contract-standard.md §4 (Pipeline Stage Contract)
-# Mirrors: configs/nexus-ai/stages/sdlc/01-intake.yaml field set.
-# Transcribed from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.3.
-# Top structure: Nexus AI Orchestration Model. activation_pipeline is ONE pipeline under it.
-# owner_agent is a snake_case Agent role under activation_team; a Core Ability is NEVER an owner_agent.
-# Pilot must run against a defined cohort with rollback reachable at all times (md §2.3).
+# Nexus AI Orchestration Model — Activation Pipeline
+# Stage #3 of 8: pilot_activation
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Source of truth (transcribed, then ENRICHED to professional-grade reliability):
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2.3.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/24-performance-resilience.yaml-style
+#   telemetry/threshold gate contracts.
+# Pipeline: activation_pipeline. owner_agent is a snake_case Agent role under activation_team.
+#   Pilot must run against a defined cohort with rollback reachable at all times (md §2.3).
+#
+# PROFESSIONAL-GRADE COVERAGE folded into pilot (the canary phase of staged activation):
+#   1. CANARY / HEALTH-METRIC GATE. The catalog pilot collected telemetry but had NO live health gate
+#      comparing pilot telemetry to the pre-exposure HEALTH_BASELINE (#2). Added:
+#      pilot_health_within_canary_thresholds gate + CANARY_HEALTH_REPORT output. This is the live
+#      "is the pilot regressing the baseline?" guard, distinct from the separate-owner acceptance
+#      review at #4.
+#   2. BLAST-RADIUS ENFORCEMENT. The catalog bounded the cohort but did not re-check it against the
+#      pre-registered ceiling. Added: blast_radius_within_limit gate against BLAST_RADIUS_LIMIT (#1).
+#   3. ABORT-CRITERIA ENFORCEMENT. Added: no_abort_condition_breached gate against ABORT_CRITERIA (#1)
+#      — if a pre-registered abort threshold trips during the pilot, the run does NOT pass forward; it
+#      routes to rollback_readiness (#6) to exercise rollback before any retry.
+#
+# TOOL RECONCILIATION (fixes a latent over-claim in the prior contract):
+#   The prior pilot contract listed rollback_executor in uses_tools, but tools_registry.yaml restricts
+#   rollback_executor.allowed_callers to [rollback_readiness_agent, incident_response_agent] — NOT
+#   pilot_activation_agent. The pilot OWNER does not execute rollback; it keeps rollback REACHABLE
+#   (a readiness assertion, gated by rollback_reachable_during_pilot) and routes to rollback_readiness
+#   (#6) if the pilot is unsafe. rollback_executor is therefore removed here (it stays in #6, whose
+#   owner rollback_readiness_agent IS its allowed caller), eliminating a dangling caller edge.
+#   uses_* are now a SUBSET of pilot_activation_agent's declared capabilities (agent_roles.yaml).
 
 version: draft-0.1
 stage_id: pilot_activation
 name: Pilot Activation
 purpose: >-
-  Activate the target for a bounded pilot cohort selected via the cohort selector.
-  Collect real-usage telemetry and incident signals under controlled exposure.
-  Pilot must run against a defined cohort with rollback reachable at all times.
+  Activate the target for a bounded pilot cohort selected via the cohort selector, within the
+  pre-registered blast-radius ceiling, collecting real-usage telemetry and incident signals under
+  controlled exposure. Continuously compare pilot health to the HEALTH_BASELINE (canary gate) and to
+  the pre-registered ABORT_CRITERIA; keep rollback reachable at all times. If a canary threshold or an
+  abort criterion trips, do NOT pass forward — route to rollback_readiness to exercise rollback before
+  any retry.
 
 owner_team: activation_team
 team_lead: activation_team_lead
 owner_agent: pilot_activation_agent
 sub_agents: []
 
+# uses_* are a SUBSET of pilot_activation_agent's declared capabilities (agent_roles.yaml):
+#   skills [sentinel, gap-audit, calibrate]; tools [activation_flag_controller, cohort_selector,
+#   telemetry_reader, artifact_writer, evidence_writer]; core [Supervisor, Memory, OS].
 uses_core_abilities:
-  - OS                # execute the pilot activation under controlled exposure
-  - Memory
-  - Web
-
+  - OS       # execute the pilot activation under controlled, cohort-bounded exposure
+  - Memory   # recall the baseline, blast-radius limit and abort criteria for live comparison
 uses_skills:
-  - sentinel          # premortem/foresight on pilot exposure risk
-  - gap-audit         # confirm pilot telemetry coverage
-
+  - sentinel    # premortem/foresight on pilot exposure risk before widening any exposure
+  - gap-audit   # confirm pilot telemetry coverage spans every baseline / abort-criterion signal
+  - calibrate   # keep the canary health verdict rationale-backed against the baseline, not asserted
 uses_tools:
-  - activation_flag_controller
-  - cohort_selector              # select the bounded pilot cohort
-  - rollback_executor            # keep rollback reachable during the pilot
-  - telemetry_reader             # collect real-usage telemetry and incident signals
-  - artifact_writer
-  - evidence_writer
-  - policy_query
-
+  - activation_flag_controller   # scope the activation flag to the bounded pilot cohort
+  - cohort_selector              # select the bounded pilot cohort within the blast-radius limit
+  - telemetry_reader             # collect real-usage telemetry/incident signals; compute the canary delta
+  - artifact_writer              # write PILOT_RESULT + CANARY_HEALTH_REPORT (side-effect: governance + trace)
+  - evidence_writer              # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - activation_pipeline_governance
   - evidence_required_policy
-
 uses_audit_schemas:
   - activation_evidence_schema       # evidence (decision proof)
   - stage_gate_trace_schema          # trace (operation history) — kept distinct from evidence
-
 uses_model_provider_profiles:
   - activation_reasoning_model
-  - risk_analysis_model
-
+  - risk_analysis_model              # assess canary/abort signals as risk, not just raw metrics
 uses_context_memory_profiles:
   - activation_run_context
   - pilot_evidence_context_pack
 
 inputs:
-  - PREVIEW_RESULT
+  - PREVIEW_RESULT       # from preview (#2): preview must have passed
+  - HEALTH_BASELINE      # from preview (#2): the canary comparison baseline
+  - BLAST_RADIUS_LIMIT   # from intake (#1): cohort/scope ceiling the pilot must stay within
+  - ABORT_CRITERIA       # from intake (#1): thresholds that, if breached, abort the pilot
 
 outputs:
-  - PILOT_RESULT
+  - PILOT_RESULT             # pilot telemetry, error rates, incidents, user signal over the cohort
+  - CANARY_HEALTH_REPORT     # pilot-vs-baseline health deltas + canary pass/fail per signal
+  - PILOT_GATE_RESULT        # binary gate result for the pilot stage
 
 evidence:
   - PILOT_RESULT
+  - CANARY_HEALTH_REPORT
+  - PILOT_GATE_RESULT
 
 trace:
   - pilot_activation_trace
   - stage_gate_decision_trace
 
 gates:
-  - pilot_cohort_bounded
-  - pilot_telemetry_collected
-  - rollback_reachable_during_pilot
+  - pilot_cohort_bounded                    # cohort is explicitly bounded (not open/public)
+  - blast_radius_within_limit               # cohort/scope stays within the pre-registered ceiling (#1)
+  - pilot_telemetry_collected               # real-usage telemetry/incident signals collected
+  - pilot_health_within_canary_thresholds   # pilot health does not regress the baseline beyond thresholds
+  - no_abort_condition_breached             # no pre-registered abort criterion (#1) tripped during the pilot
+  - rollback_reachable_during_pilot         # rollback path reachable at all times (readiness assertion)
 
 on_pass: pilot_evidence_review
 on_fail: pilot_activation
+# rework_route: self for re-scope/re-run; an UNSAFE pilot (canary/abort breach) routes to
+#   rollback_readiness (#6) to exercise rollback before retry — see runtime_rules by_failure_condition
+#   (pilot_unsafe -> rollback_readiness) and the def allowed_rework_routes.
 rework_route: pilot_activation
 
+# Real failure conditions that hard-block the pilot (no empty load-bearing field).
 blocking_conditions:
-  - public_activation_attempted_without_pilot_evidence
+  - pilot_cohort_unbounded                      # cohort not bounded -> uncontrolled exposure
+  - blast_radius_exceeds_limit                  # exposure widened past the pre-registered ceiling
+  - pilot_telemetry_not_collected               # no telemetry -> canary/acceptance unprovable
+  - canary_health_threshold_breached            # pilot regresses the baseline beyond the canary threshold
+  - abort_condition_breached_during_pilot       # a pre-registered abort criterion tripped
+  - rollback_unreachable_during_pilot           # rollback not reachable -> pilot is unsafe to run
 
 optional_conditions: []
 

@@ -1,18 +1,37 @@
 # Nexus AI Orchestration Model — Knowledge / Memory Pipeline
-# Stage #1 of 6: memory_intake
+# Stage #1 of 7: memory_intake
 # Machine-readable stage contract. Transcribed (not invented) from
-#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.1.
-# Field set mirrors configs/nexus-ai/stages/sdlc/01-intake.yaml.
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.1,
+#   then ENRICHED to professional-grade reliability (the sdlc / research_pipeline bar): chained named
+#   inputs/outputs (+ a gate result), an explicit target-scope gate (md entry_criterion
+#   target_knowledge_scope_declared), filled blocking_conditions, annotated uses_* lines.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/01-intake.yaml and the research exemplar
+#   configs/nexus-ai/stages/research/01-research-intake.yaml.
 # Pipeline: knowledge_memory_pipeline (configs/nexus-ai/knowledge_memory_pipeline.yaml).
-# owner_agent is a snake_case Agent role under knowledge_team, managed by knowledge_team_lead;
-#   Memory is a Core Ability USED by the agent, NEVER the owner; Supervisor is never the team_lead.
+#
+# Depth / reconciliation notes:
+#   - owner_agent kept as canonical knowledge_intake_agent (agent_roles.yaml knowledge_team roster,
+#     owned_stages: [memory_intake], reviewed_by: knowledge_team_lead). Memory is a Core Ability USED
+#     by the agent, NEVER the owner; Supervisor is never the team_lead.
+#   - No-self-approval: this is an AUTHORING stage (it produces MEMORY_INTAKE_RECORD +
+#     MEMORY_PROVENANCE_RECORD); its reviewer is knowledge_team_lead. The structural no-self-approval /
+#     no-bypass policy gate constrains every gate decision (see runtime_rules).
+#   - Outputs enriched beyond the bare record so the declared target scope and an initial
+#     sensitivity hint chain forward (source_classification consumes TARGET_KNOWLEDGE_SCOPE to bound
+#     classification; the hint pre-warns the sensitive-content detector). Mirrors how SDLC/research
+#     intake seed downstream context. Tools are unchanged from the registry (memory_ingestor is
+#     caller-locked to knowledge_intake_agent; the others are knowledge-callable).
+#   - Evidence != Trace kept distinct.
 version: draft-0.1
 stage_id: memory_intake
 name: Memory Intake
 purpose: >-
-  Receive a candidate memory item plus its origin reference, normalize it into a
-  candidate record, and confirm minimum intake metadata before anything is
-  classified or stored.
+  Receive a candidate memory item plus its origin reference, normalize it into a candidate record,
+  confirm the minimum intake metadata AND that a target knowledge scope is declared, and seed an
+  initial provenance record — before anything is classified, summarized or stored. An item that
+  cannot be provenance-seeded or has no declared target scope is rejected at intake and no downstream
+  stage runs for it.
+
 owner_team: knowledge_team
 team_lead: knowledge_team_lead
 owner_agent: knowledge_intake_agent
@@ -20,17 +39,19 @@ sub_agents: []
 
 # Shared Registry + Usage Mapping (all 7 categories present, even if empty). md §2.1 "Uses (mapping)".
 uses_core_abilities:
-  - Memory
+  - Memory   # recall whether this candidate / origin is already known; seed the candidate record
 uses_skills: []
 uses_tools:
-  - memory_ingestor
-  - provenance_recorder
-  - artifact_writer
-  - evidence_writer
+  - memory_ingestor       # normalize candidate + origin into MEMORY_INTAKE_RECORD (allowed_callers: knowledge_intake_agent)
+  - provenance_recorder   # seed MEMORY_PROVENANCE_RECORD (side-effect: governance + trace)
+  - artifact_writer       # write the intake record artifact (side-effect: governance + trace)
+  - evidence_writer       # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - memory_source_governance
 uses_audit_schemas:
-  - memory_provenance_schema
+  - memory_provenance_schema   # evidence schema (origin reference + provenance seed); matches md §2.1 + knowledge_intake_agent registry
+  # NOTE: the gate-decision trace (trace: gate_decision_trace below) is governed by the pipeline-level
+  # stage_gate_trace_schema; intake's own audit schema set is memory_provenance_schema per md §2.1.
 uses_model_provider_profiles:
   - knowledge_reasoning_profile
 uses_context_memory_profiles:
@@ -38,26 +59,32 @@ uses_context_memory_profiles:
   - memory_candidate_context_pack
 
 inputs:
-  - MEMORY_CANDIDATE
-  - CANDIDATE_ORIGIN_REFERENCE
+  - MEMORY_CANDIDATE             # the candidate memory item (entry_criterion: candidate_memory_item_present)
+  - CANDIDATE_ORIGIN_REFERENCE   # where it came from (entry_criterion: candidate_origin_reference_present)
+  - TARGET_KNOWLEDGE_SCOPE       # the declared target scope (entry_criterion: target_knowledge_scope_declared)
+
 outputs:
-  - MEMORY_INTAKE_RECORD
-  - MEMORY_PROVENANCE_RECORD
+  - MEMORY_INTAKE_RECORD          # normalized candidate record
+  - MEMORY_PROVENANCE_RECORD      # initial provenance seed (extended by every later stage)
+  - INTAKE_SENSITIVITY_HINT       # first-pass sensitivity signal that pre-warns the #2 detector
+  - MEMORY_INTAKE_GATE_RESULT     # binary gate result for the intake stage
 
 evidence:
   - MEMORY_INTAKE_RECORD
   - MEMORY_PROVENANCE_RECORD
+  - MEMORY_INTAKE_GATE_RESULT
 trace:
   - memory_intake_trace
   - gate_decision_trace
 
-# md §2.1 key gates (both blockers).
+# md §2.1 key gates (both blockers) + target-scope gate (md entry_criterion target_knowledge_scope_declared).
 gates:
-  - intake_metadata_complete
-  - provenance_seed_recorded
+  - intake_metadata_complete       # candidate item + origin reference + target scope all present
+  - provenance_seed_recorded       # an initial provenance record exists for the candidate
+  - target_scope_declared          # the knowledge scope the item targets is explicitly declared
 
-# md §2.1 on_pass: source_classification; on_fail: reject and stop intake (no downstream
-# stage runs for an item that cannot be provenance-seeded).
+# md §2.1 on_pass: source_classification; on_fail: reject and stop intake (no downstream stage runs
+# for an item that cannot be provenance-seeded / scoped). Self-route on intake failure.
 on_pass: source_classification
 on_fail: memory_intake
 rework_route: memory_intake
@@ -65,6 +92,7 @@ rework_route: memory_intake
 blocking_conditions:
   - intake_metadata_incomplete
   - provenance_seed_not_recorded
+  - target_knowledge_scope_undeclared
 optional_conditions: []
 conditional_required_gates: []
 

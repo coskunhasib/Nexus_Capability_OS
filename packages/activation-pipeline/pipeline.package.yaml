@@ -9,7 +9,7 @@ description: Staged activation of a feature, capability, or pipeline through pre
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: 9ed30f2
+  source_commit: 383a28c
   source_path: configs/nexus-ai/activation_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:
@@ -178,13 +178,29 @@ gates:
   set: always
 - id: rollback_owner_assigned
   set: always
+- id: blast_radius_limit_defined
+  set: always
+- id: abort_criteria_defined
+  set: always
 - id: preview_required_gate
   set: always
 - id: preview_behaves_as_expected
   set: always
 - id: telemetry_observable_in_preview
   set: always
+- id: health_baseline_captured
+  set: always
+- id: blast_radius_within_limit
+  set: always
+- id: pilot_health_within_canary_thresholds
+  set: always
+- id: no_abort_condition_breached
+  set: always
 - id: activation_evidence_complete
+  set: always
+- id: post_activation_health_within_baseline
+  set: always
+- id: activation_stable_over_monitoring_window
   set: always
 - id: all_required_gates_passed
   set: always
@@ -196,22 +212,34 @@ gates:
   set: conditional
 - id: rollback_required_gate_if_public_scope
   set: conditional
+- id: extended_monitoring_window_if_public_scope
+  set: conditional
 evidence:
   required_evidence:
   - ACTIVATION_REQUEST
+  - ABORT_CRITERIA
+  - BLAST_RADIUS_LIMIT
   - PREVIEW_RESULT
+  - HEALTH_BASELINE
   - PILOT_RESULT
+  - CANARY_HEALTH_REPORT
   - PILOT_EVIDENCE_REVIEW_REPORT
   - ROLLBACK_PLAN
   - ROLLBACK_READINESS_REPORT
+  - ROLLBACK_DRILL_REPORT
   - ACTIVATION_DECISION
   - ACTIVATION_COMPLETION_REPORT
+  - POST_ACTIVATION_MONITORING_REPORT
   required_trace:
   - activation_transition_trace
   - preview_activation_trace
   - pilot_activation_trace
+  - pilot_evidence_review_handoff_trace
   - rollback_drill_trace
   - owner_decision_trace
+  - post_activation_monitoring_trace
+  - gate_aggregation_decision_trace
+  - stage_gate_decision_trace
   - policy_evaluation_trace
 stages:
 - activation_intake
@@ -221,3 +249,4 @@ stages:
 - public_activation_decision
 - rollback_readiness
 - activation_completion
+- post_activation_monitoring

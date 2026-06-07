@@ -1,38 +1,74 @@
 # Nexus AI Orchestration Model — Knowledge / Memory Pipeline
-# Stage #2 of 6: source_classification
+# Stage #2 of 7: source_classification
 # Machine-readable stage contract. Transcribed (not invented) from
-#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.2.
-# Field set mirrors configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md §2.2,
+#   then ENRICHED to professional-grade reliability (sdlc / research_pipeline bar).
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/16-security-validation.yaml-style
+#   gate-with-subagent contracts (a producer agent + a decomposing sub-agent; multiple gates;
+#   populated blocking_conditions; annotated uses_* lines) and the research exemplar's
+#   configs/nexus-ai/stages/research/05-source-reliability-assessment.yaml.
 # Pipeline: knowledge_memory_pipeline. owner_agent is a snake_case Agent role under knowledge_team.
-# gap-audit is used here to find missing/inconsistent source attributes (md §2.2).
+#
+# COVERAGE ADDITION folded in here (professional-grade calibration — PII / sensitive-content
+# detection is a facet of classification, so it belongs in this stage rather than a padded new one):
+#   PII / SENSITIVE-CONTENT DETECTION. The md purpose names "sensitivity" and "whether redaction is
+#   required", and the pipeline blocks on `unredacted_sensitive_content_detected` — but the prior
+#   contract gated REDACTION (redaction_applied_if_required) WITHOUT an explicit DETECTION step: it
+#   assumed sensitivity was simply "classified". A redaction gate with no detection upstream cannot
+#   prove sensitive content was actually looked for. Added: sensitive_content_detection_complete gate
+#   + SENSITIVE_CONTENT_DETECTION_REPORT output + a dedicated sensitive_content_detection_subagent
+#   that scans for PII / secrets / regulated content and hands findings up. This is a distinct
+#   analytical task from origin-type / trust-tier classification, hence the sub-agent. Detection is
+#   what MAKES the existing redaction_applied_if_required gate meaningful (it fires when detection
+#   finds redactable content).
+#
+# Depth / reconciliation notes:
+#   - owner_agent kept as canonical source_classification_agent (agent_roles.yaml; owned_stages:
+#     [source_classification]; reviewed_by: knowledge_team_lead).
+#   - gap-audit finds missing / inconsistent source attributes AND sources lacking a sensitivity
+#     determination (catalog md §2.2 use of gap-audit, extended to detection completeness).
+#   - SUB-AGENT sensitive_content_detection_subagent decomposes PII/secret/regulated-content scanning
+#     from the trust-tier classification. It DETECTS and REPORTS; source_classification_agent decides
+#     the classification + redaction gate. REPORTED for registry formalization (parent_agent =
+#     source_classification_agent). The detection tool used is redaction_tool (allowed_callers:
+#     [source_classification_agent]) which both detects redactable spans and applies redaction; a
+#     dedicated pii_detector tool does NOT exist in tools_registry.yaml — REPORTED.
+#   - redaction_applied_if_required stays a conditional blocker (required_when:
+#     sensitivity_requires_redaction == true, now driven by the detection report) — see
+#     conditional_required_gates.
+#   - Evidence != Trace kept distinct.
 version: draft-0.1
 stage_id: source_classification
 name: Source Classification
 purpose: >-
-  Classify the candidate's source — origin type, trust tier, sensitivity, and whether
-  redaction is required — so that every later decision (summary framing, validity window,
-  retrieval exposure) inherits a governed classification.
+  Classify the candidate's source — origin type, trust tier, sensitivity — and DETECT any PII /
+  secrets / regulated content it carries, so that redaction is applied wherever detection requires it
+  and every later decision (summary framing, conflict reconciliation, validity window, retrieval
+  exposure) inherits a governed classification. No candidate proceeds with sensitive content detected
+  but not redacted.
+
 owner_team: knowledge_team
 team_lead: knowledge_team_lead
 owner_agent: source_classification_agent
-sub_agents: []
+sub_agents:
+  - sensitive_content_detection_subagent   # decomposes PII/secret/regulated-content detection from classification
 
 uses_core_abilities:
-  - Memory
-  - Web
+  - Memory   # recall the candidate record, the origin reference and prior classifications of this source
+  - Web      # consult origin / publisher signals to set origin type and trust tier
 uses_skills:
-  - gap-audit   # find missing or inconsistent source attributes
+  - gap-audit   # find missing or inconsistent source attributes; sources lacking a sensitivity determination
 uses_tools:
-  - source_classifier
-  - redaction_tool
-  - provenance_recorder
-  - evidence_writer
+  - source_classifier     # assign origin type / trust tier / sensitivity (allowed_callers: source_classification_agent)
+  - redaction_tool        # detect redactable spans + apply redaction (allowed_callers: source_classification_agent; side-effect: governance + trace)
+  - provenance_recorder   # extend provenance with the classification + detection result (side-effect: governance + trace)
+  - evidence_writer       # write SOURCE_CLASSIFICATION_REPORT + detection report as evidence (side-effect: governance + trace)
 uses_governance_profiles:
   - memory_source_governance
   - redaction_required_gate
 uses_audit_schemas:
-  - memory_provenance_schema
-  - stage_gate_trace_schema
+  - memory_provenance_schema   # evidence schema (classification + detection attach to provenance)
+  - stage_gate_trace_schema    # trace schema (distinct from evidence)
 uses_model_provider_profiles:
   - knowledge_reasoning_profile
 uses_context_memory_profiles:
@@ -40,22 +76,33 @@ uses_context_memory_profiles:
   - memory_candidate_context_pack
 
 inputs:
-  - MEMORY_INTAKE_RECORD
+  - MEMORY_INTAKE_RECORD       # the normalized candidate from intake (#1)
+  - TARGET_KNOWLEDGE_SCOPE     # bounds what classification the scope requires (e.g. regulated scope -> stricter)
+  - INTAKE_SENSITIVITY_HINT    # the first-pass sensitivity signal from intake; pre-warns the detector
+
 outputs:
-  - SOURCE_CLASSIFICATION_REPORT
+  - SOURCE_CLASSIFICATION_REPORT        # origin type / trust tier / sensitivity level + redaction-required flag
+  - SENSITIVE_CONTENT_DETECTION_REPORT  # PII / secrets / regulated-content findings (from the sub-agent)
+  - REDACTION_APPLIED_RECORD            # what was redacted, when redaction was required
+  - SOURCE_CLASSIFICATION_GATE_RESULT   # binary gate result for this stage
 
 evidence:
   - SOURCE_CLASSIFICATION_REPORT
+  - SENSITIVE_CONTENT_DETECTION_REPORT
+  - SOURCE_CLASSIFICATION_GATE_RESULT
 trace:
   - source_classification_trace
+  - sensitive_content_detection_trace   # sub-agent detection activity
+  - skill_activation_trace
   - gate_decision_trace
 
-# md §2.2 key gates. redaction_applied_if_required is a conditional blocker
+# md §2.2 key gates + the added detection gate. redaction_applied_if_required is a conditional blocker
 # (required_when: sensitivity_requires_redaction == true) — see conditional_required_gates.
 gates:
-  - source_trust_tier_assigned
-  - sensitivity_classified
-  - redaction_applied_if_required
+  - source_trust_tier_assigned             # a trust tier is recorded
+  - sensitivity_classified                 # a sensitivity level is recorded
+  - sensitive_content_detection_complete   # PII/secret/regulated-content scan actually ran (no silent skip)
+  - redaction_applied_if_required          # CONDITIONAL blocker — when detection requires redaction
 
 on_pass: summary_generation
 on_fail: memory_intake
@@ -64,10 +111,14 @@ rework_route: memory_intake
 blocking_conditions:
   - source_trust_tier_unassigned
   - sensitivity_unclassified
+  - sensitive_content_scan_not_run
   - redaction_not_applied_when_required
 optional_conditions: []
 conditional_required_gates:
-  # md §2.2: redaction_applied_if_required (blocker) — required_when sensitivity requires redaction.
-  - redaction_applied_if_required
+  # md §2.2: redaction_applied_if_required (blocker) — required_when the detection report shows
+  # sensitive content that the sensitivity classification requires redacting.
+  - gate_id: redaction_applied_if_required
+    required_when: >-
+      sensitivity_requires_redaction == true
 
 max_iterations: 3
