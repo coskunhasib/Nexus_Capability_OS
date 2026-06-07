@@ -1,0 +1,117 @@
+version: draft-0.1
+contract_id: nexus_ai_pipeline_selection_contract
+purpose: >-
+  Deterministic, auditable mapping from a user intent (free text + optional structured
+  signals) to the pipeline — and thus the .pipeline package — that should run. This is a
+  PRE-SELECTION contract: the mission_orchestrator may confirm or override it
+  (see executor_override_policy.yaml). Mechanism ported from the (now-archived) main-branch
+  capability-compiler's compiler-rules; seeded with nexus catalog pipelines only (no main
+  domain breadth). Keyword pre-selection is heuristic; the orchestrator/owner is the final authority.
+status: draft
+top_structure: nexus_ai_orchestration_model
+catalog_ref: configs/nexus-ai/pipeline_catalog.yaml
+override_policy_ref: configs/nexus-ai/executor_override_policy.yaml
+
+# Optional structured signals an intent may carry (all optional; free text alone also works).
+signals:
+  domain: [software_product, saas, ai_agent_product, api_service, web_app, internal_tool,
+           research, operations, knowledge, skill, activation, other]
+  target_output: [software, code, research_report, incident_resolution, skill_change,
+                  memory_change, activation_rollout, unknown]
+  risk_level: [prototype, internal_tool, commercial_product, regulated_or_high_risk]
+
+# Selection rules. Match score = number of matched keywords (+3 per matched structured signal).
+# Winner = highest score; ties broken by higher priority; still tied -> ambiguous (do not force).
+rules:
+  - id: rule_sdlc
+    priority: 30   # generic catch-all for software building; loses ties to a specific pipeline
+    match:
+      any_domain: [software_product, saas, ai_agent_product, api_service, web_app, internal_tool]
+      any_target_output: [software, code]
+      contains_any: [yazılım, uygulama, app, saas, api, mvp, web, kod, code, build, feature,
+                     özellik, ürün, software, geliştir, refactor, bug, frontend, backend, deploy]
+    select:
+      pipeline_id: sdlc_pipeline
+      package: packages/sdlc-pipeline
+    rationale: Software / product building → SDLC pipeline (only fully machine-readable + packaged pipeline today).
+
+  - id: rule_skill_governance
+    priority: 45
+    match:
+      any_domain: [skill]
+      any_target_output: [skill_change]
+      contains_any: [skill, yetenek, "semantic extraction", binding, deprecation, "skill audit", "skill keşf"]
+    select: { pipeline_id: skill_governance_pipeline, package: null }
+    rationale: Skill discovery / semantic extraction / safety audit / binding → Skill Governance pipeline.
+
+  - id: rule_research
+    priority: 40
+    match:
+      any_domain: [research]
+      any_target_output: [research_report]
+      contains_any: [araştır, araştırma, research, kaynak, claim, kanıt, evidence, literatür, inceleme, rapor, survey]
+    select: { pipeline_id: research_pipeline, package: null }
+    rationale: Sourced research / claim-evidence mapping → Research pipeline.
+
+  - id: rule_operations
+    priority: 40
+    match:
+      any_domain: [operations]
+      any_target_output: [incident_resolution]
+      contains_any: [incident, olay, arıza, monitoring, izleme, runbook, rollback, postmortem,
+                     alarm, alert, ops, kesinti, outage]
+    select: { pipeline_id: operations_pipeline, package: null }
+    rationale: Incident / monitoring / runbook / postmortem → Operations pipeline.
+
+  - id: rule_activation
+    priority: 40
+    match:
+      any_domain: [activation]
+      any_target_output: [activation_rollout]
+      contains_any: [aktivasyon, activation, rollout, preview, pilot, public, yayına, "feature flag",
+                     kademeli, staged, canlıya]
+    select: { pipeline_id: activation_pipeline, package: null }
+    rationale: Staged feature / capability activation (preview→pilot→public) → Activation pipeline.
+
+  - id: rule_knowledge_memory
+    priority: 40
+    match:
+      any_domain: [knowledge]
+      any_target_output: [memory_change]
+      contains_any: [memory, hafıza, knowledge, bilgi, ingestion, retrieval, "context pack",
+                     summarization, özetleme, validity, expiration]
+    select: { pipeline_id: knowledge_memory_pipeline, package: null }
+    rationale: Memory / knowledge ingestion, validity, retrieval → Knowledge/Memory pipeline.
+
+# Tie-breakers, applied in order.
+conflict_resolution:
+  - more_matched_signals_wins
+  - then_higher_priority_wins          # specific pipeline beats generic sdlc on a score tie
+  - if_still_tied_return_ambiguous     # do NOT force; surface candidates for orchestrator/owner
+
+# When nothing matches confidently.
+default:
+  on_no_match: return_ambiguous
+  note: >-
+    No confident match → do NOT force a pipeline. Return 'ambiguous' with top candidates so the
+    mission_orchestrator (or owner) decides. This contract pre-selects; it is not the final authority.
+
+# Packaging reality (so selection never promises a package that doesn't exist yet).
+packaging_status:
+  packaged: [sdlc_pipeline]
+  defined_markdown_only_not_yet_packaged:
+    - research_pipeline
+    - activation_pipeline
+    - operations_pipeline
+    - skill_governance_pipeline
+    - knowledge_memory_pipeline
+  candidate_not_defined:
+    - content_pipeline
+    - data_processing_pipeline
+    - model_inference_pipeline
+    - customer_support_pipeline
+    - business_strategy_pipeline
+  note: >-
+    Only sdlc_pipeline has a machine-readable definition (sdlc_pipeline.yaml + stages/sdlc/*.yaml)
+    and a built package. The other 5 defined pipelines must be converted from markdown
+    definition_docs to machine-readable defs before they can be packaged (then set their `package`).
