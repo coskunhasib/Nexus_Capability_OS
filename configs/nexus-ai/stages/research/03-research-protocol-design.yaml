@@ -1,0 +1,110 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #3 of 11: research_protocol_design   (NEW — methodology / scope pre-registration)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+#
+# WHY THIS STAGE EXISTS (coverage addition, calibration exemplar):
+#   Professional sourced research PRE-REGISTERS its method BEFORE discovering sources, so the
+#   search strategy, inclusion/exclusion criteria and evidence standard cannot be reverse-engineered
+#   to fit a desired conclusion (a core integrity control and the precondition for reproducibility).
+#   The catalog's original 10-stage flow jumped from scope_and_questions straight to source_discovery
+#   with the method left implicit. This stage makes the protocol an explicit, gated artifact that
+#   source_discovery (#4) and source_reliability_assessment (#5) MUST follow and that
+#   research_completion (#11) checks the evidence chain against for reproducibility. It is a genuine
+#   distinct phase (it must precede discovery to be meaningful), not padding — it is the ONE new
+#   stage added; the other professional controls (bias/conflict screening, recency, citation
+#   integrity, evidence-chain reproducibility) are added as gates inside existing stages.
+#
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = research_scoping_agent (canonical research_team roster, agent_roles.yaml). The
+#     scoping agent already frames the research; pre-registering the PROTOCOL for that framing is the
+#     same authoring responsibility, kept BEFORE source discovery. research_protocol_design is added
+#     to research_scoping_agent.owned_stages so the registry stays consistent.
+#   - No-self-approval preserved: this is an AUTHORING stage reviewed by research_team_lead; it is
+#     DISTINCT from the cross_validation validator (#7). The scoping agent does not validate its own
+#     protocol's downstream execution.
+#   - prism = divergence over candidate methodologies/search strategies (LOCKED: ideation only, not
+#     selection-as-validation). gap-audit checks the protocol covers every load-bearing question and
+#     declares an evidence standard appropriate to the risk class.
+#   - The protocol carries the SOURCE_RELIABILITY_RUBRIC that source_reliability_assessment (#5)
+#     scores against — pre-committing the rubric is what makes reliability scoring auditable rather
+#     than post-hoc.
+version: draft-0.1
+stage_id: research_protocol_design
+name: Research Protocol Design
+purpose: >-
+  Pre-register the research method before any source is gathered: the search/discovery strategy per
+  load-bearing question, source inclusion/exclusion criteria, the minimum source-diversity and
+  reliability bar, the evidence standard required to call a question answered (scaled to the run's
+  risk class), and the source-reliability scoring rubric the assessment stage will apply. Produces a
+  RESEARCH_PROTOCOL that downstream stages must follow and that completion audits for reproducibility.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: research_scoping_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the question set, risk class and any standing methodology conventions
+  - Web      # confirm the search strategy is feasible against the live source landscape
+uses_skills:
+  - prism       # LOCKED: divergence over candidate search strategies / methodologies, NOT selection-as-validation
+  - gap-audit   # ensure the protocol covers every load-bearing question and sets an explicit evidence standard
+uses_tools:
+  - artifact_writer   # write RESEARCH_PROTOCOL (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - research_source_governance   # the protocol pre-commits source admissibility / diversity / min reliability
+  - evidence_required_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - source_corpus_context_pack   # seeds the corpus-shaping criteria the discovery stage reads
+
+inputs:
+  - RESEARCH_QUESTION_SET
+  - LOAD_BEARING_QUESTION_SET
+  - QUESTION_COVERAGE_MAP
+  - RISK_PROFILE_DECISION         # scales the evidence standard / minimum reliability bar
+  - RESEARCH_CONDITIONAL_FLAGS    # freshness_sensitive / conflict_of_interest_sensitive / citation_critical
+
+outputs:
+  - RESEARCH_PROTOCOL                 # the pre-registered method: strategy + criteria + evidence standard
+  - SOURCE_INCLUSION_CRITERIA         # inclusion/exclusion + minimum diversity, consumed by source_discovery
+  - SOURCE_RELIABILITY_RUBRIC         # scoring rubric (authority/independence/recency/corroboration/bias), consumed by #5
+  - EVIDENCE_STANDARD_DEFINITION      # what "question answered" requires at this risk class
+  - RESEARCH_PROTOCOL_GATE_RESULT     # binary gate result for this stage
+
+evidence:
+  - RESEARCH_PROTOCOL
+  - SOURCE_RELIABILITY_RUBRIC
+  - RESEARCH_PROTOCOL_GATE_RESULT
+trace:
+  - research_protocol_agent_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - protocol_covers_every_load_bearing_question     # no load-bearing question without a discovery strategy
+  - inclusion_exclusion_criteria_defined            # admissibility criteria pre-registered, not ad hoc
+  - evidence_standard_defined_for_risk_class        # the bar to call a question answered is explicit
+  - source_reliability_rubric_pre_registered        # the scoring rubric is fixed before scoring begins
+
+on_pass: source_discovery
+on_fail: scope_and_questions      # if the question set cannot support a coherent protocol, refine scope
+rework_route: research_protocol_design
+
+blocking_conditions:
+  - load_bearing_question_without_discovery_strategy
+  - inclusion_exclusion_criteria_undefined
+  - evidence_standard_undefined
+  - source_reliability_rubric_not_pre_registered
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

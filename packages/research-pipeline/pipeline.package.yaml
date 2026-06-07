@@ -1,15 +1,18 @@
 package_schema_version: '0.1'
 pipeline_id: research_pipeline
 name: Research Pipeline
-description: 'Run sourced research with no-human governance: discover sources, score
-  source reliability, extract claims, map claims to evidence, cross-validate findings
-  with a separate role, report uncertainty, and synthesize a cited research output.
+description: 'Run sourced research with no-human governance: pre-register the research
+  method, discover sources, score source reliability (with bias / conflict-of-interest
+  and recency screening), extract claims, map claims to evidence, cross-validate findings
+  with a separate role, report uncertainty, and synthesize a cited research output
+  whose citations resolve to mapped evidence and whose evidence chain is reproducible
+  end-to-end.
 
   '
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: 9ed30f2
+  source_commit: cf6d4a9
   source_path: configs/nexus-ai/research_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:
@@ -136,11 +139,15 @@ components:
   version: 1.0.0
   path: components/context-memory-profiles/context_memory_profile__claim_evidence_context_pack.yaml
 gates:
+- id: research_protocol_pre_registered
+  set: always
 - id: all_research_questions_addressed_or_flagged
   set: always
 - id: every_load_bearing_claim_has_mapped_evidence
   set: always
 - id: every_used_source_has_reliability_score
+  set: always
+- id: every_load_bearing_source_bias_conflict_screened
   set: always
 - id: validator_role_distinct_from_producer
   set: always
@@ -150,23 +157,33 @@ gates:
   set: always
 - id: citation_required_gate_pass
   set: always
+- id: citations_resolve_to_mapped_evidence
+  set: always
 - id: research_evidence_graph_complete
+  set: always
+- id: evidence_chain_reproducible
   set: always
 - id: no_blocking_policy_failure
   set: always
+- id: source_recency_validated_if_freshness_sensitive
+  set: conditional
 evidence:
   required_evidence:
   - RESEARCH_BRIEF
   - RESEARCH_QUESTION_SET
+  - RESEARCH_PROTOCOL
   - SOURCE_INVENTORY
   - SOURCE_RELIABILITY_REPORT
+  - SOURCE_BIAS_CONFLICT_REPORT
   - CLAIM_REGISTER
   - CLAIM_EVIDENCE_MAP
   - CROSS_VALIDATION_REPORT
   - UNCERTAINTY_REPORT
   - RESEARCH_SYNTHESIS
   - CITATION_INDEX
+  - CITATION_INTEGRITY_REPORT
   - RESEARCH_EVIDENCE_GRAPH
+  - REPRODUCIBILITY_AUDIT
   - RESEARCH_COMPLETION_REPORT
   required_trace:
   - web_search_tool_trace
@@ -179,6 +196,7 @@ evidence:
 stages:
 - research_intake
 - scope_and_questions
+- research_protocol_design
 - source_discovery
 - source_reliability_assessment
 - claim_extraction

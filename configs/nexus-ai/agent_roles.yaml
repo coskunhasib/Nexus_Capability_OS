@@ -1637,14 +1637,28 @@ agents:
     team_id: research_team
     pipeline_id: research_pipeline
     mission: >-
-      Decompose the goal into concrete, answerable research questions; mark which
-      are load-bearing. Uses prism for divergence only (not validation).
+      Decompose the goal into concrete, answerable research questions and mark which
+      are load-bearing, then PRE-REGISTER the research protocol (search strategy,
+      inclusion/exclusion criteria, evidence standard, reliability rubric) before any
+      source is gathered. Uses prism for divergence only (not validation).
     owned_stages:
       - scope_and_questions
+      - research_protocol_design      # NEW stage #3: methodology / scope pre-registration (authoring; reviewed by team lead)
     inputs:
       - RESEARCH_BRIEF
+      - RESEARCH_SCOPE_BOUNDARY
+      - RISK_PROFILE_DECISION
+      - RESEARCH_QUESTION_SET          # consumed by research_protocol_design to shape the protocol
+      - LOAD_BEARING_QUESTION_SET
+      - RESEARCH_CONDITIONAL_FLAGS
     outputs:
       - RESEARCH_QUESTION_SET
+      - LOAD_BEARING_QUESTION_SET
+      - QUESTION_COVERAGE_MAP
+      - RESEARCH_PROTOCOL              # pre-registered method (research_protocol_design)
+      - SOURCE_INCLUSION_CRITERIA
+      - SOURCE_RELIABILITY_RUBRIC
+      - EVIDENCE_STANDARD_DEFINITION
     sub_agents: []
     uses_core_abilities: [Memory, Web]
     uses_skills: [prism, gap-audit]
@@ -1716,9 +1730,16 @@ agents:
       - source_reliability_assessment
     inputs:
       - SOURCE_INVENTORY
+      - SOURCE_PROVENANCE_RECORD
+      - SOURCE_RELIABILITY_RUBRIC      # pre-registered rubric from research_protocol_design
+      - RESEARCH_CONDITIONAL_FLAGS
     outputs:
       - SOURCE_RELIABILITY_REPORT
-    sub_agents: []
+      - SOURCE_BIAS_CONFLICT_REPORT    # bias / conflict-of-interest findings (via sub-agent)
+      - LOW_RELIABILITY_SOURCE_FLAGS
+      - ADMISSIBLE_SOURCE_SET
+    sub_agents:
+      - source_bias_screening_subagent   # decomposes bias / conflict-of-interest screening
     uses_core_abilities: [Web, Memory]
     uses_skills: [calibrate, gap-audit]
     uses_tools: [source_reliability_checker, evidence_writer]
@@ -1825,11 +1846,18 @@ agents:
       - cross_validation
     inputs:
       - SOURCE_RELIABILITY_REPORT
+      - SOURCE_BIAS_CONFLICT_REPORT
       - CLAIM_REGISTER
       - CLAIM_EVIDENCE_MAP
+      - SINGLE_SOURCE_CLAIM_FLAGS
+      - CONTRADICTION_REGISTER
     outputs:
       - CROSS_VALIDATION_REPORT
-    sub_agents: []
+      - REPLICATION_DIVERGENCE_REPORT
+      - SINGLE_SOURCE_CLAIM_RESOLUTION
+      - CONFLICT_RESOLUTION_LOG
+    sub_agents:
+      - independent_replication_subagent   # independently re-derives scores/mappings; reports divergences
     uses_core_abilities: [Memory, Web, Supervisor]
     uses_skills: [llm-council, calibrate]
     uses_tools: [source_reliability_checker, evidence_reader, artifact_writer]
@@ -1949,12 +1977,20 @@ agents:
     inputs:
       - RESEARCH_SYNTHESIS
       - CITATION_INDEX
+      - CITATION_INTEGRITY_REPORT
       - CROSS_VALIDATION_REPORT
       - UNCERTAINTY_REPORT
+      - CLAIM_EVIDENCE_MAP
+      - SOURCE_RELIABILITY_REPORT
+      - RESEARCH_PROTOCOL              # audit the evidence chain against the pre-registered method
+      - ALL_STAGE_GATE_RESULTS
     outputs:
       - RESEARCH_EVIDENCE_GRAPH
+      - REPRODUCIBILITY_AUDIT
       - RESEARCH_COMPLETION_REPORT
-    sub_agents: []
+      - RESEARCH_COMPLETION_GATE_RESULT
+    sub_agents:
+      - research_evidence_graph_subagent   # assembles + integrity-audits the research evidence graph
     uses_core_abilities: [Memory, Supervisor]
     uses_skills: [gap-audit]
     uses_tools: [evidence_reader, artifact_writer]

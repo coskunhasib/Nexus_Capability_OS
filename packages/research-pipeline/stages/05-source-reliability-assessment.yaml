@@ -1,0 +1,112 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #5 of 11: source_reliability_assessment
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.4.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/16-security-validation.yaml-style
+#   gate-with-subagent contracts (a producer agent + a decomposing sub-agent; multiple gates;
+#   populated blocking_conditions; annotated uses_* lines).
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#
+# COVERAGE ADDITIONS folded in here (calibration exemplar — bias/COI + recency are facets of
+# reliability, so they belong in this stage rather than a padded new stage):
+#   1. SOURCE BIAS / CONFLICT-OF-INTEREST SCREENING. The md purpose names "bias signals" and the
+#      source_reliability_checker tool + source_evaluation_model both score bias/COI, but the prior
+#      contract carried NO gate enforcing it. Added: source_bias_and_conflict_screened gate +
+#      SOURCE_BIAS_CONFLICT_REPORT output + a dedicated source_bias_screening_subagent. This is a
+#      distinct analytical task from authority/corroboration scoring, hence the sub-agent.
+#   2. RECENCY / FRESHNESS VALIDATION. Provenance carries publication date; for decision_support /
+#      high_stakes_cited / regulated runs a stale source is a real failure. Added:
+#      source_recency_validated gate against the protocol's freshness requirement.
+#
+# Depth / reconciliation notes:
+#   - calibrate keeps reliability scores rationale-backed, not asserted; gap-audit finds unscored or
+#     under-justified sources. The score is applied against the pre-registered SOURCE_RELIABILITY_RUBRIC
+#     from stage #3 (auditable, not post-hoc).
+#   - source_evaluation_model is the dedicated scoring profile (capability_scope includes
+#     provenance_and_bias_assessment). source_reliability_checker tool emits the score+rationale.
+#   - No-self-approval: scoring here is independently RE-checked at cross_validation (#7) by the
+#     distinct cross_validation_agent. source_reliability_agent.reviewed_by = cross_validation_agent
+#     (agent_roles.yaml). The sub-agent returns analysis to its parent and never decides the gate.
+#   - on_fail routes to source_discovery (need better/fresher/less-conflicted sources); internal
+#     rescoring is re-run in place (rework_route = self).
+version: draft-0.1
+stage_id: source_reliability_assessment
+name: Source Reliability Assessment
+purpose: >-
+  Score each candidate source for reliability against the pre-registered rubric — authority,
+  independence, recency/freshness, corroboration, and bias/conflict-of-interest signals — with an
+  explicit rationale per score; flag low-reliability, stale, and conflicted sources; and decide which
+  sources are admissible into claim extraction. calibrate keeps every score rationale-backed rather
+  than asserted. Produces the SOURCE_RELIABILITY_REPORT plus a dedicated bias/conflict report.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: source_reliability_agent
+sub_agents:
+  - source_bias_screening_subagent   # decomposes bias / conflict-of-interest screening from core scoring
+
+uses_core_abilities:
+  - Memory   # recall the rubric, the corpus and prior reliability decisions
+  - Web      # consult corroborating / independence signals about a publisher
+uses_skills:
+  - calibrate   # keep reliability scores rationale-backed and consistently calibrated, not asserted
+  - gap-audit   # detect unscored sources / missing rationale / unscreened bias
+uses_tools:
+  - source_reliability_checker   # score authority/independence/recency/corroboration/bias (trace: source_reliability_checker_tool_trace)
+  - evidence_writer              # write SOURCE_RELIABILITY_REPORT evidence (side-effect: governance + trace)
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - source_evaluation_model      # dedicated source-reliability + provenance/bias assessment profile
+uses_context_memory_profiles:
+  - research_run_context
+  - source_corpus_context_pack
+
+inputs:
+  - SOURCE_INVENTORY
+  - SOURCE_PROVENANCE_RECORD       # publication dates drive the recency/freshness gate
+  - SOURCE_RELIABILITY_RUBRIC      # pre-registered scoring rubric from research_protocol_design (#3)
+  - RESEARCH_CONDITIONAL_FLAGS     # freshness_sensitive / conflict_of_interest_sensitive strictness
+
+outputs:
+  - SOURCE_RELIABILITY_REPORT       # per-source score + rationale (authority/independence/recency/corroboration/bias)
+  - SOURCE_BIAS_CONFLICT_REPORT     # per-source bias / conflict-of-interest findings (from the sub-agent)
+  - LOW_RELIABILITY_SOURCE_FLAGS    # sources flagged stale / low-reliability / conflicted, with handling note
+  - ADMISSIBLE_SOURCE_SET           # sources cleared to enter claim_extraction (#6)
+  - SOURCE_RELIABILITY_GATE_RESULT  # binary gate result for this stage
+
+evidence:
+  - SOURCE_RELIABILITY_REPORT
+  - SOURCE_BIAS_CONFLICT_REPORT
+  - SOURCE_RELIABILITY_GATE_RESULT
+trace:
+  - source_reliability_agent_trace
+  - source_reliability_checker_tool_trace
+  - bias_conflict_screening_trace        # sub-agent screening activity
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - every_candidate_source_scored
+  - reliability_rationale_present
+  - low_reliability_sources_flagged
+  - source_bias_and_conflict_screened    # bias / conflict-of-interest disclosed per source
+  - source_recency_validated             # publication date meets the protocol's freshness requirement
+
+on_pass: claim_extraction
+on_fail: source_discovery          # need better / fresher / less-conflicted sources
+rework_route: source_reliability_assessment
+
+blocking_conditions:
+  - candidate_source_unscored
+  - reliability_rationale_absent
+  - undisclosed_conflict_of_interest_in_load_bearing_source
+  - stale_source_used_for_freshness_sensitive_question
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

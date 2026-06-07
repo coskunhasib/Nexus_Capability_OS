@@ -1,9 +1,20 @@
 # Nexus AI Orchestration Model — Research Pipeline (pipeline definition)
-# Machine-readable transcription of the catalog entry. Field set mirrors
-# configs/nexus-ai/sdlc_pipeline.yaml exactly.
-# Source of truth (transcribed, not invented):
+# Machine-readable transcription of the catalog entry, ENRICHED to professional-grade reliability
+# (the calibration exemplar; same quality bar as configs/nexus-ai/sdlc_pipeline.yaml). Field set
+# mirrors sdlc_pipeline.yaml exactly.
+# Source of truth (transcribed, then enriched — not invented):
 #   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
 #   §1 Pipeline Definition Contract (the YAML fields) + §2 Per-stage detail.
+#
+# PROFESSIONAL-GRADE UPGRADE (calibration exemplar). The catalog's original 10-stage flow was
+# brought to SDLC-level rigor. Coverage changes:
+#   - ADDED stage research_protocol_design (#3): methodology / scope pre-registration BEFORE source
+#     discovery (search strategy, inclusion/exclusion, evidence standard, reliability rubric). It is
+#     a genuine distinct phase (must precede discovery), the ONE new stage.
+#   - ADDED gates inside existing stages: source bias / conflict-of-interest screening + recency
+#     validation (source_reliability_assessment #5), citation integrity (synthesis #10), and
+#     evidence-chain reproducibility (research_completion #11).
+#   => 11 stages. Producer != validator (no self-approval) preserved at cross_validation (#8).
 # Top structure is the Nexus AI Orchestration Model; Research is ONE pipeline under it.
 # Core Abilities (Supervisor/Coder/Vision/Audio/Creative/Memory/Web/OS) are abilities,
 #   NOT agents and NOT team members; owner_agent is always a snake_case Agent role; the
@@ -12,9 +23,11 @@ version: draft-0.1
 pipeline_id: research_pipeline
 name: Research Pipeline
 purpose: >
-  Run sourced research with no-human governance: discover sources, score source reliability,
-  extract claims, map claims to evidence, cross-validate findings with a separate role,
-  report uncertainty, and synthesize a cited research output.
+  Run sourced research with no-human governance: pre-register the research method, discover sources,
+  score source reliability (with bias / conflict-of-interest and recency screening), extract claims,
+  map claims to evidence, cross-validate findings with a separate role, report uncertainty, and
+  synthesize a cited research output whose citations resolve to mapped evidence and whose evidence
+  chain is reproducible end-to-end.
 status: draft
 owner_domain: research_and_knowledge
 required_team_type: research_team
@@ -42,50 +55,69 @@ entry_criteria:
   - research_questions_bounded_or_derivable
   - risk_profile_selected
 
-# Conditions that mark the pipeline complete (md §1 exit_criteria).
+# Conditions that mark the pipeline complete (md §1 exit_criteria + the professional-grade controls
+# added for the calibration exemplar: a pre-registered protocol, bias/conflict screening, citation
+# integrity, and a reproducible evidence chain).
 exit_criteria:
   - all_research_questions_addressed_or_flagged
   - every_load_bearing_claim_has_mapped_evidence
   - every_used_source_has_reliability_score
+  - research_protocol_pre_registered                 # methodology/scope pre-registered before discovery (#3)
+  - every_load_bearing_source_bias_conflict_screened # bias / conflict-of-interest disclosed (#5)
   - cross_validation_completed_by_separate_role
   - uncertainty_report_present
   - citation_required_gate_pass
+  - citations_resolve_to_mapped_evidence             # citation integrity, not just presence (#10)
   - no_blocking_policy_failure
   - research_evidence_graph_complete
+  - evidence_chain_reproducible                      # end-to-end chain re-walks against the protocol (#11)
 
-# Pipeline-level conditions that block progression / release (md §1 blocking_conditions).
+# Pipeline-level conditions that block progression / release (md §1 blocking_conditions + the new
+# professional-grade failure conditions surfaced by the added gates).
 blocking_conditions:
   - load_bearing_claim_without_evidence_count > 0
   - unscored_source_used_in_synthesis == true
   - producer_role_is_sole_validator_of_own_source == true
   - uncited_claim_in_final_synthesis == true
   - critical_source_reliability_conflict_unresolved == true
+  - research_protocol_not_pre_registered == true
+  - undisclosed_conflict_of_interest_in_load_bearing_source == true
+  - citation_does_not_resolve_to_mapped_evidence == true
+  - broken_evidence_chain_link == true
 
-# Permitted rework routes (md §1 allowed_rework_routes). Each value is a known stage_id.
+# Permitted rework routes (md §1 allowed_rework_routes + the new protocol_gap route for the added
+# research_protocol_design stage). Each value is a known stage_id.
 allowed_rework_routes:
   scope_gap: scope_and_questions
+  protocol_gap: research_protocol_design
   insufficient_sources: source_discovery
   source_reliability_failure: source_discovery
+  source_bias_conflict_failure: source_reliability_assessment
   unmapped_claim: claim_evidence_mapping
   cross_validation_conflict: claim_evidence_mapping
   uncertainty_underreported: uncertainty_reporting
   synthesis_not_supported_by_evidence: claim_evidence_mapping
   citation_gap: synthesis
+  citation_integrity_failure: synthesis
 
-# Evidence artifacts the pipeline must produce (md §1 required_evidence).
-# Evidence = decision proof, DISTINCT from trace.
+# Evidence artifacts the pipeline must produce (md §1 required_evidence + the new decision-proof
+# artifacts the professional-grade controls produce). Evidence = decision proof, DISTINCT from trace.
 required_evidence:
   - RESEARCH_BRIEF
   - RESEARCH_QUESTION_SET
+  - RESEARCH_PROTOCOL              # pre-registered method (research_protocol_design #3)
   - SOURCE_INVENTORY
   - SOURCE_RELIABILITY_REPORT
+  - SOURCE_BIAS_CONFLICT_REPORT    # bias / conflict-of-interest findings (source_reliability_assessment #5)
   - CLAIM_REGISTER
   - CLAIM_EVIDENCE_MAP
   - CROSS_VALIDATION_REPORT
   - UNCERTAINTY_REPORT
   - RESEARCH_SYNTHESIS
   - CITATION_INDEX
+  - CITATION_INTEGRITY_REPORT      # citation-integrity verification (synthesis #10)
   - RESEARCH_EVIDENCE_GRAPH
+  - REPRODUCIBILITY_AUDIT          # evidence-chain reproducibility audit (research_completion #11)
   - RESEARCH_COMPLETION_REPORT
 
 # Trace records the pipeline must produce (md §1 required_trace).
@@ -99,9 +131,14 @@ required_trace:
   - cross_validation_role_handoff_trace
   - gate_decision_trace
 
+# Canonical stage set (11). research_protocol_design (#3) was ADDED for professional-grade
+# reliability: it pre-registers the method before discovery (the one new stage; the other
+# professional controls are gates inside existing stages). Order is load-bearing — the protocol
+# must precede source_discovery.
 stages:
   - research_intake
   - scope_and_questions
+  - research_protocol_design
   - source_discovery
   - source_reliability_assessment
   - claim_extraction
@@ -153,22 +190,30 @@ uses_context_memory_profiles:
   - source_corpus_context_pack
   - claim_evidence_context_pack
 
-# Required gates. The md does not define a dedicated D-016-style canonical gate set;
-# the always-required gates here are the md's pipeline-level pass conditions
-# (md §1 exit_criteria + the no-self-approval structural gate from §2.7/§3). The md
-# defines no applicability-gated gates, so `conditional` is empty.
+# Required gates. The md does not define a dedicated D-016-style canonical gate set; the
+# always-required gates here are the md's pipeline-level pass conditions (md §1 exit_criteria + the
+# no-self-approval structural gate from §2.7/§3), PLUS the four professional-grade rollup gates added
+# for the calibration exemplar (protocol pre-registration, bias/conflict screening, citation
+# integrity, evidence-chain reproducibility). `conditional` now carries one applicability-gated gate
+# (source recency) that is required only on freshness-sensitive runs — see required_gate_producers in
+# research_pipeline_runtime_rules.yaml for the gate -> producing-stage map.
 required_gates:
   always:
+    - research_protocol_pre_registered                  # NEW: producing_stage research_protocol_design (#3)
     - all_research_questions_addressed_or_flagged
     - every_load_bearing_claim_has_mapped_evidence
     - every_used_source_has_reliability_score
+    - every_load_bearing_source_bias_conflict_screened  # NEW: producing_stage source_reliability_assessment (#5)
     - validator_role_distinct_from_producer
     - cross_validation_completed_by_separate_role
     - uncertainty_report_present
     - citation_required_gate_pass
+    - citations_resolve_to_mapped_evidence              # NEW: producing_stage synthesis (#10)
     - research_evidence_graph_complete
+    - evidence_chain_reproducible                       # NEW: producing_stage research_completion (#11)
     - no_blocking_policy_failure
-  conditional: []
+  conditional:
+    - source_recency_validated_if_freshness_sensitive   # NEW: producing_stage source_reliability_assessment (#5)
 
 canonical_docs:
   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md

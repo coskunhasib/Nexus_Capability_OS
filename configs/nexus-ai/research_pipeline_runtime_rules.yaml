@@ -46,9 +46,12 @@ routing_terminals:
 #   required gate has a real producer (the gate name would be a dangling edge: present in
 #   required_gates, resolving to nothing). This block resolves that edge.
 #
-# SCOPE: ALL required gates in research_pipeline.yaml required_gates — 9 `always` gates and 0
-#   `conditional` gates (the def's required_gates.conditional is empty). Most map by name to a single
-#   producing stage whose `gates:` list contains the gate; the cross-cutting POLICY gate
+# SCOPE: ALL required gates in research_pipeline.yaml required_gates — 13 `always` gates and 1
+#   `conditional` gate (after the professional-grade calibration upgrade: +4 always rollup gates
+#   [research_protocol_pre_registered, every_load_bearing_source_bias_conflict_screened,
+#   citations_resolve_to_mapped_evidence, evidence_chain_reproducible] and +1 conditional gate
+#   [source_recency_validated_if_freshness_sensitive]). Most map by name to a single producing stage
+#   whose `gates:` list contains the (component) gate; the cross-cutting POLICY gate
 #   no_blocking_policy_failure has no single producing stage (producing_stage: pipeline).
 #
 # AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/research/*.yaml; the
@@ -56,36 +59,52 @@ routing_terminals:
 #   `uses_governance_profiles` (exact string as it appears in the stage contract).
 #
 # CHECKER CONTRACT (how to verify): for each entry, assert
-#   (a) `gate` ∈ research_pipeline.yaml required_gates.always (or .conditional, currently empty),
-#   (b) `producing_stage` ∈ the canonical 10-stage set (or the literal `pipeline` for policy gates),
+#   (a) `gate` ∈ research_pipeline.yaml required_gates.always (or .conditional),
+#   (b) `producing_stage` ∈ the canonical 11-stage set (or the literal `pipeline` for policy gates),
 #   (c) `producing_rule` ∈ that stage's uses_governance_profiles (configs/nexus-ai/stages/research/*.yaml),
 #   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
 # Any unmet assertion = a dangling required-gate edge.
 required_gate_producers:
-  scope: research_required_gates_all   # all 9 always gates + 0 conditional gates (required_gates.conditional is empty)
+  scope: research_required_gates_all   # all 13 always gates + 1 conditional gate (source_recency_validated_if_freshness_sensitive)
   note: >-
     Each rollup gate in research_pipeline.yaml required_gates is SATISFIED BY the producing stage's
     gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does
     NOT redefine any stage gate and does NOT alter research_pipeline.yaml (which stays schema-valid).
     producing_rule strings are copied verbatim from each producing stage's uses_governance_profiles.
   gates:
+    - gate: research_protocol_pre_registered              # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: research_protocol_design           # stage #3 (NEW)
+      producing_rule: research_source_governance          # in research_protocol_design.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - protocol_covers_every_load_bearing_question
+        - inclusion_exclusion_criteria_defined
+        - evidence_standard_defined_for_risk_class
+        - source_reliability_rubric_pre_registered
+      note: >-
+        Rollup gate for the ADDED methodology/scope pre-registration stage (#3). It confirms the
+        research method was pre-registered BEFORE source discovery — the integrity control that makes
+        the run auditable and reproducible. The research_completion blocking_condition
+        broken_evidence_chain_link and the evidence_chain_reproducible gate (#11) verify the chain was
+        actually executed against this registered protocol.
+
     - gate: all_research_questions_addressed_or_flagged   # required_gates.always
       tier: always
-      producing_stage: synthesis                          # stage #9
+      producing_stage: synthesis                          # stage #10
       producing_rule: citation_required_gate              # in synthesis.uses_governance_profiles
       satisfied_by_stage_gates:
         - all_research_questions_addressed_or_flagged
 
     - gate: every_load_bearing_claim_has_mapped_evidence  # required_gates.always
       tier: always
-      producing_stage: claim_evidence_mapping             # stage #6
+      producing_stage: claim_evidence_mapping             # stage #7
       producing_rule: evidence_required_policy            # in claim_evidence_mapping.uses_governance_profiles
       satisfied_by_stage_gates:
         - every_load_bearing_claim_has_mapped_evidence
 
     - gate: every_used_source_has_reliability_score       # required_gates.always
       tier: always
-      producing_stage: source_reliability_assessment      # stage #4
+      producing_stage: source_reliability_assessment      # stage #5
       producing_rule: research_source_governance          # in source_reliability_assessment.uses_governance_profiles
       satisfied_by_stage_gates:
         - every_candidate_source_scored
@@ -95,9 +114,21 @@ required_gate_producers:
         "every used source has a reliability score". The research_completion blocking_condition
         unscored_source_used_in_synthesis == true guards the same invariant at the terminal gate.
 
+    - gate: every_load_bearing_source_bias_conflict_screened   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: source_reliability_assessment      # stage #5
+      producing_rule: research_source_governance          # in source_reliability_assessment.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - source_bias_and_conflict_screened
+      note: >-
+        Rollup gate for the ADDED bias / conflict-of-interest screening (decomposed to
+        source_bias_screening_subagent). The component gate source_bias_and_conflict_screened
+        requires bias/COI disclosure per source; the pipeline blocking_condition
+        undisclosed_conflict_of_interest_in_load_bearing_source guards it run-wide.
+
     - gate: validator_role_distinct_from_producer         # required_gates.always
       tier: always
-      producing_stage: cross_validation                   # stage #7
+      producing_stage: cross_validation                   # stage #8
       producing_rule: no_self_approval_policy             # in cross_validation.uses_governance_profiles
       satisfied_by_stage_gates:
         - validator_role_distinct_from_producer
@@ -107,40 +138,67 @@ required_gate_producers:
 
     - gate: cross_validation_completed_by_separate_role   # required_gates.always
       tier: always
-      producing_stage: research_completion                # stage #10
+      producing_stage: research_completion                # stage #11
       producing_rule: no_self_approval_policy             # in research_completion.uses_governance_profiles
       satisfied_by_stage_gates:
         - cross_validation_completed_by_separate_role
       note: >-
         This gate is a literal component gate of the terminal research_completion stage (it confirms
-        the cross_validation stage #7 ran under a separate role). The substantive separate-role check
-        happens in cross_validation (#7, validator_role_distinct_from_producer); research_completion
+        the cross_validation stage #8 ran under a separate role). The substantive separate-role check
+        happens in cross_validation (#8, validator_role_distinct_from_producer); research_completion
         rolls it up at the final gate.
 
     - gate: uncertainty_report_present                    # required_gates.always
       tier: always
-      producing_stage: uncertainty_reporting              # stage #8
+      producing_stage: uncertainty_reporting              # stage #9
       producing_rule: evidence_required_policy            # in uncertainty_reporting.uses_governance_profiles
       satisfied_by_stage_gates:
         - uncertainty_report_present
 
     - gate: citation_required_gate_pass                   # required_gates.always
       tier: always
-      producing_stage: research_completion                # stage #10
+      producing_stage: research_completion                # stage #11
       producing_rule: evidence_required_policy            # in research_completion.uses_governance_profiles
       satisfied_by_stage_gates:
         - citation_required_gate_pass
       note: >-
         The terminal research_completion stage carries the literal citation_required_gate_pass gate.
-        It rolls up the synthesis stage (#9) citation enforcement (no_uncited_load_bearing_claim under
+        It rolls up the synthesis stage (#10) citation enforcement (no_uncited_load_bearing_claim under
         the citation_required_gate governance profile).
+
+    - gate: citations_resolve_to_mapped_evidence          # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: synthesis                          # stage #10
+      producing_rule: citation_required_gate              # in synthesis.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - citations_resolve_to_mapped_evidence
+      note: >-
+        Citation-INTEGRITY rollup gate (distinct from citation PRESENCE). The synthesis component gate
+        citations_resolve_to_mapped_evidence requires every citation to resolve to real, matching
+        mapped evidence in the CLAIM_EVIDENCE_MAP; the pipeline blocking_condition
+        citation_does_not_resolve_to_mapped_evidence guards it. Closes the fabricated/mismatched-
+        citation failure mode that a presence-only citation gate misses.
 
     - gate: research_evidence_graph_complete              # required_gates.always
       tier: always
-      producing_stage: research_completion                # stage #10
+      producing_stage: research_completion                # stage #11
       producing_rule: evidence_required_policy            # in research_completion.uses_governance_profiles
       satisfied_by_stage_gates:
         - research_evidence_graph_complete
+
+    - gate: evidence_chain_reproducible                   # required_gates.always (NEW — professional-grade)
+      tier: always
+      producing_stage: research_completion                # stage #11
+      producing_rule: evidence_required_policy            # in research_completion.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - evidence_chain_reproducible
+      note: >-
+        Reproducibility rollup gate. The research_completion component gate evidence_chain_reproducible
+        (decomposed to research_evidence_graph_subagent) audits that the end-to-end chain
+        goal -> question -> protocol -> source(+provenance) -> score -> claim -> mapped evidence ->
+        cross-validation -> uncertainty -> cited synthesis re-walks WITHOUT a broken link against the
+        pre-registered RESEARCH_PROTOCOL (#3). Pipeline blocking_condition broken_evidence_chain_link
+        guards it. This is the terminal pairing for the protocol-pre-registration gate.
 
     - gate: no_blocking_policy_failure                    # required_gates.always
       tier: always
@@ -153,17 +211,40 @@ required_gate_producers:
         no-blocking-policy-failure condition over the whole run — i.e. none of the def's
         blocking_conditions (research_pipeline.yaml: load_bearing_claim_without_evidence_count > 0,
         unscored_source_used_in_synthesis, producer_role_is_sole_validator_of_own_source,
-        uncited_claim_in_final_synthesis, critical_source_reliability_conflict_unresolved) hold.
-        It is also re-checked as the literal terminal gate of research_completion (#10), but it has
+        uncited_claim_in_final_synthesis, critical_source_reliability_conflict_unresolved, and the
+        professional-grade additions research_protocol_not_pre_registered,
+        undisclosed_conflict_of_interest_in_load_bearing_source,
+        citation_does_not_resolve_to_mapped_evidence, broken_evidence_chain_link) hold.
+        It is also re-checked as the literal terminal gate of research_completion (#11), but it has
         no single producing stage, so producing_stage is `pipeline`.
+
+    # --- conditional (applicability-gated) ------------------------------------------------------
+    - gate: source_recency_validated_if_freshness_sensitive   # required_gates.conditional (NEW — professional-grade)
+      tier: conditional
+      producing_stage: source_reliability_assessment      # stage #5
+      producing_rule: research_source_governance          # in source_reliability_assessment.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - source_recency_validated
+      conditional_required_when: >-
+        freshness_sensitive == true (RESEARCH_CONDITIONAL_FLAGS, set at research_intake #1) — i.e.
+        risk_profile in {decision_support, high_stakes_cited, regulated_or_high_risk} or the requester
+        marked the topic time-sensitive.
+      note: >-
+        Conditional gate. The producing stage's component gate source_recency_validated checks each
+        source's publication date against the protocol's freshness requirement. When the run is NOT
+        freshness-sensitive the gate evaluates to pass_if_not_applicable and does not block. Mirrors
+        the SDLC conditional-gate pattern (a *_if_* rollup gate satisfied by an un-suffixed component
+        gate). Pipeline blocking_condition stale_source_used_for_freshness_sensitive_question guards
+        the applicable case at the stage.
 
   invariants:
     - Every `gate` MUST exist in configs/nexus-ai/research_pipeline.yaml required_gates
-      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional, currently empty).
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
     - Every `producing_stage` MUST be a canonical stage_id in configs/nexus-ai/research_pipeline.yaml,
       or the literal `pipeline` for cross-cutting policy gates with no single producing stage.
     - "Every `producing_rule` MUST appear in the producing stage's uses_governance_profiles (configs/nexus-ai/stages/research/*.yaml); for producing_stage: pipeline it is the cross-cutting policy profile that aggregates the run-level blocking_conditions."
     - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/research/*.yaml); for producing_stage: pipeline it is the policy gate name carried at the terminal research_completion stage."
+    - "A conditional gate's satisfied_by_stage_gates names the un-suffixed component gate on the producing stage (e.g. source_recency_validated_if_freshness_sensitive -> source_recency_validated); when not applicable it evaluates to pass_if_not_applicable and does not block."
     - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change research_pipeline.yaml."
 
 # =====================================================================================
@@ -171,13 +252,17 @@ required_gate_producers:
 # =====================================================================================
 rework_routing_table:
 
-  # -- Authoritative per-stage routes (complete; covers all 10 canonical stages) --------
+  # -- Authoritative per-stage routes (complete; covers all 11 canonical stages) --------
   # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
   # Values copied from each stage's own canonical `rework_route` in
-  # configs/nexus-ai/stages/research/*.yaml.
+  # configs/nexus-ai/stages/research/*.yaml. (NOTE: a stage's on_fail may name an UPSTREAM stage
+  # while its rework_route names the SELF-rework target — e.g. scope_and_questions on_fail=research_intake
+  # but rework_route=scope_and_questions; source_discovery on_fail=scope_and_questions but
+  # rework_route=source_discovery. by_stage tracks rework_route, matching the SDLC convention.)
   by_stage:
     research_intake: research_intake
     scope_and_questions: scope_and_questions
+    research_protocol_design: research_protocol_design   # NEW stage #3 (rework_route = self)
     source_discovery: source_discovery
     source_reliability_assessment: source_reliability_assessment
     claim_extraction: claim_extraction
@@ -189,16 +274,20 @@ rework_routing_table:
 
   # -- Failure-type index (the def's allowed_rework_routes: map failure -> stage_id) -----
   # Copied verbatim from research_pipeline.yaml allowed_rework_routes. Each target is a known
-  # stage_id; these are the named failure routes the def declares for the pipeline.
+  # stage_id; these are the named failure routes the def declares for the pipeline (now including the
+  # professional-grade routes: protocol_gap, source_bias_conflict_failure, citation_integrity_failure).
   by_failure_type:
     scope_gap: scope_and_questions
+    protocol_gap: research_protocol_design
     insufficient_sources: source_discovery
     source_reliability_failure: source_discovery
+    source_bias_conflict_failure: source_reliability_assessment
     unmapped_claim: claim_evidence_mapping
     cross_validation_conflict: claim_evidence_mapping
     uncertainty_underreported: uncertainty_reporting
     synthesis_not_supported_by_evidence: claim_evidence_mapping
     citation_gap: synthesis
+    citation_integrity_failure: synthesis
 
   routing_invariants:
     - All routing targets MUST be a known canonical stage_id (configs/nexus-ai/research_pipeline.yaml)

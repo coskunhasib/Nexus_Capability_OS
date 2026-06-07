@@ -1,29 +1,49 @@
 # Nexus AI Orchestration Model — Research Pipeline
-# Stage #2 of 10: scope_and_questions
-# Machine-readable stage contract. Transcribed (not invented) from
-#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.2.
-# Field set mirrors configs/nexus-ai/stages/sdlc/04-requirements.yaml.
+# Stage #2 of 11: scope_and_questions
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.2.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/04-requirements.yaml (rich chaining
+#   inputs/outputs, multiple gates, populated blocking_conditions, annotated uses_* lines).
 # Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
-# prism is used here for DIVERGENCE (LOCKED: brainstorming/divergence only), NOT validation.
+#
+# Depth / reconciliation notes:
+#   - prism is used here for DIVERGENCE ONLY (LOCKED: brainstorming/divergence — diverse question set
+#     and candidate angles, NOT validation or decision). gap-audit surfaces question-coverage gaps.
+#   - No-self-approval: authoring stage; its reviewer is research_team_lead
+#     (agent_roles.yaml research_scoping_agent.reviewed_by). The producer!=validator structural gate
+#     is at cross_validation (#7).
+#   - on_fail routing reflects the md §2.2 two-way logic: a scope/goal MISMATCH routes back to
+#     research_intake (#1); an internal question-set gap is re-run in place (rework_route = self).
+#     on_fail names the upstream stage; rework_route names the self-rework target (matches the SDLC
+#     convention where on_fail and rework_route may differ — e.g. requirements on_fail=requirements,
+#     rework_route=intake).
+#   - Outputs enriched: beyond RESEARCH_QUESTION_SET this stage emits the explicit load-bearing
+#     question subset and a coverage map, which research_protocol_design (#3) and synthesis (#9)
+#     consume (synthesis must address or flag EVERY load-bearing question).
 version: draft-0.1
 stage_id: scope_and_questions
 name: Scope and Questions
 purpose: >-
-  Decompose the goal into concrete, answerable research questions and sub-questions;
-  mark which are load-bearing for the downstream decision. prism is used here for
-  divergence — generating a diverse question set and candidate angles, not for validation.
+  Decompose the research goal into concrete, answerable research questions and sub-questions; mark
+  which are load-bearing for the downstream decision; and produce a question-coverage map so no
+  decision-critical angle is silently dropped. prism is used here for divergence — generating a
+  diverse question set and candidate angles — not for validation. Produces the bounded
+  RESEARCH_QUESTION_SET that every later stage is measured against.
+
 owner_team: research_team
 team_lead: research_team_lead
 owner_agent: research_scoping_agent
 sub_agents: []
 
 uses_core_abilities:
-  - Memory
+  - Memory   # recall the brief and any prior research framing
+  - Web      # sanity-check that candidate questions are researchable
 uses_skills:
   - prism       # LOCKED: divergence — diverse question set / candidate angles, NOT validation
-  - gap-audit   # surface missing question coverage / scope gaps
+  - gap-audit   # surface missing question coverage / scope gaps before the run commits sources
 uses_tools:
-  - artifact_writer
+  - artifact_writer   # write RESEARCH_QUESTION_SET (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
 uses_governance_profiles:
   - research_source_governance
   - evidence_required_policy
@@ -37,13 +57,22 @@ uses_context_memory_profiles:
 
 inputs:
   - RESEARCH_BRIEF
+  - RESEARCH_SCOPE_BOUNDARY     # from research_intake; refined into the bounded question set
+  - RISK_PROFILE_DECISION       # higher risk class => stricter load-bearing-coverage expectations
+
 outputs:
-  - RESEARCH_QUESTION_SET
+  - RESEARCH_QUESTION_SET            # concrete, answerable questions + sub-questions
+  - LOAD_BEARING_QUESTION_SET        # the decision-critical subset (drives downstream gating)
+  - QUESTION_COVERAGE_MAP            # goal-area -> question coverage, with any flagged gaps
+  - SCOPE_QUESTIONS_GATE_RESULT      # binary gate result for this stage
 
 evidence:
   - RESEARCH_QUESTION_SET
+  - LOAD_BEARING_QUESTION_SET
+  - SCOPE_QUESTIONS_GATE_RESULT
 trace:
-  - agent_invocation_trace
+  - research_scoping_agent_trace
+  - prism_skill_activation_trace      # divergence activation (LOCKED semantics)
   - skill_activation_trace
   - gate_decision_trace
 
@@ -52,11 +81,15 @@ gates:
   - load_bearing_questions_identified
   - no_major_question_gap
 
-on_pass: source_discovery
-on_fail: research_intake
-rework_route: scope_and_questions
+on_pass: research_protocol_design
+on_fail: research_intake          # scope/goal MISMATCH routes upstream to intake
+rework_route: scope_and_questions # internal question-set gap is re-run in place
 
-blocking_conditions: []
+blocking_conditions:
+  - research_questions_unbounded
+  - load_bearing_questions_not_identified
+  - major_question_gap
+  - question_not_traceable_to_research_goal
 optional_conditions: []
 conditional_required_gates: []
 

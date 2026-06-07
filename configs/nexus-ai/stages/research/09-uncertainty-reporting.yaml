@@ -1,0 +1,97 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #9 of 11: uncertainty_reporting
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.8.
+# Field set + rigor mirror the SDLC stage contracts.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#
+# Depth / reconciliation notes:
+#   - bayesian-update adjusts confidence as corroborating/contradicting evidence accumulates;
+#     calibrate keeps the stated confidence levels rationale-backed (not asserted). Both consume the
+#     cross-validation verdict so confidence reflects the INDEPENDENTLY re-checked evidence, not the
+#     producer's self-assessment.
+#   - Produces the UNCERTAINTY_REPORT (always-required rollup gate uncertainty_report_present) plus
+#     per-claim confidence and the explicit contested-points / known-gaps registers that synthesis
+#     must stay consistent with (synthesis gate synthesis_consistent_with_uncertainty_report).
+#   - No-self-approval: authoring stage; reviewed by research_team_lead
+#     (agent_roles.yaml uncertainty_reporting_agent.reviewed_by). Distinct from cross_validation (#8).
+#   - on_fail routes to claim_evidence_mapping when under-reported uncertainty traces to a mapping gap;
+#     otherwise re-run in place (rework_route = self) — matches md §2.8.
+version: draft-0.1
+stage_id: uncertainty_reporting
+name: Uncertainty Reporting
+purpose: >-
+  Quantify and document residual uncertainty per claim and per research question — confidence levels
+  (rationale-backed), evidence strength, corroboration depth, contested points, and known gaps — using
+  the independently cross-validated evidence. bayesian-update adjusts confidence as
+  corroborating/contradicting evidence accumulates. Produces the UNCERTAINTY_REPORT synthesis must
+  remain consistent with.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: uncertainty_reporting_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the claim-evidence map, contradictions and the cross-validation verdict
+  - Web      # re-check contested evidence where needed to set confidence
+uses_skills:
+  - bayesian-update   # adjust confidence as corroborating / contradicting evidence accumulates
+  - calibrate         # keep stated confidence levels rationale-backed and consistently calibrated
+uses_tools:
+  - artifact_writer   # write UNCERTAINTY_REPORT (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - claim_evidence_context_pack
+
+inputs:
+  - CLAIM_EVIDENCE_MAP
+  - CROSS_VALIDATION_REPORT        # confidence reflects the independently re-checked evidence
+  - CONTRADICTION_REGISTER
+  - SINGLE_SOURCE_CLAIM_RESOLUTION
+  - LOAD_BEARING_QUESTION_SET      # report uncertainty per load-bearing question
+
+outputs:
+  - UNCERTAINTY_REPORT              # per-claim / per-question confidence + evidence strength
+  - CONFIDENCE_RATIONALE_LOG        # the rationale behind each confidence level
+  - CONTESTED_POINTS_REGISTER       # points where sources/evidence disagree, made explicit
+  - KNOWN_GAPS_REGISTER             # questions/claims with insufficient evidence, made explicit
+  - UNCERTAINTY_REPORT_GATE_RESULT  # binary gate result for this stage
+
+evidence:
+  - UNCERTAINTY_REPORT
+  - CONTESTED_POINTS_REGISTER
+  - UNCERTAINTY_REPORT_GATE_RESULT
+trace:
+  - uncertainty_reporting_agent_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - uncertainty_report_present
+  - confidence_levels_rationale_backed
+  - contested_points_explicit
+  - known_gaps_explicit             # questions/claims with insufficient evidence are surfaced, not buried
+
+on_pass: synthesis
+on_fail: claim_evidence_mapping     # under-reported uncertainty that traces to a mapping gap
+rework_route: uncertainty_reporting
+
+blocking_conditions:
+  - uncertainty_report_absent
+  - confidence_levels_not_rationale_backed
+  - contested_point_omitted
+  - known_gap_unreported
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,0 +1,95 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #7 of 11: claim_evidence_mapping
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.6.
+# Field set + rigor mirror the SDLC stage contracts.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#
+# Depth / reconciliation notes:
+#   - Produces CLAIM_EVIDENCE_MAP: every claim mapped to supporting AND contradicting evidence across
+#     sources, with support strength and any conflicts recorded. This is the authoritative producer
+#     of the always-required rollup gate every_load_bearing_claim_has_mapped_evidence
+#     (research_pipeline_runtime_rules.yaml required_gate_producers).
+#   - gap-audit surfaces unsupported / single-source / contradiction-bearing claims so none is hidden.
+#   - No-self-approval: this mapping is INDEPENDENTLY re-checked at cross_validation (#8) by the
+#     distinct cross_validation_agent. claim_evidence_agent.reviewed_by = cross_validation_agent
+#     (agent_roles.yaml). This stage is the named rework target for several pipeline failure types
+#     (unmapped_claim, cross_validation_conflict, synthesis_not_supported_by_evidence).
+#   - on_fail / rework both route to self (mapping rework); an evidence GAP that needs new sources is
+#     expressed via the pipeline-level route insufficient_sources -> source_discovery, not by skipping
+#     forward.
+version: draft-0.1
+stage_id: claim_evidence_mapping
+name: Claim-Evidence Mapping
+purpose: >-
+  Map every claim — and every load-bearing claim without exception — to its supporting and
+  contradicting evidence across the scored sources; record support strength, corroboration count,
+  single-source status and any conflicts. Flag unsupported claims. Produces the CLAIM_EVIDENCE_MAP
+  that cross-validation re-checks, uncertainty reporting quantifies, and synthesis cites against.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: claim_evidence_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the claim register and scored corpus
+  - Web      # re-read source passages to confirm support / contradiction
+uses_skills:
+  - gap-audit   # surface unsupported claims, single-source claims and unrecorded contradictions
+uses_tools:
+  - claim_mapper      # build the claim->evidence map with support strength (trace: claim_mapper_tool_trace)
+  - evidence_writer   # write CLAIM_EVIDENCE_MAP evidence (side-effect: governance + trace)
+  - evidence_reader   # read source-reliability + claim evidence to ground the mapping
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - claim_evidence_context_pack
+
+inputs:
+  - CLAIM_REGISTER
+  - LOAD_BEARING_CLAIM_SET
+  - SOURCE_RELIABILITY_REPORT      # weight evidence by source reliability
+  - ADMISSIBLE_SOURCE_SET
+
+outputs:
+  - CLAIM_EVIDENCE_MAP             # claim -> supporting/contradicting evidence + support strength
+  - CONTRADICTION_REGISTER         # recorded conflicts between sources for the same claim
+  - UNSUPPORTED_CLAIM_FLAGS        # claims with insufficient / no mapped evidence
+  - SINGLE_SOURCE_CLAIM_FLAGS      # claims resting on one source (handed to cross_validation #8)
+  - CLAIM_EVIDENCE_MAP_GATE_RESULT # binary gate result for this stage
+
+evidence:
+  - CLAIM_EVIDENCE_MAP
+  - CONTRADICTION_REGISTER
+  - CLAIM_EVIDENCE_MAP_GATE_RESULT
+trace:
+  - claim_evidence_agent_trace
+  - claim_mapper_tool_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - every_load_bearing_claim_has_mapped_evidence
+  - contradictions_recorded
+  - unsupported_claims_flagged
+
+on_pass: cross_validation
+on_fail: claim_evidence_mapping
+rework_route: claim_evidence_mapping
+
+blocking_conditions:
+  - load_bearing_claim_without_mapped_evidence
+  - contradictions_unrecorded
+  - unsupported_claim_unflagged
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

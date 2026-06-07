@@ -4,11 +4,16 @@
 # Scope: one role per DISTINCT sub_agent referenced across the authoritative sources:
 #   - configs/nexus-ai/stages/sdlc/*.yaml  (31 SDLC stage contracts — AUTHORITATIVE for SDLC
 #     owner_agent + sub_agents). Only 8 stages declare a non-empty `sub_agents:` list.
-#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md  (5 non-SDLC pipelines). Of these, only the
+#   - configs/nexus-ai/stages/research/*.yaml  (11 research stage contracts). The Research Pipeline
+#     was raised to professional-grade reliability (calibration exemplar); 3 of its stages now declare
+#     a sub_agent for genuine decomposition: source_reliability_assessment (#5) ->
+#     source_bias_screening_subagent, cross_validation (#8) -> independent_replication_subagent,
+#     research_completion (#11) -> research_evidence_graph_subagent.
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md  (the other non-SDLC pipelines). Of these, only the
 #     skill_governance pipeline references a sub-agent, and it REUSES the SDLC
 #     `skill_semantic_extractor_subagent` (it owns stage 2.2 skill_semantic_extraction there,
-#     parent: skill_librarian_agent). research / activation / operations / knowledge-memory
-#     pipelines declare only Agents — no sub-agents. => 8 distinct sub-agents total.
+#     parent: skill_librarian_agent). activation / operations / knowledge-memory pipelines declare
+#     only Agents — no sub-agents. => 11 distinct sub-agents total (8 SDLC + 3 research).
 #
 # Contract shape: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md §7 (Sub-agent Role
 #   Contract). Boundary rules: doc 18 §11 (and task LOCKED DECISIONS):
@@ -627,14 +632,229 @@ sub_agents:
       - broken_traceability_link
       - inconsistent_evidence_graph
 
+  # ---------------------------------------------------------------------------
+  # 9) source_bias_screening_subagent
+  #    RESEARCH stage #5 (source_reliability_assessment, owner: source_reliability_agent).
+  #    NEW (research professional-grade calibration): decomposes bias / conflict-of-interest
+  #    screening from core reliability scoring. The md §2.4 purpose names "bias signals" and the
+  #    source_reliability_checker tool + source_evaluation_model both score bias/COI, but it was an
+  #    un-decomposed facet; this sub-agent makes it an explicit analysis hand-up.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: source_bias_screening_subagent
+    parent_agent: source_reliability_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      For each candidate source, screen for bias and conflict-of-interest signals — funding/ownership
+      ties, advocacy or vendor stance, undisclosed sponsorship, self-citation loops, and independence
+      from the parties the research bears on — and produce a per-source SOURCE_BIAS_CONFLICT_REPORT
+      with rationale. Hands the screening up to source_reliability_agent, which folds it into the
+      reliability score and decides the stage gate. This sub-agent screens and reports; it does not
+      decide the gate and does not set the final reliability score.
+    activation_conditions:
+      - parent_agent_invokes_during_source_reliability_assessment
+      - source_inventory_and_provenance_available_for_screening
+    inputs:
+      - SOURCE_INVENTORY
+      - SOURCE_PROVENANCE_RECORD
+      - SOURCE_RELIABILITY_RUBRIC      # the pre-registered rubric's bias/independence criteria
+      - RESEARCH_CONDITIONAL_FLAGS     # conflict_of_interest_sensitive raises screening strictness
+    outputs:
+      - SOURCE_BIAS_CONFLICT_REPORT    # per-source bias / COI findings handed to the parent
+    uses_core_abilities:
+      - Memory   # recall the rubric, the corpus and prior independence assessments
+      - Web      # consult ownership / funding / affiliation signals about a publisher
+    uses_skills:
+      - calibrate   # keep bias/COI findings rationale-backed and consistently calibrated
+      - gap-audit   # detect sources lacking an independence/COI assessment
+    uses_tools:
+      - source_reliability_checker   # score bias signals (side-effect: governance + trace)
+      - evidence_reader              # read provenance / inventory to ground the screening
+      - artifact_writer              # write SOURCE_BIAS_CONFLICT_REPORT (side-effect: governance + trace)
+      - evidence_writer              # write screening evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - research_source_governance   # source admissibility / independence rules
+      - evidence_required            # canonical (stage contract uses the _policy variant)
+      - no_self_approval             # canonical (screening is independent of the producing discovery role)
+    uses_audit_schemas:
+      - source_evidence_schema       # evidence schema (the bias/COI findings attach to source evidence)
+      - stage_gate_trace_schema      # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - source_evaluation_model      # capability_scope includes provenance_and_bias_assessment
+    uses_context_memory_profiles:
+      - source_corpus_context_pack
+    permissions:
+      - read_source_inventory_and_provenance
+      - screen_bias_and_conflict_of_interest
+      - author_bias_conflict_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_source_reliability_gate   # gate decision belongs to source_reliability_agent
+      - set_the_final_reliability_score                # the parent owns the composite score
+      - solely_validate_the_sources_it_screens         # cross_validation re-checks independently (no self-approval)
+      - mutate_source_inventory_or_provenance
+      - bypass_a_blocking_governance_gate
+    returns_to: source_reliability_agent
+    blocks_when:
+      - undisclosed_conflict_of_interest_in_load_bearing_source
+      - bias_assessment_missing_for_a_candidate_source
+      - independence_not_assessed_for_a_load_bearing_source
+
+  # ---------------------------------------------------------------------------
+  # 10) independent_replication_subagent
+  #     RESEARCH stage #8 (cross_validation, owner: cross_validation_agent).
+  #     NEW (research professional-grade calibration): mirrors the SDLC bug_hunter_subagent pattern
+  #     (a dedicated sub-agent under an independent gate stage). Independently RE-DERIVES reliability
+  #     scores and claim->evidence mappings — the operational meaning of evidence-chain replicability
+  #     by a separate role. NO-SELF-APPROVAL is intrinsic: parent cross_validation_agent is distinct
+  #     from every producing agent.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: independent_replication_subagent
+    parent_agent: cross_validation_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Independently re-derive — without reusing the producers' working — the source-reliability scores
+      and the claim->evidence mappings for load-bearing claims, then report every divergence from the
+      producing stages (score deltas, mapping disagreements, uncorroborated single-source claims).
+      This is an independent REPLICATION of the evidence chain by a separate role, handed up to
+      cross_validation_agent, which adjudicates and decides the gate. The sub-agent replicates and
+      reports; it does not decide the cross-validation gate and never validates work it produced.
+    activation_conditions:
+      - parent_agent_invokes_during_cross_validation
+      - producing_stage_scores_and_mappings_available_for_independent_recheck
+    inputs:
+      - SOURCE_RELIABILITY_REPORT
+      - CLAIM_EVIDENCE_MAP
+      - SINGLE_SOURCE_CLAIM_FLAGS
+      - CONTRADICTION_REGISTER
+    outputs:
+      - REPLICATION_DIVERGENCE_REPORT   # where independent re-derivation diverged from the producers
+    uses_core_abilities:
+      - Memory   # recall the producing stages' outputs and the source corpus
+      - Web      # independently re-fetch source material to confirm support/contradiction
+    uses_skills:
+      - llm-council   # multi-perspective independent re-derivation / adjudication input
+      - calibrate     # keep re-derived scores rationale-backed and consistently calibrated
+    uses_tools:
+      - source_reliability_checker   # independently re-score sources (side-effect: governance + trace)
+      - evidence_reader              # read the producers' evidence to re-check it
+      - artifact_writer              # write REPLICATION_DIVERGENCE_REPORT (side-effect: governance + trace)
+      - evidence_writer              # write replication evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - no_self_approval             # canonical (validator role distinct from producer roles)
+      - research_source_governance
+      - evidence_required            # canonical (stage contract uses the _policy variant)
+    uses_audit_schemas:
+      - claim_evidence_schema        # evidence schema (re-checked mappings)
+      - source_evidence_schema       # evidence schema (re-checked scores)
+      - stage_gate_trace_schema      # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - source_evaluation_model
+    uses_context_memory_profiles:
+      - claim_evidence_context_pack
+    permissions:
+      - independently_re_derive_scores_and_mappings
+      - author_replication_divergence_report
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_cross_validation_gate     # gate decision belongs to cross_validation_agent
+      - validate_scores_or_mappings_it_itself_produced  # it produced none; preserves producer != validator
+      - mutate_the_producing_stages_evidence_artifacts
+      - bypass_a_blocking_governance_gate
+    returns_to: cross_validation_agent
+    blocks_when:
+      - material_replication_divergence_unresolved
+      - single_source_load_bearing_claim_uncorroborated
+      - critical_source_reliability_conflict_unresolved
+
+  # ---------------------------------------------------------------------------
+  # 11) research_evidence_graph_subagent
+  #     RESEARCH stage #11 (research_completion, owner: research_completion_agent).
+  #     NEW (research professional-grade calibration): the research analogue of the SDLC
+  #     evidence_trace_subagent — assembles + integrity-audits the end-to-end research evidence graph
+  #     and the reproducibility audit, and hands them up to research_completion_agent (which decides
+  #     the terminal gate). Evidence/trace assembly + integrity audit, NOT a defect sweep.
+  # ---------------------------------------------------------------------------
+  - sub_agent_id: research_evidence_graph_subagent
+    parent_agent: research_completion_agent
+    team_lead_direct_call_allowed: false
+    mission: >-
+      Assemble the end-to-end research evidence DAG — goal -> research question -> pre-registered
+      protocol -> source (+provenance) -> reliability score -> claim -> mapped evidence ->
+      cross-validation -> uncertainty -> cited synthesis — and audit it for completeness, internal
+      consistency, and reproducibility against the registered RESEARCH_PROTOCOL: no orphan
+      load-bearing claim, no broken link, every used source scored, every load-bearing claim mapped
+      and cited. Hands RESEARCH_EVIDENCE_GRAPH + REPRODUCIBILITY_AUDIT to research_completion_agent.
+      This is evidence/trace assembly and integrity auditing — NOT defect finding and NOT synthesis.
+    activation_conditions:
+      - parent_agent_invokes_during_research_completion
+      - upstream_stage_evidence_and_gate_results_available
+    inputs:
+      - RESEARCH_PROTOCOL
+      - SOURCE_RELIABILITY_REPORT
+      - CLAIM_EVIDENCE_MAP
+      - CROSS_VALIDATION_REPORT
+      - UNCERTAINTY_REPORT
+      - RESEARCH_SYNTHESIS
+      - CITATION_INDEX
+      - CITATION_INTEGRITY_REPORT
+      - ALL_STAGE_GATE_RESULTS
+    outputs:
+      - RESEARCH_EVIDENCE_GRAPH
+      - REPRODUCIBILITY_AUDIT          # confirms the chain re-walks against the registered protocol
+    uses_core_abilities:
+      - Memory   # recall the full run history: questions, protocol, scores, mappings, gate results
+      - Web      # spot-re-verify a cited source passage while auditing the chain
+    uses_skills:
+      - gap-audit   # detect orphan load-bearing claims, missing nodes and broken chain links
+    uses_tools:
+      - evidence_reader   # read all upstream evidence + gate results to build/audit the graph
+      - artifact_writer   # write RESEARCH_EVIDENCE_GRAPH / REPRODUCIBILITY_AUDIT (side-effect: governance + trace)
+      - evidence_writer   # write stage evidence (side-effect: governance + trace)
+    uses_governance_profiles:
+      - evidence_required            # canonical (stage contract uses the _policy variant)
+      - citation_required_gate       # the graph must reflect a passing citation gate
+      - no_self_approval             # canonical (author != the completion gate decider)
+    uses_audit_schemas:
+      - source_evidence_schema       # evidence schema (source nodes)
+      - claim_evidence_schema        # evidence schema (claim->evidence nodes)
+      - stage_gate_trace_schema      # trace schema (distinct from evidence)
+    uses_model_provider_profiles:
+      - research_reasoning_profile
+    uses_context_memory_profiles:
+      - research_run_context
+    permissions:
+      - read_all_upstream_evidence_and_gate_results
+      - assemble_research_evidence_graph_and_reproducibility_audit
+      - run_completeness_and_consistency_checks
+      - write_evidence_and_trace
+    forbidden_actions:
+      - approve_or_block_the_research_completion_gate   # gate decision belongs to research_completion_agent
+      - fabricate_or_alter_upstream_evidence_artifacts   # may link/audit, must not mutate sources
+      - author_or_edit_the_research_synthesis            # synthesis is research_synthesis_agent's artifact
+      - bypass_a_blocking_governance_gate
+    returns_to: research_completion_agent
+    blocks_when:
+      - missing_required_evidence
+      - orphan_load_bearing_claim
+      - broken_evidence_chain_link
+      - inconsistent_research_evidence_graph
+
 # ---------------------------------------------------------------------------------------------------
 # Coverage / invariant summary (for the catalog reviewer):
-#   - 8 distinct sub-agents = every distinct sub_agent referenced across the 31 SDLC stage YAMLs
-#     (stages 3, 6 [x2], 8, 13, 15, 16, 28) plus the 5 pipeline docs (skill_governance reuses
-#     skill_semantic_extractor_subagent; the other 4 pipelines declare no sub-agents).
+#   - 11 distinct sub-agents: the 8 SDLC sub-agents referenced across the 31 SDLC stage YAMLs
+#     (stages 3, 6 [x2], 8, 13, 15, 16, 28; skill_governance reuses skill_semantic_extractor_subagent)
+#     PLUS 3 NEW research sub-agents added for professional-grade research calibration:
+#       source_bias_screening_subagent (research #5, parent source_reliability_agent),
+#       independent_replication_subagent (research #8, parent cross_validation_agent),
+#       research_evidence_graph_subagent (research #11, parent research_completion_agent).
+#     The activation / operations / knowledge-memory pipelines still declare no sub-agents.
 #   - No orphans: every entry has a parent_agent and team_lead_direct_call_allowed: false.
-#   - Every parent_agent is an SDLC agent_roles entry (skill_librarian_agent, architecture_agent,
-#     security_privacy_agent, qa_agent, security_validation_agent, evidence_graph_agent) — none is a
-#     Core Ability, none is a Team Lead.
+#   - Every parent_agent is an agent_roles entry (SDLC: skill_librarian_agent, architecture_agent,
+#     security_privacy_agent, qa_agent, security_validation_agent, evidence_graph_agent; RESEARCH:
+#     source_reliability_agent, cross_validation_agent, research_completion_agent) — none is a Core
+#     Ability, none is a Team Lead.
 #   - No Core Ability appears as a sub_agent. Skill != Tool, Governance != Audit, Evidence != Trace.
-#   - No sub-agent decides a gate or approves its own work; each returns_to its parent_agent.
+#   - No sub-agent decides a gate or approves its own work; each returns_to its parent_agent. The new
+#     research sub-agents preserve producer != validator: the bias screener does not validate its own
+#     screening (cross_validation re-checks), the replication sub-agent produces nothing it later
+#     validates, and the evidence-graph sub-agent assembles but does not decide the completion gate.

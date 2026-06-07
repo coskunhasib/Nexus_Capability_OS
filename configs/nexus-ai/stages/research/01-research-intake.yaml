@@ -1,62 +1,102 @@
 # Nexus AI Orchestration Model — Research Pipeline
-# Stage #1 of 10: research_intake
-# Machine-readable stage contract. Transcribed (not invented) from
+# Stage #1 of 11: research_intake
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source of truth (transcribed, then enriched to SDLC stage-contract depth):
 #   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.1.
-# Field set mirrors configs/nexus-ai/stages/sdlc/01-intake.yaml.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/01-intake.yaml and
+#   .../04-requirements.yaml (rich inputs/outputs that chain, multiple gates, populated
+#   blocking_conditions, annotated uses_* lines).
 # Pipeline: research_pipeline (configs/nexus-ai/research_pipeline.yaml).
-# owner_agent is a snake_case Agent role under research_team, managed by research_team_lead;
-#   Supervisor is a Core Ability, NEVER the team_lead and NEVER a stage owner_agent.
+#
+# Reconciliation / depth notes:
+#   - owner_agent kept as canonical research_intake_agent (agent_roles.yaml research_team roster).
+#     Supervisor is a Core Ability, NEVER the team_lead and NEVER a stage owner_agent; team_lead is
+#     the pipeline-specific research_team_lead role.
+#   - No-self-approval: research_intake is an AUTHORING stage (it produces the RESEARCH_BRIEF). Its
+#     reviewer is research_team_lead (agent_roles.yaml: research_intake_agent.reviewed_by), so there
+#     is no self-approval conflict here; the structural producer!=validator gate lives at
+#     cross_validation (#7).
+#   - Evidence != Trace kept distinct: evidence = RESEARCH_BRIEF / RESEARCH_INTAKE_GATE_RESULT
+#     (decision proof); trace = the operation/decision log items.
+#   - Outputs enriched beyond the bare RESEARCH_BRIEF so the scope/risk decision and the conditional
+#     applicability flags chain forward (scope_and_questions consumes RISK_PROFILE_DECISION and
+#     RESEARCH_SCOPE_BOUNDARY; reliability/freshness stages consume the conditional flags). This
+#     mirrors how SDLC intake/domain_risk seed CONDITIONAL_GATE_FLAGS for downstream if-applicable
+#     gates.
 version: draft-0.1
 stage_id: research_intake
 name: Research Intake
 purpose: >-
-  Capture the research goal, requester intent, decision the research must support,
-  scope boundaries, and risk profile.
+  Capture the research goal, requester intent, the decision the research must support, scope
+  boundaries, and the risk profile; resolve the run's risk class (exploratory / decision_support /
+  high_stakes_cited / regulated_or_high_risk) and initialize the conditional-gate flags that decide
+  which heightened checks downstream stages must enforce (source freshness, bias/conflict screening,
+  citation integrity). Emit a faithful RESEARCH_BRIEF and the intake gate result that gate the run's
+  start.
+
 owner_team: research_team
 team_lead: research_team_lead
 owner_agent: research_intake_agent
 sub_agents: []
 
 # Shared Registry + Usage Mapping (all 7 categories present, even if empty).
-# md §2.1 names no per-stage abilities/skills/tools beyond pipeline defaults.
 uses_core_abilities:
-  - Memory
-uses_skills: []
+  - Memory   # recall prior research on the topic / requester context
+  - Web      # light validation that the goal is researchable (not a deep search — that is stage #3)
+uses_skills:
+  - gap-audit   # surface missing intake facets (undefined decision, unbounded scope, no risk class)
 uses_tools:
-  - artifact_writer
-  - evidence_writer
+  - artifact_writer   # write RESEARCH_BRIEF (side-effect: implies governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: implies governance + trace)
 uses_governance_profiles:
   - research_source_governance
   - evidence_required_policy
 uses_audit_schemas:
-  - source_evidence_schema
-  - stage_gate_trace_schema
+  - source_evidence_schema     # evidence (decision proof)
+  - stage_gate_trace_schema    # trace (operation history) — kept distinct from evidence
 uses_model_provider_profiles:
   - research_reasoning_profile
 uses_context_memory_profiles:
   - research_run_context
 
 inputs:
-  - RESEARCH_GOAL
+  - RESEARCH_REQUEST          # requester's raw ask (matches research_intake_agent.inputs)
+  - RESEARCH_GOAL             # the goal to be researched (entry_criteria: research_goal_present)
+
 outputs:
-  - RESEARCH_BRIEF
+  - RESEARCH_BRIEF                 # goal, decision-to-support, requester intent, scope boundaries
+  - RISK_PROFILE_DECISION          # selected risk class for the run (drives downstream gate strictness)
+  - RESEARCH_SCOPE_BOUNDARY        # in-scope / out-of-scope statement that scope_and_questions refines
+  - RESEARCH_CONDITIONAL_FLAGS     # freshness_sensitive / conflict_of_interest_sensitive / citation_critical
+  - RESEARCH_INTAKE_GATE_RESULT    # binary gate result for the intake stage
 
 evidence:
   - RESEARCH_BRIEF
+  - RISK_PROFILE_DECISION
+  - RESEARCH_INTAKE_GATE_RESULT
 trace:
-  - agent_invocation_trace
+  - research_intake_agent_trace
+  - intake_gate_decision_trace
   - gate_decision_trace
 
 gates:
   - research_goal_present
   - risk_profile_selected
   - scope_initially_bounded
+  - decision_to_support_identified        # what downstream decision the research must inform is explicit
+  - conditional_flags_initialized         # freshness / conflict-of-interest / citation-critical flags resolved
 
 on_pass: scope_and_questions
 on_fail: research_intake
 rework_route: research_intake
 
-blocking_conditions: []
+# Real failure conditions that hard-block intake (no empty load-bearing field).
+blocking_conditions:
+  - research_goal_absent
+  - risk_profile_unselected
+  - scope_unbounded
+  - decision_to_support_unidentified
+  - conditional_gate_flags_uninitialized
 optional_conditions: []
 conditional_required_gates: []
 

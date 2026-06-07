@@ -1,0 +1,90 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #6 of 11: claim_extraction
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.5.
+# Field set + rigor mirror the SDLC stage contracts.
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#
+# Depth / reconciliation notes:
+#   - Extracts ONLY from the ADMISSIBLE_SOURCE_SET (sources cleared by #5), so no claim rests on an
+#     unscored / inadmissible source — this directly defends the pipeline blocking_condition
+#     unscored_source_used_in_synthesis at the point claims first enter the chain.
+#   - claim_mapper extracts atomic claims and tags asserting source(s); each claim must be atomic and
+#     checkable and carry which load-bearing question it bears on (so synthesis can prove coverage).
+#   - No-self-approval: the claim->evidence MAPPING (#7) and cross_validation (#8) are owned by
+#     DISTINCT agents. claim_extraction_agent.reviewed_by = cross_validation_agent (agent_roles.yaml).
+#   - on_fail routes to source_discovery when claims rest on too few/weak sources; otherwise re-run
+#     extraction in place (rework_route = self).
+version: draft-0.1
+stage_id: claim_extraction
+name: Claim Extraction
+purpose: >-
+  Extract atomic, checkable claims relevant to the load-bearing research questions from the admissible
+  (scored) source corpus only; tag each claim with its asserting source(s) and the question(s) it
+  bears on; and separate load-bearing claims from background. Produces the CLAIM_REGISTER the mapping
+  stage resolves to evidence.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: claim_extraction_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory   # recall the question set and the scored corpus
+  - Web      # re-read source content where extraction needs the full passage
+uses_skills:
+  - gap-audit   # detect load-bearing questions with no extracted claims / claims not tied to a question
+uses_tools:
+  - claim_mapper      # extract atomic claims + tag asserting sources (trace: claim_mapper_tool_trace)
+  - artifact_writer   # write CLAIM_REGISTER (side-effect: governance + trace)
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - claim_evidence_context_pack
+
+inputs:
+  - ADMISSIBLE_SOURCE_SET          # only sources cleared by source_reliability_assessment (#5)
+  - SOURCE_RELIABILITY_REPORT
+  - LOAD_BEARING_QUESTION_SET      # to tag which claims are decision-critical
+
+outputs:
+  - CLAIM_REGISTER                 # atomic claims, each tagged with asserting source(s)
+  - LOAD_BEARING_CLAIM_SET         # decision-critical claim subset (drives mapping/citation gates)
+  - CLAIM_SOURCE_TAGGING           # claim -> asserting-source linkage
+  - CLAIM_EXTRACTION_GATE_RESULT   # binary gate result for this stage
+
+evidence:
+  - CLAIM_REGISTER
+  - LOAD_BEARING_CLAIM_SET
+  - CLAIM_EXTRACTION_GATE_RESULT
+trace:
+  - claim_extraction_agent_trace
+  - claim_mapper_tool_trace
+  - gate_decision_trace
+
+gates:
+  - claims_are_atomic_and_checkable
+  - each_claim_linked_to_asserting_source
+  - load_bearing_claims_tagged
+  - claims_extracted_only_from_admissible_sources   # no claim rests on an unscored / inadmissible source
+
+on_pass: claim_evidence_mapping
+on_fail: source_discovery          # claims rest on too few / too weak sources
+rework_route: claim_extraction
+
+blocking_conditions:
+  - claim_not_atomic_or_checkable
+  - claim_not_linked_to_asserting_source
+  - load_bearing_claim_untagged
+  - claim_extracted_from_inadmissible_source
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,12 +1,17 @@
 required_gates:
   always:
+  - research_protocol_pre_registered
   - all_research_questions_addressed_or_flagged
   - every_load_bearing_claim_has_mapped_evidence
   - every_used_source_has_reliability_score
+  - every_load_bearing_source_bias_conflict_screened
   - validator_role_distinct_from_producer
   - cross_validation_completed_by_separate_role
   - uncertainty_report_present
   - citation_required_gate_pass
+  - citations_resolve_to_mapped_evidence
   - research_evidence_graph_complete
+  - evidence_chain_reproducible
   - no_blocking_policy_failure
-  conditional: []
+  conditional:
+  - source_recency_validated_if_freshness_sensitive

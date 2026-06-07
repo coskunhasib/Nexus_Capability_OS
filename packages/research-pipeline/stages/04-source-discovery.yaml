@@ -1,0 +1,97 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #4 of 11: source_discovery
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.3.
+# Field set + rigor mirror the SDLC stage contracts (rich chaining inputs/outputs, multiple gates,
+#   populated blocking_conditions, annotated uses_* lines).
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#
+# Depth / reconciliation notes:
+#   - Now consumes the pre-registered RESEARCH_PROTOCOL / SOURCE_INCLUSION_CRITERIA from stage #3, so
+#     discovery follows the registered strategy instead of an implicit one. This is what lets the
+#     completion stage audit the corpus against the declared method (reproducibility).
+#   - Provenance is mandatory per candidate (URL, publisher, date, access timestamp). The captured
+#     publication date feeds the recency/freshness gate in source_reliability_assessment (#5).
+#   - on_fail routing reflects md §2.3 two-way logic: insufficient sources are re-run in place
+#     (rework_route = self); a question that proves un-researchable routes back to scope_and_questions
+#     (on_fail). source_provenance is a HARD requirement, so missing provenance is a blocking_condition.
+#   - No-self-approval: discovery is an authoring/collection stage; reliability scoring (#5) and
+#     cross_validation (#7) are owned by DISTINCT agents. source_discovery_agent.reviewed_by =
+#     research_team_lead (agent_roles.yaml).
+version: draft-0.1
+stage_id: source_discovery
+name: Source Discovery
+purpose: >-
+  Execute the pre-registered discovery strategy: find candidate sources for each load-bearing
+  research question via web search and fetch, applying the registered inclusion/exclusion criteria
+  and minimum source-diversity bar, and record full provenance (URL, publisher, publication date,
+  access timestamp) for every candidate. Produces the SOURCE_INVENTORY the reliability stage scores.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: source_discovery_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Web      # search and fetch candidate sources
+  - Memory   # recall the protocol, question set and already-seen sources to avoid duplication
+uses_skills:
+  - gap-audit   # detect questions still without admissible candidate sources / diversity shortfalls
+uses_tools:
+  - web_search        # discover candidate sources (trace: web_search_tool_trace)
+  - web_fetch         # retrieve candidate content + provenance (trace: web_fetch_tool_trace)
+  - artifact_writer   # write SOURCE_INVENTORY (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+  - source_corpus_context_pack
+
+inputs:
+  - RESEARCH_QUESTION_SET
+  - LOAD_BEARING_QUESTION_SET
+  - RESEARCH_PROTOCOL            # the registered discovery strategy
+  - SOURCE_INCLUSION_CRITERIA    # admissibility + minimum diversity to apply during discovery
+
+outputs:
+  - SOURCE_INVENTORY              # candidate sources with full provenance per entry
+  - SOURCE_PROVENANCE_RECORD      # URL / publisher / publication date / access timestamp per source
+  - QUESTION_SOURCE_COVERAGE_MAP  # which questions have admissible candidates and which still lack them
+  - SOURCE_DISCOVERY_GATE_RESULT  # binary gate result for this stage
+
+evidence:
+  - SOURCE_INVENTORY
+  - SOURCE_PROVENANCE_RECORD
+  - SOURCE_DISCOVERY_GATE_RESULT
+trace:
+  - source_discovery_agent_trace
+  - web_search_tool_trace
+  - web_fetch_tool_trace
+  - gate_decision_trace
+
+gates:
+  - each_question_has_candidate_sources
+  - source_provenance_recorded
+  - minimum_source_diversity_met
+  - candidates_satisfy_inclusion_criteria   # discovered sources honour the pre-registered admissibility criteria
+
+on_pass: source_reliability_assessment
+on_fail: scope_and_questions       # a question that proves un-researchable routes back to scope
+rework_route: source_discovery     # insufficient/low-diversity sources are re-discovered in place
+
+blocking_conditions:
+  - question_without_candidate_sources
+  - source_provenance_missing
+  - minimum_source_diversity_not_met
+  - included_source_violates_inclusion_criteria
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

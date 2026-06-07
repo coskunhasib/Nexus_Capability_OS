@@ -1,0 +1,114 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #8 of 11: cross_validation   (NO-SELF-APPROVAL keystone)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.7.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/15-verification-loop-bug-finding.yaml
+#   (an independent gate stage that decomposes its work to a dedicated sub-agent).
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#
+# NO-SELF-APPROVAL (STRUCTURAL — the load-bearing invariant of this pipeline):
+#   owner_agent is a DISTINCT cross_validation_agent, separate from source_reliability_agent /
+#   claim_extraction_agent / claim_evidence_agent (agent_roles.yaml: those three list
+#   reviewed_by: cross_validation_agent; cross_validation_agent itself is reviewed_by:
+#   research_team_lead). A researcher must NEVER be the sole validator of their own source or
+#   mapping. Enforced by the validator_role_distinct_from_producer gate + no_self_approval_policy
+#   governance profile. This is the producer!=validator edge recorded in
+#   research_pipeline_runtime_rules.yaml required_gate_producers.
+#
+# Depth / reconciliation notes:
+#   - llm-council is used here for cross-checked, multi-perspective ADJUDICATION (NOT verification-loop,
+#     which is bug/defect finding and is intentionally NOT used in the Research Pipeline). calibrate
+#     keeps the re-scored reliability values rationale-backed.
+#   - REPRODUCIBILITY / REPLICABILITY of the evidence chain is exercised here: the
+#     independent_replication_subagent re-derives reliability scores and claim->evidence mappings
+#     independently and reports divergences — an independent replication of the producing stages'
+#     work, which is the operational meaning of "the evidence chain is replicable by a separate role".
+#   - on_fail / rework route to claim_evidence_mapping (#7) for mapping conflicts; a corroboration gap
+#     that needs new sources is expressed via the pipeline route cross_validation_conflict ->
+#     claim_evidence_mapping (and insufficient_sources -> source_discovery), never by skipping forward.
+version: draft-0.1
+stage_id: cross_validation
+name: Cross-Validation
+purpose: >-
+  Independent verification by a DIFFERENT role: independently re-check source-reliability scores and
+  claim->evidence mappings, surface single-source claims, replicate the evidence chain for
+  load-bearing claims, and resolve or escalate source/evidence conflicts. This stage enforces the
+  no-self-approval rule — a researcher must not solely validate their own source or mapping —
+  structurally, via a distinct owner_agent. llm-council provides multi-perspective adjudication.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: cross_validation_agent
+sub_agents:
+  - independent_replication_subagent   # independently re-derives scores/mappings and reports divergences
+
+uses_core_abilities:
+  - Memory      # recall the producing stages' scores, mappings and the source corpus
+  - Web         # independently re-fetch source material to confirm support/contradiction
+  - Supervisor  # route adjudication across multiple perspectives (llm-council orchestration)
+uses_skills:
+  - llm-council   # cross-checked, multi-perspective adjudication of contested scores/mappings
+  - calibrate     # keep re-checked reliability scores rationale-backed and consistently calibrated
+uses_tools:
+  - source_reliability_checker   # independently re-score sources (trace: source_reliability_checker_tool_trace)
+  - evidence_reader              # read the producing stages' evidence to re-check it
+  - artifact_writer              # write CROSS_VALIDATION_REPORT (side-effect: governance + trace)
+uses_governance_profiles:
+  - no_self_approval_policy      # STRUCTURAL: validator role distinct from producer roles
+  - research_source_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - claim_evidence_schema
+  - source_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - source_evaluation_model      # independent re-scoring uses the dedicated source-assessment profile
+uses_context_memory_profiles:
+  - research_run_context
+  - claim_evidence_context_pack
+
+inputs:
+  - CLAIM_EVIDENCE_MAP
+  - SOURCE_RELIABILITY_REPORT
+  - SOURCE_BIAS_CONFLICT_REPORT    # re-check that bias/conflict findings were correctly applied
+  - SINGLE_SOURCE_CLAIM_FLAGS      # claims flagged single-source by #7, for independent corroboration
+  - CONTRADICTION_REGISTER
+
+outputs:
+  - CROSS_VALIDATION_REPORT          # independent re-check verdict per score / mapping
+  - REPLICATION_DIVERGENCE_REPORT    # where independent re-derivation diverged from the producers
+  - SINGLE_SOURCE_CLAIM_RESOLUTION   # corroborated, accepted-as-single-source, or escalated
+  - CONFLICT_RESOLUTION_LOG          # how each critical source/evidence conflict was resolved/escalated
+  - CROSS_VALIDATION_GATE_RESULT     # binary gate result for this stage
+
+evidence:
+  - CROSS_VALIDATION_REPORT
+  - REPLICATION_DIVERGENCE_REPORT
+  - CONFLICT_RESOLUTION_LOG
+  - CROSS_VALIDATION_GATE_RESULT
+trace:
+  - cross_validation_agent_trace
+  - cross_validation_role_handoff_trace     # records the producer->validator role handoff (distinct roles)
+  - source_reliability_checker_tool_trace
+  - independent_replication_trace            # sub-agent re-derivation activity
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - validator_role_distinct_from_producer
+  - single_source_claims_identified
+  - no_unresolved_critical_source_conflict
+  - reliability_scores_independently_rechecked    # scores re-derived by the distinct validator role
+
+on_pass: uncertainty_reporting
+on_fail: claim_evidence_mapping
+rework_route: claim_evidence_mapping
+
+blocking_conditions:
+  - producer_role_is_sole_validator_of_own_source == true
+  - critical_source_reliability_conflict_unresolved == true
+  - single_source_load_bearing_claim_unresolved == true
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

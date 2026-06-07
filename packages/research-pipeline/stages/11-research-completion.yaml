@@ -1,0 +1,120 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Stage #11 of 11: research_completion   (terminal aggregate completion / gate stage)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code.
+# Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md §2.10.
+# Field set + rigor mirror configs/nexus-ai/stages/sdlc/29-development-completion.yaml (the
+#   always-on aggregate readiness gate that decides whether ALL required gates passed) and the
+#   SDLC evidence_trace_subagent pattern (a sub-agent assembles + integrity-audits the graph).
+# Pipeline: research_pipeline. owner_agent is a snake_case Agent role under research_team.
+#   on_pass = done (canonical terminal); on_fail routes to the specific stage that produced the
+#   missing/failed evidence (relevant_failed_stage).
+#
+# COVERAGE ADDITION folded in here (calibration exemplar):
+#   EVIDENCE-CHAIN REPRODUCIBILITY / REPLICABILITY. research_completion builds the
+#   RESEARCH_EVIDENCE_GRAPH but the prior contract did not verify the chain is reproducible — i.e.
+#   that every load-bearing conclusion traces, without a broken link, goal -> question -> protocol ->
+#   source(+provenance) -> reliability score -> claim -> mapped evidence -> cross-validation ->
+#   uncertainty -> cited synthesis. Added: evidence_chain_reproducible gate + REPRODUCIBILITY_AUDIT
+#   output + broken_evidence_chain_link blocking_condition. Pairs with the pre-registered
+#   RESEARCH_PROTOCOL (#3): the graph is audited AGAINST the registered method, so a third party could
+#   re-walk the chain. This is the operational meaning of a reproducible sourced-research output.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = research_completion_agent (canonical research_team roster). NO-SELF-APPROVAL
+#     COMPLIANT: this is an aggregate gate; research_completion_agent authored NONE of the artifacts it
+#     judges (brief/questions/protocol/sources/scores/claims/mappings/cross-validation/uncertainty/
+#     synthesis are produced by their respective owner agents). It also rolls up the separate-role
+#     cross_validation result. research_synthesis_agent.reviewed_by = research_completion_agent.
+#   - The research_evidence_graph_subagent assembles + integrity-audits the graph and returns it to
+#     the parent; it NEVER decides the completion gate (mirrors evidence_trace_subagent in SDLC).
+#   - Supervisor (Core Ability) is used for aggregate routing over all stage gates to pick the rework
+#     target; it is NOT the owner and NOT a team member.
+#   - gates here are the pipeline's always-required ROLLUP gates plus the new reproducibility gate.
+version: draft-0.1
+stage_id: research_completion
+name: Research Completion
+purpose: >-
+  Decide — under no-human governance — whether the research is genuinely complete by assembling the
+  RESEARCH_EVIDENCE_GRAPH, confirming every load-bearing claim has mapped evidence, every used source
+  is scored, cross-validation was completed by a separate role, the uncertainty report is present, the
+  citation gate passed, and the end-to-end evidence chain is reproducible against the pre-registered
+  protocol; confirm no blocking policy failure; and emit the completion report. On any failed required
+  gate, route back to the relevant failed stage rather than passing forward.
+
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: research_completion_agent
+sub_agents:
+  - research_evidence_graph_subagent   # assembles + integrity-audits the research evidence graph
+
+uses_core_abilities:
+  - Memory      # recall the full run history, all stage gate results and accepted findings
+  - Supervisor  # aggregate-decision/routing over every upstream stage gate; pick the rework target
+uses_skills:
+  - gap-audit   # detect any missing required gate, unmapped load-bearing claim, or broken chain link
+uses_tools:
+  - evidence_reader   # read all upstream evidence + gate results to build/audit the graph
+  - artifact_writer   # write RESEARCH_EVIDENCE_GRAPH / RESEARCH_COMPLETION_REPORT (side-effect: governance + trace)
+uses_governance_profiles:
+  - evidence_required_policy
+  - no_self_approval_policy      # rolls up the separate-role cross_validation; aggregate gate != author
+  - citation_required_gate       # re-checks the synthesis citation enforcement at the terminal gate
+uses_audit_schemas:
+  - source_evidence_schema
+  - claim_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - research_run_context
+
+inputs:
+  - RESEARCH_SYNTHESIS
+  - CITATION_INDEX
+  - CITATION_INTEGRITY_REPORT
+  - UNCERTAINTY_REPORT
+  - CROSS_VALIDATION_REPORT
+  - CLAIM_EVIDENCE_MAP
+  - SOURCE_RELIABILITY_REPORT
+  - RESEARCH_PROTOCOL              # audit the evidence chain against the pre-registered method
+  - ALL_STAGE_GATE_RESULTS         # every upstream *_GATE_RESULT, for the aggregate decision
+
+outputs:
+  - RESEARCH_EVIDENCE_GRAPH          # goal -> question -> protocol -> source -> score -> claim -> evidence -> synthesis
+  - REPRODUCIBILITY_AUDIT            # confirms the chain is re-walkable against the registered protocol
+  - RESEARCH_COMPLETION_REPORT       # the completion verdict + per-gate rollup
+  - RESEARCH_COMPLETION_GATE_RESULT  # single binary terminal gate result
+
+evidence:
+  - RESEARCH_EVIDENCE_GRAPH
+  - REPRODUCIBILITY_AUDIT
+  - RESEARCH_COMPLETION_REPORT
+  - RESEARCH_COMPLETION_GATE_RESULT
+trace:
+  - research_completion_agent_trace
+  - gate_aggregation_decision_trace      # aggregate go/no-go decision lineage over all stage gates
+  - evidence_graph_assembly_trace        # sub-agent graph-assembly + integrity-audit activity
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - research_evidence_graph_complete
+  - cross_validation_completed_by_separate_role
+  - citation_required_gate_pass
+  - evidence_chain_reproducible          # the end-to-end chain re-walks against the registered protocol
+  - no_blocking_policy_failure
+
+on_pass: done
+on_fail: relevant_failed_stage
+rework_route: relevant_failed_stage
+
+blocking_conditions:
+  - load_bearing_claim_without_evidence_count > 0
+  - unscored_source_used_in_synthesis == true
+  - uncited_claim_in_final_synthesis == true
+  - cross_validation_not_completed_by_separate_role == true
+  - broken_evidence_chain_link == true
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3
