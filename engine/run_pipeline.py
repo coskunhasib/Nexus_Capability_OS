@@ -116,6 +116,8 @@ def main():
         prod = producers.get(gate)
         if prod and prod.get("producing_stage"):
             ps, sb = prod["producing_stage"], prod.get("satisfied_by", [])
+            if ps in ("pipeline", "policy", None, ""):
+                return "PASS", "pipeline-level policy gate (mock pass)"
             if ps not in completed:
                 return "FAIL", f"producing stage '{ps}' did not complete"
             unmet = [g for g in sb if g not in passed_stage_gates.get(ps, set())]

@@ -1,0 +1,263 @@
+# Nexus AI Orchestration Model — Skill Governance Pipeline
+# Runtime rules: required-gate -> producer map + rework routing table + iteration policy.
+# Machine-readable blueprint/documentation only — NO runtime code, NO merge, NO deploy.
+#
+# Top structure is the Nexus AI Orchestration Model; the Skill Governance Pipeline is ONE pipeline
+# under it (catalog entry, Phase B / doc 16), not the top. This file holds the cross-stage RUNTIME
+# RULES that the Skill Governance Pipeline (and its Team Lead orchestrator) must obey — it does NOT
+# redefine per-stage contracts (those live in configs/nexus-ai/stages/skill-governance/*.yaml).
+#
+# Format mirror (sections + structure): configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml.
+#
+# DERIVED ONLY from this pipeline's own definition contract + its stage contracts (no invention):
+#   - configs/nexus-ai/skill_governance_pipeline.yaml
+#       (required_gates, allowed_rework_routes, blocking_conditions, stages, uses_governance_profiles),
+#   - configs/nexus-ai/stages/skill-governance/*.yaml
+#       (per-stage stage_id, gates, on_fail, rework_route, uses_governance_profiles, max_iterations).
+#
+# AUTHORITY for the gate->producer map: the producing stage + its component gate IDs are read from
+#   configs/nexus-ai/stages/skill-governance/*.yaml; the producing_rule is the gate-bearing
+#   governance profile listed in that stage's uses_governance_profiles, each a first-class item in
+#   configs/nexus-ai/governance_profiles.yaml (so every rule id below resolves — no dangling edge).
+#
+# LOCKED-DECISION compliance baked into this pipeline (carried, not re-invented here):
+#   - Skill semantics LOCKED: prism = brainstorming/divergence only; verification-loop = bug/defect
+#     finding only. Enforced by locked_semantics_enforcement_policy at skill_semantic_extraction and
+#     re-evaluated at skill_activation_decision.
+#   - Binding never precedes semantics (anti-pattern blocked): skill_binding_proposal requires the
+#     upstream semantic + script-audit + misuse-warning evidence (skill_binding_proposal_gate).
+#   - No self-approval: the activation decider (skill_runtime_safety_agent) differs from the proposer
+#     (skill_librarian_agent); enforced in the stage contract by no_self_approval_policy.
+#   - Core Abilities [Supervisor, Memory, OS, Coder, Web] are abilities only: none appears as an
+#     owner or a routing target here (routing targets are pipeline stage_ids / canonical terminals).
+
+version: draft-0.1
+rules_id: skill_governance_pipeline_runtime_rules
+pipeline_id: skill_governance_pipeline
+applies_to_pipeline_version: draft-0.1
+purpose: >-
+  Formalize the Skill Governance Pipeline cross-stage runtime rules — which producing stage and
+  gate-bearing governance rule satisfies each required gate, where a failed stage reworks to, and
+  how many iterations are allowed before the run is hard-blocked — under no-human governance.
+  Documentation/blueprint only; no runtime code. It does NOT redefine any stage gate and does NOT
+  alter skill_governance_pipeline.yaml (which stays schema-valid).
+status: draft
+owner_team: skill_governance_team
+team_lead: skill_governance_team_lead
+
+# Canonical routing terminals these rules may point to (besides any pipeline stage_id).
+# These mirror configs/nexus-ai/stages/skill-governance/*.yaml on_fail/rework_route/on_pass usage
+# (skill_deprecation_update.on_pass = done; the iteration limit terminal = block_and_report).
+routing_terminals:
+  - done                    # pipeline reached its terminal success node (after skill_activation_decision / skill_deprecation_update)
+  - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
+  - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
+
+# =====================================================================================
+# Required-gate → producer map  (make the rollup/required gates machine-checkable)
+# =====================================================================================
+# PURPOSE: configs/nexus-ai/skill_governance_pipeline.yaml `required_gates` lists the gate IDs the
+#   run must satisfy. Some are produced by exactly ONE stage's gate decision; this block resolves
+#   each required-gate name to its producing stage + the gate-bearing governance rule in that stage's
+#   uses_governance_profiles, so a checker can prove each required gate has a real producer (no
+#   dangling edge: present in required_gates, resolving to nothing).
+#
+# SCOPE: every gate in skill_governance_pipeline.yaml required_gates (8 always + 1 conditional).
+#   Gates that are themselves first-class governance profiles (skill_semantic_required_gate,
+#   script_reference_audit_gate, misuse_warning_required_gate, skill_binding_proposal_gate,
+#   skill_activation_decision_gate, skill_deprecation_required_gate, locked_semantics_enforcement_policy)
+#   map directly; component gates that are NOT standalone governance profiles
+#   (skill_intake_inventory_complete, reference_index_complete) are produced by their stage and
+#   carried by that stage's gate-bearing governance rule (recorded as producing_rule).
+#
+# CHECKER CONTRACT (how to verify): for each entry, assert
+#   (a) `gate` ∈ skill_governance_pipeline.yaml required_gates.always (or .conditional),
+#   (b) `producing_stage` ∈ the canonical 7-stage set (or `pipeline` for cross-cutting policy gates),
+#   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
+#       stage's uses_governance_profiles,
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+# Any unmet assertion = a dangling required-gate edge.
+required_gate_producers:
+  scope: skill_governance_required_gates_all   # all 9 required gates (8 always + 1 conditional)
+  note: >-
+    Each gate in skill_governance_pipeline.yaml required_gates is SATISFIED BY the producing stage's
+    gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
+    redefine any stage gate and does NOT alter skill_governance_pipeline.yaml. Cross-cutting policy
+    gates with no single producing stage use producing_stage: pipeline (see note on each).
+  gates:
+    - gate: skill_intake_inventory_complete             # required_gates.always
+      tier: always
+      producing_stage: skill_intake                     # stage #1
+      producing_rule: skill_governance_pipeline_governance  # governance_profiles.yaml; in skill_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_intake_inventory_complete
+      note: >-
+        Component gate (advisory -> blocker if package unreadable) is its own stage-1 gate. It is not
+        a standalone governance profile, so its gate-bearing rule is the stage-bound
+        skill_governance_pipeline_governance.
+
+    - gate: skill_semantic_required_gate                # required_gates.always
+      tier: always
+      producing_stage: skill_semantic_extraction        # stage #2
+      producing_rule: skill_semantic_required_gate       # governance_profiles.yaml; in skill_semantic_extraction.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_semantic_required_gate
+      note: >-
+        MANDATORY stage that must precede any binding (anti-pattern: binding without semantics).
+        Blocker gate: semantic_category, primary_purpose, not_for, used_by_agents, used_in_stages and
+        confidence >= threshold required.
+
+    - gate: locked_semantics_enforcement_policy         # required_gates.always
+      tier: always
+      producing_stage: pipeline                         # cross-cutting policy gate — NO single producing stage
+      producing_rule: locked_semantics_enforcement_policy   # governance_profiles.yaml
+      satisfied_by_stage_gates:
+        - locked_semantics_enforcement_policy
+      note: >-
+        Cross-cutting LOCKED-semantics policy gate (prism = divergence only; verification-loop =
+        bug/defect finding only). It is bound and evaluated at MORE THAN ONE stage — produced at
+        skill_semantic_extraction (stage #2) and RE-EVALUATED at skill_activation_decision (stage #6)
+        — so it has no single producing stage. producing_stage: pipeline. Both stages list it in
+        gates and in uses_governance_profiles.
+
+    - gate: script_reference_audit_gate                 # required_gates.always
+      tier: always
+      producing_stage: script_reference_audit           # stage #3
+      producing_rule: script_reference_audit_gate        # governance_profiles.yaml; in script_reference_audit.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - script_reference_audit_gate
+      note: >-
+        Blocker gate — fail if unsafe_skill_script_unmitigated. verification-loop is used here ONLY
+        with defect/bug-finding semantics (script defect sweep).
+
+    - gate: reference_index_complete                    # required_gates.always
+      tier: always
+      producing_stage: script_reference_audit           # stage #3
+      producing_rule: script_reference_audit_gate        # governance_profiles.yaml; in script_reference_audit.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - reference_index_complete
+      note: >-
+        Component gate (major) is its own stage-3 gate (SKILL_REFERENCE_INDEX produced here). It is
+        not a standalone governance profile, so its gate-bearing rule is the stage's
+        script_reference_audit_gate.
+
+    - gate: misuse_warning_required_gate                # required_gates.always
+      tier: always
+      producing_stage: misuse_warning_generation        # stage #4
+      producing_rule: misuse_warning_required_gate       # governance_profiles.yaml; in misuse_warning_generation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - misuse_warning_required_gate
+      note: >-
+        Blocker gate — cannot pass with empty/missing misuse-warning; at least one not_for warning
+        required for each locked-semantics skill. Precondition for binding + activation.
+
+    - gate: skill_binding_proposal_gate                 # required_gates.always
+      tier: always
+      producing_stage: skill_binding_proposal           # stage #5
+      producing_rule: skill_binding_proposal_gate        # governance_profiles.yaml; in skill_binding_proposal.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_binding_proposal_gate
+      note: >-
+        Blocker gate — fail if binding_proposed_without_semantics (cannot pass without upstream
+        semantic/audit/misuse evidence). Produces a PROPOSAL, not a decision.
+
+    - gate: skill_activation_decision_gate              # required_gates.always
+      tier: always
+      producing_stage: skill_activation_decision         # stage #6
+      producing_rule: skill_activation_decision_gate     # governance_profiles.yaml; in skill_activation_decision.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_activation_decision_gate
+      note: >-
+        Blocker gate — cannot pass with missing evidence or self_approval_of_activation_decision.
+        Review independence: decider (skill_runtime_safety_agent) != proposer (skill_librarian_agent),
+        enforced by no_self_approval_policy bound at this stage.
+
+    - gate: skill_deprecation_required_gate             # required_gates.conditional
+      tier: conditional
+      producing_stage: skill_deprecation_update          # stage #7 (CONDITIONAL)
+      producing_rule: skill_deprecation_required_gate     # governance_profiles.yaml; in skill_deprecation_update.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - skill_deprecation_required_gate
+      conditional_required_when: >-
+        deprecation_or_update == true or version_or_hash_changed == true
+      note: >-
+        Conditional gate (major). Stage #7 runs only when deprecation_or_update is active in
+        risk_profiles OR version/hash changed. On version/hash change, skill_semantic_required_gate
+        is re-triggered (the stage's conditional_required_gates).
+
+  invariants:
+    - Every `gate` MUST exist in configs/nexus-ai/skill_governance_pipeline.yaml required_gates
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
+    - Every `producing_stage` MUST be a canonical stage_id in
+      configs/nexus-ai/skill_governance_pipeline.yaml, OR `pipeline` for a cross-cutting policy gate
+      that has no single producing stage (locked_semantics_enforcement_policy).
+    - "Every `producing_rule` MUST resolve to a governance profile id in configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles (for producing_stage pipeline, in the uses_governance_profiles of every stage that binds it)."
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/skill-governance/*.yaml); for producing_stage: pipeline, in the gates list of at least one binding stage."
+    - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change skill_governance_pipeline.yaml."
+
+# =====================================================================================
+# Rework routing table  (map: failure -> stage_id)
+# =====================================================================================
+rework_routing_table:
+
+  # -- Authoritative per-stage routes (complete; covers all 7 canonical stages) ----------
+  # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
+  # Values copied from each stage's own canonical `on_fail` / `rework_route` in
+  # configs/nexus-ai/stages/skill-governance/*.yaml (on_fail == rework_route for every stage).
+  by_stage:
+    skill_intake: skill_intake
+    skill_semantic_extraction: skill_intake
+    script_reference_audit: skill_semantic_extraction
+    misuse_warning_generation: script_reference_audit
+    skill_binding_proposal: skill_semantic_extraction
+    skill_activation_decision: skill_binding_proposal
+    skill_deprecation_update: skill_semantic_extraction
+
+  # -- Definition-contract allowed rework routes (cross-check) ----------------------------
+  # Copied verbatim from skill_governance_pipeline.yaml `allowed_rework_routes`. Each per-stage
+  # route above MUST be one of these permitted edges (the contract is the allow-list).
+  allowed_rework_routes:
+    - skill_binding_proposal -> skill_semantic_extraction
+    - misuse_warning_generation -> script_reference_audit
+    - script_reference_audit -> skill_semantic_extraction
+    - skill_activation_decision -> skill_binding_proposal
+    - skill_semantic_extraction -> skill_intake
+
+  routing_invariants:
+    - All routing targets MUST be a known canonical stage_id
+      (configs/nexus-ai/skill_governance_pipeline.yaml) or a routing_terminal
+      (done | relevant_failed_stage | block_and_report).
+    - Every `by_stage` route MUST be one of the def `allowed_rework_routes` edges, OR a self-loop
+      (skill_intake -> skill_intake; permitted because skill_intake.rework_route == skill_intake).
+    - A failed stage MUST route to its declared rework target; the Team Lead orchestrator MAY NOT
+      improvise a different target (pipeline is a deterministic stage graph, not agent chatter).
+    - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
+      unre-evaluated gates (notably, no binding/activation may be re-reached without re-passing
+      skill_semantic_extraction — binding never precedes semantics).
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal
+      stage rework target.
+
+# =====================================================================================
+# Iteration policy
+# =====================================================================================
+# No-human system: infinite loops are forbidden. Mirrors sdlc_pipeline_runtime_rules.yaml.
+iteration_policy:
+  default_max_iterations_per_stage: 3      # mirrors per-stage `max_iterations: 3` in every stage contract
+  max_total_rework_cycles: 8               # ceiling on cumulative rework cycles across the whole run
+  on_iteration_limit_exceeded:
+    action: block_and_report               # canonical terminal: halt; do NOT auto-loop further
+    output: REWORK_LIMIT_EXCEEDED.md
+  # Clarifying semantics (do not contradict the locked values above):
+  scope_notes:
+    - default_max_iterations_per_stage applies PER stage_id; a stage's own `max_iterations` (if set)
+      overrides this default for that stage only. Every skill-governance stage sets max_iterations to 3.
+    - max_total_rework_cycles counts every rework hop across the run; reaching it triggers
+      on_iteration_limit_exceeded even if no single stage hit its per-stage cap.
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
+      report is emitted as run evidence (it records the offending stage, failure type, route taken,
+      and iteration counts).
+
+# Canonical docs this runtime-rules file is bound to.
+canonical_docs:
+  - configs/nexus-ai/skill_governance_pipeline.yaml
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md

@@ -1,0 +1,250 @@
+# Nexus AI Orchestration Model — Operations Pipeline
+# Runtime rules: required-gate -> producer map + rework routing table + iteration policy.
+# Machine-readable blueprint/documentation only — NO runtime code, NO merge, NO deploy.
+#
+# Top structure is the Nexus AI Orchestration Model; the Operations Pipeline is ONE pipeline
+# under it, not the top. This file holds the cross-stage RUNTIME RULES that the Operations
+# Pipeline (and its Team Lead orchestrator) must obey — it does NOT redefine per-stage contracts
+# (those live in configs/nexus-ai/stages/operations/*.yaml).
+#
+# Parity target: this file mirrors the section set + structure of
+#   configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml
+# (header, routing_terminals, required_gate_producers + invariants, rework_routing_table,
+#  iteration_policy, canonical_docs), brought to the same parity for operations_pipeline.
+#
+# Source of truth (everything below is DERIVED from these; nothing invented):
+#   - configs/nexus-ai/operations_pipeline.yaml
+#       (required_gates.always/.conditional, allowed_rework_routes, blocking_conditions,
+#        uses_governance_profiles, stages, canonical_docs)
+#   - configs/nexus-ai/stages/operations/*.yaml
+#       (per-stage stage_id, gates, on_fail, rework_route, uses_governance_profiles)
+#
+# AUTHORITY for the gate->producer map: the producing stage + its gate IDs come from the
+#   operations stage files; the producing_rule is the gate-bearing governance profile listed in
+#   that stage's uses_governance_profiles (each a first-class id in
+#   configs/nexus-ai/governance_profiles.yaml, so every rule id below resolves — no dangling edge).
+
+version: draft-0.1
+rules_id: operations_pipeline_runtime_rules
+pipeline_id: operations_pipeline
+applies_to_pipeline_version: draft-0.1
+purpose: >-
+  Formalize the Operations Pipeline cross-stage runtime rules — which producing stage and
+  gate-bearing governance rule satisfies each required gate, where a failed stage reworks to, and
+  how many iterations are allowed before the run is hard-blocked — under no-human governance.
+  Documentation/blueprint only; no runtime code.
+status: draft
+owner_team: operations_team
+team_lead: operations_team_lead
+
+# Canonical routing terminals these rules may point to (besides any pipeline stage_id).
+# These mirror configs/nexus-ai/stages/operations/*.yaml on_fail/rework_route usage
+# (learning_update.on_pass: done) and the sdlc runtime-rules terminal set.
+routing_terminals:
+  - done                    # pipeline reached its terminal success node (after learning_update)
+  - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
+  - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
+
+# =====================================================================================
+# Required-gate → producer map  (make the rollup/required gates machine-checkable)
+# =====================================================================================
+# PURPOSE: configs/nexus-ai/operations_pipeline.yaml `required_gates` lists the gate IDs the run
+#   must satisfy. Each required gate is SATISFIED BY a specific producing stage's gate decision.
+#   Without an explicit map a checker cannot prove each required gate has a real producer (the gate
+#   name would be a dangling edge: present in required_gates, resolving to nothing). This block
+#   resolves that edge for every operations required gate (always + conditional).
+#
+# SCOPE: ALL operations required gates — required_gates.always (8) + required_gates.conditional (1).
+#   The 7 always gates that map by name to a single producing stage, the 1 always-on cross-cutting
+#   POLICY gate (no_blocking_policy_failure) that has NO single producing stage, and the 1 conditional
+#   severity-gated postmortem gate.
+#
+# CHECKER CONTRACT (how to verify): for each entry, assert
+#   (a) `gate` ∈ operations_pipeline.yaml required_gates.always (or .conditional for the
+#       conditional postmortem gate),
+#   (b) `producing_stage` ∈ the canonical operations 6-stage set (or `pipeline` for a policy gate
+#       with no single producing stage),
+#   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
+#       stage's uses_governance_profiles (N/A for the pipeline-level policy gate),
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+# Any unmet assertion = a dangling required-gate edge.
+required_gate_producers:
+  scope: operations_required_gates_all   # all 9 required gates (8 always + 1 conditional); not a subset
+  note: >-
+    Each gate in operations_pipeline.yaml required_gates is SATISFIED BY the producing stage's gate
+    decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
+    redefine any stage gate and does NOT alter operations_pipeline.yaml (which stays schema-valid).
+  gates:
+    - gate: incident_record_present                     # required_gates.always
+      tier: always
+      producing_stage: incident_intake                  # stage #1
+      producing_rule: evidence_required_policy           # governance_profiles.yaml; in incident_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - incident_record_present
+
+    - gate: affected_capability_identified              # required_gates.always
+      tier: always
+      producing_stage: incident_intake                  # stage #1
+      producing_rule: evidence_required_policy           # governance_profiles.yaml; in incident_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - affected_capability_identified
+
+    - gate: severity_assigned                           # required_gates.always
+      tier: always
+      producing_stage: severity_classification          # stage #2
+      producing_rule: incident_severity_required_gate    # governance_profiles.yaml; in severity_classification.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - severity_assigned
+      note: >-
+        Blocker gate: severity_assigned satisfies incident_severity_required_gate. Severity
+        classification is mandatory before any mitigation work may begin (stage #2).
+
+    - gate: mitigation_plan_present                      # required_gates.always
+      tier: always
+      producing_stage: mitigation_plan                  # stage #3
+      producing_rule: mitigation_plan_required_gate      # governance_profiles.yaml; in mitigation_plan.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - mitigation_plan_present
+      note: >-
+        Blocker gate: mitigation_plan_present satisfies mitigation_plan_required_gate. Required for
+        any active (non-resolved) incident (stage #3).
+
+    - gate: rollback_or_fix_executed                    # required_gates.always
+      tier: always
+      producing_stage: rollback_or_fix                  # stage #4
+      producing_rule: rollback_runbook_evidence_gate     # governance_profiles.yaml; in rollback_or_fix.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - rollback_or_fix_executed
+
+    - gate: runbook_or_rollback_evidence_present         # required_gates.always
+      tier: always
+      producing_stage: rollback_or_fix                  # stage #4
+      producing_rule: rollback_runbook_evidence_gate     # governance_profiles.yaml; in rollback_or_fix.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - runbook_or_rollback_evidence_present
+      note: >-
+        Blocker gate: runbook_or_rollback_evidence_present satisfies rollback_runbook_evidence_gate.
+        Either path (rollback OR forward fix) must be backed by runbook or rollback evidence (stage #4).
+
+    - gate: operational_learning_record_present          # required_gates.always
+      tier: always
+      producing_stage: learning_update                  # stage #6
+      producing_rule: evidence_required_policy           # governance_profiles.yaml; in learning_update.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - operational_learning_record_present
+      note: >-
+        learning_update is NOT an incident-resolution blocker (the incident is already mitigated by
+        this point), but the OPERATIONAL_LEARNING_RECORD evidence item must exist for clean pipeline
+        exit; this gate records that satisfied-by edge.
+
+    - gate: no_blocking_policy_failure                   # required_gates.always
+      tier: always
+      producing_stage: pipeline                         # POLICY gate — no single producing stage
+      producing_rule: operations_pipeline_governance     # pipeline-level governance profile; bound by every operations stage
+      satisfied_by_stage_gates: []
+      note: >-
+        Cross-cutting POLICY gate with NO single producing stage: it rolls up the absence of any
+        blocking_conditions firing across the whole run (operations_pipeline.yaml blocking_conditions:
+        missing_severity_classification, missing_mitigation_plan_for_active_incident,
+        rollback_or_fix_lacks_runbook_or_rollback_evidence, postmortem_missing_for_required_severity,
+        self_approved_resolution, missing_required_evidence). It is enforced by the pipeline-level
+        governance profile (operations_pipeline_governance, bound by every operations stage) together
+        with no_self_approval_policy / evidence_required_policy; producing_stage: pipeline marks that
+        it has no single stage owner. Mirrors how sdlc treats its cross-cutting policy gates.
+
+    - gate: postmortem_present_if_required_severity      # required_gates.conditional
+      tier: conditional
+      producing_stage: postmortem                       # stage #5
+      producing_rule: postmortem_required_gate           # governance_profiles.yaml; in postmortem.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - postmortem_present
+      conditional_required_when: >-
+        severity >= major (major_incident or critical_outage_or_safety_event) OR
+        rollback_executed == true
+      note: >-
+        Conditional severity-gated gate. The stage-5 component gate postmortem_present is a blocker
+        for required severities and satisfies postmortem_required_gate; postmortem_present_if_required_severity
+        is the stage's conditional_required_gates entry (operations_pipeline.yaml required_gates.conditional).
+        A lightweight POSTMORTEM_REPORT is still produced for lower severities so learning_update always
+        has an input.
+
+  invariants:
+    - Every `gate` MUST exist in configs/nexus-ai/operations_pipeline.yaml required_gates
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
+    - Every `producing_stage` MUST be a canonical stage_id in
+      configs/nexus-ai/operations_pipeline.yaml stages, OR the literal `pipeline` for a cross-cutting
+      policy gate that has no single producing stage.
+    - "Every `producing_rule` MUST resolve to a governance profile id in configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles (for producing_stage: pipeline, the rule is a pipeline-level governance profile bound by the pipeline / its stages)."
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/operations/*.yaml); an empty list is allowed only for a policy gate with producing_stage: pipeline."
+    - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change operations_pipeline.yaml."
+
+# =====================================================================================
+# Rework routing table  (map: failure -> stage_id)
+# =====================================================================================
+rework_routing_table:
+
+  # -- Authoritative per-stage routes (complete; covers all 6 canonical operations stages) -------
+  # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
+  # Values copied from each stage's own canonical on_fail / rework_route in
+  # configs/nexus-ai/stages/operations/*.yaml. on_fail == rework_route for every operations stage.
+  by_stage:
+    incident_intake: incident_intake
+    severity_classification: incident_intake
+    mitigation_plan: severity_classification
+    rollback_or_fix: mitigation_plan
+    postmortem: rollback_or_fix
+    learning_update: postmortem
+
+  # -- Definition-level allowed rework routes (operations_pipeline.yaml allowed_rework_routes) ----
+  # The pipeline def states permitted rework edges as "<from_artifact_stage> -> <to_stage>". These
+  # are the same backward edges as by_stage, keyed by the FAILING stage's artifact name in the def.
+  allowed_rework_routes_from_def:
+    - severity_classification -> incident_intake
+    - mitigation_plan -> severity_classification
+    - rollback_or_fix -> mitigation_plan
+    - postmortem -> rollback_or_fix
+    - learning_update -> postmortem
+  allowed_rework_routes_note: >-
+    operations_pipeline.yaml allowed_rework_routes omits the incident_intake -> incident_intake
+    self-loop that the stage-1 file declares (on_fail/rework_route: incident_intake); both are
+    carried here — by_stage is authoritative per-stage, allowed_rework_routes_from_def mirrors the
+    def verbatim. The five def edges match by_stage for stages #2–#6 exactly.
+
+  routing_invariants:
+    - All routing targets MUST be a known canonical stage_id (configs/nexus-ai/operations_pipeline.yaml
+      stages) or a routing_terminal (done | relevant_failed_stage | block_and_report).
+    - A failed stage MUST route to its declared rework target (its on_fail / rework_route); the Team
+      Lead orchestrator MAY NOT improvise a different target (pipeline is a deterministic stage graph,
+      not agent chatter).
+    - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
+      unre-evaluated gates.
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal stage
+      rework target.
+
+# =====================================================================================
+# Iteration policy
+# =====================================================================================
+# No-human system: infinite loops are forbidden. Mirrors
+# configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml iteration_policy.
+iteration_policy:
+  default_max_iterations_per_stage: 3      # derived: every operations stage file declares max_iterations: 3
+  max_total_rework_cycles: 8               # shared no-human ceiling on cumulative rework cycles across the whole run (mirrors sdlc runtime-rules; not an operations-specific value in the operations doc)
+  on_iteration_limit_exceeded:
+    action: block_and_report               # canonical terminal: halt; do NOT auto-loop further
+    output: REWORK_LIMIT_EXCEEDED.md
+  # Clarifying semantics (do not contradict the locked values above):
+  scope_notes:
+    - default_max_iterations_per_stage applies PER stage_id; it is the per-stage max_iterations of 3
+      declared in every configs/nexus-ai/stages/operations/*.yaml file.
+    - max_total_rework_cycles counts every rework hop across the run; reaching it triggers
+      on_iteration_limit_exceeded even if no single stage hit its per-stage cap. The value mirrors
+      the sdlc runtime-rules no-human ceiling (the operations canonical doc declares per-stage
+      max_iterations but no numeric total ceiling, so the shared no-human ceiling is reused here).
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
+      report is emitted as run evidence (it records the offending stage, failure type, route taken,
+      and iteration counts).
+
+# Canonical docs this runtime-rules file is bound to.
+canonical_docs:
+  - configs/nexus-ai/operations_pipeline.yaml
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md

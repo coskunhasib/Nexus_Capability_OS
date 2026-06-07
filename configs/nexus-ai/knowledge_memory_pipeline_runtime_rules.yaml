@@ -1,0 +1,268 @@
+# Nexus AI Orchestration Model — Knowledge / Memory Pipeline
+# Runtime rules: required-gate -> producer map + rework routing table + iteration policy.
+# Machine-readable blueprint/documentation only — NO runtime code, NO merge, NO deploy.
+#
+# Top structure is the Nexus AI Orchestration Model; the Knowledge / Memory Pipeline is ONE
+# pipeline under it, not the top. This file holds the cross-stage RUNTIME RULES that the
+# Knowledge / Memory Pipeline (and its knowledge_team_lead orchestrator) must obey — it does NOT
+# redefine per-stage contracts (those live in configs/nexus-ai/stages/knowledge-memory/*.yaml).
+#
+# Source of truth (DERIVED, not invented):
+#   - configs/nexus-ai/knowledge_memory_pipeline.yaml (pipeline definition: required_gates,
+#     allowed_rework_routes, stages, blocking_conditions),
+#   - configs/nexus-ai/stages/knowledge-memory/*.yaml (per-stage canonical stage_id, gates,
+#     on_fail, rework_route, uses_governance_profiles),
+#   - configs/nexus-ai/governance_profiles.yaml (the governance profile ids the producing_rule
+#     fields resolve to),
+#   - mirrors the SDLC analogue configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml (section set
+#     + structure) to bring this pipeline to parity.
+#
+# Every value below is taken from the files above; where a required gate has no single producing
+# stage (a cross-cutting policy gate) that is recorded explicitly rather than invented.
+#
+# LOCKED-DECISION compliance baked into this file:
+#   - Memory is a Core Ability only: it is NEVER an owner_agent or a routing target here (routing
+#     targets are pipeline stage_ids / canonical terminals only).
+#   - team_lead = knowledge_team_lead; Supervisor (a Core Ability) is NOT the team lead.
+#   - Concept boundaries kept distinct: Skill != Tool, Governance != Audit, Evidence != Trace.
+
+version: draft-0.1
+rules_id: knowledge_memory_pipeline_runtime_rules
+pipeline_id: knowledge_memory_pipeline
+applies_to_pipeline_version: draft-0.1
+purpose: >-
+  Formalize the Knowledge / Memory Pipeline cross-stage runtime rules — which producing stage and
+  governance rule satisfies each required gate, where a failed stage reworks to, and how many
+  iterations are allowed before the run is hard-blocked — under no-human governance.
+  Documentation/blueprint only; no runtime code.
+status: draft
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+
+# Canonical routing terminals these rules may point to (besides any pipeline stage_id).
+# These mirror configs/nexus-ai/stages/knowledge-memory/*.yaml on_fail/rework_route usage.
+routing_terminals:
+  - done                    # pipeline reached its terminal success node (after memory_expiration_review)
+  - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
+  - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
+
+# =====================================================================================
+# Required-gate → producer map  (make the rollup gates machine-checkable)
+# =====================================================================================
+# PURPOSE: configs/nexus-ai/knowledge_memory_pipeline.yaml `required_gates` lists the gate IDs the
+#   run must satisfy. Each gate name is SATISFIED BY a specific stage's gate decision; without an
+#   explicit map a checker cannot prove each required gate has a real producer (the gate name would
+#   be a dangling edge: present in required_gates, resolving to nothing). This block resolves that
+#   edge for every gate in required_gates (10 always + 2 conditional).
+#
+# AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/knowledge-memory/*.yaml
+#   (the stage whose `gates:` list contains the gate); the producing_rule is a gate-bearing
+#   governance profile in that stage's `uses_governance_profiles`, each a first-class item in
+#   configs/nexus-ai/governance_profiles.yaml (so every rule id below resolves — no new dangling edge).
+#
+# CHECKER CONTRACT (how to verify): for each entry, assert
+#   (a) `gate` ∈ knowledge_memory_pipeline.yaml required_gates.always (tier=always) or
+#       required_gates.conditional (tier=conditional),
+#   (b) `producing_stage` ∈ the canonical 6-stage set (or `pipeline` for a policy gate),
+#   (c) `producing_rule` ∈ configs/nexus-ai/governance_profiles.yaml ids AND is listed in that
+#       stage's uses_governance_profiles (policy gates exempt — see note),
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+# Any unmet assertion = a dangling required-gate edge.
+required_gate_producers:
+  scope: knowledge_memory_required_gates_all   # every gate in required_gates (10 always + 2 conditional)
+  note: >-
+    Each gate in knowledge_memory_pipeline.yaml required_gates is SATISFIED BY the producing stage's
+    gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does NOT
+    redefine any stage gate and does NOT alter knowledge_memory_pipeline.yaml (which stays
+    schema-valid). The one cross-cutting policy gate
+    (team_lead_cannot_self_approve_or_bypass_gate) has no single producing stage and is recorded
+    with producing_stage: pipeline.
+  gates:
+    - gate: intake_metadata_complete                    # required_gates.always
+      tier: always
+      producing_stage: memory_intake                    # stage #1
+      producing_rule: memory_source_governance          # governance_profiles.yaml; in memory_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - intake_metadata_complete
+
+    - gate: provenance_seed_recorded                    # required_gates.always
+      tier: always
+      producing_stage: memory_intake                    # stage #1
+      producing_rule: memory_source_governance
+      satisfied_by_stage_gates:
+        - provenance_seed_recorded
+
+    - gate: source_trust_tier_assigned                  # required_gates.always
+      tier: always
+      producing_stage: source_classification            # stage #2
+      producing_rule: memory_source_governance          # governance_profiles.yaml; in source_classification.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - source_trust_tier_assigned
+
+    - gate: sensitivity_classified                      # required_gates.always
+      tier: always
+      producing_stage: source_classification            # stage #2
+      producing_rule: memory_source_governance
+      satisfied_by_stage_gates:
+        - sensitivity_classified
+
+    - gate: summary_grounded_in_source                  # required_gates.always
+      tier: always
+      producing_stage: summary_generation               # stage #3
+      producing_rule: memory_source_governance          # governance_profiles.yaml; in summary_generation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - summary_grounded_in_source
+      note: >-
+        BLOCKER gate. The stage's other gate, summary_confidence_calibrated, is MAJOR (non-blocking)
+        and is NOT in required_gates; it is routed back via rework rather than hard-blocked.
+
+    - gate: validity_window_present                     # required_gates.always
+      tier: always
+      producing_stage: validity_window_assignment       # stage #4
+      producing_rule: validity_window_required_gate     # governance_profiles.yaml; in validity_window_assignment.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - validity_window_present
+      note: >-
+        BLOCKER gate. The stage's other gate, validity_rationale_recorded, is MAJOR (non-blocking)
+        and is NOT in required_gates.
+
+    - gate: update_bound_to_validity_window             # required_gates.always
+      tier: always
+      producing_stage: retrieval_profile_update         # stage #5
+      producing_rule: validity_window_required_gate     # governance_profiles.yaml; in retrieval_profile_update.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - update_bound_to_validity_window
+      note: >-
+        Mirrors the retrieval_profile_update_without_validity_window blocking condition: a retrieval
+        profile update may not be released unless it is bound to a validity window.
+
+    - gate: sensitivity_exposure_consistent            # required_gates.always
+      tier: always
+      producing_stage: retrieval_profile_update         # stage #5
+      producing_rule: memory_source_governance          # governance_profiles.yaml; in retrieval_profile_update.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - sensitivity_exposure_consistent
+
+    - gate: expiration_outcome_recorded                # required_gates.always
+      tier: always
+      producing_stage: memory_expiration_review         # stage #6
+      producing_rule: validity_window_required_gate     # governance_profiles.yaml; in memory_expiration_review.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - expiration_outcome_recorded
+
+    - gate: team_lead_cannot_self_approve_or_bypass_gate  # required_gates.always
+      tier: always
+      producing_stage: pipeline                         # POLICY gate — no single producing stage
+      producing_rule: pipeline                          # cross-cutting structural policy; not a per-stage gate-bearing rule
+      satisfied_by_stage_gates: []
+      note: >-
+        Cross-cutting structural policy gate (knowledge_memory_pipeline.yaml §3.1 no-self-approval).
+        It is NOT produced by any single stage's `gates:` list; it constrains EVERY gate decision so
+        that knowledge_team_lead can neither self-approve nor bypass a gate. Recorded with
+        producing_stage: pipeline so the always-required rollup is machine-checkable while honoring
+        that it has no single producer. See invariants.
+
+    - gate: redaction_applied_if_required               # required_gates.conditional
+      tier: conditional
+      producing_stage: source_classification            # stage #2
+      producing_rule: redaction_required_gate           # governance_profiles.yaml; in source_classification.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - redaction_applied_if_required
+      conditional_required_when: >-
+        sensitivity_requires_redaction == true
+      note: >-
+        Conditional BLOCKER (stage #2 conditional_required_gates). When the candidate's sensitivity
+        does not require redaction the gate evaluates to pass_if_applicable; when it does, redaction
+        must be applied before source_classification may pass.
+
+    - gate: expired_memory_retired_from_retrieval       # required_gates.conditional
+      tier: conditional
+      producing_stage: memory_expiration_review         # stage #6
+      producing_rule: validity_window_required_gate     # governance_profiles.yaml; in memory_expiration_review.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - expired_memory_retired_from_retrieval
+      conditional_required_when: >-
+        outcome == expired
+      note: >-
+        Conditional BLOCKER (stage #6 conditional_required_gates). When the expiration outcome is
+        `expired` the memory must be retired from retrieval before the run may complete; otherwise
+        the gate evaluates to pass_if_applicable.
+
+  invariants:
+    - Every `gate` MUST exist in configs/nexus-ai/knowledge_memory_pipeline.yaml required_gates
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
+    - Every `producing_stage` MUST be a canonical stage_id in
+      configs/nexus-ai/knowledge_memory_pipeline.yaml, EXCEPT the cross-cutting policy gate whose
+      producing_stage is the sentinel `pipeline` (no single producing stage).
+    - Every per-stage `producing_rule` MUST resolve to a governance profile id in
+      configs/nexus-ai/governance_profiles.yaml AND appear in that stage's uses_governance_profiles;
+      the `pipeline` policy gate is exempt (its producing_rule is the sentinel `pipeline`).
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/knowledge-memory/*.yaml); the policy gate's list is empty by design."
+    - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change knowledge_memory_pipeline.yaml."
+
+# =====================================================================================
+# Rework routing table  (map: failure -> stage_id)
+# =====================================================================================
+rework_routing_table:
+
+  # -- Authoritative per-stage routes (complete; covers all 6 canonical stages) ----------
+  # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
+  # Values copied from each stage's own canonical `rework_route` in
+  # configs/nexus-ai/stages/knowledge-memory/*.yaml.
+  by_stage:
+    memory_intake: memory_intake
+    source_classification: memory_intake
+    summary_generation: source_classification
+    validity_window_assignment: source_classification
+    retrieval_profile_update: validity_window_assignment
+    memory_expiration_review: validity_window_assignment
+
+  # -- Pipeline-declared allowed rework routes (the def's allowed_rework_routes) ----------
+  # Transcribed verbatim from knowledge_memory_pipeline.yaml allowed_rework_routes ("source ->
+  # target"). Each must be consistent with by_stage above (same source -> same target).
+  allowed_rework_routes:
+    - source_classification -> memory_intake
+    - summary_generation -> source_classification
+    - validity_window_assignment -> source_classification
+    - retrieval_profile_update -> validity_window_assignment
+    - memory_expiration_review -> validity_window_assignment
+
+  routing_invariants:
+    - All routing targets MUST be a known canonical stage_id
+      (configs/nexus-ai/knowledge_memory_pipeline.yaml) or a routing_terminal
+      (done | relevant_failed_stage | block_and_report).
+    - A failed stage MUST route to its declared rework target (its stage-file `rework_route`); the
+      knowledge_team_lead orchestrator MAY NOT improvise a different target (the pipeline is a
+      deterministic stage graph, not agent chatter).
+    - Each by_stage entry (except a self-route) MUST match a "source -> target" line in
+      allowed_rework_routes; memory_intake self-routes to itself on intake failure (no upstream
+      stage exists), which is not listed in allowed_rework_routes by design.
+    - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
+      unre-evaluated gates.
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal
+      stage rework target.
+
+# =====================================================================================
+# Iteration policy
+# =====================================================================================
+# No-human system: infinite loops are forbidden. Mirrors the SDLC iteration policy.
+iteration_policy:
+  default_max_iterations_per_stage: 3      # mirrors per-stage `max_iterations: 3` in every stage contract
+  max_total_rework_cycles: 8               # ceiling on cumulative rework cycles across the whole run
+  on_iteration_limit_exceeded:
+    action: block_and_report               # canonical terminal: halt; do NOT auto-loop further
+    output: REWORK_LIMIT_EXCEEDED.md
+  # Clarifying semantics (do not contradict the locked values above):
+  scope_notes:
+    - default_max_iterations_per_stage applies PER stage_id; a stage's own `max_iterations` (if set)
+      overrides this default for that stage only. Every knowledge-memory stage sets max_iterations=3.
+    - max_total_rework_cycles counts every rework hop across the run; reaching it triggers
+      on_iteration_limit_exceeded even if no single stage hit its per-stage cap.
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
+      report is emitted as run evidence (it records the offending stage, failure type, route taken,
+      and iteration counts).
+
+# Canonical docs this runtime-rules file is bound to.
+canonical_docs:
+  - configs/nexus-ai/knowledge_memory_pipeline.yaml
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md

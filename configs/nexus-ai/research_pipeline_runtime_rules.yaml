@@ -1,0 +1,239 @@
+# Nexus AI Orchestration Model — Research Pipeline
+# Runtime rules: required-gate -> producer map + rework routing table + iteration policy.
+# Machine-readable blueprint/documentation only — NO runtime code, NO merge, NO deploy.
+#
+# Top structure is the Nexus AI Orchestration Model; the Research Pipeline is ONE pipeline under it,
+# not the top. This file holds the cross-stage RUNTIME RULES that the Research Pipeline (and its
+# Team Lead orchestrator) must obey — it does NOT redefine per-stage contracts (those live in
+# configs/nexus-ai/stages/research/*.yaml).
+#
+# Source of truth (DERIVED, not invented):
+#   - configs/nexus-ai/research_pipeline.yaml
+#       required_gates.{always,conditional}, allowed_rework_routes, stages,
+#       required_team_type, required_team_lead_role.
+#   - configs/nexus-ai/stages/research/*.yaml
+#       each stage's stage_id, gates, on_fail, rework_route, uses_governance_profiles.
+#
+# Mirrors the section set of configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml:
+#   header, routing_terminals, required_gate_producers (+ invariants),
+#   rework_routing_table (+ routing_invariants), iteration_policy, canonical_docs.
+
+version: draft-0.1
+rules_id: research_pipeline_runtime_rules
+pipeline_id: research_pipeline
+applies_to_pipeline_version: draft-0.1
+purpose: >-
+  Formalize the Research Pipeline cross-stage runtime rules — which producing stage satisfies each
+  required rollup gate, where a failed stage reworks to, and how many iterations are allowed before
+  the run is hard-blocked — under no-human governance. Documentation/blueprint only; no runtime code.
+status: draft
+owner_team: research_team
+team_lead: research_team_lead
+
+# Canonical routing terminals these rules may point to (besides any pipeline stage_id).
+# These mirror configs/nexus-ai/stages/research/*.yaml on_pass/on_fail/rework_route usage.
+routing_terminals:
+  - done                    # pipeline reached its terminal success node (after research_completion)
+  - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
+  - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
+
+# =====================================================================================
+# Required-gate → producer map  (make the rollup gates machine-checkable)
+# =====================================================================================
+# PURPOSE: configs/nexus-ai/research_pipeline.yaml `required_gates` lists rollup gate IDs the run
+#   must satisfy, but a rollup gate name is NOT always itself a stage gate — it is SATISFIED BY a
+#   specific upstream stage's gate decision. Without an explicit map a checker cannot prove each
+#   required gate has a real producer (the gate name would be a dangling edge: present in
+#   required_gates, resolving to nothing). This block resolves that edge.
+#
+# SCOPE: ALL required gates in research_pipeline.yaml required_gates — 9 `always` gates and 0
+#   `conditional` gates (the def's required_gates.conditional is empty). Most map by name to a single
+#   producing stage whose `gates:` list contains the gate; the cross-cutting POLICY gate
+#   no_blocking_policy_failure has no single producing stage (producing_stage: pipeline).
+#
+# AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/research/*.yaml; the
+#   producing_rule is the stage-specific gate-bearing governance profile listed in that stage's
+#   `uses_governance_profiles` (exact string as it appears in the stage contract).
+#
+# CHECKER CONTRACT (how to verify): for each entry, assert
+#   (a) `gate` ∈ research_pipeline.yaml required_gates.always (or .conditional, currently empty),
+#   (b) `producing_stage` ∈ the canonical 10-stage set (or the literal `pipeline` for policy gates),
+#   (c) `producing_rule` ∈ that stage's uses_governance_profiles (configs/nexus-ai/stages/research/*.yaml),
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+# Any unmet assertion = a dangling required-gate edge.
+required_gate_producers:
+  scope: research_required_gates_all   # all 9 always gates + 0 conditional gates (required_gates.conditional is empty)
+  note: >-
+    Each rollup gate in research_pipeline.yaml required_gates is SATISFIED BY the producing stage's
+    gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does
+    NOT redefine any stage gate and does NOT alter research_pipeline.yaml (which stays schema-valid).
+    producing_rule strings are copied verbatim from each producing stage's uses_governance_profiles.
+  gates:
+    - gate: all_research_questions_addressed_or_flagged   # required_gates.always
+      tier: always
+      producing_stage: synthesis                          # stage #9
+      producing_rule: citation_required_gate              # in synthesis.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - all_research_questions_addressed_or_flagged
+
+    - gate: every_load_bearing_claim_has_mapped_evidence  # required_gates.always
+      tier: always
+      producing_stage: claim_evidence_mapping             # stage #6
+      producing_rule: evidence_required_policy            # in claim_evidence_mapping.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - every_load_bearing_claim_has_mapped_evidence
+
+    - gate: every_used_source_has_reliability_score       # required_gates.always
+      tier: always
+      producing_stage: source_reliability_assessment      # stage #4
+      producing_rule: research_source_governance          # in source_reliability_assessment.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - every_candidate_source_scored
+      note: >-
+        Rollup gate. The producing stage's component gate is every_candidate_source_scored
+        (every candidate source is scored for reliability); this is the authoritative producer of
+        "every used source has a reliability score". The research_completion blocking_condition
+        unscored_source_used_in_synthesis == true guards the same invariant at the terminal gate.
+
+    - gate: validator_role_distinct_from_producer         # required_gates.always
+      tier: always
+      producing_stage: cross_validation                   # stage #7
+      producing_rule: no_self_approval_policy             # in cross_validation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - validator_role_distinct_from_producer
+      note: >-
+        No-self-approval structural gate: cross_validation.owner_agent (cross_validation_agent) is a
+        DISTINCT role from the producing agents, enforced by no_self_approval_policy.
+
+    - gate: cross_validation_completed_by_separate_role   # required_gates.always
+      tier: always
+      producing_stage: research_completion                # stage #10
+      producing_rule: no_self_approval_policy             # in research_completion.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - cross_validation_completed_by_separate_role
+      note: >-
+        This gate is a literal component gate of the terminal research_completion stage (it confirms
+        the cross_validation stage #7 ran under a separate role). The substantive separate-role check
+        happens in cross_validation (#7, validator_role_distinct_from_producer); research_completion
+        rolls it up at the final gate.
+
+    - gate: uncertainty_report_present                    # required_gates.always
+      tier: always
+      producing_stage: uncertainty_reporting              # stage #8
+      producing_rule: evidence_required_policy            # in uncertainty_reporting.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - uncertainty_report_present
+
+    - gate: citation_required_gate_pass                   # required_gates.always
+      tier: always
+      producing_stage: research_completion                # stage #10
+      producing_rule: evidence_required_policy            # in research_completion.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - citation_required_gate_pass
+      note: >-
+        The terminal research_completion stage carries the literal citation_required_gate_pass gate.
+        It rolls up the synthesis stage (#9) citation enforcement (no_uncited_load_bearing_claim under
+        the citation_required_gate governance profile).
+
+    - gate: research_evidence_graph_complete              # required_gates.always
+      tier: always
+      producing_stage: research_completion                # stage #10
+      producing_rule: evidence_required_policy            # in research_completion.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - research_evidence_graph_complete
+
+    - gate: no_blocking_policy_failure                    # required_gates.always
+      tier: always
+      producing_stage: pipeline                           # POLICY gate — no single producing stage
+      producing_rule: evidence_required_policy            # cross-cutting; also surfaced at research_completion.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - no_blocking_policy_failure
+      note: >-
+        Pipeline-level cross-cutting POLICY gate (producing_stage: pipeline). It aggregates the
+        no-blocking-policy-failure condition over the whole run — i.e. none of the def's
+        blocking_conditions (research_pipeline.yaml: load_bearing_claim_without_evidence_count > 0,
+        unscored_source_used_in_synthesis, producer_role_is_sole_validator_of_own_source,
+        uncited_claim_in_final_synthesis, critical_source_reliability_conflict_unresolved) hold.
+        It is also re-checked as the literal terminal gate of research_completion (#10), but it has
+        no single producing stage, so producing_stage is `pipeline`.
+
+  invariants:
+    - Every `gate` MUST exist in configs/nexus-ai/research_pipeline.yaml required_gates
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional, currently empty).
+    - Every `producing_stage` MUST be a canonical stage_id in configs/nexus-ai/research_pipeline.yaml,
+      or the literal `pipeline` for cross-cutting policy gates with no single producing stage.
+    - "Every `producing_rule` MUST appear in the producing stage's uses_governance_profiles (configs/nexus-ai/stages/research/*.yaml); for producing_stage: pipeline it is the cross-cutting policy profile that aggregates the run-level blocking_conditions."
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/research/*.yaml); for producing_stage: pipeline it is the policy gate name carried at the terminal research_completion stage."
+    - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change research_pipeline.yaml."
+
+# =====================================================================================
+# Rework routing table  (map: failure -> stage_id)
+# =====================================================================================
+rework_routing_table:
+
+  # -- Authoritative per-stage routes (complete; covers all 10 canonical stages) --------
+  # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
+  # Values copied from each stage's own canonical `rework_route` in
+  # configs/nexus-ai/stages/research/*.yaml.
+  by_stage:
+    research_intake: research_intake
+    scope_and_questions: scope_and_questions
+    source_discovery: source_discovery
+    source_reliability_assessment: source_reliability_assessment
+    claim_extraction: claim_extraction
+    claim_evidence_mapping: claim_evidence_mapping
+    cross_validation: claim_evidence_mapping
+    uncertainty_reporting: uncertainty_reporting
+    synthesis: synthesis
+    research_completion: relevant_failed_stage
+
+  # -- Failure-type index (the def's allowed_rework_routes: map failure -> stage_id) -----
+  # Copied verbatim from research_pipeline.yaml allowed_rework_routes. Each target is a known
+  # stage_id; these are the named failure routes the def declares for the pipeline.
+  by_failure_type:
+    scope_gap: scope_and_questions
+    insufficient_sources: source_discovery
+    source_reliability_failure: source_discovery
+    unmapped_claim: claim_evidence_mapping
+    cross_validation_conflict: claim_evidence_mapping
+    uncertainty_underreported: uncertainty_reporting
+    synthesis_not_supported_by_evidence: claim_evidence_mapping
+    citation_gap: synthesis
+
+  routing_invariants:
+    - All routing targets MUST be a known canonical stage_id (configs/nexus-ai/research_pipeline.yaml)
+      or a routing_terminal (done | relevant_failed_stage | block_and_report).
+    - A failed stage MUST route to its declared rework target; the Team Lead orchestrator MAY NOT
+      improvise a different target (pipeline is a deterministic stage graph, not agent chatter).
+    - relevant_failed_stage MUST resolve to the specific upstream stage whose gate/evidence failed
+      (used by the terminal aggregate stage — research_completion).
+    - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
+      unre-evaluated gates.
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal
+      stage rework target.
+    - "NOTE: by_stage is derived from each stage file's own rework_route; by_failure_type is the def's allowed_rework_routes. They agree on shared routes; by_failure_type also names failure types (e.g. insufficient_sources / source_reliability_failure -> source_discovery) that the per-stage rework_route expresses as self-rework (source_reliability_assessment -> source_reliability_assessment), because a stage file routes by the stage that failed while the def routes by failure type."
+
+# =====================================================================================
+# Iteration policy
+# =====================================================================================
+# No-human system: infinite loops are forbidden.
+iteration_policy:
+  default_max_iterations_per_stage: 3      # mirrors per-stage `max_iterations: 3` in every research stage contract
+  max_total_rework_cycles: 8               # ceiling on cumulative rework cycles across the whole run
+  on_iteration_limit_exceeded:
+    action: block_and_report               # canonical terminal: halt; do NOT auto-loop further
+    output: REWORK_LIMIT_EXCEEDED.md
+  # Clarifying semantics (do not contradict the locked values above):
+  scope_notes:
+    - default_max_iterations_per_stage applies PER stage_id; a stage's own `max_iterations` (if set)
+      overrides this default for that stage only.
+    - max_total_rework_cycles counts every rework hop across the run; reaching it triggers
+      on_iteration_limit_exceeded even if no single stage hit its per-stage cap.
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
+      report is emitted as run evidence (it records the offending stage, failure type, route taken,
+      and iteration counts).
+
+# Canonical docs this runtime-rules file is bound to.
+canonical_docs:
+  - configs/nexus-ai/research_pipeline.yaml
+  - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
