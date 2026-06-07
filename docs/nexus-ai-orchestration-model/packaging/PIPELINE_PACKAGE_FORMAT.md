@@ -87,7 +87,11 @@ components:
   # ... every entry referenced by the pipeline's uses_* fields
 gates:
   - { id: tests_pass,        path: gates/tests_pass.yaml }
-  # ... one per required_gates entry
+  # ... 19 always (D-016) + 7 conditional  (gate entries are {id, set}; defs in gates/required_gates.yaml)
+evidence:                  # governance/audit payload, bundled under evidence/
+  required_evidence: [REQUIREMENTS_SPEC, ARCHITECTURE_DOC, "… (19 artifacts)"]
+  required_trace:    [stage_gate_trace_schema, "… (5 records)"]
+stages: [intake, requirements, "… (ordered ids; contracts bundled under stages/)"]
 ```
 
 > The `components` list is derived from the pipeline definition's existing
@@ -95,6 +99,15 @@ gates:
 > `required_team_lead_role`, `uses_governance_profiles`, `uses_audit_schemas`,
 > `uses_model_provider_profiles`, `uses_context_memory_profiles` fields. Packaging
 > bundles each referenced entry from its Shared Registry file and stamps it with a version.
+>
+> **Component `kind` vocabulary:** `team`, `team_lead`, `core_ability`, `skill`, `tool`,
+> `governance_profile`, `audit_schema`, `model_provider_profile`, `context_memory_profile`
+> (plus `agent` / `sub_agent` where a pipeline declares them directly). When a `uses_*`
+> token is an alias of a canonical id, the component records `requested_as: <token>`.
+> Path spellings use hyphens (`core-abilities/`) while ids use underscores
+> (`core_ability`) — a path-vs-id style split, not a mismatch.
+>
+> The authoritative, machine-generated example is `packages/sdlc-pipeline/pipeline.package.yaml`.
 
 ## 6. The pipeline definition — `pipeline.yaml`
 

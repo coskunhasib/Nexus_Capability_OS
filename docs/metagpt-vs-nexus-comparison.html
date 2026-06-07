@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MetaGPT ↔ Nexus ↔ Capability_OS — İnteraktif Graf</title>
+<style>
+  :root{
+    --mg:#8b7cf6; --nx:#22b8ee; --co:#f5a524; --tg:#22c55e; --mn:#ec4899; --root:#94a3b8; --gate:#ef4444;
+    --bg:#0b1220; --grid:#16203a; --panel:#0f1830; --node:#162138; --node2:#1c2a47;
+    --ink:#e6edf6; --muted:#8aa0b8; --line:#2a3a5c; --wire:#3a4d72; --hot:#fbbf24;
+    --bar:#0e1730;
+  }
+  html[data-theme="light"]{
+    --bg:#eef2f8; --grid:#dde6f2; --panel:#ffffff; --node:#ffffff; --node2:#f1f5fb;
+    --ink:#1f2937; --muted:#5b6b82; --line:#cfdaeb; --wire:#b6c4dc; --bar:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* top bar */
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:var(--bar);border-bottom:1px solid var(--line);z-index:5}
+  .bar .title{font-weight:700;font-size:.95rem;margin-right:6px}
+  .bar .title small{font-weight:400;color:var(--muted);font-size:.72rem}
+  .bar input[type=search]{flex:0 1 240px;min-width:140px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:.82rem}
+  .btn{cursor:pointer;font-size:.76rem;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);user-select:none;white-space:nowrap}
+  .btn:hover{border-color:var(--muted)}
+  .btn.on{background:var(--tg);color:#04210f;border-color:var(--tg);font-weight:700}
+  .chip{cursor:pointer;font-size:.74rem;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);user-select:none;display:inline-flex;align-items:center;gap:6px}
+  .chip .sw{width:9px;height:9px;border-radius:50%}
+  .chip.off{opacity:.35;text-decoration:line-through}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+  .spacer{flex:1}
+  .hint{color:var(--muted);font-size:.72rem}
+
+  /* stage */
+  .stage{position:relative;flex:1;overflow:hidden;cursor:grab;
+    background-image:radial-gradient(var(--grid) 1px, transparent 1px);background-size:26px 26px}
+  .stage.grabbing{cursor:grabbing}
+  svg{width:100%;height:100%;display:block}
+
+  .edge{fill:none;stroke:var(--wire);stroke-width:1.6;transition:stroke .15s,stroke-width .15s}
+  .edge.sub{stroke:var(--co)}
+  .edge.gap{stroke:var(--tg);stroke-width:2.2}
+  .edge.hot{stroke:var(--hot);stroke-width:2.9}
+
+  .n{cursor:pointer}
+  .n rect{rx:9;ry:9;fill:var(--node);stroke:var(--c);stroke-width:1.7;transition:fill .15s,stroke-width .15s,opacity .15s;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.28))}
+  .n .lbl{fill:var(--ink);font-size:12.5px;font-weight:600;dominant-baseline:middle}
+  .n .sub{fill:var(--muted);font-size:10px;font-family:ui-monospace,monospace;dominant-baseline:middle}
+  .n.sys rect{fill:var(--c);stroke:var(--c)}
+  .n.sys .lbl{fill:#06101f;font-weight:800;font-size:14px}
+  .n.root rect{fill:var(--node2)}
+  .n.group rect{fill:var(--node2);stroke-dasharray:0}
+  .n.gap rect{stroke:var(--tg);stroke-width:2.4;fill:color-mix(in srgb,var(--tg) 16%,var(--node))}
+  .n.hassub rect{stroke:var(--co)}
+  .n:hover rect{stroke-width:3}
+  .n.hit rect{stroke:var(--hot);stroke-width:3.4;filter:drop-shadow(0 0 7px var(--hot))}
+  .n.dim{opacity:.18}
+  .badge circle{fill:var(--c);stroke:var(--bg);stroke-width:2}
+  .badge text{fill:#06101f;font-size:10px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+
+  /* detail panel */
+  #info{position:absolute;top:12px;right:12px;width:300px;max-height:calc(100% - 24px);overflow:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.4);
+    padding:14px 16px;transform:translateX(125%);transition:transform .25s;z-index:6}
+  #info.open{transform:none}
+  #info h3{margin:0 0 2px;font-size:1.02rem}
+  #info .meta{font-size:.74rem;color:var(--muted);margin-bottom:10px;font-family:ui-monospace,monospace}
+  #info .tag{display:inline-block;font-size:.68rem;padding:2px 7px;border-radius:999px;border:1px solid var(--line);margin-right:5px}
+  #info ul{margin:8px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+  #info li{font-family:ui-monospace,monospace;font-size:.76rem;color:var(--ink);padding:3px 8px;background:var(--bg);border-radius:6px}
+  #info .x{position:absolute;top:10px;right:12px;cursor:pointer;color:var(--muted);font-size:1.1rem;border:none;background:none}
+  .legendline{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:.72rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="title">MetaGPT ↔ Nexus_Project ↔ Capability_OS <small>· Capability_OS = main + nexus (aynı repo) · 2026-06-07</small></span>
+  <input id="q" type="search" placeholder="ara: ajan / skill / tool / stage…">
+  <span class="btn" id="expand">⊕ Hepsini aç</span>
+  <span class="btn" id="collapse">⊖ Topla</span>
+  <span class="btn" id="fit">⤢ Sığdır</span>
+  <span class="btn on" id="autofit">⤢ Oto-sığdır</span>
+  <span class="btn" id="orient">⇆ Yön</span>
+  <span class="btn" id="theme">🌓</span>
+  <span class="sep"></span>
+  <span class="chip" data-sys="① MetaGPT / Atoms"><span class="sw" style="background:var(--mg)"></span>MetaGPT</span>
+  <span class="chip" data-sys="② Nexus_Project"><span class="sw" style="background:var(--nx)"></span>Nexus</span>
+  <span class="chip" data-sys="③ Capability_OS (NCO)"><span class="sw" style="background:var(--co)"></span>Cap_OS (main+nexus)</span>
+  <span class="chip" data-sys="④ Hedef Nexus"><span class="sw" style="background:var(--tg)"></span>Hedef</span>
+  <span class="btn" id="hlgap">★ Eksikler</span>
+  <span class="spacer"></span>
+  <span class="hint">sürükle = pan · tekerlek = zoom · tıkla = aç/kapat</span>
+</div>
+
+<div class="stage" id="stage">
+  <svg id="svg"><g id="view"></g></svg>
+  <div id="info"><button class="x" id="infox">✕</button><div id="infobody"></div></div>
+</div>
+
+<script>
+"use strict";
+/* ---------------- DATA MODEL ---------------- */
+const lv = a => a.map(s => ({label:s}));
+const G  = (label,c,o)=>Object.assign({label,c},o||{});
+
+const OS12 = lv(['file_read','file_write','shell_exec','process_run','test_runner','contract_test_runner','migration_checker','benchmark_runner','restore_test_runner','activation_flag_controller','runbook_executor','rollback_executor']);
+const COD6 = lv(['repo_reader','repo_writer','repo_diff_reader','test_writer','coverage_parser','script_static_analyzer']);
+const MEM8 = lv(['memory_search','memory_write','memory_summarize','context_recall','memory_ingestor','retrieval_profile_writer','expiration_scanner','provenance_recorder']);
+const SUB52 = lv(['artifact_writer','evidence_writer','evidence_reader','defect_tracker','policy_query','requirements_trace_checker','diagram_generator','scanner_runner','dependency_scanner','sbom_generator','license_checker','prompt_injection_tester','tool_misuse_tester','context_poisoning_tester','evidence_consistency_checker','agent_permission_auditor','eval_runner','compliance_matrix_builder','accessibility_auditor','resource_budget_checker','cost_estimator','quota_policy_checker','backup_plan_checker','dr_runbook_checker','package_reputation_checker','data_inventory_checker','retention_policy_checker','deletion_flow_checker','tenant_isolation_checker','ux_flow_checker','contrast_checker','rollback_validator','observability_plan_checker','incident_runbook_checker','skill_package_reader','source_reliability_checker','claim_mapper','cohort_selector','telemetry_reader','incident_intake_tool','monitoring_query_tool','alert_correlator','severity_classifier_tool','mitigation_plan_builder','postmortem_builder','skill_semantic_extractor','reference_index_builder','skill_binding_proposer','source_classifier','summary_writer','validity_window_calculator','redaction_tool']);
+const STAGES = lv(['01 intake','02 domain_risk','03 skill_extract','04 requirements','05 requirements_review 🚦','06 architecture','07 architecture_review 🚦','08 security_privacy_design','09 premortem_fmea','10 planning','11 implementation','12 code_review','13 test_generation','14 test_execution','15 verification_loop','16 security_validation','17 supply_chain','18 agentic_safety','19 privacy','20 api_contract','21 compliance*','22 data_migration*','23 a11y_ux*','24 performance_resilience','25 cost_resource','26 backup_dr*','27 ops_readiness','28 evidence_graph','29 dev_completion','30 release_candidate','31 refraction_learning']);
+
+const DATA = {label:'Karşılaştırma', t:'root', c:[
+
+ G('① MetaGPT / Atoms',[
+   G('Varsayılan takım — MGXEnv (use_mgx)',[
+     G('TeamLeader "Mike" ★hub',lv(['Plan','DelegateTask (publish_team_message)','ReplyToHuman']),{t:'agent'}),
+     G('ProductManager "Alice"',lv(['WritePRD','(RoleZero tabanlı)']),{t:'role'}),
+     G('Architect "Bob"',lv(['WriteDesign','(RoleZero tabanlı)']),{t:'role'}),
+     G('Engineer2 "Alex"',lv(['write_new_code','Terminal','CodeReview','Deployer','git_create_pull']),{t:'role'}),
+     G('DataAnalyst "David"',lv(['WriteAnalysisCode','ExecuteNbCode (Jupyter)','AskReview']),{t:'role'}),
+   ],{t:'group'}),
+   G('Eski sabit-SOP (use_mgx=False · opsiyonel)',[
+     {label:'Boss YOK → Human: UserRequirement'},
+     G('ProjectManager',lv(['WriteTasks']),{t:'role'}),
+     G('Engineer (klasik)',lv(['WriteCode','WriteCodeReview','SummarizeCode']),{t:'role'}),
+     G('QaEngineer',lv(['WriteTest','RunCode','DebugError']),{t:'role'}),
+   ],{t:'group'}),
+   G('Bağımsız ajanlar',[
+     G('RoleZero ★yeni temel',lv(['komut/araç döngüsü','ToolRecommender (BM25)','exp_pool · long-term memory','ask_human / reply_to_human']),{t:'agent'}),
+     G('DataInterpreter',lv(['WritePlan','WriteAnalysisCode','ExecuteNbCode','AskReview']),{t:'agent'}),
+     G('Researcher',lv(['CollectLinks','WebBrowseAndSummarize','ConductResearch']),{t:'agent'}),
+   ],{t:'group'}),
+   G('Foundation',lv(['Role(_observe·_think·_act)','Action / ActionNode (şema-doğrulamalı)','MGXEnv hub + Environment(pub/sub)','Memory (base / RoleZero long-term)','ProjectRepo (git)','Tools (@register_tool)','serialize/recover · CostManager bütçe']),{t:'group'}),
+   G('Self-optimizasyon',[
+     G('AFlow — MCTS (ICLR25)',lv(['Generate','Review','Revise','Ensemble','Test','Programmer','Format']),{t:'agent'}),
+     {label:'SELA — MCTS AutoML'},
+   ],{t:'group'}),
+   G('Ekosistem / ürün',lv(['MGX → Atoms (atoms.dev · 2026-01)','OpenManus','DeepWisdom']),{t:'group'}),
+   G('⚠ Eksik: governance / audit / evidence',lv(['zorunlu kalite kapısı yok (yalnız bütçe)','review/test opsiyonel, LLM-yargılı','audit trail / provenance / iz yok']),{t:'group'}),
+ ],{col:'mg',t:'sys'}),
+
+ G('② Nexus_Project',[
+   G('9 Ajan (Supervisor yönlendirir)',[
+     G('CODER',lv(['code_generate','code_review','code_debug','code_refactor','code_explain','code_run_tests']),{t:'agent',sub:'qwen2.5-coder-32b'}),
+     G('VISION',lv(['image_analyze','ocr_extract','object_detect','image_compare']),{t:'agent',sub:'internvl2.5-26b'}),
+     G('MEMORY',lv(['memory_store','memory_search','context_manage','summarize']),{t:'agent',sub:'varsayılan'}),
+     G('WEB',lv(['web_search','web_scrape','api_call','deep_research']),{t:'agent',sub:'varsayılan'}),
+     G('CREATIVE',lv(['image_generate','audio_generate','text_generate','content_generate']),{t:'agent',sub:'varsayılan'}),
+     G('AUDIO',lv(['transcribe','text_to_speech','audio_analyze','emotion_detect','translate_audio']),{t:'agent',sub:'whisper-large-v3'}),
+     G('OS',lv(['file_read','file_write','command_execute','file_search','file_manage']),{t:'agent',sub:'varsayılan'}),
+     G('EVALUATOR',lv(['evaluate_output','compare_outputs','optimize_suggest']),{t:'agent',sub:'varsayılan'}),
+     G('KNOWLEDGE',lv(['knowledge_search','knowledge_ingest','knowledge_analyze']),{t:'agent',sub:'varsayılan'}),
+   ],{t:'group'}),
+   G('Teams (2)',[
+     G('tm-analysis [sequential]',lv(['VISION → Görüntü Analizci','MEMORY → Hafıza Sorgucu','WEB → Araştırmacı']),{t:'team'}),
+     G('tm-production [sequential]',lv(['CODER → Geliştirici','CREATIVE → İçerik Üretici','AUDIO → Ses İşlemci']),{t:'team'}),
+   ],{t:'group'}),
+   G('Stratejiler (5)',lv(['sequential','parallel','debate','voting','cognitive']),{t:'group'}),
+   G('Pipelines (4)',[
+     G('pl-cognitive-code',lv(['UPPER: hypothesis·critic·synthesizer','🚦 ONAY KAPISI (approve/revise/reject)','LOWER: hypothesis·critic·synthesizer','final_review','evaluator (min 7)']),{t:'pipe'}),
+     G('pl-cognitive-research',lv(['UPPER tier','🚦 gate','LOWER tier','final_review','evaluator']),{t:'pipe'}),
+     G('pl-code-quality [classic]',lv(['architect_layer','worker_layer','final_review','evaluator']),{t:'pipe'}),
+     G('pl-research [classic]',lv(['architect_layer','worker_layer','final_review','evaluator']),{t:'pipe'}),
+     G('Tipli 6-rol şeması',lv(['upper_designer','upper_critic','upper_reviewer','worker_writer','worker_reviewer','worker_final']),{t:'pipe'}),
+   ],{t:'group'}),
+   G('Yönetişim',[
+     G('Hooks (3)',lv(['content_moderation [pre·10]','pii_scrub [post·50]','audit_log [post·200]']),{t:'team'}),
+     G('Self-evolution',lv(['CreationProposal: sub_agent·team·skill','ImprovementProposal: prompt·config·model·skill_add']),{t:'team'}),
+     G('Sub-agent (dinamik)',lv(['peer_call · cycle-detect · max_depth=5','Celery → direct fallback']),{t:'team'}),
+   ],{t:'group'}),
+   G('Tam ürün (orkestrasyon = 1 dilim)',lv(['V1-RC · 220 router · 333 servis · 260 test','multi-tenant + RLS · auth · billing (iyzico)','compute marketplace + escrow · model lifecycle','RAG/knowledge · OTel/Grafana/Loki · air-gap']),{t:'group'}),
+ ],{col:'nx',t:'sys'}),
+
+ G('③ Capability_OS (NCO)',[
+   G('▸ nexus branch — blueprint',[
+   G('Core Abilities (8)',[
+     G('memory',lv(['memory_search','memory_write','memory_summarize','context_recall']),{t:'ability'}),
+     G('web ⚠high',lv(['web_search','web_fetch','web_scrape']),{t:'ability'}),
+     G('os ⚠high',lv(['file_read','file_write','shell_exec','process_run']),{t:'ability'}),
+     G('reasoning (tool yok)',lv(['supervisor','coder','vision','audio','creative']),{t:'ability'}),
+   ],{t:'group'}),
+   G('Skills (18 · Skill≠Tool)',[
+     G('canonical (12)',lv(['prism','verification-loop','sentinel','llm-council','fmea','adr-builder','gap-audit','prompt-fidelity','calibrate','refraction','fermi-decompose','bayesian-update']),{t:'team'}),
+     G('candidate (6)',lv(['skill-architect','handoff-designer','context-pack-builder','scanner-result-normalizer','evidence-graph-builder','release-readiness-judge']),{t:'team'}),
+   ],{t:'group'}),
+   G('Tools (81)',[
+     G('OS (12)',OS12,{t:'team'}),G('Coder (6)',COD6,{t:'team'}),G('Memory (8)',MEM8,{t:'team'}),
+     G('Web (3)',lv(['web_search','web_fetch','web_scrape']),{t:'team'}),
+     G('substrate / null (~52)',SUB52,{t:'team'}),
+   ],{t:'group'}),
+   G('Teams (6) → Lead → Ajan → Sub-agent',[
+     G('sdlc_team ▸ sdlc_team_lead (31 stage)',[
+       {label:'product_requirements'},{label:'domain_risk'},
+       G('skill_librarian',lv(['skill_semantic_extractor_subagent']),{t:'agent',tag:'hassub'}),
+       G('architecture',lv(['api_design_subagent','data_model_subagent']),{t:'agent',tag:'hassub'}),
+       G('security_privacy',lv(['threat_modeling_subagent']),{t:'agent',tag:'hassub'}),
+       {label:'risk'},{label:'planning'},{label:'engineering'},{label:'code_reviewer'},
+       G('qa',lv(['test_generation_subagent','bug_hunter_subagent']),{t:'agent',tag:'hassub'}),
+       G('security_validation',lv(['security_scan_interpreter_subagent']),{t:'agent',tag:'hassub'}),
+       {label:'supply_chain'},{label:'agentic_safety'},{label:'privacy'},{label:'contract_validation'},
+       {label:'compliance'},{label:'data_migration'},{label:'ux_accessibility'},{label:'performance_resilience'},
+       {label:'cost_resource'},{label:'operations_readiness'},
+       G('evidence_graph',lv(['evidence_trace_subagent']),{t:'agent',tag:'hassub'}),
+       {label:'release_manager'},{label:'memory_curator'},
+     ],{t:'team'}),
+     G('research_team ▸ research_team_lead (10)',lv(['research_intake','research_scoping','source_discovery','source_reliability','claim_extraction','claim_evidence','cross_validation','uncertainty_reporting','research_synthesis','research_completion']),{t:'team'}),
+     G('operations_team ▸ operations_team_lead (6)',lv(['incident_intake','severity_classification','mitigation_planning','incident_response','postmortem','operational_learning']),{t:'team'}),
+     G('activation_team ▸ activation_team_lead (5)',lv(['activation_manager','pilot_activation','activation_reviewer','activation_owner_decision','rollback_readiness']),{t:'team'}),
+     G('knowledge_team ▸ knowledge_team_lead (6)',lv(['knowledge_intake','source_classification','memory_summarization','validity_window','retrieval_profile','memory_expiration']),{t:'team'}),
+     G('skill_governance_team ▸ lead (2)',lv(['skill_librarian (paylaşımlı)','skill_runtime_safety']),{t:'team'}),
+   ],{t:'group'}),
+   G('SDLC Pipeline — 31 stage',STAGES,{t:'group'}),
+   G('Coordination System (doc 23)',lv(['Delegation','Creator-Verifier','Controlled Direct Comm.','Negotiation / Arbitration','Broadcast / Event Bus']),{t:'group'}),
+   G('Mission System (doc 24)',lv(['Mission = yönetilen iş kabı (≠ Pipeline Run)','Validation Contract (üretimden önce)','Validators adversarial · fresh-context','Structured Handoff','Mission Control: sade isimler']),{t:'group'}),
+   G('Governance / Audit / Registry',lv(['19 always-required gate (D-016)','7-katman governance','evidence-graph + trace audit','Shared Registry (7 registry)']),{t:'group'}),
+   G('▸ Skeleton v0 — çalışan (2026-06-07)',[
+     G('.pipeline paketleme',lv(['format spec','consumer contract (Nexus)','integration plan (Nexus)']),{t:'group'}),
+     G('engine / tezgâh',lv(['packager','validator','mock runner']),{t:'group'}),
+     G('sdlc paketi',lv(['70 component','26 gate','31 stage']),{t:'group'}),
+     G('gate enforcement',lv(['19 zorunlu gate (D-016)','PASS · --skip→FAIL','evidence + trace']),{t:'group'}),
+     {label:'MetaGPT aktarımı: observe→think→act'},
+   ],{t:'group'}),
+   ],{t:'group'}),
+   G('▸ main branch — compiler/kernel',[
+   G('Capability Compiler',lv(['intent → compiler-rules','→ Capability Pack','→ Execution Plan → Task Packet','→ Nexus Handoff Packet']),{t:'group'}),
+   G('Registry (JSON source-of-truth)',lv(['8 skill','24 agent-profile','8 macro-pipeline ailesi','51 gate','compiler-rules']),{t:'group'}),
+   G('Kontrat / doğrulama',lv(['13 JSON-Schema packet','44 verify:* script (CI gate)','trials = acceptance senaryoları']),{t:'group'}),
+   G('Runtime köprüsü',[
+     {label:'Runner = MOCK (gerçek ajan yok)'},
+     G('Adapter zarfları (atıl)',lv(['OpenHands','code-agent']),{t:'group'}),
+   ],{t:'group'}),
+   G('Durum / konum',lv(['React19/TS/Vite SPA + express worker','alpha · runner mock','Nexus’a entegre edilecek katman']),{t:'group'}),
+   ],{t:'group',col:'mn'}),
+ ],{col:'co',t:'sys'}),
+
+ G('④ Hedef Nexus',[
+   G('Mevcut Nexus parçaları',lv(['NexusOrchestrator','CognitivePipeline','BenchmarkHarness']),{t:'group'}),
+   G('Sentez yönü',lv(['Project Nexus icra + NCO governance/gate disiplini','+ MetaGPT kod-yürütme & AFlow self-opt','NCO bitince Nexus’a entegre']),{t:'group'}),
+   G('Eklenecek — v1 (MetaGPT eksikleri)',[
+     G('ExecuteSandbox ★',lv(['Jupyter/Docker izole yürütme','agent_react_loop test→fix iskeleti']),{t:'gap',tag:'gap'}),
+     G('DataInterpreter ★',lv(['plan→kod→çalıştır→self-debug→viz','bağlanır: skills/code.py · CODER · OS']),{t:'gap',tag:'gap'}),
+     G('DynamicPlanner ★',lv(['görev DAG üret + replan','bağlanır: task_orchestration · architect tier']),{t:'gap',tag:'gap'}),
+     G('AFlow Optimizer ★',lv(['pipeline MCTS optimizasyon','fitness=benchmark · self_evolution']),{t:'gap',tag:'gap'}),
+   ],{t:'group'}),
+ ],{col:'tg',t:'sys'}),
+]};
+
+/* ---------------- ENGINE ---------------- */
+const COL = {mg:'#8b7cf6', nx:'#22b8ee', co:'#f5a524', tg:'#22c55e', mn:'#ec4899', root:'#94a3b8'};
+const XSTEP=250, YSTEP=98, HGAP=20, VGAP=11;
+let ORIENT='TB';   // 'TB' = yatay/landscape (yukarı→aşağı, kardeşler yana) · 'LR' = soldan sağa
+const svg=document.getElementById('svg'), view=document.getElementById('view'), stage=document.getElementById('stage');
+const cv=document.createElement('canvas'), ctx=cv.getContext('2d');
+let tx=60,ty=300,k=1, idc=0, AUTOFIT=true;
+view.innerHTML='<g id="edges"></g><g id="nodes"></g>';
+const edgesG=document.getElementById('edges'), nodesG=document.getElementById('nodes');
+const idx={}; let nodeEls={}, edgeEls={}, cur={}, anim=null, firstDraw=true;
+
+function prep(n,col,depth,parent){
+  n.id='n'+(idc++); n.depth=depth; n.parent=parent||null; idx[n.id]=n;
+  n.col = n.col || col || 'root';
+  n._c = depth>=2 && n.c && n.c.length>0;   // initial: systems open, groups collapsed
+  (n.c||[]).forEach(ch=>prep(ch,n.col,depth+1,n));
+}
+prep(DATA,'root',0,null);
+
+function measure(n){
+  ctx.font='600 12.5px system-ui'; let w=ctx.measureText(n.label).width;
+  if(n.sub){ ctx.font='500 10px ui-monospace'; w=Math.max(w,ctx.measureText(n.sub).width); }
+  return Math.min(244, Math.max(86, Math.ceil(w)+28));
+}
+
+let VIS=[];
+function layout(){
+  VIS=[]; let cur=0;
+  (function walk(n){
+    if(n._hidden) return;
+    n.w=measure(n); n.h=n.sub?46:32; VIS.push(n);
+    const kids=(n.c||[]).filter(c=>!c._hidden);
+    const leaf = n._c || kids.length===0;
+    if(ORIENT==='TB'){ n.cy = n.depth*YSTEP + n.h/2; if(leaf){ n.cx=cur+n.w/2; cur+=n.w+HGAP; } }
+    else            { n.cx = n.depth*XSTEP + n.w/2; if(leaf){ n.cy=cur+n.h/2; cur+=n.h+VGAP; } }
+    if(leaf) return;
+    kids.forEach(walk);
+    if(ORIENT==='TB'){ n.cx=(kids[0].cx+kids[kids.length-1].cx)/2; }
+    else            { n.cy=(kids[0].cy+kids[kids.length-1].cy)/2; }
+  })(DATA);
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const NS='http://www.w3.org/2000/svg';
+function mkNode(n){ const g=document.createElementNS(NS,'g'); g.setAttribute('data-id',n.id); nodesG.appendChild(g); nodeEls[n.id]=g; return g; }
+function nodeContent(g,n){
+  const col=COL[n.col]||COL.root, hh=n.h, ww=n.w;
+  const cls=['n',n.t||'leaf']; if(n.tag) cls.push(n.tag); if(n._hit) cls.push('hit');
+  g.setAttribute('class',cls.join(' ')); g.style.setProperty('--c',col);
+  const sub=n.sub?`<text class="sub" x="13" y="${hh/2+9}">${esc(n.sub)}</text>`:'';
+  const ly=n.sub?hh/2-6:hh/2;
+  let badge='';
+  if(n._c && n.c && n.c.length){ const bx=ORIENT==='TB'?ww/2:ww, by=ORIENT==='TB'?hh:hh/2;
+    badge=`<g class="badge"><circle cx="${bx}" cy="${by}" r="9"/><text x="${bx}" y="${by}">${n.c.length}</text></g>`; }
+  g.innerHTML=`<rect width="${ww}" height="${hh}"/><text class="lbl" x="13" y="${ly}">${esc(n.label)}</text>${sub}${badge}`;
+}
+function placeNode(id){ const c=cur[id],n=idx[id],g=nodeEls[id]; if(!g||!n||!c)return;
+  g.setAttribute('transform',`translate(${c.x},${c.y}) scale(${c.s}) translate(${-n.w/2},${-n.h/2})`); g.style.opacity=c.o; }
+function mkEdge(n){ const p=document.createElementNS(NS,'path');
+  p.setAttribute('data-s',n.parent.id); p.setAttribute('data-t',n.id);
+  let cls='edge'; const base = n.tag==='gap'?.9:(n.parent.tag==='hassub'?.85:.5);
+  if(n.tag==='gap')cls+=' gap'; else if(n.parent.tag==='hassub')cls+=' sub';
+  p.setAttribute('class',cls); p.dataset.base=base; p.dataset.o='0'; p.style.opacity='0';
+  edgesG.appendChild(p); edgeEls[n.id]=p; return p; }
+function edgeD(cid){ const n=idx[cid], pc=cur[n.parent.id], cc=cur[cid], p=idx[n.parent.id]; if(!pc||!cc)return '';
+  if(ORIENT==='TB'){ const x1=pc.x,y1=pc.y+p.h/2,x2=cc.x,y2=cc.y-n.h/2,dy=Math.max(16,(y2-y1)/2);
+    return `M${x1},${y1} C${x1},${y1+dy} ${x2},${y2-dy} ${x2},${y2}`; }
+  const x1=pc.x+p.w/2,y1=pc.y,x2=cc.x-n.w/2,y2=cc.y,dx=Math.max(18,(x2-x1)/2);
+  return `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`; }
+
+function render(instant, panTo){
+  const animate = !instant && !firstDraw; firstDraw=false;
+  const panFrom = (panTo && animate) ? {x:tx,y:ty} : null;
+  const vis={}; VIS.forEach(n=>vis[n.id]=n);
+  const tg={};
+  VIS.forEach(n=>{
+    if(!nodeEls[n.id]){ mkNode(n); const ps=(n.parent&&cur[n.parent.id])?cur[n.parent.id]:{x:n.cx,y:n.cy};
+      cur[n.id]={x:ps.x,y:ps.y,o:0,s:.62}; }
+    nodeContent(nodeEls[n.id],n);
+    tg[n.id]={x:n.cx,y:n.cy,o:(n._dim?0.16:1),s:1};
+  });
+  Object.keys(nodeEls).forEach(id=>{ if(vis[id])return;
+    const dn=idx[id]; let a=dn?dn.parent:null; while(a&&!vis[a.id])a=a.parent;
+    const t=a?{x:a.cx,y:a.cy}:(cur[id]||{x:0,y:0});
+    if(!cur[id])cur[id]={x:t.x,y:t.y,o:0,s:.62};
+    tg[id]={x:t.x,y:t.y,o:0,s:.55,remove:true};
+  });
+  VIS.forEach(n=>{ if(n.parent&&vis[n.parent.id] && !edgeEls[n.id]) mkEdge(n); });
+  const edgeTO={}; Object.keys(edgeEls).forEach(cid=>{ const n=idx[cid];
+    edgeTO[cid]= (vis[cid] && n.parent && vis[n.parent.id]) ? (tg[cid]?tg[cid].o:1) : 0; });
+
+  cancelAnimationFrame(anim);
+  const start={}; Object.keys(tg).forEach(id=>{ const c=cur[id]||tg[id]; start[id]={x:c.x,y:c.y,o:c.o,s:c.s==null?1:c.s}; });
+  const eStart={}; Object.keys(edgeEls).forEach(cid=>{ eStart[cid]=parseFloat(edgeEls[cid].dataset.o||'0'); });
+  Object.keys(tg).forEach(id=>placeNode(id));   // ilk yerleşim (flash önle)
+  const t0=performance.now(), D=animate?340:0;
+  function frame(now){
+    const t=D?Math.min(1,(now-t0)/D):1, e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+    Object.keys(tg).forEach(id=>{ const s=start[id],q=tg[id],c=cur[id];
+      c.x=s.x+(q.x-s.x)*e; c.y=s.y+(q.y-s.y)*e; c.o=s.o+(q.o-s.o)*e; c.s=s.s+((q.s==null?1:q.s)-s.s)*e; placeNode(id); });
+    Object.keys(edgeEls).forEach(cid=>{ const p=edgeEls[cid], base=parseFloat(p.dataset.base)||.5;
+      const oo=eStart[cid]+((edgeTO[cid]||0)*base-eStart[cid])*e; p.dataset.o=oo; p.style.opacity=oo;
+      const d=edgeD(cid); if(d) p.setAttribute('d',d); });
+    if(panFrom){ tx=panFrom.x+(panTo.x-panFrom.x)*e; ty=panFrom.y+(panTo.y-panFrom.y)*e; apply(); }
+    if(t<1){ anim=requestAnimationFrame(frame); }
+    else{
+      Object.keys(tg).forEach(id=>{ if(tg[id].remove){ if(nodeEls[id])nodeEls[id].remove(); delete nodeEls[id]; delete cur[id]; }});
+      Object.keys(edgeEls).forEach(cid=>{ if((edgeTO[cid]||0)===0){ edgeEls[cid].remove(); delete edgeEls[cid]; }});
+    }
+  }
+  anim=requestAnimationFrame(frame);
+}
+function isSubAgentEdge(n){ return n.parent && n.parent.tag==='hassub'; }
+
+function apply(){ view.setAttribute('transform',`translate(${tx},${ty}) scale(${k})`); }
+function findNode(id){ let r=null; (function w(n){ if(n.id===id){r=n;return;} (n.c||[]).forEach(w); })(DATA); return r; }
+
+function fit(){
+  if(!VIS.length) return;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  VIS.forEach(n=>{ x0=Math.min(x0,n.cx-n.w/2); x1=Math.max(x1,n.cx+n.w/2); y0=Math.min(y0,n.cy-n.h/2); y1=Math.max(y1,n.cy+n.h/2); });
+  const pad=50, W=stage.clientWidth, H=stage.clientHeight, bw=x1-x0+pad*2, bh=y1-y0+pad*2;
+  k=Math.min(W/bw, H/bh, 1.15); k=Math.max(k,0.1);
+  tx = (W - (x0+x1)*k)/2; ty = (H - (y0+y1)*k)/2; apply();
+}
+function redraw(keepView){ layout(); render(); if(!keepView) {} apply(); }
+
+/* ---- interactions ---- */
+view.addEventListener('click', ev=>{
+  if(dragMoved) return;
+  const g=ev.target.closest('.n'); if(!g) return;
+  const n=findNode(g.dataset.id); if(!n) return;
+  if(n.c && n.c.length){
+    const c=cur[n.id], sx=(c?c.x:n.cx)*k+tx, sy=(c?c.y:n.cy)*k+ty;  // tıklanan düğümün ekran konumu
+    n._c=!n._c; layout();
+    AUTOFIT ? (render(false), fit()) : render(false, {x: sx - n.cx*k, y: sy - n.cy*k});               // o konumu sabit tut (üst sabit kalır)
+  }
+  showInfo(n);
+});
+view.addEventListener('mouseover', ev=>{
+  const g=ev.target.closest('.n'); if(!g) return; const id=g.dataset.id;
+  view.querySelectorAll(`path[data-t="${id}"],path[data-s="${id}"]`).forEach(p=>p.classList.add('hot'));
+});
+view.addEventListener('mouseout', ev=>{
+  const g=ev.target.closest('.n'); if(!g) return; const id=g.dataset.id;
+  view.querySelectorAll(`path[data-t="${id}"],path[data-s="${id}"]`).forEach(p=>p.classList.remove('hot'));
+});
+
+let drag=false,dragMoved=false,sx,sy,stx,sty;
+stage.addEventListener('pointerdown',ev=>{
+  if(ev.target.closest('.n')) { drag=false; return; }
+  drag=true; dragMoved=false; sx=ev.clientX; sy=ev.clientY; stx=tx; sty=ty;
+  stage.classList.add('grabbing'); stage.setPointerCapture(ev.pointerId);
+});
+stage.addEventListener('pointermove',ev=>{
+  if(!drag) return; const dx=ev.clientX-sx, dy=ev.clientY-sy;
+  if(Math.abs(dx)+Math.abs(dy)>4) dragMoved=true;
+  tx=stx+dx; ty=sty+dy; apply();
+});
+stage.addEventListener('pointerup',ev=>{ drag=false; stage.classList.remove('grabbing'); setTimeout(()=>dragMoved=false,0); });
+stage.addEventListener('wheel',ev=>{
+  ev.preventDefault();
+  const r=stage.getBoundingClientRect(), mx=ev.clientX-r.left, my=ev.clientY-r.top;
+  const k2=Math.min(2.6, Math.max(0.12, k*(ev.deltaY<0?1.12:0.893)));
+  tx=mx-(mx-tx)*(k2/k); ty=my-(my-ty)*(k2/k); k=k2; apply();
+},{passive:false});
+
+/* ---- detail panel ---- */
+const info=document.getElementById('info'), infobody=document.getElementById('infobody');
+document.getElementById('infox').onclick=()=>info.classList.remove('open');
+function showInfo(n){
+  const kids=(n.c||[]).map(c=>`<li>${esc(c.label)}</li>`).join('');
+  const tags = (n.t?`<span class="tag" style="border-color:${COL[n.col]};color:${COL[n.col]}">${n.t}</span>`:'')
+             + (n.tag==='gap'?'<span class="tag" style="border-color:var(--tg);color:var(--tg)">eksik / eklenecek</span>':'')
+             + (n.tag==='hassub'?'<span class="tag" style="border-color:var(--co);color:var(--co)">sub-agent\'lı</span>':'');
+  infobody.innerHTML = `<h3>${esc(n.label)}</h3>`
+    + `<div class="meta">${n.sub?('model: '+esc(n.sub)+' · '):''}${(n.c&&n.c.length)?n.c.length+' alt-düğüm':'yaprak'}</div>`
+    + tags + (kids?`<ul>${kids}</ul>`:'');
+  info.classList.add('open');
+}
+
+/* ---- toolbar ---- */
+function setAll(c){ (function w(n){ if(n.c&&n.c.length && n.depth>=1) n._c=c; (n.c||[]).forEach(w); })(DATA); layout(); render(); apply(); }
+document.getElementById('expand').onclick=()=>{ setAll(false); fit(); };
+document.getElementById('collapse').onclick=()=>{ (function w(n){ if(n.c&&n.c.length) n._c=n.depth>=2; (n.c||[]).forEach(w);})(DATA); layout();render();apply(); fit(); };
+document.getElementById('fit').onclick=fit;
+document.getElementById('autofit').onclick=function(){ AUTOFIT=!AUTOFIT; this.classList.toggle('on',AUTOFIT); if(AUTOFIT) fit(); };
+document.getElementById('theme').onclick=()=>{ const r=document.documentElement; r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'; };
+document.getElementById('orient').onclick=()=>{ ORIENT = ORIENT==='TB'?'LR':'TB'; layout(); render(true); fit(); };
+
+document.querySelectorAll('.chip[data-sys]').forEach(ch=>{
+  ch.onclick=()=>{ const sys=DATA.c.find(s=>s.label===ch.dataset.sys); if(!sys)return;
+    sys._hidden=!sys._hidden; ch.classList.toggle('off',sys._hidden); layout(); render(); if(AUTOFIT) fit(); else apply(); };
+});
+
+const q=document.getElementById('q');
+q.addEventListener('input',()=>{
+  const v=q.value.trim().toLowerCase();
+  // clear flags
+  (function w(n){ n._hit=false; n._keep=false; n._dim=false; (n.c||[]).forEach(w); })(DATA);
+  if(v){
+    (function w(n){
+      if((n.label||'').toLowerCase().includes(v)){ n._hit=true; let p=n; while(p){ p._keep=true; if(p.parent)p.parent._c=false; p=p.parent; } }
+      (n.c||[]).forEach(w);
+    })(DATA);
+    (function w(n){ if(!n._hit && !n._keep) n._dim=true; (n.c||[]).forEach(w); })(DATA);
+  }
+  layout(); render();
+});
+
+let gapOn=false;
+document.getElementById('hlgap').onclick=function(){
+  gapOn=!gapOn; this.classList.toggle('on',gapOn);
+  (function w(n){ n._dim=false; (n.c||[]).forEach(w); })(DATA);
+  if(gapOn){ // Hedef'i aç + gap olmayanları soluklaştır
+    DATA.c.forEach(s=>{ if(s.label==='④ Hedef Nexus'){ (function o(n){n._c=false;(n.c||[]).forEach(o);})(s);} });
+    (function w(n){ if(n.tag!=='gap' && n.t!=='root' && n.t!=='sys') n._dim=true; (n.c||[]).forEach(w); })(DATA);
+  }
+  layout(); render();
+};
+
+/* ---- boot ---- */
+function boot(){ layout(); render(true); fit(); }
+window.addEventListener('resize',()=>{ render(true); if(AUTOFIT) fit(); else apply(); });
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(boot); } else boot();
+boot();
+</script>
+</body>
+</html>

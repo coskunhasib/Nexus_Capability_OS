@@ -20,8 +20,8 @@ This folder holds the **packaging standard** and the **Nexus handoff** material.
 | [`CONSUMER_CONTRACT.md`](./CONSUMER_CONTRACT.md) | What Nexus must do on import (import/fingerprint/dedup/resolve) | **draft-0.1** |
 | [`NEXUS_INTEGRATION_PLAN.md`](./NEXUS_INTEGRATION_PLAN.md) | Reference/sample implementation plan for the Nexus side | **draft-0.1** |
 
-Related (elsewhere in the repo, planned):
-- `packages/sdlc/` — the first example package (the `sdlc_pipeline` packaged).
+Related (in this repo — **built 2026-06-07**):
+- `packages/sdlc-pipeline/` — the first example package (sdlc packaged: 70 components, 26 gates, 31 stages).
 - `engine/` — the local "is this package valid / does it run" test tool (our workbench; **stays here**, not shipped).
 
 ## Roadmap (owner-directed, 2026-06-07)
