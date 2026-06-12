@@ -455,6 +455,94 @@ team_templates:
       - introduce_plugin
 
   # ===========================================================================
+  # 2b) DISCOVERY TEAM — owns the product_discovery_pipeline (idea -> GO/NO_GO/PIVOT).
+  #     Roster + uses_* from the product_discovery_pipeline plan (FAZ 1d / FAZ 2).
+  #     discovery_decision_agent RECORDS a human/owner GO/NO_GO/PIVOT decision (not an
+  #     autonomous approver). NO_GO is a valid, honourable terminal (learning report).
+  # ===========================================================================
+  - team_id: discovery_team
+    team_type: discovery_team
+    pipeline_id: product_discovery_pipeline
+    purpose: >-
+      Run cheap, kill-friendly product discovery under no-human-in-the-loop governance up to the
+      decision point: pre-register kill-criteria, evidence each load-bearing problem claim, falsify
+      the riskiest assumptions, assess feasibility within cost bounds, assemble a business case with a
+      complete option set (including a genuine NO_GO), record a human/owner GO/NO_GO/PIVOT decision,
+      and on GO hand a pre-authored PRODUCT_BRIEF to the SDLC pipeline. NO_GO is a valid terminal whose
+      deliverable is a learning report.
+    team_lead_role: discovery_team_lead   # pipeline-specific; NOT Supervisor
+    agents:
+      - discovery_intake_agent           # owns: discovery_intake + discovery_handoff_and_closeout
+      - problem_validation_agent         # owns: problem_evidence_validation + assumption_and_demand_testing
+      - feasibility_assessment_agent     # owns: feasibility_assessment
+      - business_case_agent              # owns: business_case_assembly
+      - discovery_decision_agent         # owns: go_no_go_decision — RECORDS owner decision (no self-approval)
+    direct_sub_agents: []   # discovery sub-agents are parent-scoped (problem_validation_agent), not team-direct
+    uses_core_abilities:
+      - Supervisor
+      - Web
+      - Memory
+      - Coder
+    uses_skills:
+      - prism
+      - fermi-decompose
+      - sentinel
+      - bayesian-update
+      - calibrate
+      - llm-council
+      - gap-audit
+      - handoff-designer
+    uses_tools:
+      - web_search
+      - web_fetch
+      - cost_estimator
+      - resource_budget_checker
+      - source_reliability_checker
+      - claim_mapper
+      - artifact_writer
+      - evidence_writer
+      - evidence_reader
+      - memory_search
+    uses_governance_profiles:
+      - discovery_pipeline_governance
+      - go_no_go_decision_gate
+      - problem_evidence_gate
+      - feasibility_gate
+      - no_self_approval_policy             # alias of canonical `no_self_approval`
+      - evidence_required_policy            # alias of canonical `evidence_required`
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles:
+      - research_reasoning_profile
+      - risk_analysis_model
+      - supervisor_routing_model
+    uses_context_memory_profiles:
+      - discovery_run_context
+      - business_case_context_pack
+    permissions:
+      - own_and_execute_discovery_stages
+      - assign_stage_owner_agents
+      - pre_register_kill_criteria_before_evidence_gathering
+      - evidence_problem_claims_and_falsify_critical_assumptions
+      - assess_feasibility_within_declared_cost_bounds
+      - assemble_business_case_with_a_complete_option_set
+      - record_an_owner_go_no_go_or_pivot_decision
+      - emit_sdlc_handoff_on_go_or_learning_report_on_no_go
+      - request_rework_along_allowed_routes
+    forbidden_actions:
+      - core_ability_as_team_member
+      - supervisor_as_team_lead                # discovery_team_lead is the lead, never Supervisor
+      - authorize_go_without_owner_decision
+      - self_approval_of_discovery_decision
+      - soften_pre_registered_kill_criteria
+      - emit_handoff_without_recorded_go_decision
+      - team_lead_bypasses_blocking_gate
+      - team_lead_owns_a_stage
+      - orphan_sub_agent_without_parent_or_direct_call_flag
+      - introduce_plugin
+
+  # ===========================================================================
   # 3) ACTIVATION TEAM — owns the activation_pipeline (preview -> pilot -> public).
   #    Roster + uses_* from docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §1–§3.
   #    activation_owner_decision_agent RECORDS a human/owner decision (not an autonomous

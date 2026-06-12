@@ -959,6 +959,40 @@ governance_profiles:
         Canonical. Spans three SDLC stages (27/29/30). Distinct from the global no_policy_bypass: this
         is the specific dev-completion->RC ordering + release-evidence governance.
 
+    - id: discovery_pipeline_governance
+      name: Discovery Pipeline Governance
+      type: governance_umbrella
+      status: candidate
+      purpose: >-
+        Umbrella governance for the Product Discovery Pipeline: kill-criteria must be pre-registered
+        before evidence-gathering; every load-bearing problem claim must be sourced; critical
+        assumptions must be tested or explicitly flagged; GO may not be authorized without a recorded
+        human/owner decision and no agent may self-approve the discovery decision; NO_GO is a valid,
+        honourable terminal (its deliverable is a learning report).
+      owner_domain: product_management
+      allowed_usage:
+        - Bind at the Product Discovery Pipeline level and re-show under each discovery stage.
+        - Govern the idea -> problem-evidence -> assumption-test -> feasibility -> business-case -> owner-decision invariants.
+      forbidden_usage:
+        - Used outside the Product Discovery Pipeline.
+        - Used to authorize a GO in place of the human/owner decision (that authority is the owner's).
+      governance_profiles:
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - discovery_evidence_schema
+        - stage_gate_trace_schema
+      scope: pipeline
+      applies_to:
+        - product_discovery_pipeline
+      severity_default: blocker
+      used_by:
+        - product_discovery_pipeline
+      notes: >-
+        NEW (product_discovery_pipeline plan §1a). Layered over the gate-style profiles
+        go_no_go_decision_gate / problem_evidence_gate / feasibility_gate. Bound by every discovery
+        stage's uses_governance_profiles.
+
   # -----------------------------------------------------------------------------------
   # SCOPE: team — intra-team role/responsibility rules
   # (03-governance-and-audit-layering.md §5). The repo does not yet define standalone
@@ -2752,6 +2786,101 @@ governance_profiles:
         already a canonical SDLC stage gate (stages 22 + 26). Registered once, status candidate
         (pending Phase E ratification of the cross-pipeline shared definition); SDLC usages are
         canonical bindings. Flagged in open_questions.
+
+    - id: go_no_go_decision_gate
+      name: Go / No-Go Decision Gate (HUMAN/OWNER)
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Discovery decision gate: a GO may not be issued without a recorded human/owner decision; the
+        producing agent may not self-approve the discovery decision. NO_GO and PIVOT are valid recorded
+        outcomes. The owner reviews the business case + residual risk + kill-criteria status and
+        explicitly records GO/NO_GO/PIVOT before the run may proceed to closeout.
+      owner_domain: product_management
+      allowed_usage:
+        - Gate the go_no_go_decision stage so a valid owner decision is recorded before closeout.
+        - Re-show no_self_approval at the discovery decision (proposer != authorizer of GO).
+      forbidden_usage:
+        - Used to authorize a GO autonomously without a human/owner decision.
+        - Confused with owner_activation_decision_gate (that is the activation public-launch gate).
+      governance_profiles:
+        - discovery_pipeline_governance
+        - no_self_approval
+        - evidence_required
+      audit_schemas:
+        - discovery_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - go_no_go_decision
+      severity_default: blocker
+      used_by:
+        - go_no_go_decision     # discovery stage 06
+      notes: >-
+        NEW (product_discovery_pipeline plan §1a). Human/owner authority gate; NO_GO is a valid,
+        honourable terminal. No GO without a recorded owner decision; no self-approval of the decision.
+
+    - id: problem_evidence_gate
+      name: Problem Evidence Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Discovery evidence gate: every load-bearing problem claim must be backed by a source, the target
+        user segment must be evidenced, and critical assumptions must be tested or explicitly flagged
+        before the run advances. Blocks unsourced problem framing and untested critical assumptions.
+      owner_domain: product_management
+      allowed_usage:
+        - Gate the problem_evidence_validation and assumption_and_demand_testing stages.
+        - Require a source for every load-bearing problem claim and evidence for the target segment.
+      forbidden_usage:
+        - Used outside the Product Discovery Pipeline.
+        - Used to wave through an untested critical assumption without a flag.
+      governance_profiles:
+        - discovery_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - discovery_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - problem_evidence_validation
+        - assumption_and_demand_testing
+      severity_default: blocker
+      used_by:
+        - problem_evidence_validation     # discovery stage 02
+        - assumption_and_demand_testing   # discovery stage 03
+      notes: >-
+        NEW (product_discovery_pipeline plan §1a). Spans the two problem-validation stages; pairs with
+        the discovery_pipeline_governance umbrella.
+
+    - id: feasibility_gate
+      name: Feasibility Gate
+      type: stage_gate_profile
+      status: candidate
+      purpose: >-
+        Discovery feasibility gate: a plausible solution shape must exist, technical risks must be
+        registered with severity, and a cost estimate must fall within declared bounds before the
+        business case may be assembled. Blocks an unbounded or absent cost estimate.
+      owner_domain: product_management
+      allowed_usage:
+        - Gate the feasibility_assessment stage (solution shape + risk register + bounded cost).
+      forbidden_usage:
+        - Used outside the Product Discovery Pipeline.
+        - Asserting feasibility without a Coder reasoning trace or cost bound.
+      governance_profiles:
+        - discovery_pipeline_governance
+        - evidence_required
+      audit_schemas:
+        - discovery_evidence_schema
+        - stage_gate_trace_schema
+      scope: stage
+      applies_to:
+        - feasibility_assessment
+      severity_default: blocker
+      used_by:
+        - feasibility_assessment     # discovery stage 04
+      notes: >-
+        NEW (product_discovery_pipeline plan §1a). Pairs with the discovery_pipeline_governance umbrella.
 
     - id: owner_activation_decision_gate
       name: Owner Activation Decision Gate (HUMAN/OWNER)

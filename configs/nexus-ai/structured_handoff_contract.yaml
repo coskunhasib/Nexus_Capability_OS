@@ -42,6 +42,27 @@ handoff_types:
   - worker_to_validator
   - pipeline_run_to_mission
   - mission_to_memory
+  - discovery_to_sdlc_handoff   # product_discovery_pipeline GO -> sdlc_pipeline intake (plan §1h)
+
+# product_discovery_pipeline -> sdlc_pipeline handoff (plan §1h). Emitted ONLY on a recorded GO
+# decision. The SDLC intake stage treats this as a PRE-AUTHORED brief: it does NOT re-author a second
+# competing PRODUCT_BRIEF, it verifies fidelity (prompt-fidelity mode) of the pre-authored package.
+discovery_to_sdlc_handoff:
+  from_pipeline: product_discovery_pipeline
+  to_pipeline: sdlc_pipeline
+  emitted_when: discovery_decision_value == GO   # NO_GO / PIVOT do NOT emit this handoff
+  emitted_by: discovery_intake_agent             # owns discovery_handoff_and_closeout
+  received_at_stage: intake                       # sdlc stage 01 (verify-fidelity mode)
+  payload:
+    - PRODUCT_BRIEF
+    - SUCCESS_METRICS
+    - INITIAL_SCOPE
+    - DISCOVERY_EVIDENCE_GRAPH      # ref to the discovery evidence graph (provenance, not re-derived)
+  intake_semantics: >-
+    sdlc intake treats this package as a pre-authored brief and runs in verify-fidelity (prompt-fidelity)
+    mode rather than authoring from scratch; it never produces a second competing PRODUCT_BRIEF.
+  evidence_refs: [discovery_evidence_schema]
+  trace_refs: [owner_decision_trace, gate_decision_trace]
 
 minimum_quality_rules:
   - no_silent_handoff

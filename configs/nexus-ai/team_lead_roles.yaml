@@ -318,6 +318,69 @@ team_lead_roles:
       - cannot_complete_research_with_an_unscored_source_used_in_synthesis
 
   # ===========================================================================
+  # 2b. DISCOVERY TEAM LEAD
+  #    Source of truth: the product_discovery_pipeline plan (FAZ 1e / FAZ 3 per-stage owner_agent).
+  # ===========================================================================
+  - team_lead_id: discovery_team_lead
+    team_id: discovery_team
+    pipeline_id: product_discovery_pipeline
+    mission: >-
+      Orchestrate the Product Discovery Pipeline (idea -> problem-evidence -> assumption-test ->
+      feasibility -> business-case -> owner GO/NO_GO/PIVOT -> closeout): assign each stage to its
+      owner Agent, enforce that kill-criteria are pre-registered before evidence-gathering and never
+      softened, ensure every load-bearing problem claim is sourced and every critical assumption is
+      tested or flagged, and require a recorded human/owner decision before any GO or SDLC handoff —
+      without owning a stage, authoring the decision artifact, or bypassing a gate. NO_GO is a valid
+      terminal whose deliverable is a learning report.
+    responsibilities:
+      - Confirm the product idea, kill-criteria, owner, and risk profile and assign each stage to its owner Agent.
+      - Enforce that kill-criteria are pre-registered before evidence-gathering and are never softened mid-run.
+      - Require every load-bearing problem claim to be sourced and every critical assumption tested or flagged.
+      - Ensure the GO/NO_GO/PIVOT decision is recorded by the decision Agent and is not self-approved.
+      - Route rework along allowed routes (and decision-driven PIVOT routes) and emit the SDLC handoff only on a recorded GO.
+    # 5 discovery Agents (every owner_agent across the FAZ 3 stage table).
+    may_assign_agents:
+      - discovery_intake_agent          # discovery_intake, discovery_handoff_and_closeout
+      - problem_validation_agent        # problem_evidence_validation, assumption_and_demand_testing
+      - feasibility_assessment_agent    # feasibility_assessment
+      - business_case_agent             # business_case_assembly
+      - discovery_decision_agent        # go_no_go_decision (RECORDS the human/owner decision; not an autonomous approver)
+    may_call_direct_sub_agents: []      # discovery sub-agents are parent-scoped (problem_validation_agent), not team-direct
+    may_use_core_abilities:
+      - Supervisor    # routing/orchestration support (capability only — not this lead)
+      - Memory        # discovery run context, evidence/decision recall
+      - Web           # market/problem evidence context
+    may_use_skills:
+      - sentinel          # premortem / blind-spot check before each discovery gate
+      - calibrate         # confidence calibration on evidence and assumptions
+      - gap-audit         # coverage gaps in problem evidence / option set
+    may_call_tools:
+      - evidence_reader   # inspect problem/feasibility/decision evidence at gates
+      - artifact_writer   # idea brief / orchestration artifacts
+      - evidence_writer   # record gate evidence
+    uses_governance_profiles:
+      - discovery_pipeline_governance     # pipeline umbrella
+      - go_no_go_decision_gate            # no GO without a recorded owner decision
+      - problem_evidence_gate             # every load-bearing problem claim sourced; critical assumptions tested/flagged
+      - feasibility_gate                  # plausible solution shape + bounded cost
+      - no_self_approval                  # decision recorder != proposer ; alias: no_self_approval_policy
+      - evidence_required                 # every gate decision evidenced ; alias: evidence_required_policy
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_context_memory_profiles:
+      - discovery_run_context
+      - business_case_context_pack
+    forbidden_actions:
+      - *team_lead_forbidden_defaults
+      - cannot_authorize_go_in_place_of_the_owner
+      - cannot_soften_pre_registered_kill_criteria
+    blocking_limits:
+      - *team_lead_blocking_limits_defaults
+      - cannot_complete_discovery_without_a_recorded_owner_decision
+      - cannot_emit_handoff_without_go_decision
+
+  # ===========================================================================
   # 3. ACTIVATION TEAM LEAD
   #    Source of truth: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md §2 (per-stage owner_agent).
   # ===========================================================================

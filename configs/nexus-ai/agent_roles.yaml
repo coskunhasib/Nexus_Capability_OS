@@ -2018,6 +2018,284 @@ agents:
     reviewed_by: research_team_lead
 
   # ===========================================================================
+  # DISCOVERY TEAM (team_id: discovery_team, lead: discovery_team_lead) — 5 roles
+  # Source: the product_discovery_pipeline plan (FAZ 1f / FAZ 3 stage table + artifact chain)
+  # ===========================================================================
+
+  - agent_id: discovery_intake_agent
+    team_id: discovery_team
+    pipeline_id: product_discovery_pipeline
+    mission: >-
+      Frame the raw product idea into a bounded IDEA_BRIEF, PRE-REGISTER the kill-criteria before any
+      evidence is gathered, and state the target-user hypothesis and discovery budget. Also owns the
+      terminal handoff/closeout stage: on a recorded GO emit the pre-authored SDLC handoff package, on
+      NO_GO capture the learning report, on PIVOT emit the pivot brief, and assemble the discovery
+      evidence graph. Front-and-back-of-pipeline ownership.
+    owned_stages:
+      - discovery_intake
+      - discovery_handoff_and_closeout
+    inputs:
+      - PRODUCT_IDEA
+      - DISCOVERY_DECISION
+      - BUSINESS_CASE
+      - SUCCESS_METRICS_DRAFT
+      - DISCOVERY_EVIDENCE_GRAPH
+    outputs:
+      - IDEA_BRIEF
+      - KILL_CRITERIA
+      - DISCOVERY_CONDITIONAL_FLAGS
+      - DISCOVERY_INTAKE_GATE_RESULT
+      - PRODUCT_BRIEF
+      - SUCCESS_METRICS
+      - INITIAL_SCOPE
+      - SDLC_HANDOFF_PACKAGE
+      - NO_GO_LEARNING_REPORT
+      - PIVOT_BRIEF
+      - DISCOVERY_EVIDENCE_GRAPH
+      - DISCOVERY_COMPLETION_REPORT
+    sub_agents: []
+    uses_core_abilities: [Memory, Supervisor]
+    uses_skills: [prism, gap-audit, handoff-designer]
+    uses_tools: [artifact_writer, evidence_writer, evidence_reader, memory_search]
+    uses_governance_profiles:
+      - discovery_pipeline_governance
+      - evidence_required_policy
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile, supervisor_routing_model]
+    uses_context_memory_profiles: [discovery_run_context, business_case_context_pack]
+    permissions:
+      - frame_idea_and_pre_register_kill_criteria
+      - assemble_discovery_evidence_graph
+      - emit_sdlc_handoff_on_go_or_learning_report_on_no_go
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - soften_pre_registered_kill_criteria
+      - emit_handoff_without_recorded_go_decision
+      - author_a_second_competing_product_brief_on_handoff
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - idea_unbounded_or_unintelligible
+      - kill_criteria_not_pre_registered
+      - no_identifiable_target_user_hypothesis
+      - discovery_budget_undefined
+      - handoff_emitted_without_recorded_go_decision
+      - no_go_terminated_without_learning_report
+      - broken_discovery_evidence_chain_link
+    reviewed_by: discovery_team_lead
+
+  - agent_id: problem_validation_agent
+    team_id: discovery_team
+    pipeline_id: product_discovery_pipeline
+    mission: >-
+      Validate the problem with sourced evidence: evidence each load-bearing problem claim, characterise
+      the target user segment, map existing alternatives, then identify the riskiest assumptions and run
+      cheap falsification tests (desk falsification) so that every critical assumption is tested or
+      explicitly flagged, producing a VALIDATED_PROBLEM_STATEMENT grounded in the evidence.
+    owned_stages:
+      - problem_evidence_validation
+      - assumption_and_demand_testing
+    inputs:
+      - IDEA_BRIEF
+      - KILL_CRITERIA
+      - DISCOVERY_CONDITIONAL_FLAGS
+      - PROBLEM_EVIDENCE_REPORT
+      - MARKET_SCAN_REPORT
+      - TARGET_USER_PROFILE
+      - EXISTING_ALTERNATIVES_MAP
+    outputs:
+      - PROBLEM_EVIDENCE_REPORT
+      - MARKET_SCAN_REPORT
+      - TARGET_USER_PROFILE
+      - EXISTING_ALTERNATIVES_MAP
+      - ASSUMPTION_REGISTER
+      - ASSUMPTION_TEST_REPORT
+      - VALIDATED_PROBLEM_STATEMENT
+    sub_agents: [market_scan_subagent, assumption_test_subagent]
+    uses_core_abilities: [Web, Memory]
+    uses_skills: [gap-audit, calibrate, bayesian-update, fermi-decompose, sentinel]
+    uses_tools: [web_search, web_fetch, source_reliability_checker, claim_mapper, evidence_writer, artifact_writer]
+    uses_governance_profiles:
+      - discovery_pipeline_governance
+      - problem_evidence_gate
+      - evidence_required_policy
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile, risk_analysis_model]
+    uses_context_memory_profiles: [discovery_run_context]
+    permissions:
+      - gather_sourced_problem_evidence_and_map_alternatives
+      - design_and_run_cheap_assumption_falsification_tests
+      - flag_untestable_assumptions_as_residual_risk
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - assert_a_load_bearing_problem_claim_without_a_source
+      - leave_a_critical_assumption_untested_and_unflagged
+      - continue_the_run_when_a_kill_criterion_is_already_met
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - load_bearing_problem_claim_without_source
+      - no_evidenced_target_user_segment
+      - alternatives_landscape_unscanned
+      - kill_criterion_already_met_but_run_continued
+      - critical_assumption_untested_and_unflagged
+      - assumption_confidence_asserted_without_rationale
+      - validated_problem_statement_contradicts_evidence
+    reviewed_by: discovery_team_lead
+
+  - agent_id: feasibility_assessment_agent
+    team_id: discovery_team
+    pipeline_id: product_discovery_pipeline
+    mission: >-
+      Assess whether a plausible solution can be built within bounds: identify a candidate solution
+      shape, register technical risks with severity, produce a cost-feasibility estimate within the
+      declared bounds, and consider build-vs-buy where alternatives exist. Grounds feasibility in a
+      Coder reasoning trace rather than assertion.
+    owned_stages:
+      - feasibility_assessment
+    inputs:
+      - VALIDATED_PROBLEM_STATEMENT
+      - ASSUMPTION_REGISTER
+      - ASSUMPTION_TEST_REPORT
+      - EXISTING_ALTERNATIVES_MAP
+    outputs:
+      - FEASIBILITY_REPORT
+      - TECHNICAL_RISK_REGISTER
+      - COST_FEASIBILITY_ESTIMATE
+      - BUILD_VS_BUY_NOTE
+    sub_agents: []
+    uses_core_abilities: [Coder, Web, Memory]
+    uses_skills: [fermi-decompose, sentinel, llm-council]
+    uses_tools: [cost_estimator, resource_budget_checker, web_search, web_fetch, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - discovery_pipeline_governance
+      - feasibility_gate
+      - evidence_required_policy
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile, risk_analysis_model]
+    uses_context_memory_profiles: [discovery_run_context]
+    permissions:
+      - identify_a_candidate_solution_shape_with_coder_reasoning
+      - register_technical_risks_with_severity
+      - estimate_cost_within_declared_bounds
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - assert_feasibility_without_a_coder_reasoning_trace
+      - produce_an_unbounded_or_absent_cost_estimate
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - no_plausible_solution_shape_identified
+      - critical_technical_risk_without_mitigation_hypothesis
+      - cost_estimate_absent_or_unbounded
+      - feasibility_asserted_without_coder_reasoning_trace
+    reviewed_by: discovery_team_lead
+
+  - agent_id: business_case_agent
+    team_id: discovery_team
+    pipeline_id: product_discovery_pipeline
+    mission: >-
+      Assemble an internally consistent business case from the upstream evidence: draft measurable
+      success metrics, frame a COMPLETE decision option set including a genuine NO_GO, summarise residual
+      risk, and explicitly evaluate the pre-registered kill-criteria so the owner can decide on grounded
+      material. Does not approve the decision (no self-approval).
+    owned_stages:
+      - business_case_assembly
+    inputs:
+      - FEASIBILITY_REPORT
+      - TECHNICAL_RISK_REGISTER
+      - COST_FEASIBILITY_ESTIMATE
+      - BUILD_VS_BUY_NOTE
+      - VALIDATED_PROBLEM_STATEMENT
+      - KILL_CRITERIA
+    outputs:
+      - BUSINESS_CASE
+      - SUCCESS_METRICS_DRAFT
+      - DECISION_OPTION_SET
+      - RESIDUAL_RISK_SUMMARY
+    sub_agents: []
+    uses_core_abilities: [Memory, Supervisor]
+    uses_skills: [fermi-decompose, calibrate, sentinel, gap-audit]
+    uses_tools: [cost_estimator, evidence_reader, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - discovery_pipeline_governance
+      - evidence_required_policy
+      - no_self_approval_policy
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [research_reasoning_profile, risk_analysis_model]
+    uses_context_memory_profiles: [discovery_run_context, business_case_context_pack]
+    permissions:
+      - assemble_business_case_from_upstream_evidence
+      - draft_measurable_success_metrics
+      - frame_a_complete_option_set_including_a_genuine_no_go
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - approve_the_discovery_decision
+      - omit_the_no_go_option_or_kill_criteria_evaluation
+      - contradict_upstream_evidence_in_the_business_case
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - business_case_contradicts_upstream_evidence
+      - success_metrics_unmeasurable_or_absent
+      - no_go_option_not_genuinely_framed
+      - kill_criteria_unevaluated_in_business_case
+    reviewed_by: discovery_team_lead
+
+  - agent_id: discovery_decision_agent
+    team_id: discovery_team
+    pipeline_id: product_discovery_pipeline
+    mission: >-
+      RECORD the human/owner GO/NO_GO/PIVOT decision grounded in the business case and the kill-criteria
+      review — never authorise a GO autonomously and never self-approve the decision. The stage PASSES
+      when a valid decision (any value) is recorded; branching to handoff / learning / pivot happens at
+      closeout per DISCOVERY_DECISION.value.
+    owned_stages:
+      - go_no_go_decision
+    inputs:
+      - BUSINESS_CASE
+      - SUCCESS_METRICS_DRAFT
+      - DECISION_OPTION_SET
+      - RESIDUAL_RISK_SUMMARY
+      - KILL_CRITERIA
+    outputs:
+      - DISCOVERY_DECISION
+    sub_agents: []
+    uses_core_abilities: [Memory, Supervisor]
+    uses_skills: [sentinel, llm-council, calibrate]
+    uses_tools: [evidence_reader, artifact_writer, evidence_writer]
+    uses_governance_profiles:
+      - discovery_pipeline_governance
+      - go_no_go_decision_gate
+      - no_self_approval_policy
+      - evidence_required_policy
+    uses_audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    uses_model_provider_profiles: [risk_analysis_model, supervisor_routing_model]
+    uses_context_memory_profiles: [discovery_run_context, business_case_context_pack]
+    permissions:
+      - record_a_human_owner_go_no_go_or_pivot_decision
+      - review_kill_criteria_at_the_decision_point
+      - write_stage_evidence_and_trace
+    forbidden_actions:
+      - autonomously_authorize_go_without_a_human_owner_decision
+      - self_approve_the_discovery_decision
+      - decide_go_while_a_kill_criterion_is_met_and_unwaived
+      - bypass_a_failed_blocking_gate
+    blocking_conditions:
+      - go_authorized_without_owner_decision
+      - self_approval_of_discovery_decision
+      - decision_recorded_without_rationale
+      - go_decided_while_kill_criterion_met_and_unwaived
+      - pivot_decided_without_named_pivot_target_stage
+    reviewed_by: discovery_team_lead
+
+  # ===========================================================================
   # ACTIVATION TEAM (team_id: activation_team, lead: activation_team_lead) — 5
   # Source: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md
   # ===========================================================================
@@ -2936,6 +3214,11 @@ coverage_summary:
   sdlc_agent_roles_emitted: 24         # sdlc_team_lead excluded (it is a Team Lead)
   sdlc_team_lead_owned_stages: [requirements_review, architecture_review]
   research_agent_roles: 10
+  # Discovery team (NEW — product_discovery_pipeline plan §1f): 5 distinct agent roles.
+  #   discovery_intake_agent (intake + handoff/closeout), problem_validation_agent
+  #   (problem evidence + assumption testing; parents market_scan_subagent + assumption_test_subagent),
+  #   feasibility_assessment_agent, business_case_agent, discovery_decision_agent (records owner GO/NO_GO/PIVOT).
+  discovery_agent_roles: 5
   activation_agent_roles: 5
   operations_agent_roles: 6
   # R12: skill_governance contributes ONE new distinct agent_id (skill_runtime_safety_agent). The
@@ -2944,7 +3227,7 @@ coverage_summary:
   skill_governance_new_agent_roles: 1  # skill_runtime_safety_agent (skill_librarian_agent is shared from sdlc_team via also_serves)
   skill_governance_shared_agent_roles: 1  # skill_librarian_agent (cross-team; counted under sdlc_agent_roles_emitted)
   knowledge_agent_roles: 7   # +1: knowledge_reconciliation_agent (NEW, owns knowledge_conflict_resolution)
-  total_distinct_agent_roles: 53       # R12 baseline 52 + 1 NEW knowledge_reconciliation_agent
+  total_distinct_agent_roles: 58       # 53 + 5 NEW discovery agents (product_discovery_pipeline plan §1f)
   shared_cross_team_agent_roles:
     - agent_id: skill_librarian_agent  # sdlc_team (primary) + skill_governance_team (also_serves); alias: skill_librarian_agent_skill_governance
   core_abilities_as_agents: 0

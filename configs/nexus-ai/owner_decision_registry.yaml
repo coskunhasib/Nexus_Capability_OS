@@ -36,6 +36,7 @@ allowed_decision_types:
   - APPROVE_RISK_ACCEPTANCE
   - APPROVE_MISSION_PLAN
   - APPROVE_RELEASE_CANDIDATE
+  - APPROVE_DISCOVERY_GO_NO_GO   # product_discovery_pipeline: records the owner GO / NO_GO / PIVOT decision (plan §1h)
   - HOLD_FOR_REVIEW
   - BLOCK_EXECUTION
   - CANCEL_MISSION
@@ -47,6 +48,33 @@ runtime_workpackage_execution_template: |
   EXECUTOR: <assigned executor>
   REVIEWER: ChatGPT
   BRANCH/WORKSPACE: isolated under nexus; no main merge
+
+# product_discovery_pipeline owner decision (plan §1h). The go_no_go_decision stage RECORDS this owner
+# decision; no GO may be authorized without it and no agent may self-approve it. NO_GO and PIVOT are
+# valid recorded values (NO_GO is an honourable terminal whose deliverable is a learning report).
+discovery_go_no_go_decision:
+  decision_type: APPROVE_DISCOVERY_GO_NO_GO
+  pipeline_id: product_discovery_pipeline
+  recorded_at_stage: go_no_go_decision
+  recorded_by: discovery_decision_agent   # RECORDS the owner decision; never self-approves it
+  allowed_values: [GO, NO_GO, PIVOT]
+  grounded_in:
+    - BUSINESS_CASE
+    - DECISION_OPTION_SET
+    - RESIDUAL_RISK_SUMMARY
+    - KILL_CRITERIA          # explicitly reviewed at the decision point
+  on_go: emits_sdlc_handoff_package_to_the_sdlc_pipeline
+  on_no_go: emits_no_go_learning_report_and_terminates
+  on_pivot: emits_pivot_brief_and_routes_back_to_the_named_pivot_target_stage
+  template: |
+    OWNER_DECISION: APPROVE_DISCOVERY_GO_NO_GO
+    VALUE: <GO | NO_GO | PIVOT>
+    SCOPE: <product_discovery_pipeline run id>
+    GROUNDED_IN: BUSINESS_CASE + DECISION_OPTION_SET + RESIDUAL_RISK_SUMMARY + KILL_CRITERIA review
+    RECORDED_BY: discovery_decision_agent (owner decision; no self-approval)
+    REVIEWER: <owner>
+  evidence_refs: [discovery_evidence_schema]
+  trace_refs: [owner_decision_trace, gate_decision_trace]
 
 rules:
   - runtime_execution_requires_explicit_owner_decision

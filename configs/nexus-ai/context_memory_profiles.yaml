@@ -791,6 +791,101 @@ profiles:
     aliases: []
     notes: New (draft-0.1, research-pipeline.md §2.6-§2.9). Feeds the citation_required_gate.
 
+  # ---- Product Discovery Pipeline --------------------------------------------------------------
+  - id: discovery_run_context
+    name: Discovery Run Context
+    type: run_context
+    status: candidate
+    scope: run
+    purpose: >-
+      Whole-run working context for a Product Discovery Pipeline run: the product idea, the
+      pre-registered kill-criteria, the evidence status of each load-bearing problem claim and tested
+      assumption, the discovery evidence graph spine, and which stages/gates have been evaluated. Lets
+      the owner decision and closeout confirm kill-criteria were honored and the decision is grounded.
+    owner_domain: product_management
+    allowed_usage:
+      - read_as_run_level_backbone_by_any_discovery_stage
+      - carry_the_pre_registered_kill_criteria_and_evidence_status
+    forbidden_usage:
+      - used_to_authorize_a_go_without_a_recorded_owner_decision
+      - used_to_soften_pre_registered_kill_criteria
+      - shared_across_different_discovery_runs
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_discovery_evidence_graph     # artifact->evidence + decision records
+      - current_run_stage_outputs                # IDEA_BRIEF / KILL_CRITERIA / PROBLEM_EVIDENCE_REPORT ...
+      - durable_memory_prior_discoveries         # advisory (prior discovery on the idea/market)
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - readable_by_all_discovery_stages
+      - run_scoped_isolation: true
+      - load_bearing_problem_claims_must_resolve_to_mapped_evidence
+      - kill_criteria_status_must_remain_visible_at_every_stage
+    redaction_rules:
+      - no_raw_secrets
+      - redact_confidential_market_or_user_data
+      - redact_pii_from_quoted_user_research
+    governance_profiles:
+      - discovery_pipeline_governance
+      - context_access_governance
+      - no_self_approval_policy
+    audit_schemas:
+      - discovery_evidence_schema
+      - stage_gate_trace_schema
+    used_by:
+      - product_discovery_pipeline
+    aliases: []
+    notes: >-
+      NEW (product_discovery_pipeline plan §1c). Kill-criteria pre-registration and owner-decision
+      independence are enforced via governance, not by collapsing roles in this context.
+
+  - id: business_case_context_pack
+    name: Business Case Context Pack
+    type: context_pack
+    status: candidate
+    scope: stage_pack
+    purpose: >-
+      The decision-package working view: the assembled business case, draft success metrics, the
+      complete decision option set (including a genuinely framed NO_GO), residual-risk summary, and
+      kill-criteria evaluation. Consumed by business-case assembly, the GO/NO_GO decision, and closeout.
+    owner_domain: product_management
+    allowed_usage:
+      - read_by_business_case_assembly_go_no_go_decision_and_closeout
+      - carry_the_complete_option_set_and_residual_risk_for_the_owner_decision
+    forbidden_usage:
+      - present_an_incomplete_option_set_to_the_owner_decision
+      - drop_the_no_go_option_or_the_kill_criteria_evaluation
+      - used_to_self_approve_the_discovery_decision
+      - exposed_as_an_agent_team_skill_or_tool
+    source_priority:
+      - current_run_business_case              # BUSINESS_CASE + DECISION_OPTION_SET + RESIDUAL_RISK_SUMMARY
+      - current_run_feasibility_and_evidence   # FEASIBILITY_REPORT + VALIDATED_PROBLEM_STATEMENT
+      - discovery_run_context
+    retention: run_scoped
+    validity_window: single_pipeline_run
+    retrieval_rules:
+      - scoped_to_the_decision_package
+      - decision_option_set_must_be_complete_including_no_go
+      - kill_criteria_evaluation_must_be_present
+    redaction_rules:
+      - no_raw_secrets
+      - redact_confidential_market_or_user_data
+    governance_profiles:
+      - go_no_go_decision_gate
+      - context_access_governance
+      - evidence_required_policy
+    audit_schemas:
+      - discovery_evidence_schema
+      - context_usage_trace_schema
+    used_by:
+      - product_discovery_pipeline
+      - stage:business_case_assembly@product_discovery_pipeline
+      - stage:go_no_go_decision@product_discovery_pipeline
+      - stage:discovery_handoff_and_closeout@product_discovery_pipeline
+    aliases: []
+    notes: NEW (product_discovery_pipeline plan §1c). Feeds the go_no_go_decision_gate.
+
   # ---- Activation Pipeline ---------------------------------------------------------------------
   - id: activation_run_context
     name: Activation Run Context

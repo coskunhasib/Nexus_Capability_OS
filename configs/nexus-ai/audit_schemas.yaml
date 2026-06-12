@@ -2592,6 +2592,60 @@ audit_schemas:
       stages: [claim_evidence_mapping, cross_validation]
       agents: [claim_evidence_agent, cross_validation_agent]
 
+  # ----- Product Discovery pipeline ------------------------------------------
+
+  - id: discovery_evidence_schema
+    name: Discovery Evidence Schema
+    type: evidence_schema
+    status: candidate
+    purpose: >-
+      Decision-proof record for a product-discovery artifact (IDEA_BRIEF, KILL_CRITERIA,
+      PROBLEM_EVIDENCE_REPORT, ASSUMPTION_TEST_REPORT, FEASIBILITY_REPORT, BUSINESS_CASE,
+      DISCOVERY_DECISION). Captures the decision reference, kill-criteria status, and source
+      citations behind each load-bearing discovery claim.
+    owner_domain: product_management
+    allowed_usage:
+      - Record discovery decision-proof evidence across the product discovery pipeline stages.
+    forbidden_usage:
+      - Used to record process history (trace_schema).
+    governance_profiles:
+      - evidence_required_policy   # canonical id evidence_required; bound under its _policy variant in the discovery pipeline
+      - discovery_pipeline_governance
+      - go_no_go_decision_gate
+    audit_schemas:
+      - stage_gate_trace_schema
+    notes: >-
+      NEW (product_discovery_pipeline plan §1b). Consumed by discovery_decision_agent at the GO/NO_GO
+      decision and by sdlc intake on a GO handoff. Kill-criteria status must be recorded on every record.
+    applies_to:
+      - product_discovery_pipeline
+      - discovery_stage:discovery_intake
+      - discovery_stage:problem_evidence_validation
+      - discovery_stage:assumption_and_demand_testing
+      - discovery_stage:feasibility_assessment
+      - discovery_stage:business_case_assembly
+      - discovery_stage:go_no_go_decision
+      - discovery_stage:discovery_handoff_and_closeout
+    required_fields:
+      - artifact_id
+      - producing_stage
+      - evidence_type
+      - decision_reference
+      - kill_criteria_status
+      - source_citations
+      - decision_timestamp
+      - status
+    producer: discovery_stage_owner_agents
+    consumer: discovery_decision_agent
+    retention: retain_with_discovery_decision
+    redaction_rules:
+      - no_raw_secret_exposure
+      - redact_confidential_market_or_user_data
+    used_by:
+      pipelines: [product_discovery_pipeline]
+      stages: [discovery_intake, problem_evidence_validation, assumption_and_demand_testing, feasibility_assessment, business_case_assembly, go_no_go_decision, discovery_handoff_and_closeout]
+      agents: [discovery_intake_agent, problem_validation_agent, feasibility_assessment_agent, business_case_agent, discovery_decision_agent]
+
   # ----- Activation pipeline -------------------------------------------------
 
   - id: activation_evidence_schema
