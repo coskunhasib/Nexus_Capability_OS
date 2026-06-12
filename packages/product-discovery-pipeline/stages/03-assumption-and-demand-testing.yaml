@@ -1,0 +1,111 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #3 of 7: assumption_and_demand_testing   (falsify the riskiest assumptions)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   A sourced problem is necessary but not sufficient — a venture rests on a stack of ASSUMPTIONS, and
+#   the riskiest ones (the ones that, if false, kill the idea) must be tested CHEAPLY before any build.
+#   This stage identifies the riskiest assumptions, designs and runs cheap falsification tests on them,
+#   and forces every critical assumption to be either TESTED or explicitly FLAGGED as untestable-now
+#   (no silent "we'll assume yes"). It folds the surviving evidence into a VALIDATED_PROBLEM_STATEMENT
+#   that the feasibility and business-case stages build on. Untestable assumptions flow forward as
+#   residual risk rather than being buried.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# KNOWN LIMIT (deliberate): testing here is DESK falsification (no live user testing — this is a
+#   no-human model). Assumptions that cannot be desk-falsified are FLAGGED untestable and surface in
+#   the RESIDUAL_RISK_SUMMARY at #5, not silently passed.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = problem_validation_agent (same role that owns #2; the validation responsibility is
+#     continuous); sub_agents: [assumption_test_subagent] designs/runs the cheap falsification tests ->
+#     ASSUMPTION_TEST_REPORT (the subagent cannot make a gate decision).
+#   - fermi-decompose sizes demand/assumptions cheaply; sentinel premortems the riskiest assumptions;
+#     bayesian-update / calibrate keep assumption confidence grounded in test outcomes, not optimism.
+version: draft-0.1
+stage_id: assumption_and_demand_testing
+name: Assumption and Demand Testing
+purpose: >-
+  Identify the riskiest assumptions the idea rests on, design and run cheap falsification tests against
+  them, and require every critical assumption to be either tested or explicitly flagged as untestable
+  (with a rationale) — never silently assumed true. Calibrate assumption confidence from test outcomes
+  and fold the surviving evidence into a VALIDATED_PROBLEM_STATEMENT. Untestable assumptions flow
+  forward as residual risk.
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: problem_validation_agent
+sub_agents:
+  - assumption_test_subagent   # design/run cheap desk falsification tests -> ASSUMPTION_TEST_REPORT (cannot make a gate decision)
+
+uses_core_abilities:
+  - Web      # gather cheap external signal to falsify demand / willingness assumptions
+  - Memory   # recall the validated problem evidence and run context to target the riskiest assumptions
+uses_skills:
+  - fermi-decompose   # decompose demand / assumption magnitude into cheap order-of-magnitude tests
+  - bayesian-update   # update assumption confidence from each test outcome
+  - calibrate         # keep assumption confidence calibrated, not anchored on optimism
+  - sentinel          # premortem the riskiest assumptions before declaring them survived
+uses_tools:
+  - web_search        # gather cheap external falsification signal
+  - web_fetch         # fetch supporting/refuting source content
+  - claim_mapper      # map each assumption to its supporting/refuting evidence
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+  - artifact_writer   # write ASSUMPTION_REGISTER / VALIDATED_PROBLEM_STATEMENT
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - problem_evidence_gate
+  - evidence_required_policy
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+  - risk_analysis_model
+uses_context_memory_profiles:
+  - discovery_run_context
+
+inputs:
+  - PROBLEM_EVIDENCE_REPORT     # from #2
+  - TARGET_USER_PROFILE         # from #2
+  - EXISTING_ALTERNATIVES_MAP   # from #2
+  - KILL_CRITERIA               # from #1 — re-checked when an assumption fails
+
+outputs:
+  - ASSUMPTION_REGISTER         # the assumptions the idea rests on, ranked by risk
+  - ASSUMPTION_TEST_REPORT      # from assumption_test_subagent: cheap falsification test design + outcomes
+  - VALIDATED_PROBLEM_STATEMENT # the problem statement after surviving assumption tests
+  - ASSUMPTION_GATE_RESULT      # binary gate result for this stage
+
+evidence:
+  - ASSUMPTION_REGISTER
+  - ASSUMPTION_TEST_REPORT
+  - VALIDATED_PROBLEM_STATEMENT
+  - ASSUMPTION_GATE_RESULT
+trace:
+  - web_search_tool_trace
+  - claim_mapper_tool_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - riskiest_assumptions_identified              # the assumptions most likely to kill the idea are named
+  - every_critical_assumption_tested_or_flagged  # each critical assumption is tested OR explicitly flagged untestable
+  - assumption_confidence_calibrated             # confidence levels are justified by test outcomes, not asserted
+  - validated_problem_statement_produced         # a problem statement consistent with the surviving evidence exists
+
+on_pass: feasibility_assessment
+on_fail: problem_evidence_validation
+rework_route: assumption_and_demand_testing
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - critical_assumption_untested_and_unflagged
+  - assumption_confidence_asserted_without_rationale
+  - validated_problem_statement_contradicts_evidence
+  - kill_criterion_met_without_escalation
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

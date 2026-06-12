@@ -1,0 +1,37 @@
+id: claim_mapper
+name: Claim Mapper
+type: tool
+category: tool
+status: candidate
+purpose: Extract atomic claims and map each to supporting/contradicting evidence with
+  support strength.
+owner_domain: research_and_knowledge
+provided_by_core_ability: null
+input_schema:
+  source_corpus: object
+  claims: object
+output_schema:
+  claim_evidence_map: object
+side_effects: writes_evidence_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- claim_extraction_agent
+- claim_evidence_agent
+allowed_usage:
+- Extract claims (claim_extraction) and build the CLAIM_EVIDENCE_MAP (claim_evidence_mapping).
+forbidden_usage:
+- Recording an unsupported claim as evidenced.
+used_by:
+  pipelines:
+  - research_pipeline
+  pipeline_stages:
+  - research_pipeline.claim_extraction
+  - research_pipeline.claim_evidence_mapping
+notes: NEW (research) per review §4.3. Trace claim_mapper_tool_trace.

@@ -1,0 +1,29 @@
+id: feasibility_gate
+name: Feasibility Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Discovery feasibility gate: a plausible solution shape must exist, technical
+  risks must be registered with severity, and a cost estimate must fall within declared
+  bounds before the business case may be assembled. Blocks an unbounded or absent
+  cost estimate.'
+owner_domain: product_management
+allowed_usage:
+- Gate the feasibility_assessment stage (solution shape + risk register + bounded
+  cost).
+forbidden_usage:
+- Used outside the Product Discovery Pipeline.
+- Asserting feasibility without a Coder reasoning trace or cost bound.
+governance_profiles:
+- discovery_pipeline_governance
+- evidence_required
+audit_schemas:
+- discovery_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- feasibility_assessment
+severity_default: blocker
+used_by:
+- feasibility_assessment
+notes: NEW (product_discovery_pipeline plan §1a). Pairs with the discovery_pipeline_governance
+  umbrella.

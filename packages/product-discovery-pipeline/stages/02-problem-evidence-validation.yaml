@@ -1,0 +1,111 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #2 of 7: problem_evidence_validation   (is the problem REAL — with sources?)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   Most products die because they solve a problem nobody has. This stage refuses to take the problem
+#   on faith: every load-bearing problem claim must resolve to a real source (no unsourced "everyone
+#   wants this"), the target-user segment must be evidenced (not asserted), and the existing-
+#   alternatives landscape must be scanned (a real problem with good-enough alternatives is still a
+#   weak bet). It also re-checks the run against the pre-registered KILL_CRITERIA: if a kill-criterion
+#   is already met by the evidence, the run must NOT silently continue. The conditional regulatory scan
+#   fires when DISCOVERY_CONDITIONAL_FLAGS.regulated_domain == true.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = problem_validation_agent (also owns #3); sub_agents: [market_scan_subagent] for
+#     the competitor/alternatives sweep -> MARKET_SCAN_REPORT (the subagent cannot make a gate decision).
+#   - For DEEP market evidence the research_pipeline MAY be invoked as a capability reference (a sourced-
+#     research capability), NOT a hard dependency — this stage stays self-sufficient under its own budget.
+#   - gap-audit / calibrate / bayesian-update keep evidence coverage honest and confidence calibrated.
+version: draft-0.1
+stage_id: problem_evidence_validation
+name: Problem Evidence Validation
+purpose: >-
+  Validate that the problem is real with sourced evidence: map every load-bearing problem claim to a
+  citable source, evidence the target-user segment rather than assert it, scan the existing-alternatives
+  landscape, and re-check the run against the pre-registered KILL_CRITERIA. Produces PROBLEM_EVIDENCE_
+  REPORT, MARKET_SCAN_REPORT, TARGET_USER_PROFILE and EXISTING_ALTERNATIVES_MAP. When the run is in a
+  regulated domain, a regulatory-exposure scan is additionally required.
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: problem_validation_agent
+sub_agents:
+  - market_scan_subagent   # competitor / alternatives sweep -> MARKET_SCAN_REPORT (cannot make a gate decision)
+
+uses_core_abilities:
+  - Web      # discover and fetch real-world evidence of the problem and the alternatives landscape
+  - Memory   # recall the IDEA_BRIEF, kill-criteria and run context to check evidence against them
+uses_skills:
+  - gap-audit         # ensure every load-bearing problem claim is covered by a real source
+  - calibrate         # keep the strength of each evidenced claim calibrated, not overstated
+  - bayesian-update   # update belief in the problem hypothesis as sourced evidence accumulates
+uses_tools:
+  - web_search                # discover candidate evidence + alternatives
+  - web_fetch                 # fetch source content for citation
+  - source_reliability_checker # score the reliability of each load-bearing source
+  - claim_mapper              # map each problem claim to its supporting source
+  - evidence_writer           # write stage evidence / gate result (side-effect: governance + trace)
+  - artifact_writer           # write PROBLEM_EVIDENCE_REPORT / TARGET_USER_PROFILE / EXISTING_ALTERNATIVES_MAP
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - problem_evidence_gate
+  - evidence_required_policy
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - discovery_run_context
+
+inputs:
+  - IDEA_BRIEF                    # from #1
+  - KILL_CRITERIA                # from #1 — re-checked against the gathered evidence
+  - DISCOVERY_CONDITIONAL_FLAGS  # from #1 — gates the conditional regulatory scan
+
+outputs:
+  - PROBLEM_EVIDENCE_REPORT      # load-bearing problem claims, each mapped to a real source
+  - MARKET_SCAN_REPORT           # from market_scan_subagent: competitors / alternatives
+  - TARGET_USER_PROFILE          # the evidenced target-user segment (not asserted)
+  - EXISTING_ALTERNATIVES_MAP    # how the problem is solved today (substitutes / status quo)
+  - PROBLEM_EVIDENCE_GATE_RESULT # binary gate result for this stage
+
+evidence:
+  - PROBLEM_EVIDENCE_REPORT
+  - MARKET_SCAN_REPORT
+  - PROBLEM_EVIDENCE_GATE_RESULT
+trace:
+  - web_search_tool_trace
+  - claim_mapper_tool_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - problem_evidence_sourced                  # every load-bearing problem claim resolves to a real source
+  - target_user_segment_evidenced             # the target-user segment is evidenced, not merely asserted
+  - existing_alternatives_mapped              # the status-quo / substitutes landscape is scanned
+  - kill_criteria_checked_against_evidence    # the run is re-checked against the pre-registered kill-criteria
+  - regulatory_exposure_scanned               # (conditional) regulatory exposure scanned when regulated_domain
+
+on_pass: assumption_and_demand_testing
+on_fail: discovery_intake
+rework_route: problem_evidence_validation
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - load_bearing_problem_claim_without_source
+  - no_evidenced_target_user_segment
+  - alternatives_landscape_unscanned
+  - kill_criterion_already_met_but_run_continued
+optional_conditions: []
+
+# The regulatory scan is required only when the idea is in a regulated domain (flag set in #1).
+conditional_required_gates:
+  - gate: regulatory_scan_if_regulated_domain
+    component_gate: regulatory_exposure_scanned
+    required_when: regulated_domain == true   # DISCOVERY_CONDITIONAL_FLAGS, set at discovery_intake (#1)
+
+max_iterations: 3

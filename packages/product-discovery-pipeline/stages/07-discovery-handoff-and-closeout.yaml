@@ -1,0 +1,129 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #7 of 7: discovery_handoff_and_closeout   (execute the decision branch + close the run)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   A recorded decision is worthless if the run does not faithfully EXECUTE it. This terminal stage
+#   executes the DISCOVERY_DECISION exactly as recorded, completes the DISCOVERY_EVIDENCE_GRAPH (the
+#   end-to-end chain idea -> kill-criteria -> evidence -> assumptions -> feasibility -> case ->
+#   decision -> deliverable), and produces the branch-appropriate deliverable. It is the producer of
+#   the always gate discovery_evidence_graph_complete and the conditional gate handoff_package_complete_
+#   if_go, and it carries the cross-cutting no_blocking_policy_failure terminal check.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# GO / NO_GO / PIVOT SEMANTICS (this stage executes the branch on DISCOVERY_DECISION.value):
+#   - GO    -> assemble PRODUCT_BRIEF + SUCCESS_METRICS + INITIAL_SCOPE into an SDLC_HANDOFF_PACKAGE,
+#             complete the evidence graph, terminate at `done`. The SDLC intake treats this as a
+#             pre-authored brief (verify-fidelity), so success metrics in the handoff MUST NOT diverge
+#             from the business case. Conditional gate handoff_package_complete_if_go is required here.
+#   - NO_GO -> capture the NO_GO_LEARNING_REPORT (the honorable terminal's deliverable), complete the
+#             evidence graph, terminate at `done`. NO_GO is NOT rework — it does not route backward.
+#             Conditional gate no_go_learning_captured_if_no_go is required here.
+#   - PIVOT -> emit the PIVOT_BRIEF and return to the def's pivot route (pivot_problem_reframe ->
+#             problem_evidence_validation #2; pivot_solution_reshape -> feasibility_assessment #4).
+#             PIVOT hops draw from the rework budget.
+#   DISCOVERY_COMPLETION_REPORT is produced on EVERY branch.
+#   on_fail / rework routes to relevant_failed_stage: a terminal-aggregate failure (e.g. a broken
+#   evidence-chain link) routes to the specific upstream stage whose artifact actually failed.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = discovery_intake_agent (also owns #1; the run-bookends — open and close — are one
+#     ownership responsibility); sub_agents: [].
+#   - handoff-designer assembles the SDLC handoff package on GO; gap-audit verifies the evidence graph
+#     is complete and the deliverable matches the recorded decision.
+version: draft-0.1
+stage_id: discovery_handoff_and_closeout
+name: Discovery Handoff and Closeout
+purpose: >-
+  Execute the recorded DISCOVERY_DECISION exactly as decided and close the run. On GO, assemble the
+  SDLC_HANDOFF_PACKAGE (PRODUCT_BRIEF + SUCCESS_METRICS + INITIAL_SCOPE) as a pre-authored brief; on
+  NO_GO, capture the NO_GO_LEARNING_REPORT (the honorable terminal); on PIVOT, emit the PIVOT_BRIEF and
+  return to the def's pivot route. Complete the DISCOVERY_EVIDENCE_GRAPH, carry the terminal
+  no-blocking-policy-failure check, and produce the DISCOVERY_COMPLETION_REPORT on every branch.
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: discovery_intake_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory       # re-walk the full evidence chain to complete the discovery evidence graph
+  - Supervisor   # execute the recorded decision branch and route any pivot back to the named stage
+uses_skills:
+  - handoff-designer   # assemble the SDLC handoff package (pre-authored brief) on GO
+  - gap-audit          # verify the evidence graph is complete and the deliverable matches the decision
+uses_tools:
+  - evidence_reader   # read the recorded decision + full evidence chain to execute the branch faithfully
+  - artifact_writer   # write the branch deliverable (handoff package / learning report / pivot brief) + completion report
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+  - memory_search     # retrieve the upstream artifacts needed to complete the evidence graph
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+  - supervisor_routing_model
+uses_context_memory_profiles:
+  - discovery_run_context
+  - business_case_context_pack
+
+inputs:
+  - DISCOVERY_DECISION    # from #6 — the recorded GO / NO_GO / PIVOT decision that drives the branch
+  - BUSINESS_CASE         # from #5 — source for the handoff brief / success metrics consistency check
+  - SUCCESS_METRICS_DRAFT # from #5 — promoted to SUCCESS_METRICS on GO (must not diverge from the case)
+  - RESIDUAL_RISK_SUMMARY # from #5 — folded into the learning report / handoff package
+
+outputs:
+  - DISCOVERY_EVIDENCE_GRAPH      # the completed end-to-end discovery evidence chain (always)
+  - DISCOVERY_COMPLETION_REPORT   # run closeout report (always, every branch)
+  - PRODUCT_BRIEF                 # (GO) the pre-authored product brief
+  - SUCCESS_METRICS               # (GO) success metrics promoted from the business case
+  - INITIAL_SCOPE                 # (GO) the initial scope for SDLC
+  - SDLC_HANDOFF_PACKAGE          # (GO) PRODUCT_BRIEF + SUCCESS_METRICS + INITIAL_SCOPE + evidence-graph ref
+  - NO_GO_LEARNING_REPORT         # (NO_GO) the honorable-terminal deliverable
+  - PIVOT_BRIEF                   # (PIVOT) the pivot brief routed back to the named pivot target stage
+  - CLOSEOUT_GATE_RESULT          # binary gate result for this stage
+
+evidence:
+  - DISCOVERY_EVIDENCE_GRAPH
+  - DISCOVERY_COMPLETION_REPORT
+  - CLOSEOUT_GATE_RESULT
+trace:
+  - skill_activation_trace
+  - rework_routing_trace
+  - gate_decision_trace
+
+gates:
+  - discovery_decision_executed_as_recorded     # the branch executed matches the recorded decision exactly
+  - discovery_evidence_graph_complete           # the end-to-end discovery evidence chain is complete
+  - handoff_package_complete_if_go              # (conditional) on GO, the SDLC handoff package is complete + consistent
+  - no_go_learning_captured_if_no_go            # (conditional) on NO_GO, a learning report is captured
+  - no_blocking_policy_failure                  # terminal cross-cutting policy check over the whole run
+
+on_pass: done
+on_fail: relevant_failed_stage
+rework_route: relevant_failed_stage
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - handoff_emitted_without_recorded_go_decision
+  - handoff_package_artifact_missing_or_inconsistent
+  - success_metrics_in_handoff_diverge_from_business_case
+  - no_go_terminated_without_learning_report
+  - broken_discovery_evidence_chain_link
+optional_conditions: []
+
+# Branch-conditional gates: the handoff package is required only on GO; the learning report only on NO_GO.
+conditional_required_gates:
+  - gate: handoff_package_complete_if_go
+    component_gate: handoff_package_complete_if_go
+    required_when: DISCOVERY_DECISION.value == GO
+  - gate: no_go_learning_captured_if_no_go
+    component_gate: no_go_learning_captured_if_no_go
+    required_when: DISCOVERY_DECISION.value == NO_GO
+
+max_iterations: 3

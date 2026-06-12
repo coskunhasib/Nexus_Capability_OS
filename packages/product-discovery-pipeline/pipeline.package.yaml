@@ -1,0 +1,229 @@
+package_schema_version: '0.1'
+pipeline_id: product_discovery_pipeline
+name: Product Discovery Pipeline
+description: 'Run cheap, kill-friendly product discovery under no-human governance:
+  pre-register the kill-criteria, validate the problem with sourced evidence, falsify
+  the riskiest assumptions, assess feasibility with cost bounds, assemble a business
+  case with a complete decision-option set, then record an explicit OWNER GO / NO_GO
+  / PIVOT decision. On GO, hand a pre-authored PRODUCT_BRIEF off to the SDLC pipeline.
+  NO_GO is a valid, honorable terminal whose deliverable is a learning report; PIVOT
+  is a decision-driven re-entry. No GO may be authorized without a recorded human/owner
+  decision and no agent may self-approve the discovery decision.
+
+  '
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: ea122ce
+  source_path: configs/nexus-ai/product_discovery_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: discovery_team
+  version: 1.0.0
+  path: components/teams/team__discovery_team.yaml
+- kind: team_lead
+  id: discovery_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__discovery_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: coder
+  version: 1.0.0
+  path: components/core-abilities/core_ability__coder.yaml
+- kind: skill
+  id: prism
+  version: 1.0.0
+  path: components/skills/skill__prism.yaml
+- kind: skill
+  id: fermi-decompose
+  version: 1.0.0
+  path: components/skills/skill__fermi-decompose.yaml
+- kind: skill
+  id: sentinel
+  version: 1.0.0
+  path: components/skills/skill__sentinel.yaml
+- kind: skill
+  id: bayesian-update
+  version: 1.0.0
+  path: components/skills/skill__bayesian-update.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: llm-council
+  version: 1.0.0
+  path: components/skills/skill__llm-council.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: handoff-designer
+  version: 1.0.0
+  path: components/skills/skill__handoff-designer.yaml
+- kind: tool
+  id: web_search
+  version: 1.0.0
+  path: components/tools/tool__web_search.yaml
+- kind: tool
+  id: web_fetch
+  version: 1.0.0
+  path: components/tools/tool__web_fetch.yaml
+- kind: tool
+  id: cost_estimator
+  version: 1.0.0
+  path: components/tools/tool__cost_estimator.yaml
+- kind: tool
+  id: resource_budget_checker
+  version: 1.0.0
+  path: components/tools/tool__resource_budget_checker.yaml
+- kind: tool
+  id: source_reliability_checker
+  version: 1.0.0
+  path: components/tools/tool__source_reliability_checker.yaml
+- kind: tool
+  id: claim_mapper
+  version: 1.0.0
+  path: components/tools/tool__claim_mapper.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: tool
+  id: memory_search
+  version: 1.0.0
+  path: components/tools/tool__memory_search.yaml
+- kind: governance_profile
+  id: discovery_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__discovery_pipeline_governance.yaml
+- kind: governance_profile
+  id: go_no_go_decision_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__go_no_go_decision_gate.yaml
+- kind: governance_profile
+  id: problem_evidence_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__problem_evidence_gate.yaml
+- kind: governance_profile
+  id: feasibility_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__feasibility_gate.yaml
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: audit_schema
+  id: discovery_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__discovery_evidence_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: research_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__research_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: risk_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__risk_analysis_model.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: context_memory_profile
+  id: discovery_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__discovery_run_context.yaml
+- kind: context_memory_profile
+  id: business_case_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__business_case_context_pack.yaml
+gates:
+- id: kill_criteria_pre_registered
+  set: always
+- id: idea_brief_bounded
+  set: always
+- id: problem_evidence_sourced
+  set: always
+- id: target_user_segment_evidenced
+  set: always
+- id: every_critical_assumption_tested_or_flagged
+  set: always
+- id: feasibility_assessed_within_cost_bounds
+  set: always
+- id: business_case_internally_consistent
+  set: always
+- id: decision_options_complete
+  set: always
+- id: owner_decision_recorded
+  set: always
+- id: no_self_approval_of_discovery_decision
+  set: always
+- id: discovery_evidence_graph_complete
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: regulatory_scan_if_regulated_domain
+  set: conditional
+- id: handoff_package_complete_if_go
+  set: conditional
+evidence:
+  required_evidence:
+  - IDEA_BRIEF
+  - KILL_CRITERIA
+  - PROBLEM_EVIDENCE_REPORT
+  - MARKET_SCAN_REPORT
+  - ASSUMPTION_REGISTER
+  - ASSUMPTION_TEST_REPORT
+  - VALIDATED_PROBLEM_STATEMENT
+  - FEASIBILITY_REPORT
+  - COST_FEASIBILITY_ESTIMATE
+  - BUSINESS_CASE
+  - DISCOVERY_DECISION
+  - DISCOVERY_EVIDENCE_GRAPH
+  - DISCOVERY_COMPLETION_REPORT
+  required_trace:
+  - web_search_tool_trace
+  - cost_estimator_tool_trace
+  - skill_activation_trace
+  - owner_decision_trace
+  - gate_decision_trace
+  - rework_routing_trace
+stages:
+- discovery_intake
+- problem_evidence_validation
+- assumption_and_demand_testing
+- feasibility_assessment
+- business_case_assembly
+- go_no_go_decision
+- discovery_handoff_and_closeout

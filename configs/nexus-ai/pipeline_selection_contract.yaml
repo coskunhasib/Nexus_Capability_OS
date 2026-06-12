@@ -15,9 +15,9 @@ override_policy_ref: configs/nexus-ai/executor_override_policy.yaml
 # Optional structured signals an intent may carry (all optional; free text alone also works).
 signals:
   domain: [software_product, saas, ai_agent_product, api_service, web_app, internal_tool,
-           research, operations, knowledge, skill, activation, other]
-  target_output: [software, code, research_report, incident_resolution, skill_change,
-                  memory_change, activation_rollout, unknown]
+           discovery, research, operations, knowledge, skill, activation, other]
+  target_output: [validated_product_brief, software, code, research_report, incident_resolution,
+                  skill_change, memory_change, activation_rollout, unknown]
   risk_level: [prototype, internal_tool, commercial_product, regulated_or_high_risk]
 
 # Selection rules. Match score = number of matched keywords (+3 per matched structured signal).
@@ -34,6 +34,17 @@ rules:
       pipeline_id: sdlc_pipeline
       package: packages/sdlc-pipeline
     rationale: Software / product building → SDLC pipeline (only fully machine-readable + packaged pipeline today).
+
+  - id: rule_discovery
+    priority: 50   # a RAW idea must enter discovery first, NOT sdlc (beats sdlc's 30 on any tie)
+    match:
+      any_domain: [discovery]
+      any_target_output: [validated_product_brief]
+      contains_any: ["fikrim var", "fikrim", "iş fikri", "değer mi", "yapsak mı", "yapmaya değer",
+                     idea, keşif, keşfet, discovery, "validate et", doğrulamak, konsept, fizibilite,
+                     "business case", "go/no-go", "no-go", pivot]
+    select: { pipeline_id: product_discovery_pipeline, package: packages/product-discovery-pipeline }
+    rationale: Raw idea / "should we build this" → discovery FIRST (cheap, kill-friendly); on GO it hands off to sdlc.
 
   - id: rule_skill_governance
     priority: 45
@@ -100,6 +111,7 @@ default:
 packaging_status:
   packaged:
     - sdlc_pipeline
+    - product_discovery_pipeline
     - research_pipeline
     - activation_pipeline
     - operations_pipeline

@@ -1,0 +1,50 @@
+id: calibrate
+name: Calibrate
+type: skill
+status: canonical
+semantic_category: confidence_calibration
+primary_purpose: severity / confidence calibration
+purpose: Calibrate severity and confidence on findings, accepted-risk decisions and
+  classifications so gate decisions carry honest confidence levels. The standard companion
+  skill across review/validation stages.
+owner_domain: reasoning_methods
+allowed_usage:
+- confidence_calibration
+- severity_calibration
+- accepted_risk_confidence
+forbidden_usage:
+- bug_finding
+- decision_making_by_itself
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - sdlc:02-domain-risk-profile
+  - sdlc:05-requirements-review
+  - sdlc:07-architecture-review
+  - sdlc:12-code-review
+  - sdlc:16-security-validation
+  - sdlc:17-supply-chain-sbom-license
+  - sdlc:18-ai-agent-safety-evaluation
+  - sdlc:20-api-contract-compatibility-validation
+  - sdlc:21-domain-regulatory-compliance-validation-if-applicable
+  - sdlc:24-performance-resilience
+  - sdlc:25-cost-resource-governance
+  - sdlc:29-development-completion
+  - sdlc:30-release-candidate
+  - sdlc:31-refraction-learning
+  - skill_governance:skill_semantic_extraction
+  agents:
+  - '(broad companion: many sdlc_team agent roles)'
+aliases: []
+notes: 14 SDLC stages — appropriate companion calibration usage (review §3, CLEAN).

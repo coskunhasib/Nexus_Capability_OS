@@ -1,0 +1,7 @@
+id: discovery-raw-idea
+intent: "yeni bir ürün fikrim var, yapmaya değer mi keşfet"
+expected:
+  pipeline_id: product_discovery_pipeline
+  package: packages/product-discovery-pipeline
+  gates_always: 12
+  stages: 7

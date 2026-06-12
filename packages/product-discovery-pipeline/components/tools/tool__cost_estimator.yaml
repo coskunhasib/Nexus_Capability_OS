@@ -1,0 +1,32 @@
+id: cost_estimator
+name: Cost Estimator
+type: tool
+category: tool
+status: canonical
+purpose: Estimate token/model/inference/compute cost for the changeset; emit COST_ESTIMATE_REPORT.
+owner_domain: cost_resource
+provided_by_core_ability: null
+input_schema:
+  usage_profile: object
+  pricing_model: object
+output_schema:
+  cost_estimate: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- cost_resource_agent
+allowed_usage:
+- Read-only cost estimation for the cost/resource governance gate.
+forbidden_usage:
+- Understating cost to pass a cost-cap gate.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - cost_resource_governance
+notes: Side-effect-free estimation.

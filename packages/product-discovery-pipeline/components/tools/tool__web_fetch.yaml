@@ -1,0 +1,36 @@
+id: web_fetch
+name: Web Fetch
+type: tool
+category: tool
+status: canonical
+purpose: Fetch a specific URL and capture its content plus provenance (publisher,
+  date, access timestamp).
+owner_domain: web_access
+provided_by_core_ability: Web
+input_schema:
+  url: string
+output_schema:
+  content: object
+  provenance: object
+side_effects: external_network_read
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- source_discovery_agent
+allowed_usage:
+- Fetch candidate source content with provenance during source_discovery.
+forbidden_usage:
+- Fetching from disallowed targets; omitting provenance.
+used_by:
+  pipelines:
+  - research_pipeline
+  pipeline_stages:
+  - research_pipeline.source_discovery
+notes: Sub-operation of Web (D-014); exposed_tool of the canonical Web ability in
+  core_abilities.yaml, hence canonical (R7). Trace web_fetch_tool_trace.

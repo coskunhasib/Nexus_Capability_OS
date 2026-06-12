@@ -1,0 +1,21 @@
+required_evidence:
+- IDEA_BRIEF
+- KILL_CRITERIA
+- PROBLEM_EVIDENCE_REPORT
+- MARKET_SCAN_REPORT
+- ASSUMPTION_REGISTER
+- ASSUMPTION_TEST_REPORT
+- VALIDATED_PROBLEM_STATEMENT
+- FEASIBILITY_REPORT
+- COST_FEASIBILITY_ESTIMATE
+- BUSINESS_CASE
+- DISCOVERY_DECISION
+- DISCOVERY_EVIDENCE_GRAPH
+- DISCOVERY_COMPLETION_REPORT
+required_trace:
+- web_search_tool_trace
+- cost_estimator_tool_trace
+- skill_activation_trace
+- owner_decision_trace
+- gate_decision_trace
+- rework_routing_trace

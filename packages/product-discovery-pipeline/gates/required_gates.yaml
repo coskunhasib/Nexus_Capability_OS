@@ -1,0 +1,17 @@
+required_gates:
+  always:
+  - kill_criteria_pre_registered
+  - idea_brief_bounded
+  - problem_evidence_sourced
+  - target_user_segment_evidenced
+  - every_critical_assumption_tested_or_flagged
+  - feasibility_assessed_within_cost_bounds
+  - business_case_internally_consistent
+  - decision_options_complete
+  - owner_decision_recorded
+  - no_self_approval_of_discovery_decision
+  - discovery_evidence_graph_complete
+  - no_blocking_policy_failure
+  conditional:
+  - regulatory_scan_if_regulated_domain
+  - handoff_package_complete_if_go

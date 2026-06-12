@@ -2,7 +2,7 @@ catalog_id: nexus_ai_pipeline_package_catalog
 catalog_schema_version: '0.1'
 purpose: 'Pull catalog: the .pipeline packages a host (Nexus) can acquire. Generated
   by engine/build_catalog.py — do not hand-edit.'
-package_count: 6
+package_count: 7
 packages:
 - pipeline_id: activation_pipeline
   name: Activation Pipeline
@@ -34,6 +34,16 @@ packages:
   gates_conditional: 2
   stages: 7
   source_commit: 383a28c
+- pipeline_id: product_discovery_pipeline
+  name: Product Discovery Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/product-discovery-pipeline
+  components: 37
+  gates_always: 12
+  gates_conditional: 2
+  stages: 7
+  source_commit: ea122ce
 - pipeline_id: research_pipeline
   name: Research Pipeline
   package_version: 1.0.0

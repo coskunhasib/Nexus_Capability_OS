@@ -1,0 +1,52 @@
+id: sentinel
+name: Sentinel
+type: skill
+status: canonical
+semantic_category: premortem_risk
+primary_purpose: decision stress test / premortem / adversarial foresight
+purpose: 'Pre-commitment stress test: surface hidden assumptions, premortem failure
+  paths and early-warning signals for designs, risk surfaces and readiness/ validation
+  gates. May call prism during premortem/mirror/counterfactual phases.'
+owner_domain: reasoning_methods
+allowed_usage:
+- premortem
+- risk_surfacing
+- hidden_assumption_surfacing
+- adversarial_foresight
+- pre_commitment_review
+- misuse_scenario_premortem
+forbidden_usage:
+- implementation
+- final_approval_by_itself
+- bug_finding
+governance_profiles:
+- skill_governance
+- locked_semantics_enforcement_policy
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  stages:
+  - sdlc:06-architecture
+  - sdlc:07-architecture-review
+  - sdlc:08-security-privacy-design
+  - sdlc:09-premortem-fmea
+  - sdlc:18-ai-agent-safety-evaluation
+  - sdlc:19-privacy-data-lifecycle-validation
+  - sdlc:23-accessibility-ux-validation-if-applicable
+  - sdlc:26-backup-restore-dr-validation-if-applicable
+  - sdlc:27-operations-readiness
+  - skill_governance:misuse_warning_generation
+  agents:
+  - architecture_agent
+  - security_privacy_agent
+  - operations_readiness_agent
+aliases: []
+notes: 9 SDLC stages — all design/risk/pre-commitment surfaces (review §3, CLEAN).
+  Activation binds it as premortem/foresight; prism and verification-loop are intentionally
+  NOT bound in activation.
