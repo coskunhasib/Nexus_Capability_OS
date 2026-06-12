@@ -1,0 +1,214 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline (pipeline definition)
+# Machine-readable pipeline contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+# Field set mirrors configs/nexus-ai/research_pipeline.yaml exactly (the calibration exemplar; same
+# 26 top-level keys IN THE SAME ORDER) and holds to the same professional-grade reliability bar as the
+# six existing pipelines (sdlc / research / activation / operations / skill_governance / knowledge_memory).
+#
+# WHY THIS PIPELINE EXISTS (owner decision):
+#   The SDLC pipeline must NOT start from a raw idea. Its entry criterion
+#   (product_intent_or_request_provided) ASSUMES the intent already exists — but nothing produces it.
+#   This pipeline fills that gap: a cheap, kill-friendly DISCOVERY process that runs BEFORE SDLC.
+#   Flow: raw idea -> kill-criteria pre-registration -> evidenced problem validation -> assumption
+#   falsification -> feasibility -> business case -> OWNER GO / NO_GO / PIVOT decision -> on GO, a
+#   pre-authored PRODUCT_BRIEF is handed off to the SDLC pipeline.
+#
+#   NO_GO IS AN HONORABLE TERMINAL, not a failure: its deliverable is a learning report. PIVOT is a
+#   decision-driven re-entry (reframe problem or reshape solution) whose hops draw from the rework
+#   budget. Only GO emits the SDLC handoff; the SDLC intake treats it as a pre-authored brief
+#   (verify-fidelity, not re-author).
+#
+# Core Abilities (Supervisor/Coder/Memory/Web/...) are abilities, NOT agents and NOT team members;
+#   owner_agent is always a snake_case Agent role; the team lead is the pipeline-specific
+#   discovery_team_lead role (NOT Supervisor).
+version: draft-0.1
+pipeline_id: product_discovery_pipeline
+name: Product Discovery Pipeline
+purpose: >
+  Run cheap, kill-friendly product discovery under no-human governance: pre-register the kill-criteria,
+  validate the problem with sourced evidence, falsify the riskiest assumptions, assess feasibility with
+  cost bounds, assemble a business case with a complete decision-option set, then record an explicit
+  OWNER GO / NO_GO / PIVOT decision. On GO, hand a pre-authored PRODUCT_BRIEF off to the SDLC pipeline.
+  NO_GO is a valid, honorable terminal whose deliverable is a learning report; PIVOT is a
+  decision-driven re-entry. No GO may be authorized without a recorded human/owner decision and no agent
+  may self-approve the discovery decision.
+status: draft
+owner_domain: product_management
+required_team_type: discovery_team
+required_team_lead_role: discovery_team_lead
+
+# Domains this pipeline applies to.
+applicable_domains:
+  - software_product
+  - saas
+  - ai_agent_product
+  - api_service
+  - internal_tool
+  - new_market_opportunity
+
+# Risk profiles this pipeline can operate under.
+risk_profiles:
+  - exploratory
+  - internal_bet
+  - commercial_bet
+  - regulated_or_high_risk
+
+# Conditions that must hold before the pipeline may start (first stage is discovery_intake; the run
+# begins from a raw product idea, not from a validated intent).
+entry_criteria:
+  - product_idea_present
+  - idea_owner_identified
+  - discovery_budget_resolvable
+  - risk_profile_selected
+
+# Conditions that mark the pipeline complete. NO_GO-valid semantics: a recorded owner decision and a
+# decision-branch deliverable (handoff package OR learning report OR pivot brief) BOTH count as complete.
+exit_criteria:
+  - kill_criteria_pre_registered
+  - every_load_bearing_problem_claim_evidenced
+  - critical_assumptions_tested_or_flagged
+  - feasibility_assessed_with_cost_bounds
+  - business_case_with_complete_option_set_produced
+  - owner_decision_recorded
+  - decision_branch_deliverable_produced
+  - discovery_evidence_graph_complete
+  - no_blocking_policy_failure
+
+# Pipeline-level conditions that block progression / a valid terminal.
+blocking_conditions:
+  - kill_criteria_not_pre_registered
+  - load_bearing_problem_claim_without_source
+  - critical_assumption_untested_and_unflagged
+  - go_authorized_without_owner_decision
+  - self_approval_of_discovery_decision
+  - go_decided_while_kill_criterion_met_and_unwaived
+  - handoff_emitted_without_recorded_go_decision
+  - no_go_terminated_without_learning_report
+  - broken_discovery_evidence_chain_link
+
+# Permitted rework routes (failure_type -> target stage_id). The two PIVOT routes are decision-driven
+# re-entries emitted by the GO/NO_GO/PIVOT decision stage; their hops draw from the rework budget.
+allowed_rework_routes:
+  idea_framing_gap: discovery_intake
+  insufficient_problem_evidence: problem_evidence_validation
+  assumption_gap: assumption_and_demand_testing
+  feasibility_gap: feasibility_assessment
+  business_case_gap: business_case_assembly
+  owner_decision_deferred: business_case_assembly
+  pivot_problem_reframe: problem_evidence_validation
+  pivot_solution_reshape: feasibility_assessment
+  handoff_package_inconsistent: business_case_assembly
+
+# Evidence artifacts the pipeline must produce. Evidence = decision proof, DISTINCT from trace.
+# Branch-conditional deliverables (produced by the decision branch at discovery_handoff_and_closeout):
+#   GO -> SDLC_HANDOFF_PACKAGE ; NO_GO -> NO_GO_LEARNING_REPORT ; PIVOT -> PIVOT_BRIEF.
+required_evidence:
+  - IDEA_BRIEF
+  - KILL_CRITERIA
+  - PROBLEM_EVIDENCE_REPORT
+  - MARKET_SCAN_REPORT
+  - ASSUMPTION_REGISTER
+  - ASSUMPTION_TEST_REPORT
+  - VALIDATED_PROBLEM_STATEMENT
+  - FEASIBILITY_REPORT
+  - COST_FEASIBILITY_ESTIMATE
+  - BUSINESS_CASE
+  - DISCOVERY_DECISION
+  - DISCOVERY_EVIDENCE_GRAPH
+  - DISCOVERY_COMPLETION_REPORT
+
+# Trace records the pipeline must produce. Trace = operation/decision log, DISTINCT from evidence.
+required_trace:
+  - web_search_tool_trace
+  - cost_estimator_tool_trace
+  - skill_activation_trace
+  - owner_decision_trace
+  - gate_decision_trace
+  - rework_routing_trace
+
+# Canonical stage set (7). Order is load-bearing — kill-criteria pre-registration (#1) must precede
+# evidence work; the owner decision (#6) must precede handoff/closeout (#7).
+stages:
+  - discovery_intake
+  - problem_evidence_validation
+  - assumption_and_demand_testing
+  - feasibility_assessment
+  - business_case_assembly
+  - go_no_go_decision
+  - discovery_handoff_and_closeout
+
+uses_core_abilities:
+  - Supervisor
+  - Web
+  - Memory
+  - Coder
+
+uses_skills:
+  - prism
+  - fermi-decompose
+  - sentinel
+  - bayesian-update
+  - calibrate
+  - llm-council
+  - gap-audit
+  - handoff-designer
+
+uses_tools:
+  - web_search
+  - web_fetch
+  - cost_estimator
+  - resource_budget_checker
+  - source_reliability_checker
+  - claim_mapper
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader
+  - memory_search
+
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - go_no_go_decision_gate
+  - problem_evidence_gate
+  - feasibility_gate
+  - no_self_approval_policy
+  - evidence_required_policy
+
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+
+# No NEW model provider profile — reuse existing ones.
+uses_model_provider_profiles:
+  - research_reasoning_profile
+  - risk_analysis_model
+  - supervisor_routing_model
+
+uses_context_memory_profiles:
+  - discovery_run_context
+  - business_case_context_pack
+
+# Required gates. The `always` set (12) are the run's pipeline-level pass conditions, including the
+# no-self-approval structural gate and the owner-decision gate. The `conditional` set (2) is
+# applicability-gated. See product_discovery_pipeline_runtime_rules.yaml `required_gate_producers`
+# for the gate -> producing-stage map.
+required_gates:
+  always:
+    - kill_criteria_pre_registered                       # producing_stage discovery_intake (#1)
+    - idea_brief_bounded                                 # producing_stage discovery_intake (#1)
+    - problem_evidence_sourced                           # producing_stage problem_evidence_validation (#2)
+    - target_user_segment_evidenced                      # producing_stage problem_evidence_validation (#2)
+    - every_critical_assumption_tested_or_flagged        # producing_stage assumption_and_demand_testing (#3)
+    - feasibility_assessed_within_cost_bounds            # producing_stage feasibility_assessment (#4)
+    - business_case_internally_consistent                # producing_stage business_case_assembly (#5)
+    - decision_options_complete                          # producing_stage business_case_assembly (#5)
+    - owner_decision_recorded                            # producing_stage go_no_go_decision (#6)
+    - no_self_approval_of_discovery_decision             # producing_stage go_no_go_decision (#6)
+    - discovery_evidence_graph_complete                  # producing_stage discovery_handoff_and_closeout (#7)
+    - no_blocking_policy_failure                         # cross-cutting POLICY gate (producing_stage: pipeline)
+  conditional:
+    - regulatory_scan_if_regulated_domain                # producing_stage problem_evidence_validation (#2)
+    - handoff_package_complete_if_go                     # producing_stage discovery_handoff_and_closeout (#7)
+
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/sdlc_pipeline.yaml
+  - configs/nexus-ai/research_pipeline.yaml

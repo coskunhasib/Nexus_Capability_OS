@@ -5,6 +5,12 @@
 # Top structure: Nexus AI Orchestration Model. SDLC is ONE pipeline under it.
 # Pipeline: sdlc_pipeline. This is stage #1 of the canonical 31-stage SDLC pipeline.
 # Stage class: always-on (not conditional) — no applicability_decision block.
+#
+# Discovery seam: when product_discovery_pipeline ends GO, its SDLC_HANDOFF_PACKAGE
+#   (PRODUCT_BRIEF, SUCCESS_METRICS, INITIAL_SCOPE) arrives pre-authored. In that case
+#   intake runs in verify-fidelity mode (prompt-fidelity) instead of authoring from
+#   scratch — it must NOT produce a second competing PRODUCT_BRIEF. With no handoff
+#   (direct USER_GOAL) intake authors the brief as before.
 
 stage_id: intake
 name: Intake
@@ -47,6 +53,7 @@ uses_context_memory_profiles:
 # --- Data flow ---
 inputs:
   - USER_GOAL
+  - SDLC_HANDOFF_PACKAGE   # optional; provided when a product_discovery_pipeline GO precedes this run (pre-authored brief -> verify-fidelity mode)
 outputs:
   - PRODUCT_BRIEF
   - INITIAL_SCOPE

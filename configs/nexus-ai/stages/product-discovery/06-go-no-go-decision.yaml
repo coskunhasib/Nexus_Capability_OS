@@ -1,0 +1,114 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #6 of 7: go_no_go_decision   (HUMAN / OWNER authority gate — GO / NO_GO / PIVOT)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   Discovery exists to produce a DECISION, and that decision belongs to the human owner — not to an
+#   autonomous agent. This is the one place the pipeline asserts human-in-the-loop. The owner reviews
+#   the business case, the complete option set, the residual-risk summary, and the pre-registered
+#   KILL_CRITERIA, then records an explicit GO / NO_GO / PIVOT decision with a rationale. owner_agent
+#   discovery_decision_agent RECORDS and routes the decision; it CANNOT authorize GO in the owner's
+#   place and CANNOT self-approve the decision (forbidden_actions: autonomously_authorize_go_without_a_
+#   human_owner_decision, self_approve_the_discovery_decision). Enforced by go_no_go_decision_gate
+#   layered on no_self_approval_policy. This is the producer of the always gates owner_decision_recorded
+#   and no_self_approval_of_discovery_decision.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+# Owner-decision EXTRA template: configs/nexus-ai/stages/activation/05-public-activation-decision.yaml.
+#
+# GO / NO_GO / PIVOT SEMANTICS (this stage):
+#   This stage PASSES when a VALID owner decision is recorded — WHICHEVER option it is. It is NOT a
+#   gate that only GO can clear; NO_GO and PIVOT are equally valid passing outcomes. The branch is
+#   resolved DOWNSTREAM at discovery_handoff_and_closeout (#7) on DISCOVERY_DECISION.value:
+#     - GO    -> #7 assembles the SDLC handoff package and completes.
+#     - NO_GO -> #7 captures the NO_GO_LEARNING_REPORT and completes (honorable terminal, not failure).
+#     - PIVOT -> #7 emits a PIVOT_BRIEF and returns to the def's pivot route
+#                (pivot_problem_reframe -> problem_evidence_validation #2; pivot_solution_reshape ->
+#                feasibility_assessment #4). PIVOT hops draw from the rework budget.
+#   A GO is BLOCKED if a pre-registered kill-criterion is met and unwaived (go_decided_while_kill_
+#   criterion_met_and_unwaived). A PIVOT must name its target stage.
+#   on_fail / rework route to business_case_assembly (#5): a deferred decision returns for a stronger
+#   package, not forward (def allowed_rework_routes: owner_decision_deferred -> business_case_assembly).
+version: draft-0.1
+stage_id: go_no_go_decision
+name: Go / No-Go Decision
+purpose: >-
+  The human/owner decision gate. The owner reviews the business case, the complete decision-option set,
+  the residual-risk summary, and the pre-registered KILL_CRITERIA, then records an explicit GO / NO_GO /
+  PIVOT decision with a rationale grounded in the business case. The decision is recorded as evidence
+  and cannot be self-approved by the recording agent; a GO is blocked while a kill-criterion is met and
+  unwaived. Any valid recorded decision PASSES this stage; the branch is resolved at closeout (#7).
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: discovery_decision_agent
+sub_agents: []
+
+# uses_* are a SUBSET of discovery_decision_agent's declared capabilities (agent_roles.yaml):
+#   skills [sentinel, llm-council, calibrate]; tools [evidence_reader, artifact_writer, evidence_writer];
+#   core [Memory, Supervisor].
+uses_core_abilities:
+  - Memory       # recall the full discovery evidence chain to brief the owner decision
+  - Supervisor   # orchestrate the decision recording and route the resulting branch
+uses_skills:
+  - sentinel       # premortem on residual risk before authorizing GO
+  - llm-council    # surface multi-perspective decision considerations for the human owner
+  - calibrate      # keep the residual-risk assessment presented with the decision calibrated
+uses_tools:
+  - evidence_reader   # read the business case + residual risk + kill-criteria to brief the owner
+  - artifact_writer   # write the DISCOVERY_DECISION record (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - go_no_go_decision_gate     # HUMAN/owner authority gate (distinct from autonomous approval)
+  - no_self_approval_policy    # the recording agent is not the authorizer (structural)
+  - evidence_required_policy
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - risk_analysis_model
+  - supervisor_routing_model
+uses_context_memory_profiles:
+  - discovery_run_context
+  - business_case_context_pack
+
+inputs:
+  - BUSINESS_CASE          # from #5
+  - DECISION_OPTION_SET    # from #5
+  - RESIDUAL_RISK_SUMMARY  # from #5
+  - KILL_CRITERIA          # from #1 — reviewed at the decision point
+
+outputs:
+  - DISCOVERY_DECISION         # recorded human/owner GO / NO_GO / PIVOT decision + rationale (+ pivot target on PIVOT)
+  - DISCOVERY_DECISION_GATE_RESULT # binary gate result for this decision stage
+
+evidence:
+  - DISCOVERY_DECISION
+  - DISCOVERY_DECISION_GATE_RESULT
+trace:
+  - owner_decision_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - go_no_go_decision_gate                # a recorded human/owner GO/NO_GO/PIVOT decision exists (HUMAN authority)
+  - no_self_approval_policy               # the recording agent is not the authorizer (structural)
+  - decision_grounded_in_business_case    # the decision rationale is grounded in the business case
+  - kill_criteria_reviewed_at_decision    # the pre-registered kill-criteria are reviewed at the decision point
+
+on_pass: discovery_handoff_and_closeout
+on_fail: business_case_assembly
+rework_route: business_case_assembly
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - go_authorized_without_owner_decision
+  - self_approval_of_discovery_decision
+  - decision_recorded_without_rationale
+  - go_decided_while_kill_criterion_met_and_unwaived
+  - pivot_decided_without_named_pivot_target_stage
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

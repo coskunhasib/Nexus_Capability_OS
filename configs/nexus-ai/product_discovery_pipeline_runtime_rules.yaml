@@ -1,0 +1,301 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Runtime rules: required-gate -> producer map + rework routing table + iteration policy.
+# Machine-readable blueprint/documentation only — NO runtime code, NO merge, NO deploy.
+#
+# Top structure is the Nexus AI Orchestration Model; the Product Discovery Pipeline is ONE pipeline
+# under it, not the top. This file holds the cross-stage RUNTIME RULES that the Product Discovery
+# Pipeline (and its Team Lead orchestrator) must obey — it does NOT redefine per-stage contracts (those
+# live in configs/nexus-ai/stages/product-discovery/*.yaml).
+#
+# Source of truth (DERIVED, not invented):
+#   - configs/nexus-ai/product_discovery_pipeline.yaml
+#       required_gates.{always,conditional}, allowed_rework_routes, stages,
+#       required_team_type, required_team_lead_role.
+#   - configs/nexus-ai/stages/product-discovery/*.yaml
+#       each stage's stage_id, gates, on_fail, rework_route, uses_governance_profiles.
+#
+# Mirrors the section set of configs/nexus-ai/research_pipeline_runtime_rules.yaml:
+#   header, routing_terminals, required_gate_producers (+ invariants),
+#   rework_routing_table (+ routing_invariants), iteration_policy, canonical_docs.
+
+version: draft-0.1
+rules_id: product_discovery_pipeline_runtime_rules
+pipeline_id: product_discovery_pipeline
+applies_to_pipeline_version: draft-0.1
+purpose: >-
+  Formalize the Product Discovery Pipeline cross-stage runtime rules — which producing stage satisfies
+  each required rollup gate, where a failed stage reworks to, how the GO/NO_GO/PIVOT branch routes, and
+  how many iterations are allowed before the run is hard-blocked — under no-human governance.
+  Documentation/blueprint only; no runtime code.
+status: draft
+owner_team: discovery_team
+team_lead: discovery_team_lead
+
+# Canonical routing terminals these rules may point to (besides any pipeline stage_id).
+# These mirror configs/nexus-ai/stages/product-discovery/*.yaml on_pass/on_fail/rework_route usage.
+routing_terminals:
+  - done                    # pipeline reached its terminal node (after discovery_handoff_and_closeout)
+  - relevant_failed_stage   # router selects the specific upstream stage whose gate/evidence actually failed
+  - block_and_report        # halt the run and emit a blocking report (no further auto-rework)
+
+# =====================================================================================
+# Required-gate → producer map  (make the rollup gates machine-checkable)
+# =====================================================================================
+# PURPOSE: configs/nexus-ai/product_discovery_pipeline.yaml `required_gates` lists rollup gate IDs the
+#   run must satisfy, but a rollup gate name is SATISFIED BY a specific upstream stage's gate decision.
+#   Without an explicit map a checker cannot prove each required gate has a real producer (the gate name
+#   would be a dangling edge). This block resolves that edge.
+#
+# SCOPE: ALL required gates in product_discovery_pipeline.yaml required_gates — 12 `always` gates and 2
+#   `conditional` gates (14 total). Most map by name to a single producing stage whose `gates:` list
+#   contains the (component) gate; the cross-cutting POLICY gate no_blocking_policy_failure has no single
+#   producing stage (producing_stage: pipeline).
+#
+# AUTHORITY: producing stage + its gate IDs are from configs/nexus-ai/stages/product-discovery/*.yaml;
+#   the producing_rule is the stage-specific gate-bearing governance profile listed in that stage's
+#   `uses_governance_profiles` (exact string as it appears in the stage contract).
+#
+# CHECKER CONTRACT (how to verify): for each entry, assert
+#   (a) `gate` ∈ product_discovery_pipeline.yaml required_gates.always (or .conditional),
+#   (b) `producing_stage` ∈ the canonical 7-stage set (or the literal `pipeline` for policy gates),
+#   (c) `producing_rule` ∈ that stage's uses_governance_profiles (stages/product-discovery/*.yaml),
+#   (d) `satisfied_by_stage_gates` ⊆ that stage's `gates:` list.
+# Any unmet assertion = a dangling required-gate edge.
+required_gate_producers:
+  scope: discovery_required_gates_all   # all 12 always gates + 2 conditional gates
+  note: >-
+    Each rollup gate in product_discovery_pipeline.yaml required_gates is SATISFIED BY the producing
+    stage's gate decision; this map makes that satisfied-by edge explicit and machine-checkable. It does
+    NOT redefine any stage gate and does NOT alter product_discovery_pipeline.yaml. producing_rule
+    strings are copied verbatim from each producing stage's uses_governance_profiles.
+  gates:
+    - gate: kill_criteria_pre_registered                  # required_gates.always
+      tier: always
+      producing_stage: discovery_intake                   # stage #1
+      producing_rule: discovery_pipeline_governance       # in discovery_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - kill_criteria_pre_registered
+      note: >-
+        The integrity control: kill-criteria fixed BEFORE evidence gathering. The pipeline
+        blocking_condition kill_criteria_not_pre_registered guards it run-wide.
+
+    - gate: idea_brief_bounded                            # required_gates.always
+      tier: always
+      producing_stage: discovery_intake                   # stage #1
+      producing_rule: discovery_pipeline_governance       # in discovery_intake.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - idea_brief_bounded
+
+    - gate: problem_evidence_sourced                      # required_gates.always
+      tier: always
+      producing_stage: problem_evidence_validation        # stage #2
+      producing_rule: problem_evidence_gate               # in problem_evidence_validation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - problem_evidence_sourced
+
+    - gate: target_user_segment_evidenced                 # required_gates.always
+      tier: always
+      producing_stage: problem_evidence_validation        # stage #2
+      producing_rule: problem_evidence_gate               # in problem_evidence_validation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - target_user_segment_evidenced
+
+    - gate: every_critical_assumption_tested_or_flagged   # required_gates.always
+      tier: always
+      producing_stage: assumption_and_demand_testing      # stage #3
+      producing_rule: problem_evidence_gate               # in assumption_and_demand_testing.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - every_critical_assumption_tested_or_flagged
+
+    - gate: feasibility_assessed_within_cost_bounds       # required_gates.always
+      tier: always
+      producing_stage: feasibility_assessment             # stage #4
+      producing_rule: feasibility_gate                    # in feasibility_assessment.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - candidate_solution_shape_exists
+        - cost_estimate_within_declared_bounds
+      note: >-
+        Rollup gate satisfied by two component gates of the feasibility stage: a candidate solution
+        shape exists AND the cost estimate is within the declared bounds. The pipeline
+        blocking_condition cost_estimate_absent_or_unbounded guards the cost half.
+
+    - gate: business_case_internally_consistent           # required_gates.always
+      tier: always
+      producing_stage: business_case_assembly             # stage #5
+      producing_rule: evidence_required_policy            # in business_case_assembly.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - business_case_internally_consistent
+
+    - gate: decision_options_complete                     # required_gates.always
+      tier: always
+      producing_stage: business_case_assembly             # stage #5
+      producing_rule: evidence_required_policy            # in business_case_assembly.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - decision_options_complete
+      note: >-
+        Anti-GO-bias rollup gate: the option set is complete, including a genuinely framed NO-GO option.
+        The pipeline blocking_condition (stage #5) no_go_option_not_genuinely_framed guards it.
+
+    - gate: owner_decision_recorded                       # required_gates.always
+      tier: always
+      producing_stage: go_no_go_decision                  # stage #6
+      producing_rule: go_no_go_decision_gate              # in go_no_go_decision.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - go_no_go_decision_gate
+        - decision_grounded_in_business_case
+      note: >-
+        HUMAN/owner-authority rollup gate. Satisfied by the recorded-decision gate AND the decision
+        being grounded in the business case. Any valid recorded GO/NO_GO/PIVOT decision satisfies it;
+        the pipeline blocking_condition go_authorized_without_owner_decision guards the GO case.
+
+    - gate: no_self_approval_of_discovery_decision        # required_gates.always
+      tier: always
+      producing_stage: go_no_go_decision                  # stage #6
+      producing_rule: no_self_approval_policy             # in go_no_go_decision.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - no_self_approval_policy
+      note: >-
+        No-self-approval structural gate: the recording agent (discovery_decision_agent) is not the
+        authorizer. The pipeline blocking_condition self_approval_of_discovery_decision guards it.
+
+    - gate: discovery_evidence_graph_complete             # required_gates.always
+      tier: always
+      producing_stage: discovery_handoff_and_closeout     # stage #7
+      producing_rule: discovery_pipeline_governance       # in discovery_handoff_and_closeout.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - discovery_evidence_graph_complete
+      note: >-
+        Terminal rollup gate: the end-to-end discovery evidence chain re-walks without a broken link.
+        The pipeline blocking_condition broken_discovery_evidence_chain_link guards it.
+
+    - gate: no_blocking_policy_failure                    # required_gates.always
+      tier: always
+      producing_stage: pipeline                           # POLICY gate — no single producing stage
+      producing_rule: evidence_required_policy            # cross-cutting; also surfaced at discovery_handoff_and_closeout.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - no_blocking_policy_failure
+      note: >-
+        Pipeline-level cross-cutting POLICY gate (producing_stage: pipeline). It aggregates the
+        no-blocking-policy-failure condition over the whole run — i.e. none of the def's
+        blocking_conditions (product_discovery_pipeline.yaml: kill_criteria_not_pre_registered,
+        load_bearing_problem_claim_without_source, critical_assumption_untested_and_unflagged,
+        go_authorized_without_owner_decision, self_approval_of_discovery_decision,
+        go_decided_while_kill_criterion_met_and_unwaived, handoff_emitted_without_recorded_go_decision,
+        no_go_terminated_without_learning_report, broken_discovery_evidence_chain_link) hold. It is also
+        re-checked as the literal terminal gate of discovery_handoff_and_closeout (#7), but it has no
+        single producing stage, so producing_stage is `pipeline`. The runner mock-passes it.
+
+    # --- conditional (applicability-gated) ------------------------------------------------------
+    - gate: regulatory_scan_if_regulated_domain           # required_gates.conditional
+      tier: conditional
+      producing_stage: problem_evidence_validation        # stage #2
+      producing_rule: problem_evidence_gate               # in problem_evidence_validation.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - regulatory_exposure_scanned
+      conditional_required_when: >-
+        regulated_domain == true (DISCOVERY_CONDITIONAL_FLAGS, set at discovery_intake #1) — i.e.
+        risk_profile == regulated_or_high_risk or the idea owner marked the domain regulated.
+      note: >-
+        Conditional gate. The producing stage's component gate regulatory_exposure_scanned checks
+        regulatory exposure when the domain is regulated. When the run is NOT regulated the gate
+        evaluates to pass_if_not_applicable and does not block.
+
+    - gate: handoff_package_complete_if_go                # required_gates.conditional
+      tier: conditional
+      producing_stage: discovery_handoff_and_closeout     # stage #7
+      producing_rule: discovery_pipeline_governance       # in discovery_handoff_and_closeout.uses_governance_profiles
+      satisfied_by_stage_gates:
+        - handoff_package_complete_if_go
+      conditional_required_when: >-
+        DISCOVERY_DECISION.value == GO (recorded at go_no_go_decision #6). On GO the SDLC_HANDOFF_PACKAGE
+        must be complete and consistent with the business case; on NO_GO/PIVOT this gate evaluates to
+        pass_if_not_applicable and does not block.
+      note: >-
+        Branch-conditional gate paired with the GO branch. The pipeline blocking_conditions
+        handoff_emitted_without_recorded_go_decision and
+        success_metrics_in_handoff_diverge_from_business_case guard the GO handoff.
+
+  invariants:
+    - Every `gate` MUST exist in configs/nexus-ai/product_discovery_pipeline.yaml required_gates
+      (tier=always -> required_gates.always; tier=conditional -> required_gates.conditional).
+    - Every `producing_stage` MUST be a canonical stage_id in configs/nexus-ai/product_discovery_pipeline.yaml,
+      or the literal `pipeline` for cross-cutting policy gates with no single producing stage.
+    - "Every `producing_rule` MUST appear in the producing stage's uses_governance_profiles (configs/nexus-ai/stages/product-discovery/*.yaml); for producing_stage: pipeline it is the cross-cutting policy profile that aggregates the run-level blocking_conditions."
+    - "Every entry in satisfied_by_stage_gates MUST appear in the producing stage's gates list (configs/nexus-ai/stages/product-discovery/*.yaml); for producing_stage: pipeline it is the policy gate name carried at the terminal discovery_handoff_and_closeout stage."
+    - "A conditional gate's satisfied_by_stage_gates names the component gate on the producing stage; when not applicable it evaluates to pass_if_not_applicable and does not block."
+    - "This map is READ-ONLY over the gate graph; it records satisfied-by edges only; it MUST NOT add, rename, or remove any gate, and MUST NOT change product_discovery_pipeline.yaml."
+
+# =====================================================================================
+# Rework routing table  (map: failure -> stage_id)
+# =====================================================================================
+rework_routing_table:
+
+  # -- Authoritative per-stage routes (complete; covers all 7 canonical stages) ---------
+  # Key = the stage that FAILS; value = stage_id (or canonical terminal) to rework to.
+  # Values copied from each stage's own canonical `rework_route` in
+  # configs/nexus-ai/stages/product-discovery/*.yaml. (NOTE: a stage's on_fail may name an UPSTREAM
+  # stage while its rework_route names the SELF-rework target — by_stage tracks rework_route, matching
+  # the SDLC/research convention.)
+  by_stage:
+    discovery_intake: discovery_intake
+    problem_evidence_validation: problem_evidence_validation
+    assumption_and_demand_testing: assumption_and_demand_testing
+    feasibility_assessment: feasibility_assessment
+    business_case_assembly: business_case_assembly
+    go_no_go_decision: business_case_assembly       # a deferred decision returns for a stronger package
+    discovery_handoff_and_closeout: relevant_failed_stage
+
+  # -- Failure-type index (the def's allowed_rework_routes: map failure -> stage_id) -----
+  # Copied verbatim from product_discovery_pipeline.yaml allowed_rework_routes. Each target is a known
+  # stage_id; these are the named failure routes the def declares (incl. the two decision-driven PIVOT
+  # routes pivot_problem_reframe / pivot_solution_reshape).
+  by_failure_type:
+    idea_framing_gap: discovery_intake
+    insufficient_problem_evidence: problem_evidence_validation
+    assumption_gap: assumption_and_demand_testing
+    feasibility_gap: feasibility_assessment
+    business_case_gap: business_case_assembly
+    owner_decision_deferred: business_case_assembly
+    pivot_problem_reframe: problem_evidence_validation
+    pivot_solution_reshape: feasibility_assessment
+    handoff_package_inconsistent: business_case_assembly
+
+  routing_invariants:
+    - All routing targets MUST be a known canonical stage_id (configs/nexus-ai/product_discovery_pipeline.yaml)
+      or a routing_terminal (done | relevant_failed_stage | block_and_report).
+    - A failed stage MUST route to its declared rework target; the Team Lead orchestrator MAY NOT
+      improvise a different target (pipeline is a deterministic stage graph, not agent chatter).
+    - relevant_failed_stage MUST resolve to the specific upstream stage whose gate/evidence failed
+      (used by the terminal aggregate stage — discovery_handoff_and_closeout).
+    - Rework targets always point BACKWARD (upstream) or to self; rework MUST NOT skip forward past
+      unre-evaluated gates.
+    - block_and_report is reached only via the iteration_policy limit below, never as a normal
+      stage rework target.
+    - "NOTE: by_stage is derived from each stage file's own rework_route; by_failure_type is the def's allowed_rework_routes. They agree on shared routes; by_failure_type also names failure types the per-stage rework_route expresses as self-rework."
+    - "PIVOT ROUTES are decision-driven BACK routes emitted by the go_no_go_decision branch at closeout (#7), NOT gate failures: pivot_problem_reframe -> problem_evidence_validation (#2) and pivot_solution_reshape -> feasibility_assessment (#4). PIVOT hops DRAW FROM the rework budget (max_total_rework_cycles) so a pivot loop cannot run unbounded."
+    - "NO_GO IS NOT REWORK: a NO_GO decision does not route backward — it terminates via discovery_handoff_and_closeout (#7) to `done` with a NO_GO_LEARNING_REPORT (the honorable terminal)."
+
+# =====================================================================================
+# Iteration policy
+# =====================================================================================
+# No-human system: infinite loops are forbidden.
+iteration_policy:
+  default_max_iterations_per_stage: 3      # mirrors per-stage `max_iterations: 3` in every discovery stage contract
+  max_total_rework_cycles: 8               # ceiling on cumulative rework cycles across the whole run (PIVOT hops count)
+  on_iteration_limit_exceeded:
+    action: block_and_report               # canonical terminal: halt; do NOT auto-loop further
+    output: REWORK_LIMIT_EXCEEDED.md
+  # Clarifying semantics (do not contradict the locked values above):
+  scope_notes:
+    - default_max_iterations_per_stage applies PER stage_id; a stage's own `max_iterations` (if set)
+      overrides this default for that stage only.
+    - max_total_rework_cycles counts every rework hop across the run, INCLUDING decision-driven PIVOT
+      hops; reaching it triggers on_iteration_limit_exceeded even if no single stage hit its per-stage cap.
+    - Either limit being exceeded => action=block_and_report and the REWORK_LIMIT_EXCEEDED.md
+      report is emitted as run evidence (it records the offending stage, failure type, route taken,
+      and iteration counts).
+
+# Canonical docs this runtime-rules file is bound to.
+canonical_docs:
+  - configs/nexus-ai/product_discovery_pipeline.yaml
+  - configs/nexus-ai/research_pipeline_runtime_rules.yaml

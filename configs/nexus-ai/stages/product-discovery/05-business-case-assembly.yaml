@@ -1,0 +1,109 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #5 of 7: business_case_assembly   (assemble the decision package — incl. a real NO-GO option)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   The owner decision (#6) is only as good as the package it decides over. This stage assembles a
+#   BUSINESS_CASE that is internally consistent with the upstream evidence (it may NOT contradict the
+#   sourced problem, the assumption tests, or the feasibility cost bounds), drafts MEASURABLE success
+#   metrics, and frames a COMPLETE decision-option set — crucially including a GENUINELY framed NO-GO
+#   option (anti-GO-bias control: a decision package that only argues for building is a sales deck, not
+#   a decision). It explicitly re-evaluates the pre-registered KILL_CRITERIA in the case so the owner
+#   sees whether any abandon condition is already met. The RESIDUAL_RISK_SUMMARY carries forward the
+#   untestable assumptions flagged in #3.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = business_case_agent; sub_agents: [].
+#   - no_self_approval_policy is carried here because this stage ASSEMBLES the decision package but does
+#     NOT make the decision — the option set (including NO-GO) is authored for a DISTINCT decision agent
+#     (#6) to decide over, preserving producer != decider.
+#   - sentinel premortems the case; gap-audit ensures the option set is complete and metrics measurable;
+#     fermi-decompose / calibrate keep the case's numbers grounded.
+version: draft-0.1
+stage_id: business_case_assembly
+name: Business Case Assembly
+purpose: >-
+  Assemble the owner decision package: a BUSINESS_CASE internally consistent with the upstream evidence,
+  a draft of MEASURABLE success metrics, and a COMPLETE decision-option set that includes a genuinely
+  framed NO-GO option. Explicitly re-evaluate the pre-registered KILL_CRITERIA within the case and carry
+  forward untestable-assumption residual risk. This stage assembles but does NOT decide — the package is
+  authored for the distinct decision agent (#6).
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: business_case_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory       # recall the full evidence chain to keep the case consistent with upstream artifacts
+  - Supervisor   # assemble and reconcile the multi-stage inputs into one coherent decision package
+uses_skills:
+  - fermi-decompose   # keep the case's value/cost numbers grounded in order-of-magnitude reasoning
+  - calibrate         # keep the case's projections and confidence calibrated
+  - sentinel          # premortem the business case before it reaches the owner
+  - gap-audit         # ensure the option set is complete and success metrics are measurable
+uses_tools:
+  - cost_estimator    # reconcile / refine cost figures for the case
+  - evidence_reader   # read the upstream evidence chain to check internal consistency
+  - artifact_writer   # write BUSINESS_CASE / SUCCESS_METRICS_DRAFT / DECISION_OPTION_SET / RESIDUAL_RISK_SUMMARY
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - evidence_required_policy
+  - no_self_approval_policy   # this stage assembles the package; a DISTINCT agent (#6) decides over it
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+  - risk_analysis_model
+uses_context_memory_profiles:
+  - discovery_run_context
+  - business_case_context_pack
+
+inputs:
+  - VALIDATED_PROBLEM_STATEMENT   # from #3
+  - FEASIBILITY_REPORT            # from #4
+  - COST_FEASIBILITY_ESTIMATE     # from #4
+  - TECHNICAL_RISK_REGISTER       # from #4
+  - KILL_CRITERIA                 # from #1 — explicitly re-evaluated in the case
+
+outputs:
+  - BUSINESS_CASE                 # the decision-grade case, consistent with upstream evidence
+  - SUCCESS_METRICS_DRAFT         # measurable success metrics (carried into the handoff on GO)
+  - DECISION_OPTION_SET           # complete option set incl. a genuinely framed NO-GO option
+  - RESIDUAL_RISK_SUMMARY         # carries forward untestable-assumption residual risk from #3
+  - BUSINESS_CASE_GATE_RESULT     # binary gate result for this stage
+
+evidence:
+  - BUSINESS_CASE
+  - DECISION_OPTION_SET
+  - RESIDUAL_RISK_SUMMARY
+  - BUSINESS_CASE_GATE_RESULT
+trace:
+  - cost_estimator_tool_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - business_case_internally_consistent              # the case does not contradict upstream evidence
+  - success_metrics_draft_measurable                 # the drafted success metrics are measurable, not vague
+  - decision_options_complete                        # the option set is complete, incl. a genuine NO-GO option
+  - kill_criteria_explicitly_evaluated_in_case       # the pre-registered kill-criteria are re-evaluated in the case
+
+on_pass: go_no_go_decision
+on_fail: feasibility_assessment
+rework_route: business_case_assembly
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - business_case_contradicts_upstream_evidence
+  - success_metrics_unmeasurable_or_absent
+  - no_go_option_not_genuinely_framed
+  - kill_criteria_unevaluated_in_business_case
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

@@ -1,0 +1,97 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #1 of 7: discovery_intake   (frame the idea + PRE-REGISTER the kill-criteria)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   Discovery must be cheap and WILLING TO KILL. The single most important integrity control is to
+#   pre-register the KILL_CRITERIA — the falsifiable conditions under which this idea should be
+#   abandoned — BEFORE any evidence is gathered, so the criteria cannot be reverse-engineered to
+#   protect a favored idea once the team is emotionally invested. This stage turns a raw PRODUCT_IDEA
+#   into a bounded IDEA_BRIEF, names an explicit target-user hypothesis, fixes a discovery budget, and
+#   pre-registers the kill-criteria. Everything downstream is checked against these criteria; the
+#   business case (#5) and the owner decision (#6) re-evaluate them explicitly. It also writes
+#   DISCOVERY_CONDITIONAL_FLAGS (e.g. regulated_domain) that gate the conditional regulatory scan in #2.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = discovery_intake_agent (also owns closeout #7); sub_agents: [].
+#   - prism = divergence over how the idea/problem could be framed (LOCKED: ideation only, not
+#     selection-as-validation). gap-audit ensures the brief is bounded and every kill-criterion is
+#     falsifiable and pre-registered, not vague aspiration.
+#   - This is an AUTHORING stage reviewed by discovery_team_lead; it does NOT make the GO decision.
+version: draft-0.1
+stage_id: discovery_intake
+name: Discovery Intake
+purpose: >-
+  Turn a raw PRODUCT_IDEA into a bounded discovery run: write a scoped IDEA_BRIEF, state an explicit
+  target-user hypothesis, resolve a discovery budget, and PRE-REGISTER the falsifiable KILL_CRITERIA
+  before any evidence is gathered. Emit DISCOVERY_CONDITIONAL_FLAGS (regulated_domain, etc.) that gate
+  downstream conditional work. These artifacts are the integrity backbone every later stage is checked
+  against.
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: discovery_intake_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Memory       # recall the idea owner's intent, prior related ideas, standing kill-criteria conventions
+  - Supervisor   # frame and sequence the intake; this is the run's orchestration entry point
+uses_skills:
+  - prism        # LOCKED: divergence over candidate problem/idea framings, NOT selection-as-validation
+  - gap-audit    # ensure the brief is bounded and every kill-criterion is falsifiable and pre-registered
+uses_tools:
+  - artifact_writer   # write IDEA_BRIEF / KILL_CRITERIA / DISCOVERY_CONDITIONAL_FLAGS (side-effect: governance + trace)
+  - evidence_writer   # write stage evidence / gate result (side-effect: governance + trace)
+  - memory_search     # retrieve prior related ideas / standing conventions
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - evidence_required_policy
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+uses_context_memory_profiles:
+  - discovery_run_context
+
+inputs:
+  - PRODUCT_IDEA                  # entry artifact: the raw idea the run begins from
+
+outputs:
+  - IDEA_BRIEF                    # bounded framing of the idea: problem hypothesis, target user, scope edges
+  - KILL_CRITERIA                # pre-registered falsifiable abandon conditions (the integrity control)
+  - DISCOVERY_CONDITIONAL_FLAGS  # e.g. regulated_domain == true -> gates the conditional regulatory scan in #2
+  - DISCOVERY_BUDGET             # the resolved discovery spend/time envelope
+  - DISCOVERY_INTAKE_GATE_RESULT # binary gate result for this stage
+
+evidence:
+  - IDEA_BRIEF
+  - KILL_CRITERIA
+  - DISCOVERY_INTAKE_GATE_RESULT
+trace:
+  - discovery_intake_agent_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - idea_brief_bounded                 # the idea is framed with explicit scope edges, not open-ended
+  - kill_criteria_pre_registered       # falsifiable abandon conditions fixed BEFORE evidence gathering
+  - target_user_hypothesis_stated      # a named target-user hypothesis exists to validate in #2
+  - discovery_budget_bounded           # a finite discovery budget is resolved (cheap-by-design)
+
+on_pass: problem_evidence_validation
+on_fail: discovery_intake
+rework_route: discovery_intake
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - idea_unbounded_or_unintelligible
+  - kill_criteria_not_pre_registered
+  - no_identifiable_target_user_hypothesis
+  - discovery_budget_undefined
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3

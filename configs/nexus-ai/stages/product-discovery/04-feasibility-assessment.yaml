@@ -1,0 +1,104 @@
+# Nexus AI Orchestration Model — Product Discovery Pipeline
+# Stage #4 of 7: feasibility_assessment   (can we build it, at what cost, with what risk?)
+# Machine-readable stage contract. Documentation/blueprint only — no runtime code, no merge, no deploy.
+#
+# WHY THIS STAGE EXISTS:
+#   A real problem with a tested demand can still be a bad bet if it is technically infeasible or
+#   ruinously expensive. This stage sketches a candidate solution SHAPE (not a design — discovery stays
+#   cheap), registers technical risks with severity, produces a COST_FEASIBILITY_ESTIMATE bounded
+#   against the declared discovery/build envelope, and considers build-vs-buy when alternatives exist.
+#   It uses the Coder core ability for grounded technical reasoning (a feasibility claim without a coder
+#   reasoning trace is hand-waving). Its outputs feed the business case (#5): no feasibility, no
+#   credible case.
+#
+# Field set + header style mirror configs/nexus-ai/stages/research/03-research-protocol-design.yaml.
+#
+# Depth / reconciliation notes:
+#   - owner_agent = feasibility_assessment_agent; sub_agents: [].
+#   - cost_estimator + resource_budget_checker bound the estimate against the declared envelope;
+#     fermi-decompose sizes effort/cost cheaply; sentinel premortems technical risk; llm-council
+#     surfaces alternative solution shapes / build-vs-buy considerations.
+version: draft-0.1
+stage_id: feasibility_assessment
+name: Feasibility Assessment
+purpose: >-
+  Assess whether the validated idea can be built, at what cost, and with what technical risk. Identify
+  a candidate solution shape, register technical risks with severity and a mitigation hypothesis each,
+  produce a cost estimate bounded against the declared envelope, and consider build-vs-buy where
+  credible alternatives exist. Feasibility claims must be grounded in a coder reasoning trace, not
+  asserted. Outputs feed the business case (#5).
+
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: feasibility_assessment_agent
+sub_agents: []
+
+uses_core_abilities:
+  - Coder    # ground the feasibility judgment in real technical reasoning (no hand-waved feasibility)
+  - Web      # check feasibility of dependencies / build-vs-buy options against the live landscape
+  - Memory   # recall the validated problem statement and run context to scope the solution shape
+uses_skills:
+  - fermi-decompose   # decompose build effort / cost into order-of-magnitude estimates
+  - sentinel          # premortem the technical risks before declaring feasibility
+  - llm-council        # surface alternative solution shapes and build-vs-buy considerations
+uses_tools:
+  - cost_estimator            # produce the COST_FEASIBILITY_ESTIMATE
+  - resource_budget_checker   # bound the estimate against the declared discovery/build envelope
+  - web_search                # check build-vs-buy alternatives / dependency feasibility
+  - web_fetch                 # fetch dependency / vendor source content
+  - artifact_writer           # write FEASIBILITY_REPORT / TECHNICAL_RISK_REGISTER / BUILD_VS_BUY_NOTE
+  - evidence_writer           # write stage evidence / gate result (side-effect: governance + trace)
+uses_governance_profiles:
+  - discovery_pipeline_governance
+  - feasibility_gate
+  - evidence_required_policy
+uses_audit_schemas:
+  - discovery_evidence_schema
+  - stage_gate_trace_schema
+uses_model_provider_profiles:
+  - research_reasoning_profile
+  - risk_analysis_model
+uses_context_memory_profiles:
+  - discovery_run_context
+
+inputs:
+  - VALIDATED_PROBLEM_STATEMENT   # from #3
+  - ASSUMPTION_REGISTER           # from #3 — technical assumptions feed risk registration
+  - DISCOVERY_BUDGET              # from #1 — bounds the cost estimate
+
+outputs:
+  - FEASIBILITY_REPORT            # candidate solution shape + feasibility judgment with coder reasoning
+  - TECHNICAL_RISK_REGISTER       # technical risks with severity + a mitigation hypothesis each
+  - COST_FEASIBILITY_ESTIMATE     # cost estimate bounded against the declared envelope
+  - BUILD_VS_BUY_NOTE             # build-vs-buy consideration where credible alternatives exist
+  - FEASIBILITY_GATE_RESULT       # binary gate result for this stage
+
+evidence:
+  - FEASIBILITY_REPORT
+  - COST_FEASIBILITY_ESTIMATE
+  - FEASIBILITY_GATE_RESULT
+trace:
+  - cost_estimator_tool_trace
+  - skill_activation_trace
+  - gate_decision_trace
+
+gates:
+  - candidate_solution_shape_exists                # a plausible solution shape is identified (not a full design)
+  - technical_risks_registered_with_severity       # technical risks are registered with severity + mitigation hypothesis
+  - cost_estimate_within_declared_bounds           # the cost estimate is present and within the declared envelope
+  - build_vs_buy_considered_if_alternatives_exist  # build-vs-buy is considered where credible alternatives exist
+
+on_pass: business_case_assembly
+on_fail: assumption_and_demand_testing
+rework_route: feasibility_assessment
+
+# Real failure conditions that hard-block the stage (no empty load-bearing field).
+blocking_conditions:
+  - no_plausible_solution_shape_identified
+  - critical_technical_risk_without_mitigation_hypothesis
+  - cost_estimate_absent_or_unbounded
+  - feasibility_asserted_without_coder_reasoning_trace
+optional_conditions: []
+conditional_required_gates: []
+
+max_iterations: 3
