@@ -6,7 +6,7 @@ description: Sıfırdan ürün seviyesine yazılım geliştirme sürecini no-hum
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: f3181ae
+  source_commit: b4db4e2
   source_path: configs/nexus-ai/sdlc_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:

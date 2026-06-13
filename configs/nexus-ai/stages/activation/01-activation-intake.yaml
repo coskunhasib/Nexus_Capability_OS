@@ -80,11 +80,13 @@ outputs:
   - ACTIVATION_SCOPE_DECISION        # resolved preview/pilot/public scope (drives conditional gates)
   - BLAST_RADIUS_LIMIT               # max cohort %/scope ceiling; consumed by pilot_activation (#3)
   - ABORT_CRITERIA                   # health/error/incident thresholds that auto-trigger rollback (#3,#8)
+  - ROLLBACK_PLAN                    # initial rollback plan authored with the rollback owner; validated + drilled at rollback_readiness (#6), gated at public_activation_decision (#5)
   - ACTIVATION_INTAKE_GATE_RESULT    # binary gate result for the intake stage
 
 evidence:
   - ACTIVATION_REQUEST
   - ACTIVATION_SCOPE_DECISION
+  - ROLLBACK_PLAN
   - ABORT_CRITERIA
   - ACTIVATION_INTAKE_GATE_RESULT
 

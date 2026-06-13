@@ -1,0 +1,18 @@
+id: discovery-to-sdlc
+description: >-
+  A product_discovery_pipeline GO hands its verified brief package to sdlc_pipeline intake.
+  Proves the designed seam end-to-end: discovery emits SDLC_HANDOFF_PACKAGE (+ PRODUCT_BRIEF,
+  SUCCESS_METRICS, INITIAL_SCOPE) and sdlc intake declares + consumes SDLC_HANDOFF_PACKAGE
+  (verify-fidelity mode, never re-authoring the brief). This is the one explicitly-wired
+  cross-pipeline handoff; other transitions are not yet artifact-wired and are out of scope.
+steps:
+  - package: packages/product-discovery-pipeline
+    role: producer
+    handoff_out:
+      - SDLC_HANDOFF_PACKAGE
+      - PRODUCT_BRIEF
+      - SUCCESS_METRICS
+      - INITIAL_SCOPE
+  - package: packages/sdlc-pipeline
+    role: consumer
+    handoff_in: SDLC_HANDOFF_PACKAGE

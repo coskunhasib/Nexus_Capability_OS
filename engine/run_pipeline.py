@@ -68,15 +68,11 @@ def mock_agent_run(stage):
     }
 
 
-def main():
-    import argparse
-    ap = argparse.ArgumentParser(description="Run a .pipeline package (mock).")
-    ap.add_argument("package")
-    ap.add_argument("--skip", action="append", default=[],
-                    help="stage_id to force-skip (demonstrates that gate enforcement bites)")
-    args = ap.parse_args()
-    pkg = os.path.abspath(args.package)
-    skip = set(args.skip)
+def execute(pkg, skip=None):
+    """Run a package (mock) end-to-end; emit evidence/trace/run records; return a result dict.
+    Kept free of stdout so other tools (run_chain.py) can compose it."""
+    pkg = os.path.abspath(pkg)
+    skip = set(skip or [])
     man = load_yaml(os.path.join(pkg, "pipeline.package.yaml")) or {}
     pdef = load_yaml(os.path.join(pkg, man.get("pipeline_def", "pipeline.yaml"))) or {}
     pid = man.get("pipeline_id", "pipeline")
@@ -182,18 +178,41 @@ def main():
         "stages": [r["stage_id"] for r in stage_results],
     })
 
-    # report
-    print(f"[runner] pipeline: {pid}  package_version: {man.get('package_version')}  mode: MOCK")
-    print(f"[runner] stages   : {len(completed)}/{len(stage_ids)} completed")
-    print(f"[runner] gates    : {always_pass}/{always_total} always-required PASS  ({cond_total} conditional evaluated)")
-    print(f"[runner] evidence : {len(evidence_records)}/{len(req_evidence)} artifacts emitted  |  trace records: {len(req_trace)}")
-    if always_fail:
+    produced_outputs = set()
+    for r in stage_results:
+        for o in (r.get("act", {}).get("outputs_produced") or []):
+            produced_outputs.add(o)
+    produced_outputs.update(e["artifact"] for e in evidence_records)
+    return {
+        "pid": pid, "package_version": man.get("package_version"),
+        "verdict": verdict, "stage_ids": stage_ids, "completed": completed,
+        "always_total": always_total, "always_pass": always_pass, "cond_total": cond_total,
+        "always_fail": always_fail, "gate_results": gate_results,
+        "evidence_records": evidence_records, "req_evidence": req_evidence, "req_trace": req_trace,
+        "out_dir": out_dir, "produced_outputs": sorted(produced_outputs),
+        "stage_results": stage_results,
+    }
+
+
+def main():
+    import argparse
+    ap = argparse.ArgumentParser(description="Run a .pipeline package (mock).")
+    ap.add_argument("package")
+    ap.add_argument("--skip", action="append", default=[],
+                    help="stage_id to force-skip (demonstrates that gate enforcement bites)")
+    args = ap.parse_args()
+    r = execute(args.package, args.skip)
+    print(f"[runner] pipeline: {r['pid']}  package_version: {r['package_version']}  mode: MOCK")
+    print(f"[runner] stages   : {len(r['completed'])}/{len(r['stage_ids'])} completed")
+    print(f"[runner] gates    : {r['always_pass']}/{r['always_total']} always-required PASS  ({r['cond_total']} conditional evaluated)")
+    print(f"[runner] evidence : {len(r['evidence_records'])}/{len(r['req_evidence'])} artifacts emitted  |  trace records: {len(r['req_trace'])}")
+    if r["always_fail"]:
         print("[runner] FAILED always-required gates:")
-        for g in always_fail:
+        for g in r["always_fail"]:
             print(f"    x {g['gate']}: {g['reason']}")
-    print(f"[runner] output   : {os.path.relpath(out_dir, REPO)}")
-    print(f"[runner] VERDICT  : {verdict}")
-    return 0 if verdict == "PASS" else 1
+    print(f"[runner] output   : {os.path.relpath(r['out_dir'], REPO)}")
+    print(f"[runner] VERDICT  : {r['verdict']}")
+    return 0 if r["verdict"] == "PASS" else 1
 
 
 if __name__ == "__main__":

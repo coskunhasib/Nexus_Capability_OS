@@ -202,6 +202,64 @@ def main():
         elif refs:
             ok(f"all {len(refs)} declared deps bundled (self-contained)")
 
+    # --- coherence checks (step 4): artifact chain + gate producers ---
+    stage_docs = {}
+    if os.path.isdir(sdir):
+        for fn in sorted(os.listdir(sdir)):
+            if fn.lower().endswith((".yaml", ".yml")):
+                sc = load_yaml(os.path.join(sdir, fn)) or {}
+                stage_docs[sc.get("stage_id") or stage_key(fn)] = sc
+    if stage_docs:
+        produced_out, produced_ev = set(), set()
+        for sc in stage_docs.values():
+            for o in (sc.get("outputs") or []):
+                produced_out.add(o)
+            for e2 in (sc.get("evidence") or []):
+                produced_ev.add(e2)
+        producible = produced_out | produced_ev
+        # (a) required_evidence coverage (ERROR, precise): every required_evidence artifact must be
+        #     produced by some stage; otherwise the runner silently attributes it to "pipeline" + stubs it.
+        req_ev = (pdef or {}).get("required_evidence", []) or []
+        ev_gap = [a for a in req_ev if a not in producible]
+        if ev_gap:
+            err(f"{len(ev_gap)} required_evidence artifact(s) produced by no stage: {ev_gap[:8]}")
+        elif req_ev:
+            ok(f"all {len(req_ev)} required_evidence artifacts produced by a stage")
+        # (b) unbroken chain (WARNING, heuristic): inputs not produced by any stage and not a
+        #     first-stage entry artifact are likely legitimate externals (RUNBOOK, DELETION_REQUEST,
+        #     ALL_STAGE_GATE_RESULTS, ...) — surface them to confirm intent, do not fail the build.
+        ordered = [s for s in stage_ids if s in stage_docs] or list(stage_docs)
+        entry_artifacts = set(stage_docs.get(ordered[0], {}).get("inputs") or [])
+        stranded = []
+        for sid, sc in stage_docs.items():
+            for inp in (sc.get("inputs") or []):
+                if inp not in produced_out and inp not in entry_artifacts:
+                    stranded.append(f"{sid}<-{inp}")
+        if stranded:
+            warn(f"{len(stranded)} stage input(s) not produced by any stage (confirm external/entry): {stranded[:8]}")
+        else:
+            ok("artifact chain unbroken (every stage input produced upstream or an entry artifact)")
+        # (c) gate producer coverage (ERROR): a required gate with NO producing stage would silently mock-pass at runtime
+        stage_gate_union = set()
+        for sc in stage_docs.values():
+            for gg in (sc.get("gates") or []):
+                stage_gate_union.add(gg if isinstance(gg, str) else (gg.get("id") or gg.get("gate")))
+        prod_map = {}
+        rr = os.path.join(CFG, f"{man.get('pipeline_id')}_runtime_rules.yaml")
+        if os.path.exists(rr):
+            for e in (((load_yaml(rr) or {}).get("required_gate_producers") or {}).get("gates") or []):
+                if isinstance(e, dict) and e.get("gate"):
+                    prod_map[e["gate"]] = e.get("producing_stage")
+        req_g = (load_yaml(gpath) or {}).get("required_gates", {}) if os.path.exists(gpath) else {}
+        req_all = (req_g.get("always") or []) + (req_g.get("conditional") or [])
+        no_producer = [g for g in req_all if g not in stage_gate_union
+                       and prod_map.get(g) not in stage_docs
+                       and prod_map.get(g) not in ("pipeline", "policy")]
+        if no_producer:
+            err(f"{len(no_producer)} required gate(s) have no producing stage (would silently mock-pass): {no_producer}")
+        elif req_all:
+            ok(f"all {len(req_all)} required gates have a producing stage")
+
     # report
     print(f"[validator] package: {os.path.relpath(pkg, REPO)}")
     print(f"[validator] {n_ok} checks ok, {len(warnings)} warn, {len(errors)} fail")
