@@ -3,11 +3,13 @@
 # Machine-readable SUMMARY index of ALL Nexus AI pipelines.
 # Top structure is the Nexus AI Orchestration Model; each pipeline below is one catalog entry.
 #
-# SINGLE SOURCE OF TRUTH (R9 reconciliation):
+# SINGLE SOURCE OF TRUTH (R9 reconciliation; updated 2026-06-13):
 #   This catalog is summary-only. The AUTHORITATIVE per-pipeline definition (full Pipeline
-#   Definition Contract — stages, owner_domain, uses_tools, uses_audit_schemas, etc.) lives in
-#   each pipeline's markdown `definition_doc` under docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md
-#   (and, for the SDLC Pipeline, in configs/nexus-ai/sdlc_pipeline.yaml + stages/sdlc/*.yaml).
+#   Definition Contract — stages, owner_domain, uses_tools, uses_audit_schemas, etc.) now lives in
+#   each pipeline's machine-readable YAML: configs/nexus-ai/<pipeline>.yaml + stages/<pipeline>/*.yaml
+#   (all 7 packaged pipelines). The original markdown drafts under
+#   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md are RETAINED for narrative/history
+#   but are NO LONGER authoritative — the YAML defs were upgraded beyond them in the professional-grade pass.
 #   This file MUST NOT re-embed or duplicate that detail. Earlier drafts carried a per-pipeline
 #   `definition_contract` block that diverged from the markdown on stage_count / owner_domain /
 #   uses_tools / uses_audit_schemas; that duplicated detail has been REMOVED so there is exactly
@@ -122,8 +124,8 @@ pipelines:
     status: draft
     required_team_type: research_team
     required_team_lead_role: research_team_lead
-    stage_count: 10
-    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/research-pipeline.md
+    stage_count: 11
+    definition_doc: configs/nexus-ai/research_pipeline.yaml
 
   # =========================================================================
   # 4. ACTIVATION PIPELINE
@@ -136,8 +138,8 @@ pipelines:
     status: draft
     required_team_type: activation_team
     required_team_lead_role: activation_team_lead
-    stage_count: 7
-    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/activation-pipeline.md
+    stage_count: 8
+    definition_doc: configs/nexus-ai/activation_pipeline.yaml
 
   # =========================================================================
   # 5. OPERATIONS PIPELINE
@@ -150,8 +152,8 @@ pipelines:
     status: draft
     required_team_type: operations_team
     required_team_lead_role: operations_team_lead
-    stage_count: 6
-    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/operations-pipeline.md
+    stage_count: 7
+    definition_doc: configs/nexus-ai/operations_pipeline.yaml
 
   # =========================================================================
   # 6. SKILL GOVERNANCE PIPELINE
@@ -164,8 +166,8 @@ pipelines:
     status: draft
     required_team_type: skill_governance_team
     required_team_lead_role: skill_governance_team_lead
-    stage_count: 7   # authoritative definition_doc lists 7 stages (skill_intake..skill_deprecation_update, §1 + §2.1–2.7). README table's "6" is the stale draft-scope value.
-    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/skill-governance-pipeline.md
+    stage_count: 8   # +skill_misuse_redteam (professional-grade upgrade); authoritative def is the YAML below.
+    definition_doc: configs/nexus-ai/skill_governance_pipeline.yaml
 
   # =========================================================================
   # 7. KNOWLEDGE / MEMORY PIPELINE
@@ -178,8 +180,8 @@ pipelines:
     status: draft
     required_team_type: knowledge_team
     required_team_lead_role: knowledge_team_lead
-    stage_count: 6
-    definition_doc: docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/knowledge-memory-pipeline.md
+    stage_count: 7
+    definition_doc: configs/nexus-ai/knowledge_memory_pipeline.yaml
 
 # ---------------------------------------------------------------------------
 # CANDIDATE PIPELINES (doc 16, section 3 — "Aday / sonraki pipeline'lar").

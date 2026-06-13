@@ -1,5 +1,7 @@
 # Activation Pipeline — Catalog Definition
 
+> **⚠️ SUPERSEDED (2026-06-13) — this markdown is no longer authoritative.** The authoritative, machine-readable definition of this pipeline is now `configs/nexus-ai/activation_pipeline.yaml` + its `stages/<...>/` contracts (professional-grade upgrade; **8 stages**). This draft is retained for narrative/history only. See `configs/nexus-ai/pipeline_catalog.yaml` for the authoritative summary catalog.
+
 This is the catalog entry for the **Activation Pipeline** under the Nexus AI Orchestration Model. It follows the Pipeline Definition Contract in [`07-pipeline-contract-standard.md`](../07-pipeline-contract-standard.md) section 2 and applies the Shared Registry + Usage Mapping rule from [`05-shared-registry-and-usage-mapping.md`](../05-shared-registry-and-usage-mapping.md).
 
 Scope: staged activation of a feature / capability / pipeline through **preview → pilot → public**, with rollback readiness and an owner decision gate. This is a **pipeline definition**, not a pipeline run. The SDLC Pipeline is referenced, not regenerated. No plugin is introduced. Core Abilities are capabilities, not agents. `team_lead` is the pipeline-specific `activation_team_lead` role, distinct from the `Supervisor` Core Ability.

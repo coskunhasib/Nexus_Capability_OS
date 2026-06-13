@@ -6,6 +6,8 @@ Bu klasör, **Nexus AI Orchestration Model** altındaki pipeline türlerinin kat
 
 > Bu klasör dokümantasyon/blueprint alanıdır. Runtime kodu, connector, deploy veya merge içermez. Pipeline definition (tanım) ile pipeline run (çalışma örneği) ayrıdır; burada yalnızca pipeline definition'lar kataloglanır.
 
+> **⚠️ SUPERSEDED (2026-06-13).** Bu klasördeki markdown definition'lar **artık authoritative değildir** — taslak dönemi metinleridir. Her pipeline'ın authoritative tanımı makine-okunabilir YAML'dadır: `configs/nexus-ai/<pipeline>.yaml` + `stages/<pipeline>/*.yaml`. Authoritative özet katalog: `configs/nexus-ai/pipeline_catalog.yaml`. Profesyonel-grade geçişte 5 pipeline genişletildi ve **7.** olarak `product_discovery_pipeline` eklendi; aşağıdaki tablo bu yeni gerçeğe göre güncellendi.
+
 ## 1. Kataloğun amacı
 
 Pipeline Catalog şu soruyu cevaplar:
@@ -66,18 +68,19 @@ Kurallar (`07` §5, §14, §15 ve kilitli kararlar):
 - Kavram sınırları korunur: `Skill != Tool`, `Governance != Audit`, `Evidence != Trace`, `Registry != Usage`. Plugin yoktur.
 - Doğru yaklaşım: `shared standard + pipeline-specific specialization`. SDLC formatı diğer pipeline'lara körlemesine kopyalanmaz.
 
-## 3. Katalog (6 pipeline)
+## 3. Katalog (7 pipeline)
 
-Aşağıdaki tablo, ilk pipeline kataloğunu (`16-pipeline-catalog-expansion-plan.md` §3 *Initial Pipeline Catalog*) listeler.
+Aşağıdaki tablo güncel katalogdur (authoritative: `configs/nexus-ai/pipeline_catalog.yaml`). Stage sayıları profesyonel-grade geçiş sonrası **makine-okunabilir YAML def'lerinden** alınmıştır; Definition doc sütunu artık YAML'ı işaret eder.
 
-| Pipeline | Status | Purpose (özet) | Team requirement (`required_team_type` / `required_team_lead_role`) | Stage count | Definition doc |
+| Pipeline | Status | Purpose (özet) | Team requirement (`required_team_type` / `required_team_lead_role`) | Stage count | Definition doc (authoritative) |
 | --- | --- | --- | --- | --- | --- |
-| **SDLC Pipeline** | reference (stable) | Sıfırdan ürün seviyesine yazılım geliştirmeyi no-human governance ile yürütmek. | `sdlc_team` / `sdlc_team_lead` | 31 | [`../08-sdlc-pipeline-contract.md`](../../pipelines/sdlc/08-sdlc-pipeline-contract.md) + [`../../../configs/nexus-ai/stages/sdlc/`](../../../../configs/nexus-ai/stages/sdlc/README.md) |
-| **Research Pipeline** | draft | Kaynaklı araştırma, kaynak güvenilirliği, claim/evidence mapping ve belirsizlik raporu üretmek. | `research_team` / `research_team_lead` | 10 | [`research-pipeline.md`](./research-pipeline.md) |
-| **Activation Pipeline** | draft | Özellik / capability / pipeline aktivasyonunu staged (preview → pilot → public) şekilde yönetmek. | `activation_team` / `activation_team_lead` | 7 | [`activation-pipeline.md`](./activation-pipeline.md) |
-| **Operations Pipeline** | draft | Incident, monitoring, runbook, rollback, postmortem ve operational learning yönetmek. | `operations_team` / `operations_team_lead` | 6 | [`operations-pipeline.md`](./operations-pipeline.md) |
-| **Skill Governance Pipeline** | draft | Skill keşfi, semantic extraction, safety audit, binding, deprecation ve update yönetmek. | `skill_governance_team` / `skill_governance_team_lead` | 7 | [`skill-governance-pipeline.md`](./skill-governance-pipeline.md) |
-| **Knowledge / Memory Pipeline** | draft | Memory ingestion, summarization, validity, expiration, retrieval profile ve context pack yönetmek. | `knowledge_team` / `knowledge_team_lead` | 6 | [`knowledge-memory-pipeline.md`](./knowledge-memory-pipeline.md) |
+| **SDLC Pipeline** | reference (stable) | Sıfırdan ürün seviyesine yazılım geliştirmeyi no-human governance ile yürütmek. | `sdlc_team` / `sdlc_team_lead` | 31 | `configs/nexus-ai/sdlc_pipeline.yaml` + `stages/sdlc/` |
+| **Product Discovery Pipeline** | draft | Ham fikri kill-friendly keşiften GO/NO_GO kararına götürmek; GO'da sdlc'ye PRODUCT_BRIEF devri (sdlc'nin ön-aşaması). NO_GO şerefli terminal. | `discovery_team` / `discovery_team_lead` | 7 | `configs/nexus-ai/product_discovery_pipeline.yaml` + `stages/product-discovery/` |
+| **Research Pipeline** | draft | Kaynaklı araştırma, kaynak güvenilirliği, claim/evidence mapping ve belirsizlik raporu üretmek. | `research_team` / `research_team_lead` | 11 | `configs/nexus-ai/research_pipeline.yaml` + `stages/research/` |
+| **Activation Pipeline** | draft | Özellik / capability / pipeline aktivasyonunu staged (preview → pilot → public) şekilde yönetmek. | `activation_team` / `activation_team_lead` | 8 | `configs/nexus-ai/activation_pipeline.yaml` + `stages/activation/` |
+| **Operations Pipeline** | draft | Incident, monitoring, runbook, rollback, postmortem ve operational learning yönetmek. | `operations_team` / `operations_team_lead` | 7 | `configs/nexus-ai/operations_pipeline.yaml` + `stages/operations/` |
+| **Skill Governance Pipeline** | draft | Skill keşfi, semantic extraction, safety audit, binding, deprecation ve update yönetmek. | `skill_governance_team` / `skill_governance_team_lead` | 8 | `configs/nexus-ai/skill_governance_pipeline.yaml` + `stages/skill-governance/` |
+| **Knowledge / Memory Pipeline** | draft | Memory ingestion, summarization, validity, expiration, retrieval profile ve context pack yönetmek. | `knowledge_team` / `knowledge_team_lead` | 7 | `configs/nexus-ai/knowledge_memory_pipeline.yaml` + `stages/knowledge-memory/` |
 
 Notlar:
 

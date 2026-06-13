@@ -1,5 +1,7 @@
 # Operations Pipeline — Catalog Definition
 
+> **⚠️ SUPERSEDED (2026-06-13) — this markdown is no longer authoritative.** The authoritative, machine-readable definition of this pipeline is now `configs/nexus-ai/operations_pipeline.yaml` + its `stages/<...>/` contracts (professional-grade upgrade; **7 stages**). This draft is retained for narrative/history only. See `configs/nexus-ai/pipeline_catalog.yaml` for the authoritative summary catalog.
+
 This document is the catalog entry for the **Operations Pipeline** within the
 **Nexus AI Orchestration Model**. It follows the Pipeline Definition Contract
 defined in [`07-pipeline-contract-standard.md`](../07-pipeline-contract-standard.md)

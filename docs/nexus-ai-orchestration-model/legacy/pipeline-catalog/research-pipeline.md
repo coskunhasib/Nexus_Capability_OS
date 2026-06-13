@@ -1,5 +1,7 @@
 # Research Pipeline — Catalog Definition
 
+> **⚠️ SUPERSEDED (2026-06-13) — this markdown is no longer authoritative.** The authoritative, machine-readable definition of this pipeline is now `configs/nexus-ai/research_pipeline.yaml` + its `stages/<...>/` contracts (professional-grade upgrade; **11 stages**). This draft is retained for narrative/history only. See `configs/nexus-ai/pipeline_catalog.yaml` for the authoritative summary catalog.
+
 This document is a **catalog entry** in the Nexus AI Orchestration Model. It defines the
 Research Pipeline as a reusable process template that follows the Pipeline Definition Contract
 in `docs/ai-sdlc-factory/07-pipeline-contract-standard.md` section 2.

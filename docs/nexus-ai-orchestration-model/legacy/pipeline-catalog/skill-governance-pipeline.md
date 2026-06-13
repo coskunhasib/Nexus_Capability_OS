@@ -1,5 +1,7 @@
 # Skill Governance Pipeline — Catalog Definition
 
+> **⚠️ SUPERSEDED (2026-06-13) — this markdown is no longer authoritative.** The authoritative, machine-readable definition of this pipeline is now `configs/nexus-ai/skill_governance_pipeline.yaml` + its `stages/<...>/` contracts (professional-grade upgrade; **8 stages**). This draft is retained for narrative/history only. See `configs/nexus-ai/pipeline_catalog.yaml` for the authoritative summary catalog.
+
 Bu doküman, Nexus AI Orchestration Model altındaki **Skill Governance Pipeline** için katalog girişidir (Phase B / doc 16, Initial Pipeline Catalog).
 
 Bu giriş `07-pipeline-contract-standard.md` bölüm 2'deki Pipeline Definition Contract'ı birebir takip eder. Pipeline, Nexus AI altındaki katalog girişlerinden biridir; üst yapı SDLC değil, Nexus AI Orchestration Model'dir.

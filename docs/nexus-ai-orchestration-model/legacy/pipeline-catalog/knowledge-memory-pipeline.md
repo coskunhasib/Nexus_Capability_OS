@@ -1,5 +1,7 @@
 # Knowledge / Memory Pipeline — Catalog Definition
 
+> **⚠️ SUPERSEDED (2026-06-13) — this markdown is no longer authoritative.** The authoritative, machine-readable definition of this pipeline is now `configs/nexus-ai/knowledge_memory_pipeline.yaml` + its `stages/<...>/` contracts (professional-grade upgrade; **7 stages**). This draft is retained for narrative/history only. See `configs/nexus-ai/pipeline_catalog.yaml` for the authoritative summary catalog.
+
 This document is one catalog entry inside the **Nexus AI Orchestration Model**. It defines the
 Knowledge / Memory Pipeline using the **Pipeline Definition Contract** from
 `docs/ai-sdlc-factory/07-pipeline-contract-standard.md` (section 2).
