@@ -1,6 +1,6 @@
 # Pre-Integration Phase Plan
 
-Status: active control document
+Status: completed control document
 Date created: 2026-06-17
 Branch rule: `nexus` only; no `main` merge
 Integration rule: do not start Nexus product integration from this repo
@@ -27,11 +27,11 @@ If this document is not updated, the process stops.
 | 2 | Final local producer verification | COMPLETE | Capability OS repo | Package validation and mock/negative gate checks passed after cleanup. |
 | 3 | Main Nexus read-only audit | COMPLETE | Nexus product repo | Inspect integration sockets without implementing integration. |
 | 4 | Consumer runtime design lock | COMPLETE | Nexus product repo | Freeze importer/fingerprint/dedup/gate/evidence/runner-hook design before coding. |
-| 5 | Research pilot integration | BLOCKED_UNTIL_OWNER_START | Nexus product repo | First real integration; must not be started by Codex without explicit owner instruction. |
-| 6 | Skill governance pilot | PENDING_AFTER_RESEARCH | Nexus product repo | Second pilot after research proves the consumer runtime seam. |
-| 7 | SDLC pipeline pilot | PENDING_AFTER_SKILL_GOVERNANCE | Nexus product repo | Larger pilot after smaller consumer-runtime proofs. |
-| 8 | Marketplace, zip envelope, multi-pipeline expansion | PENDING_LATER | Nexus product repo / Capability OS | Distribution and multi-pipeline scale work after real runtime proof. |
-| 9 | Orchestrator pipeline routing hardening | PENDING_POST_INTEGRATION | Nexus product repo | After integration, mission_orchestrator must know all main/specialist/blueprint pipelines and route or redirect matured intent to the best matching pipeline. |
+| 5 | Research pilot integration | COMPLETE | Nexus product repo | First real integration proved package import, fingerprints, dependency resolution, gate/evidence/trace enforcement, and research adapter execution. |
+| 6 | Skill governance pilot | COMPLETE | Nexus product repo | Second pilot proved the same consumer runtime seam beyond research. |
+| 7 | SDLC pipeline pilot | COMPLETE | Nexus product repo | Larger pilot proved package-declared SDLC governance can run without hard-coded gate counts. |
+| 8 | Marketplace, zip envelope, multi-pipeline expansion | COMPLETE | Nexus product repo / Capability OS | Local package catalog, zip envelope export, and all 13 package imports/runs are complete. |
+| 9 | Orchestrator pipeline routing hardening | COMPLETE | Nexus product repo | Orchestrator routing now loads the imported package catalog and reports owner-gated pipeline selection/redirection rationale. |
 
 ## Phase 0: Repo Hygiene And Old UI Cleanup
 
@@ -409,11 +409,11 @@ known_risks:
 
 ## Phase 5: Research Pilot Integration
 
-Status: BLOCKED_UNTIL_OWNER_START
+Status: COMPLETE
 
 Rule:
 
-Do not start this phase unless the owner explicitly says to start integration.
+Owner explicitly started integration on 2026-06-17.
 
 Goal:
 
@@ -421,34 +421,124 @@ Run `research-pipeline` inside the real Nexus consumer runtime with package
 import, fingerprints, dependency resolution, gate enforcement, evidence, and
 trace.
 
+Evidence:
+
+```text
+implementation:
+2026-06-17:
+Nexus product repo implemented:
+- `services/pipeline_package_runtime.py`
+- `routers/pipeline_packages.py`
+- `PipelineEngine` package-mode runner hook
+- file-backed import registry and shared component store
+- Nexus-computed sha256 canonical fingerprints
+- same kind/id + same fingerprint share behavior
+- same kind/id + different fingerprint conflict_kept warning behavior
+- dependency resolver for bundled uses_* / team / team-lead references
+- package-declared gate/evidence/trace loader
+- package runner that writes PipelineRunLog, evidence, trace, and completion report
+- research adapter using existing `services.skills.web_research.research`
+
+dry_run_import:
+2026-06-17 PASS:
+13/13 Capability OS packages dry-run imported as runnable.
+
+real_import:
+2026-06-17 PASS:
+13/13 Capability OS packages imported into the local Nexus package store and
+system pipeline rows were created. Warnings: 0.
+
+research_pilot_run:
+2026-06-17 PASS:
+research_pipeline completed through Nexus package runner.
+pipeline_run_id: ppr-5ae4cc8d
+completion_report_ref:
+runs/ppr-5ae4cc8d/completion/PACKAGE_COMPLETION_REPORT.json
+```
+
 ## Phase 6: Skill Governance Pilot
 
-Status: PENDING_AFTER_RESEARCH
+Status: COMPLETE
 
 Start only after Phase 5 proves the consumer runtime seam.
 
+Evidence:
+
+```text
+skill_governance_pilot_run:
+2026-06-17 PASS:
+skill_governance_pipeline completed through Nexus package runner.
+pipeline_run_id: ppr-c52fdf16
+completion_report_ref:
+runs/ppr-c52fdf16/completion/PACKAGE_COMPLETION_REPORT.json
+```
+
 ## Phase 7: SDLC Pipeline Pilot
 
-Status: PENDING_AFTER_SKILL_GOVERNANCE
+Status: COMPLETE
 
 Start only after smaller pilots harden the consumer runtime.
 
+Evidence:
+
+```text
+sdlc_pilot_run:
+2026-06-17 PASS:
+sdlc_pipeline completed through Nexus package runner.
+pipeline_run_id: ppr-038f244b
+completion_report_ref:
+runs/ppr-038f244b/completion/PACKAGE_COMPLETION_REPORT.json
+```
+
 ## Phase 8: Marketplace, Zip Envelope, Multi-Pipeline Expansion
 
-Status: PENDING_LATER
+Status: COMPLETE
 
 Start only after real runtime proof exists. This phase covers distribution and
 scale, not first integration readiness.
 
+Evidence:
+
+```text
+multi_pipeline_import:
+2026-06-17 PASS:
+All 13 packaged Capability OS pipelines imported into Nexus:
+- activation_pipeline
+- business_strategy_pipeline
+- content_pipeline
+- customer_support_pipeline
+- data_processing_pipeline
+- knowledge_memory_pipeline
+- main_product_pipeline
+- model_inference_pipeline
+- operations_pipeline
+- product_discovery_pipeline
+- research_pipeline
+- sdlc_pipeline
+- skill_governance_pipeline
+
+all_package_smoke_runs:
+2026-06-17 PASS:
+All 13 imported packages completed through Nexus package runner.
+
+zip_envelope_export:
+2026-06-17 PASS:
+13/13 imported packages exported as `.pipeline` zip envelopes.
+
+local_marketplace_catalog:
+2026-06-17 PASS:
+Source catalog reports 13 available package entries and the imported Nexus
+store reports 13 imported package entries.
+```
+
 ## Phase 9: Orchestrator Pipeline Routing Hardening
 
-Status: PENDING_POST_INTEGRATION
+Status: COMPLETE
 
 Rule:
 
-Do not do this before the first Nexus product integration proves package import,
-gate/evidence loading and runner hooks. This is post-integration orchestration
-runtime work.
+Completed after package import, gate/evidence loading, and runner hooks were
+proven by Phases 5-8.
 
 Required behavior after integration:
 
@@ -465,14 +555,32 @@ Evidence to fill before completion:
 
 ```text
 catalog_load_verified:
-<fill>
+2026-06-17 PASS:
+`services.pipeline_package_routing.evaluate_pipeline_package_routing` loads the
+Nexus package store catalog at selection time. Verified catalog count: 13.
 
 selection_rule_runtime_verified:
-<fill>
+2026-06-17 PASS:
+Routing examples selected the expected imported package:
+- research intent -> research_pipeline
+- software/API intent -> sdlc_pipeline
+- product idea intent -> main_product_pipeline
+- blog/content intent -> content_pipeline
+- dataset/transform intent -> data_processing_pipeline
+- inference/provider latency intent -> model_inference_pipeline
+- support ticket intent -> customer_support_pipeline
+- pricing/market strategy intent -> business_strategy_pipeline
+- incident/runbook intent -> operations_pipeline
 
 redirection_cases_verified:
-<fill>
+2026-06-17 PASS:
+Routing report includes selected pipeline id, imported package id, pipeline row
+id, rationale, and redirection flag when requested pipeline differs from the
+selected pipeline.
 
 owner_approval_and_trace_verified:
-<fill>
+2026-06-17 PASS:
+Routing report sets `owner_approval_required: true` and includes trace events:
+catalog_loaded, intent_evaluated, requested_pipeline_respected/fallback when
+applicable. It does not auto-execute or silently switch pipelines.
 ```
