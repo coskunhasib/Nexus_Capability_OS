@@ -1,0 +1,42 @@
+version: draft-0.1
+stage_id: product_discovery_or_brief_validation
+name: Product Discovery Or Brief Validation
+purpose: >-
+  Either delegate to product discovery for immature ideas or validate an already
+  mature product brief before production planning.
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: business_case_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Web, Memory]
+uses_skills: [gap-audit, calibrate, handoff-designer]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, source_reliability_checker]
+uses_governance_profiles: [discovery_pipeline_governance, problem_evidence_gate, evidence_required_policy]
+uses_audit_schemas: [discovery_evidence_schema, source_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile, risk_analysis_model]
+uses_context_memory_profiles: [discovery_run_context, business_case_context_pack]
+inputs:
+  - PRODUCT_INTENT_BRIEF_REFINED
+  - DISCOVERY_APPLICABILITY_DECISION
+outputs:
+  - PRODUCT_BRIEF
+  - PRODUCT_BRIEF_VALIDATION_REPORT
+  - DISCOVERY_OR_VALIDATION_GATE_RESULT
+evidence:
+  - PRODUCT_BRIEF
+  - PRODUCT_BRIEF_VALIDATION_REPORT
+trace:
+  - specialist_pipeline_routing_trace
+  - handoff_trace
+  - stage_gate_decision_trace
+gates:
+  - product_brief_validated_or_discovery_completed
+on_pass: production_plan_and_pipeline_routing
+on_fail: idea_shaping_if_needed
+rework_route: idea_shaping_if_needed
+blocking_conditions:
+  - product_brief_missing
+  - discovery_required_but_not_completed
+  - product_brief_validation_failed
+conditional_required_gates: []
+max_iterations: 3

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: triage_and_classification
+name: Triage And Classification
+purpose: Classify severity, account context, production impact, and escalation applicability.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: severity_classification_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [sentinel, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, policy_query]
+uses_governance_profiles: [operations_pipeline_governance, mitigation_plan_required_gate, evidence_required_policy]
+uses_audit_schemas: [severity_classification_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model, risk_analysis_model]
+uses_context_memory_profiles: [incident_context_pack]
+inputs: [SUPPORT_REQUEST_RECORD, REQUESTER_CONTEXT_RECORD]
+outputs: [SUPPORT_TRIAGE_REPORT, ESCALATION_APPLICABILITY_DECISION]
+evidence: [SUPPORT_TRIAGE_REPORT]
+trace: [support_triage_trace, escalation_decision_trace, stage_gate_decision_trace]
+gates: [severity_and_account_context_classified, incident_escalation_if_production_issue]
+on_pass: resolution_plan
+on_fail: support_intake
+rework_route: support_intake
+blocking_conditions: [support_request_unclassified, escalation_required_but_unassessed]
+conditional_required_gates: [incident_escalation_if_production_issue]
+max_iterations: 3

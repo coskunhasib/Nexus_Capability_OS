@@ -1,0 +1,48 @@
+id: operations_pipeline_governance
+name: Operations Pipeline Governance
+type: pipeline_governance_profile
+status: candidate
+purpose: 'Umbrella governance for the Operations Pipeline: incident severity classification
+  mandatory; active incident must have a mitigation plan; rollback/fix must carry
+  runbook or rollback evidence; postmortem mandatory (03 §4; operations-pipeline.md
+  §3.2).'
+owner_domain: operations_reliability
+allowed_usage:
+- Bind at the Operations Pipeline level and re-show under each operations stage.
+- Govern incident handling -> mitigation -> rollback/fix -> postmortem -> learning
+  invariants.
+forbidden_usage:
+- Used outside the Operations Pipeline.
+- Used to skip a mandatory postmortem for qualifying severities.
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- incident_evidence_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- operations_pipeline
+- incident_intake
+- severity_classification
+- mitigation_plan
+- rollback_or_fix
+- postmortem
+- learning_update
+severity_default: blocker
+used_by:
+- operations_pipeline
+- incident_intake
+- severity_classification
+- mitigation_plan
+- rollback_or_fix
+- postmortem
+- learning_update
+aliases:
+- incident_response_governance
+notes: NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. The pre-R9 catalog-YAML
+  definition_contract used the divergent name `incident_response_governance` (F-1);
+  markdown `operations_pipeline_governance` is canonical-source. After the R9 reconciliation
+  collapsed pipeline_catalog.yaml into a summary-only catalog (no per-pipeline definition_contract
+  blocks), the authoritative per-pipeline source is the markdown definition_doc; the
+  divergent name is retained under aliases only as the historical reconciliation record.

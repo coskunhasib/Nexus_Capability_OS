@@ -1,0 +1,37 @@
+version: draft-0.1
+stage_id: release_candidate_preparation
+name: Release Candidate Preparation
+purpose: >-
+  Assemble the release candidate or delivery handoff evidence and decide whether
+  the work is ready for delivery or activation.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: release_manager_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory, OS]
+uses_skills: [gap-audit, calibrate, handoff-designer]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, evidence_consistency_checker]
+uses_governance_profiles: [release_candidate_governance, release_governance, evidence_required_policy]
+uses_audit_schemas: [release_evidence_schema, release_decision_trace_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [release_reasoning_model, supervisor_routing_model]
+uses_context_memory_profiles: [release_context_pack, sdlc_run_context]
+inputs:
+  - VERIFICATION_HARDENING_REPORT
+outputs:
+  - RELEASE_CANDIDATE_OR_DELIVERY_HANDOFF
+  - RELEASE_READINESS_DECISION
+evidence:
+  - RELEASE_CANDIDATE_OR_DELIVERY_HANDOFF
+trace:
+  - release_decision_trace_schema
+  - stage_gate_decision_trace
+gates:
+  - release_candidate_or_delivery_handoff_complete
+on_pass: activation_or_handoff
+on_fail: verification_hardening_and_revision
+rework_route: verification_hardening_and_revision
+blocking_conditions:
+  - release_candidate_or_delivery_handoff_missing
+  - release_evidence_inconsistent
+conditional_required_gates: []
+max_iterations: 3

@@ -1,0 +1,13 @@
+required_evidence:
+- STRATEGY_BRIEF
+- OPTION_SET
+- MARKET_EVIDENCE_REPORT
+- STRATEGY_RISK_REGISTER
+- DECISION_RECOMMENDATION
+- STRATEGY_COMPLETION_REPORT
+required_trace:
+- strategy_framing_trace
+- market_evidence_trace
+- risk_tradeoff_trace
+- owner_decision_trace
+- stage_gate_decision_trace

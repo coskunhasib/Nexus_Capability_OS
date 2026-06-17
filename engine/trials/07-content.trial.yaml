@@ -1,0 +1,7 @@
+id: content-governed-draft
+intent: "kaynaklı bir blog içerik paketi ve article draft hazırla"
+expected:
+  pipeline_id: content_pipeline
+  package: packages/content-pipeline
+  gates_always: 7
+  stages: 5

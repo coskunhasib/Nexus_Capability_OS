@@ -1,0 +1,40 @@
+version: draft-0.1
+stage_id: activation_or_handoff
+name: Activation Or Handoff
+purpose: >-
+  Route the completed delivery either to activation or to a delivery-only
+  handoff, preserving owner approval and activation applicability.
+owner_team: activation_team
+team_lead: activation_team_lead
+owner_agent: activation_intake_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [sentinel, gap-audit, handoff-designer]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, policy_query]
+uses_governance_profiles: [activation_pipeline_governance, orchestration_governance, evidence_required_policy]
+uses_audit_schemas: [activation_evidence_schema, activation_transition_trace_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [activation_reasoning_model, supervisor_routing_model]
+uses_context_memory_profiles: [activation_run_context, release_context_pack]
+inputs:
+  - RELEASE_CANDIDATE_OR_DELIVERY_HANDOFF
+  - RELEASE_READINESS_DECISION
+outputs:
+  - ACTIVATION_HANDOFF_IF_REQUESTED
+  - DELIVERY_ONLY_HANDOFF_IF_NOT_ACTIVATED
+evidence:
+  - ACTIVATION_HANDOFF_IF_REQUESTED
+trace:
+  - handoff_trace
+  - specialist_pipeline_routing_trace
+  - stage_gate_decision_trace
+gates:
+  - activation_required_if_public_or_staged_rollout_requested
+on_pass: learning_memory_update
+on_fail: release_candidate_preparation
+rework_route: release_candidate_preparation
+blocking_conditions:
+  - activation_attempted_without_release_candidate_evidence
+  - activation_handoff_missing_when_requested
+conditional_required_gates:
+  - activation_required_if_public_or_staged_rollout_requested
+max_iterations: 3

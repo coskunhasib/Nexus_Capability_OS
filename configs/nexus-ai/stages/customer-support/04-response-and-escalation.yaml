@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: response_and_escalation
+name: Response And Escalation
+purpose: Review and record the customer response, escalation handoff if needed, and owner-visible rationale.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: incident_response_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [prompt-fidelity, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, policy_query]
+uses_governance_profiles: [operations_pipeline_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [rollback_fix_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model, supervisor_routing_model]
+uses_context_memory_profiles: [incident_context_pack]
+inputs: [RESOLUTION_PLAN, RESPONSE_REVIEW_CRITERIA]
+outputs: [CUSTOMER_RESPONSE_RECORD, ESCALATION_RECORD_IF_REQUIRED]
+evidence: [CUSTOMER_RESPONSE_RECORD, ESCALATION_RECORD_IF_REQUIRED]
+trace: [customer_response_trace, escalation_decision_trace, stage_gate_decision_trace]
+gates: [response_reviewed, escalation_recorded_if_required]
+on_pass: support_completion_learning
+on_fail: resolution_plan
+rework_route: resolution_plan
+blocking_conditions: [unsafe_or_unreviewed_customer_response, escalation_required_but_missing]
+conditional_required_gates: []
+max_iterations: 3

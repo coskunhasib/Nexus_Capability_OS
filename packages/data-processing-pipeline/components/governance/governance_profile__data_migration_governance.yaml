@@ -1,0 +1,27 @@
+id: data_migration_governance
+name: Data Migration Governance
+type: stage_governance_profile
+status: canonical
+purpose: Stage-22 LOCKED canonical governance over data migration validation (lossy
+  / irreversible / ordering / idempotency defects), conditional if applicable.
+owner_domain: data_engineering
+allowed_usage:
+- Govern the data_migration_validation stage when applicable.
+forbidden_usage:
+- Used outside the data migration validation stage.
+governance_profiles:
+- sdlc_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- data_migration_validation_if_applicable
+severity_default: blocker
+used_by:
+- data_migration_validation_if_applicable
+- sdlc_pipeline
+notes: Co-listed with rollback_required_gate and data_integrity_gate (stage 22). Uses
+  verification-loop (defect finding).

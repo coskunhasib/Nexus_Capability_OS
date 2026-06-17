@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: transform_and_validation_plan
+name: Transform And Validation Plan
+purpose: Define the transformation, validation, rollback, and resource plan before execution.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: engineering_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Coder, OS]
+uses_skills: [fmea, sentinel, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, resource_budget_checker]
+uses_governance_profiles: [implementation_governance, data_migration_governance, evidence_required_policy]
+uses_audit_schemas: [migration_evidence_schema, rollback_validation_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile, risk_analysis_model]
+uses_context_memory_profiles: [implementation_context_pack]
+inputs: [DATA_QUALITY_PROFILE, DATA_VALIDATION_THRESHOLDS]
+outputs: [TRANSFORMATION_PLAN, ROLLBACK_OR_REPLAY_PLAN]
+evidence: [TRANSFORMATION_PLAN]
+trace: [rollback_readiness_trace, stage_gate_decision_trace]
+gates: [transformation_plan_reviewed, rollback_plan_if_destructive_transform]
+on_pass: processing_execution
+on_fail: schema_and_quality_profile
+rework_route: schema_and_quality_profile
+blocking_conditions: [transformation_plan_missing, destructive_transform_without_rollback_plan]
+conditional_required_gates: [rollback_plan_if_destructive_transform]
+max_iterations: 3

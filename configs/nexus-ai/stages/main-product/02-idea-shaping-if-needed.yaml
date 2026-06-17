@@ -1,0 +1,41 @@
+version: draft-0.1
+stage_id: idea_shaping_if_needed
+name: Idea Shaping If Needed
+purpose: >-
+  Mature only ideas that need shaping, while explicitly allowing mature product
+  briefs to continue without forced discovery.
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: discovery_intake_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory, Web]
+uses_skills: [prism, fermi-decompose, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader]
+uses_governance_profiles: [discovery_pipeline_governance, orchestration_governance, evidence_required_policy]
+uses_audit_schemas: [discovery_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile, supervisor_routing_model]
+uses_context_memory_profiles: [discovery_run_context, business_case_context_pack]
+inputs:
+  - PRODUCT_INTENT_BRIEF
+  - IDEA_MATURITY_ASSESSMENT
+outputs:
+  - IDEA_SHAPING_DECISION
+  - DISCOVERY_APPLICABILITY_DECISION
+  - PRODUCT_INTENT_BRIEF_REFINED
+evidence:
+  - IDEA_SHAPING_DECISION
+trace:
+  - specialist_pipeline_routing_trace
+  - stage_gate_decision_trace
+gates:
+  - mature_idea_not_forced_through_unneeded_discovery
+  - discovery_required_if_idea_immature
+on_pass: product_discovery_or_brief_validation
+on_fail: entry_readiness_and_owner_approval_check
+rework_route: entry_readiness_and_owner_approval_check
+blocking_conditions:
+  - mature_idea_forced_through_unneeded_discovery
+  - immature_idea_advanced_without_acknowledged_risk
+conditional_required_gates:
+  - discovery_required_if_idea_immature
+max_iterations: 3

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: evaluation_harness_setup
+name: Evaluation Harness Setup
+purpose: Define evaluation cases, quality thresholds, calibration checks, and monitoring criteria.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: qa_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Coder, OS]
+uses_skills: [calibrate, verification-loop, gap-audit]
+uses_tools: [test_runner, artifact_writer, evidence_writer, evidence_reader]
+uses_governance_profiles: [verification_governance, model_invocation_governance, evidence_required_policy]
+uses_audit_schemas: [test_execution_evidence_schema, evidence_item_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile, operations_analysis_model]
+uses_context_memory_profiles: [verification_context_pack]
+inputs: [ROUTING_POLICY, FALLBACK_POLICY, SAFETY_APPLICABILITY_DECISION]
+outputs: [MODEL_EVALUATION_PLAN, MONITORING_CRITERIA]
+evidence: [MODEL_EVALUATION_PLAN]
+trace: [model_invocation_trace_schema, stage_gate_decision_trace]
+gates: [evaluation_harness_ready]
+on_pass: inference_execution_monitoring
+on_fail: routing_and_provider_plan
+rework_route: routing_and_provider_plan
+blocking_conditions: [evaluation_harness_missing, quality_thresholds_missing]
+conditional_required_gates: []
+max_iterations: 3

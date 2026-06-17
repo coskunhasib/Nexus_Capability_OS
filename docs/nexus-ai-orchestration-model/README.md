@@ -24,7 +24,11 @@ Not:
 SDLC Factory
 ```
 
-SDLC is only one pipeline under Nexus AI. The Mission System, Coordination System, Governance, Audit, Shared Registry, user-facing terminology, post-launch frontier backlog, protocol/security/evaluation ideas and runtime execution contracts are **top-level Nexus AI standards**, not SDLC-only standards.
+`main_product_pipeline` is the primary user-facing product journey under Nexus AI. SDLC is a
+specialist build/engineering pipeline that can be delegated to by that main journey. The Mission
+System, Coordination System, Governance, Audit, Shared Registry, user-facing terminology,
+post-launch frontier backlog, protocol/security/evaluation ideas and runtime execution contracts are
+**top-level Nexus AI standards**, not SDLC-only standards.
 
 ## Canonical interpretation rule
 
@@ -41,7 +45,10 @@ Nexus AI Orchestration Model
 ├── Mission System
 ├── Shared Registry System
 ├── Pipeline System
-│   └── SDLC Pipeline is only one pipeline type
+│   ├── Main Product Pipeline is the primary product journey
+│   └── Specialist pipelines include SDLC, Discovery, Research, Activation, Operations,
+│       Skill Governance, Knowledge/Memory, Content, Data Processing, Model/Inference,
+│       Customer Support and Business/Strategy
 ├── Team System
 ├── Core Abilities Layer
 ├── Skills and Tools Layer
@@ -62,6 +69,8 @@ docs/nexus-ai-orchestration-model/23-coordination-system-and-runtime-gap-closure
 docs/nexus-ai-orchestration-model/24-mission-system-and-user-facing-runtime-model.md
 docs/nexus-ai-orchestration-model/25-mission-runtime-gap-closure-audit.md
 docs/nexus-ai-orchestration-model/26-post-launch-frontier-backlog-and-reassessment-plan.md
+docs/nexus-ai-orchestration-model/packaging/
+configs/nexus-ai/main_product_pipeline.yaml
 configs/nexus-ai/*.yaml
 .memory/*.md
 ```

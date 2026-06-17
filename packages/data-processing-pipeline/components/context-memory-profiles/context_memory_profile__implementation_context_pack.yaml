@@ -1,0 +1,60 @@
+id: implementation_context_pack
+name: Implementation Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'The changeset/implementation working context: CODE_CHANGESET_SUMMARY, IMPLEMENTATION_NOTES,
+  LOCAL_BUILD_RESULT, TOOL_PERMISSION_MAP, CONTEXT_POLICY and any conditional change
+  reports (data-model/migration/API/UI/resource-usage). Seeded by planning, produced
+  by implementation, and consumed by code review, test generation/execution, bug finding,
+  agentic-safety, contract/migration/accessibility/performance validation.'
+owner_domain: sdlc
+allowed_usage:
+- read_by_implementation_review_test_and_validation_stages
+- expose_changeset_tool_permission_map_and_context_policy
+forbidden_usage:
+- used_as_the_release_decision_context
+- used_to_grant_tool_access_beyond_the_tool_permission_map
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_implementation_artifacts
+- architecture_context_pack
+- requirements_context_pack
+- sdlc_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_changeset_under_work
+- tool_permission_map_and_context_policy_are_authoritative_for_tool_access
+redaction_rules:
+- no_raw_secrets
+- strip_secrets_from_diffs_and_logs
+governance_profiles:
+- implementation_governance
+- context_access_governance
+- no_silent_mutation_policy
+audit_schemas:
+- implementation_evidence_schema
+- tool_call_trace_schema
+- context_usage_trace_schema
+used_by:
+- sdlc_pipeline
+- stage:planning
+- stage:implementation
+- stage:code_review
+- stage:test_generation
+- stage:test_execution
+- stage:verification_loop_bug_finding
+- stage:ai_agent_safety_evaluation
+- stage:api_contract_compatibility_validation
+- stage:data_migration_validation_if_applicable
+- stage:accessibility_ux_validation_if_applicable
+- stage:performance_resilience
+aliases:
+- planning_context_pack
+- code_review_context_pack
+- ux_accessibility_context_pack
+notes: Canonical changeset pack. Many legacy stage packs reconciled partly here (the
+  changeset/tool-permission portion). Legacy names that split across multiple canonical
+  packs are recorded in reconciliation notes rather than as read-time aliases. See
+  stage headers 12/13/14/18/20/22/23/24 for the exact splits.

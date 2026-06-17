@@ -1,0 +1,60 @@
+id: policy_query
+name: Policy Query
+type: tool
+category: tool
+status: canonical
+purpose: Query policy-as-data (forbidden/allowed licenses, breaking-change/deprecation
+  policy, retention, quota/cost-cap, observability/on-call/SLO, governance/regulatory
+  obligations) for gate decisions.
+owner_domain: governance
+provided_by_core_ability: null
+input_schema:
+  policy_domain: string
+  subject: object
+output_schema:
+  policy_result: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- sdlc_team_lead
+- security_privacy_agent
+- code_reviewer_agent
+- supply_chain_agent
+- privacy_agent
+- contract_validation_agent
+- compliance_agent
+- cost_resource_agent
+- operations_readiness_agent
+- release_manager_agent
+- activation_team_lead
+- operations_team_lead
+allowed_usage:
+- Read-only evaluation of policy-as-data; Governance != Audit (this reads governance
+- it does not write audit).
+forbidden_usage:
+- Mutating policy; bypassing a blocking policy result.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  sdlc_stages:
+  - architecture_review
+  - security_privacy_design
+  - code_review
+  - supply_chain_sbom_license
+  - privacy_data_lifecycle_validation
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - cost_resource_governance
+  - operations_readiness
+  - development_completion
+  - release_candidate
+notes: Used by 11 SDLC stages plus activation/operations pipelines. Side-effect-free
+  policy read; the decision it informs is recorded via evidence_writer (Governance
+  != Audit boundary).

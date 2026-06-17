@@ -1,0 +1,41 @@
+id: vision
+name: Vision
+display_name: Vision
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+purpose: 'Visual perception and reasoning capability: inspect rendered UI for contrast,
+  focus indicators, layout, and visual state, and reason over images/visual artifacts.
+  Visual capture from the built/rendered UI is driven by an OS-provided auditor tool;
+  Vision supplies the visual judgement.'
+owner_domain: visual_perception
+model_provider_profiles:
+- vision_model
+exposed_tools: []
+governance_profiles:
+- vision_governance
+- no_secret_read
+audit_schemas:
+- core_ability_invocation_trace_schema
+- accessibility_evidence_schema
+allowed_callers:
+- accessibility_ux_agent
+allowed_usage:
+- inspect_rendered_ui_for_contrast_focus_layout_and_visual_state
+- reason_over_images_and_visual_artifacts
+- support_accessibility_and_ux_visual_validation
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- extracting_secrets_or_pii_from_rendered_content
+- rendering_a_gate_pass_decision_without_evidence
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - accessibility_ux_validation_if_applicable
+  capability_systems:
+  - nexus_ai_capability_system
+notes: 'Vision is bound only by the conditional accessibility/UX validation stage
+  in the current SDLC contract set. Still status: canonical (the NAME is locked, K-003);
+  usage is narrow but real.'

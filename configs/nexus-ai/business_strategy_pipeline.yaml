@@ -1,0 +1,75 @@
+version: draft-0.1
+pipeline_id: business_strategy_pipeline
+name: Business / Strategy Pipeline
+purpose: >-
+  Frame, evidence, stress-test, and decide on business and strategy questions
+  with explicit options, risks, tradeoffs, owner decisions, evidence, and trace.
+status: draft
+owner_domain: business_strategy
+required_team_type: discovery_team
+required_team_lead_role: discovery_team_lead
+applicable_domains: [business_strategy, market_strategy, pricing, partnership, investment_decision]
+risk_profiles: [exploratory, strategic_bet, commercial_bet, regulated_or_high_risk]
+entry_criteria:
+  - strategy_question_present
+  - decision_owner_identified
+  - decision_horizon_known
+exit_criteria:
+  - strategy_question_bounded
+  - option_set_complete
+  - market_evidence_sourced
+  - risks_and_tradeoffs_recorded
+  - decision_recorded_or_owner_deferred
+blocking_conditions:
+  - strategy_question_unbounded
+  - option_set_missing
+  - unsupported_market_claim
+  - risk_tradeoff_unrecorded
+  - owner_decision_missing_without_deferral
+allowed_rework_routes:
+  framing_gap: strategy_intake
+  option_gap: option_framing
+  evidence_gap: evidence_and_market_analysis
+  risk_gap: risk_and_financial_assessment
+  decision_gap: strategy_decision_closeout
+required_evidence:
+  - STRATEGY_BRIEF
+  - OPTION_SET
+  - MARKET_EVIDENCE_REPORT
+  - STRATEGY_RISK_REGISTER
+  - DECISION_RECOMMENDATION
+  - STRATEGY_COMPLETION_REPORT
+required_trace:
+  - strategy_framing_trace
+  - market_evidence_trace
+  - risk_tradeoff_trace
+  - owner_decision_trace
+  - stage_gate_decision_trace
+stages:
+  - strategy_intake
+  - option_framing
+  - evidence_and_market_analysis
+  - risk_and_financial_assessment
+  - strategy_decision_closeout
+uses_core_abilities: [Supervisor, Web, Memory, Creative]
+uses_skills: [prism, sentinel, fermi-decompose, bayesian-update, llm-council, calibrate]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, web_search, source_reliability_checker, claim_mapper, cost_estimator, policy_query]
+uses_governance_profiles: [discovery_pipeline_governance, go_no_go_decision_gate, problem_evidence_gate, feasibility_gate, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [discovery_evidence_schema, source_evidence_schema, claim_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile, risk_analysis_model, supervisor_routing_model]
+uses_context_memory_profiles: [discovery_run_context, business_case_context_pack, claim_evidence_context_pack]
+required_gates:
+  always:
+    - strategy_question_bounded
+    - option_set_complete
+    - market_evidence_sourced
+    - risks_and_tradeoffs_recorded
+    - recommendation_reviewed
+    - decision_recorded_or_owner_deferred
+    - no_blocking_policy_failure
+  conditional:
+    - regulatory_review_if_market_regulated
+    - financial_model_if_investment_decision
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/pipeline_catalog.yaml

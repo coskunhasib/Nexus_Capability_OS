@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - support_request_captured
+  - severity_and_account_context_classified
+  - resolution_plan_complete
+  - response_reviewed
+  - escalation_recorded_if_required
+  - learning_update_complete
+  - no_blocking_policy_failure
+  conditional:
+  - incident_escalation_if_production_issue
+  - knowledge_update_if_reusable_answer

@@ -1,0 +1,43 @@
+version: draft-0.1
+stage_id: entry_readiness_and_owner_approval_check
+name: Entry Readiness And Owner Approval Check
+purpose: >-
+  Confirm owner approval, product ownership, idea maturity state, constraints,
+  and non-goals before the main product journey starts.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: product_requirements_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [gap-audit, prompt-fidelity]
+uses_tools: [artifact_writer, evidence_writer, policy_query, memory_search]
+uses_governance_profiles: [orchestration_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [sdlc_pipeline_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [supervisor_routing_model, sdlc_reasoning_profile]
+uses_context_memory_profiles: [sdlc_run_context, discovery_run_context]
+inputs:
+  - OWNER_PRODUCT_INTENT
+  - OWNER_APPROVAL_SIGNAL
+outputs:
+  - OWNER_APPROVAL_RECORD
+  - IDEA_MATURITY_ASSESSMENT
+  - PRODUCT_INTENT_BRIEF
+evidence:
+  - OWNER_APPROVAL_RECORD
+  - IDEA_MATURITY_ASSESSMENT
+  - PRODUCT_INTENT_BRIEF
+trace:
+  - owner_decision_trace
+  - stage_gate_decision_trace
+gates:
+  - owner_approved_main_product_pipeline_entry
+  - idea_maturity_state_recorded
+on_pass: idea_shaping_if_needed
+on_fail: pre_pipeline_interaction
+rework_route: pre_pipeline_interaction
+blocking_conditions:
+  - owner_approval_missing
+  - product_intent_unbounded
+  - idea_maturity_state_missing
+conditional_required_gates: []
+max_iterations: 3

@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - source_data_registered
+  - schema_profile_complete
+  - quality_thresholds_defined
+  - transformation_plan_reviewed
+  - processing_validation_passed
+  - delivery_package_complete
+  - no_blocking_policy_failure
+  conditional:
+  - privacy_redaction_if_sensitive_data
+  - rollback_plan_if_destructive_transform

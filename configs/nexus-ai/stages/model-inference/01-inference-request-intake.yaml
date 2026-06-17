@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: inference_request_intake
+name: Inference Request Intake
+purpose: Bound the inference goal, consumers, quality targets, cost targets, latency targets, and risk class.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: incident_intake_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [gap-audit, prism]
+uses_tools: [artifact_writer, evidence_writer, policy_query]
+uses_governance_profiles: [model_invocation_governance, operations_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [evidence_item_schema, model_invocation_trace_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model, supervisor_routing_model]
+uses_context_memory_profiles: [operations_run_context]
+inputs: [INFERENCE_GOAL, MODEL_OR_PROVIDER_CONTEXT]
+outputs: [INFERENCE_REQUEST, QUALITY_COST_LATENCY_TARGETS]
+evidence: [INFERENCE_REQUEST]
+trace: [model_invocation_trace_schema, stage_gate_decision_trace]
+gates: [inference_goal_bounded]
+on_pass: routing_and_provider_plan
+on_fail: inference_request_intake
+rework_route: inference_request_intake
+blocking_conditions: [inference_goal_unbounded, targets_missing]
+conditional_required_gates: []
+max_iterations: 3

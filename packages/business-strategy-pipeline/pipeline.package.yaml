@@ -1,0 +1,197 @@
+package_schema_version: '0.1'
+pipeline_id: business_strategy_pipeline
+name: Business / Strategy Pipeline
+description: Frame, evidence, stress-test, and decide on business and strategy questions
+  with explicit options, risks, tradeoffs, owner decisions, evidence, and trace.
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 74e50a1
+  source_path: configs/nexus-ai/business_strategy_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: discovery_team
+  version: 1.0.0
+  path: components/teams/team__discovery_team.yaml
+- kind: team_lead
+  id: discovery_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__discovery_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: creative
+  version: 1.0.0
+  path: components/core-abilities/core_ability__creative.yaml
+- kind: skill
+  id: prism
+  version: 1.0.0
+  path: components/skills/skill__prism.yaml
+- kind: skill
+  id: sentinel
+  version: 1.0.0
+  path: components/skills/skill__sentinel.yaml
+- kind: skill
+  id: fermi-decompose
+  version: 1.0.0
+  path: components/skills/skill__fermi-decompose.yaml
+- kind: skill
+  id: bayesian-update
+  version: 1.0.0
+  path: components/skills/skill__bayesian-update.yaml
+- kind: skill
+  id: llm-council
+  version: 1.0.0
+  path: components/skills/skill__llm-council.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: tool
+  id: web_search
+  version: 1.0.0
+  path: components/tools/tool__web_search.yaml
+- kind: tool
+  id: source_reliability_checker
+  version: 1.0.0
+  path: components/tools/tool__source_reliability_checker.yaml
+- kind: tool
+  id: claim_mapper
+  version: 1.0.0
+  path: components/tools/tool__claim_mapper.yaml
+- kind: tool
+  id: cost_estimator
+  version: 1.0.0
+  path: components/tools/tool__cost_estimator.yaml
+- kind: tool
+  id: policy_query
+  version: 1.0.0
+  path: components/tools/tool__policy_query.yaml
+- kind: governance_profile
+  id: discovery_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__discovery_pipeline_governance.yaml
+- kind: governance_profile
+  id: go_no_go_decision_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__go_no_go_decision_gate.yaml
+- kind: governance_profile
+  id: problem_evidence_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__problem_evidence_gate.yaml
+- kind: governance_profile
+  id: feasibility_gate
+  version: 1.0.0
+  path: components/governance/governance_profile__feasibility_gate.yaml
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: audit_schema
+  id: discovery_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__discovery_evidence_schema.yaml
+- kind: audit_schema
+  id: source_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__source_evidence_schema.yaml
+- kind: audit_schema
+  id: claim_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__claim_evidence_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: research_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__research_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: risk_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__risk_analysis_model.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: context_memory_profile
+  id: discovery_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__discovery_run_context.yaml
+- kind: context_memory_profile
+  id: business_case_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__business_case_context_pack.yaml
+- kind: context_memory_profile
+  id: claim_evidence_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__claim_evidence_context_pack.yaml
+gates:
+- id: strategy_question_bounded
+  set: always
+- id: option_set_complete
+  set: always
+- id: market_evidence_sourced
+  set: always
+- id: risks_and_tradeoffs_recorded
+  set: always
+- id: recommendation_reviewed
+  set: always
+- id: decision_recorded_or_owner_deferred
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: regulatory_review_if_market_regulated
+  set: conditional
+- id: financial_model_if_investment_decision
+  set: conditional
+evidence:
+  required_evidence:
+  - STRATEGY_BRIEF
+  - OPTION_SET
+  - MARKET_EVIDENCE_REPORT
+  - STRATEGY_RISK_REGISTER
+  - DECISION_RECOMMENDATION
+  - STRATEGY_COMPLETION_REPORT
+  required_trace:
+  - strategy_framing_trace
+  - market_evidence_trace
+  - risk_tradeoff_trace
+  - owner_decision_trace
+  - stage_gate_decision_trace
+stages:
+- strategy_intake
+- option_framing
+- evidence_and_market_analysis
+- risk_and_financial_assessment
+- strategy_decision_closeout

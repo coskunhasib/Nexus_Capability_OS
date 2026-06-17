@@ -1,0 +1,96 @@
+team_id: operations_team
+team_type: operations_team
+pipeline_id: operations_pipeline
+purpose: 'Run the live-operations lifecycle for released Nexus AI capabilities: intake
+  and deduplicate incident signals, classify severity (mandatory before mitigation),
+  build a mitigation plan, decide and execute rollback-or-fix backed by runbook/rollback
+  evidence, run a mandatory postmortem for qualifying severities, and feed operational
+  learning back into memory and the SDLC. Consumes SDLC operations-readiness artifacts
+  (RUNBOOK, ROLLBACK_PLAN, OBSERVABILITY_PLAN, INCIDENT_RESPONSE_PLAN); references
+  the SDLC pipeline rather than regenerating it.'
+team_lead_role: operations_team_lead
+agents:
+- incident_intake_agent
+- severity_classification_agent
+- mitigation_planning_agent
+- incident_response_agent
+- postmortem_agent
+- operational_learning_agent
+direct_sub_agents: []
+uses_core_abilities:
+- Supervisor
+- Memory
+- OS
+- Web
+- Coder
+uses_skills:
+- sentinel
+- fmea
+- gap-audit
+- refraction
+- bayesian-update
+- calibrate
+uses_tools:
+- incident_intake_tool
+- monitoring_query_tool
+- alert_correlator
+- severity_classifier_tool
+- runbook_executor
+- rollback_executor
+- mitigation_plan_builder
+- postmortem_builder
+- artifact_writer
+- evidence_writer
+- evidence_reader
+- memory_write
+- policy_query
+uses_governance_profiles:
+- operations_pipeline_governance
+- no_self_approval_policy
+- evidence_required_policy
+- incident_severity_required_gate
+- mitigation_plan_required_gate
+- rollback_runbook_evidence_gate
+- postmortem_required_gate
+uses_audit_schemas:
+- incident_evidence_schema
+- severity_classification_evidence_schema
+- mitigation_plan_evidence_schema
+- rollback_fix_evidence_schema
+- postmortem_evidence_schema
+- operational_learning_evidence_schema
+- stage_gate_trace_schema
+uses_model_provider_profiles:
+- supervisor_routing_model
+- incident_triage_model
+- operations_analysis_model
+- postmortem_reasoning_model
+- learning_reflection_model
+uses_context_memory_profiles:
+- operations_run_context
+- incident_context_pack
+- operations_context_pack
+- postmortem_context_pack
+- learning_context_pack
+permissions:
+- own_and_execute_operations_stages
+- assign_stage_owner_agents
+- intake_and_correlate_incident_signals
+- classify_severity_and_build_mitigation_plan
+- execute_rollback_or_fix_with_runbook_or_rollback_evidence
+- run_postmortem_and_record_operational_learning
+- hand_improvement_backlog_back_toward_sdlc
+- request_rework_along_allowed_routes
+forbidden_actions:
+- core_ability_as_team_member
+- supervisor_as_team_lead
+- self_approved_resolution
+- agent_approves_own_work
+- rollback_or_fix_without_runbook_or_rollback_evidence
+- missing_severity_classification_before_mitigation
+- team_lead_executes_rollback_or_fix
+- team_lead_bypasses_blocking_gate
+- team_lead_owns_a_stage
+- regenerate_sdlc_pipeline
+- orphan_sub_agent_without_parent_or_direct_call_flag
+- introduce_plugin

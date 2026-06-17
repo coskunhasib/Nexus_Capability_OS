@@ -7,7 +7,7 @@
 #   This catalog is summary-only. The AUTHORITATIVE per-pipeline definition (full Pipeline
 #   Definition Contract — stages, owner_domain, uses_tools, uses_audit_schemas, etc.) now lives in
 #   each pipeline's machine-readable YAML: configs/nexus-ai/<pipeline>.yaml + stages/<pipeline>/*.yaml
-#   (all 7 packaged pipelines). The original markdown drafts under
+#   where a stage directory exists. The original markdown drafts under
 #   docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md are RETAINED for narrative/history
 #   but are NO LONGER authoritative — the YAML defs were upgraded beyond them in the professional-grade pass.
 #   This file MUST NOT re-embed or duplicate that detail. Earlier drafts carried a per-pipeline
@@ -79,11 +79,35 @@ core_abilities:
 # PIPELINES (each is one catalog entry — SUMMARY ONLY).
 # The full Pipeline Definition Contract (07 §2) for each pipeline lives in its
 # `definition_doc`. This catalog references it; it does not duplicate it.
+#
+# Product-work model:
+#   - main_product_pipeline is the primary user-facing product journey.
+#   - Specialist execution pipelines remain reusable units that may be delegated
+#     to by main_product_pipeline or selected directly for standalone specialist
+#     work.
+#   - All catalog pipelines have machine-readable definitions and packages.
 # ---------------------------------------------------------------------------
 pipelines:
 
   # =========================================================================
-  # 1. SDLC PIPELINE — already defined; referenced only, NOT regenerated here.
+  # 1. MAIN PRODUCT PIPELINE — primary user-facing product journey.
+  # =========================================================================
+  - pipeline_id: main_product_pipeline
+    name: Main Product Pipeline
+    purpose: >-
+      Owner-approved product intentten ürün seviyesine giden ana yolculuğu yürütmek:
+      fikir olgunluğu kontrolü, gerekirse discovery, üretim planı, SDLC/build,
+      verification/hardening, release-candidate veya delivery handoff, opsiyonel
+      activation ve learning/memory update. Specialist pipeline'lar bu ana akış
+      altında çağrılabilir; olgun fikir gereksiz discovery'ye zorlanmaz.
+    status: draft
+    required_team_type: sdlc_team
+    required_team_lead_role: sdlc_team_lead
+    stage_count: 9
+    definition_doc: configs/nexus-ai/main_product_pipeline.yaml
+
+  # =========================================================================
+  # 2. SDLC PIPELINE — specialist execution unit for build/product engineering.
   # =========================================================================
   - pipeline_id: sdlc_pipeline
     name: SDLC Pipeline
@@ -97,7 +121,7 @@ pipelines:
     definition_doc: configs/nexus-ai/sdlc_pipeline.yaml
 
   # =========================================================================
-  # 2. PRODUCT DISCOVERY PIPELINE — front-runs SDLC; a raw idea enters here first.
+  # 3. PRODUCT DISCOVERY PIPELINE — specialist discovery unit.
   # =========================================================================
   - pipeline_id: product_discovery_pipeline
     name: Product Discovery Pipeline
@@ -114,7 +138,7 @@ pipelines:
     definition_doc: configs/nexus-ai/product_discovery_pipeline.yaml
 
   # =========================================================================
-  # 3. RESEARCH PIPELINE
+  # 4. RESEARCH PIPELINE
   # =========================================================================
   - pipeline_id: research_pipeline
     name: Research Pipeline
@@ -128,7 +152,7 @@ pipelines:
     definition_doc: configs/nexus-ai/research_pipeline.yaml
 
   # =========================================================================
-  # 4. ACTIVATION PIPELINE
+  # 5. ACTIVATION PIPELINE
   # =========================================================================
   - pipeline_id: activation_pipeline
     name: Activation Pipeline
@@ -142,7 +166,7 @@ pipelines:
     definition_doc: configs/nexus-ai/activation_pipeline.yaml
 
   # =========================================================================
-  # 5. OPERATIONS PIPELINE
+  # 6. OPERATIONS PIPELINE
   # =========================================================================
   - pipeline_id: operations_pipeline
     name: Operations Pipeline
@@ -156,7 +180,7 @@ pipelines:
     definition_doc: configs/nexus-ai/operations_pipeline.yaml
 
   # =========================================================================
-  # 6. SKILL GOVERNANCE PIPELINE
+  # 7. SKILL GOVERNANCE PIPELINE
   # =========================================================================
   - pipeline_id: skill_governance_pipeline
     name: Skill Governance Pipeline
@@ -170,7 +194,7 @@ pipelines:
     definition_doc: configs/nexus-ai/skill_governance_pipeline.yaml
 
   # =========================================================================
-  # 7. KNOWLEDGE / MEMORY PIPELINE
+  # 8. KNOWLEDGE / MEMORY PIPELINE
   # =========================================================================
   - pipeline_id: knowledge_memory_pipeline
     name: Knowledge / Memory Pipeline
@@ -183,35 +207,50 @@ pipelines:
     stage_count: 7
     definition_doc: configs/nexus-ai/knowledge_memory_pipeline.yaml
 
-# ---------------------------------------------------------------------------
-# CANDIDATE PIPELINES (doc 16, section 3 — "Aday / sonraki pipeline'lar").
-# Not yet defined. Listed as catalog placeholders only (no definition_doc yet).
-# ---------------------------------------------------------------------------
-candidate_pipelines:
   - pipeline_id: content_pipeline
     name: Content Pipeline
     purpose: Plan, draft, review, and govern multi-format content production end to end.
-    status: candidate
+    status: draft
+    required_team_type: knowledge_team
+    required_team_lead_role: knowledge_team_lead
+    stage_count: 5
+    definition_doc: configs/nexus-ai/content_pipeline.yaml
 
   - pipeline_id: data_processing_pipeline
     name: Data Processing Pipeline
     purpose: Ingest, validate, transform, and quality-gate data sets for downstream use.
-    status: candidate
+    status: draft
+    required_team_type: sdlc_team
+    required_team_lead_role: sdlc_team_lead
+    stage_count: 5
+    definition_doc: configs/nexus-ai/data_processing_pipeline.yaml
 
   - pipeline_id: model_inference_pipeline
     name: Model / Inference Pipeline
     purpose: Serve, route, evaluate, and monitor model inference under cost and quality gates.
-    status: candidate
+    status: draft
+    required_team_type: operations_team
+    required_team_lead_role: operations_team_lead
+    stage_count: 5
+    definition_doc: configs/nexus-ai/model_inference_pipeline.yaml
 
   - pipeline_id: customer_support_pipeline
     name: Customer Support Pipeline
     purpose: Triage, resolve, escalate, and learn from customer support interactions.
-    status: candidate
+    status: draft
+    required_team_type: operations_team
+    required_team_lead_role: operations_team_lead
+    stage_count: 5
+    definition_doc: configs/nexus-ai/customer_support_pipeline.yaml
 
   - pipeline_id: business_strategy_pipeline
     name: Business / Strategy Pipeline
     purpose: Frame, analyze, stress-test, and decide on business and strategy questions.
-    status: candidate
+    status: draft
+    required_team_type: discovery_team
+    required_team_lead_role: discovery_team_lead
+    stage_count: 5
+    definition_doc: configs/nexus-ai/business_strategy_pipeline.yaml
 
 # ---------------------------------------------------------------------------
 # Shared Registry + Usage Mapping note:

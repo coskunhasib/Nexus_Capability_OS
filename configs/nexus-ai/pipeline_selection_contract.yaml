@@ -2,11 +2,12 @@ version: draft-0.1
 contract_id: nexus_ai_pipeline_selection_contract
 purpose: >-
   Deterministic, auditable mapping from a user intent (free text + optional structured
-  signals) to the pipeline — and thus the .pipeline package — that should run. This is a
-  PRE-SELECTION contract: the mission_orchestrator may confirm or override it
-  (see executor_override_policy.yaml). Mechanism ported from the (now-archived) main-branch
-  capability-compiler's compiler-rules; seeded with nexus catalog pipelines only (no main
-  domain breadth). Keyword pre-selection is heuristic; the orchestrator/owner is the final authority.
+  signals) to the pipeline that should run. Some selected pipelines are packaged .pipeline
+  units; orchestration-level selections may point to a blueprint-only pipeline until packaged.
+  This is a PRE-SELECTION contract: the mission_orchestrator may confirm or override it
+  (see executor_override_policy.yaml). Mechanism ported from archived capability-compiler
+  rules; seeded with nexus catalog pipelines only. Keyword pre-selection is heuristic; the
+  orchestrator/owner is the final authority.
 status: draft
 top_structure: nexus_ai_orchestration_model
 catalog_ref: configs/nexus-ai/pipeline_catalog.yaml
@@ -15,36 +16,141 @@ override_policy_ref: configs/nexus-ai/executor_override_policy.yaml
 # Optional structured signals an intent may carry (all optional; free text alone also works).
 signals:
   domain: [software_product, saas, ai_agent_product, api_service, web_app, internal_tool,
-           discovery, research, operations, knowledge, skill, activation, other]
-  target_output: [validated_product_brief, software, code, research_report, incident_resolution,
-                  skill_change, memory_change, activation_rollout, unknown]
+           discovery, research, operations, knowledge, skill, activation, content,
+           data_processing, model_inference, customer_support, business_strategy, other]
+  target_output: [product_ready_artifact, validated_product_brief, software, code, research_report,
+                  incident_resolution, skill_change, memory_change, activation_rollout,
+                  content_package, processed_dataset, inference_result, support_resolution,
+                  strategy_decision, unknown]
   risk_level: [prototype, internal_tool, commercial_product, regulated_or_high_risk]
+  idea_maturity: [raw_idea, partially_mature, mature, unknown]
+
+# Pre-entry interaction happens BEFORE a pipeline run. It is not a new concept:
+# the existing mission_orchestrator owns this conversation and may only start the
+# selected pipeline after explicit owner approval. Ideas are not assumed to be
+# software/product ideas; after maturation they route to the best matching pipeline.
+pre_pipeline_interaction:
+  applies_before_rules: true
+  when_idea_signal_detected_without_owner_approval:
+    return: pre_pipeline_idea_maturation
+    owner: mission_orchestrator
+    required_behavior:
+      - inform_user_that_nexus_detected_an_idea_and_is_maturing_it_before_pipeline_entry
+      - interactively_clarify_problem_value_scope_risk_and_success_criteria
+      - summarize_matured_intent_open_risks_and_recommended_next_step
+      - recommend_the_best_matching_pipeline_after_maturation
+      - request_owner_approval_to_enter_the_selected_pipeline
+      - do_not_start_pipeline_until_owner_approval_is_recorded
+    possible_selected_pipelines_after_maturation:
+      - main_product_pipeline
+      - product_discovery_pipeline
+      - research_pipeline
+      - activation_pipeline
+      - operations_pipeline
+      - skill_governance_pipeline
+      - knowledge_memory_pipeline
+      - sdlc_pipeline
+      - content_pipeline
+      - data_processing_pipeline
+      - model_inference_pipeline
+      - customer_support_pipeline
+      - business_strategy_pipeline
+  when_owner_approval_recorded:
+    continue_to_rules: true
+  mature_idea_policy:
+    - selection_rules_run_after_maturation_and_owner_approval
+    - mature_idea_must_not_be_forced_through_extra_discovery
+    - product_building_idea_routes_to_main_product_pipeline
+    - research_idea_routes_to_research_pipeline
+    - operations_idea_routes_to_operations_pipeline
+    - activation_idea_routes_to_activation_pipeline
+    - skill_change_idea_routes_to_skill_governance_pipeline
+    - memory_or_knowledge_idea_routes_to_knowledge_memory_pipeline
+    - content_idea_routes_to_content_pipeline
+    - data_processing_idea_routes_to_data_processing_pipeline
+    - model_inference_idea_routes_to_model_inference_pipeline
+    - customer_support_idea_routes_to_customer_support_pipeline
+    - business_strategy_idea_routes_to_business_strategy_pipeline
+    - ambiguous_idea_returns_ambiguous_with_top_candidates_for_owner_choice
+
+post_integration_orchestrator_requirement:
+  status: post_integration_required
+  owner: mission_orchestrator
+  purpose: >-
+    After Nexus product integration, the orchestrator runtime must know the catalog of all main,
+    specialist, and blueprint-level pipelines, evaluate matured intent against that catalog, and
+    route or redirect work to the best matching pipeline when needed.
+  required_runtime_behavior:
+    - load_pipeline_catalog_at_selection_time
+    - know_all_available_main_specialist_and_blueprint_pipeline_ids
+    - score_matured_intent_against_pipeline_selection_rules
+    - recommend_or_select_the_best_matching_pipeline
+    - redirect_to_a_more_appropriate_pipeline_when_the_initial_guess_is_wrong
+    - preserve_owner_approval_before_starting_or_switching_pipeline
+    - record_pipeline_selection_rationale_as_trace
+  known_pipeline_ids_to_route:
+    - main_product_pipeline
+    - product_discovery_pipeline
+    - research_pipeline
+    - activation_pipeline
+    - operations_pipeline
+    - skill_governance_pipeline
+    - knowledge_memory_pipeline
+    - sdlc_pipeline
+    - content_pipeline
+    - data_processing_pipeline
+    - model_inference_pipeline
+    - customer_support_pipeline
+    - business_strategy_pipeline
+  forbidden_runtime_behavior:
+    - assume_every_idea_is_software_or_product_building
+    - default_to_main_product_pipeline_when_research_operations_skill_memory_content_data_inference_support_or_strategy_pipeline_matches_better
+    - silently_switch_pipeline_without_owner_visible_rationale
+    - start_a_pipeline_without_owner_approval_when_approval_is_required
 
 # Selection rules. Match score = number of matched keywords (+3 per matched structured signal).
 # Winner = highest score; ties broken by higher priority; still tied -> ambiguous (do not force).
 rules:
-  - id: rule_sdlc
-    priority: 30   # generic catch-all for software building; loses ties to a specific pipeline
+  - id: rule_main_product
+    priority: 60
     match:
       any_domain: [software_product, saas, ai_agent_product, api_service, web_app, internal_tool]
-      any_target_output: [software, code]
+      any_target_output: [product_ready_artifact, software, code]
       contains_any: [yazılım, uygulama, app, saas, api, mvp, web, kod, code, build, feature,
                      özellik, ürün, software, geliştir, refactor, bug, frontend, backend, deploy]
     select:
+      pipeline_id: main_product_pipeline
+      package: packages/main-product-pipeline
+      definition_doc: configs/nexus-ai/main_product_pipeline.yaml
+    rationale: >-
+      Product-building intent -> Main Product Pipeline. It owns the end-to-end journey and delegates
+      to SDLC / discovery / activation / research / knowledge units as needed.
+
+  - id: rule_sdlc_direct
+    priority: 25
+    match:
+      any_domain: [software_product, saas, ai_agent_product, api_service, web_app, internal_tool]
+      any_target_output: [software, code]
+      contains_any: ["direct sdlc", "sdlc only", "sadece sdlc", "implementation only", "kodla ve bitir"]
+    select:
       pipeline_id: sdlc_pipeline
       package: packages/sdlc-pipeline
-    rationale: Software / product building → SDLC pipeline (only fully machine-readable + packaged pipeline today).
+    rationale: Explicit direct SDLC request -> SDLC Pipeline. General product work should use main_product_pipeline.
 
   - id: rule_discovery
-    priority: 50   # a RAW idea must enter discovery first, NOT sdlc (beats sdlc's 30 on any tie)
+    priority: 45
     match:
       any_domain: [discovery]
       any_target_output: [validated_product_brief]
-      contains_any: ["fikrim var", "fikrim", "iş fikri", "değer mi", "yapsak mı", "yapmaya değer",
-                     idea, keşif, keşfet, discovery, "validate et", doğrulamak, konsept, fizibilite,
+      contains_any: ["discovery only", "sadece keşif", "validated brief", "validate et",
+                     keşif, keşfet, discovery, doğrulamak, konsept, fizibilite,
                      "business case", "go/no-go", "no-go", pivot]
     select: { pipeline_id: product_discovery_pipeline, package: packages/product-discovery-pipeline }
-    rationale: Raw idea / "should we build this" → discovery FIRST (cheap, kill-friendly); on GO it hands off to sdlc.
+    rationale: >-
+      Explicit standalone discovery request -> Product Discovery Pipeline. Raw product ideas without
+      owner approval are handled by pre_pipeline_interaction first; approved product work enters
+      main_product_pipeline only when the matured intent is product-building. Non-product ideas route
+      to their matching specialist pipeline.
 
   - id: rule_skill_governance
     priority: 45
@@ -64,6 +170,36 @@ rules:
     select: { pipeline_id: research_pipeline, package: packages/research-pipeline }
     rationale: Sourced research / claim-evidence mapping → Research pipeline.
 
+  - id: rule_content
+    priority: 40
+    match:
+      any_domain: [content, knowledge]
+      any_target_output: [content_package]
+      contains_any: [content, içerik, blog, makale, article, newsletter, doküman, documentation,
+                     copy, yazı, yayın]
+    select: { pipeline_id: content_pipeline, package: packages/content-pipeline }
+    rationale: Governed content planning / drafting / review → Content pipeline.
+
+  - id: rule_data_processing
+    priority: 40
+    match:
+      any_domain: [data_processing]
+      any_target_output: [processed_dataset]
+      contains_any: ["data processing", "veri işleme", dataset, transform, dönüştür, etl, ingestion,
+                     ingest, "data quality", "kalite profili"]
+    select: { pipeline_id: data_processing_pipeline, package: packages/data-processing-pipeline }
+    rationale: Dataset ingest / transform / validation → Data Processing pipeline.
+
+  - id: rule_model_inference
+    priority: 40
+    match:
+      any_domain: [model_inference, ai_agent_product]
+      any_target_output: [inference_result]
+      contains_any: [inference, çıkarım, "model routing", "model route", "model eval", latency,
+                     "model serving", "provider routing", "inference result"]
+    select: { pipeline_id: model_inference_pipeline, package: packages/model-inference-pipeline }
+    rationale: Model inference routing / evaluation / monitoring → Model / Inference pipeline.
+
   - id: rule_operations
     priority: 40
     match:
@@ -73,6 +209,26 @@ rules:
                      alarm, alert, ops, kesinti, outage]
     select: { pipeline_id: operations_pipeline, package: packages/operations-pipeline }
     rationale: Incident / monitoring / runbook / postmortem → Operations pipeline.
+
+  - id: rule_customer_support
+    priority: 40
+    match:
+      any_domain: [customer_support, operations]
+      any_target_output: [support_resolution]
+      contains_any: ["customer support", "müşteri destek", "support ticket", ticket, escalation,
+                     "müşteri yanıtı", "support response", "resolution plan"]
+    select: { pipeline_id: customer_support_pipeline, package: packages/customer-support-pipeline }
+    rationale: Customer support triage / response / escalation → Customer Support pipeline.
+
+  - id: rule_business_strategy
+    priority: 40
+    match:
+      any_domain: [business_strategy]
+      any_target_output: [strategy_decision]
+      contains_any: [strategy, strateji, pricing, fiyatlandırma, "market strategy", "pazar stratejisi",
+                     partnership, ortaklık, "business case", "karar önerisi"]
+    select: { pipeline_id: business_strategy_pipeline, package: packages/business-strategy-pipeline }
+    rationale: Business or strategy decision support → Business / Strategy pipeline.
 
   - id: rule_activation
     priority: 40
@@ -110,21 +266,23 @@ default:
 # Packaging reality (so selection never promises a package that doesn't exist yet).
 packaging_status:
   packaged:
-    - sdlc_pipeline
+    - main_product_pipeline
     - product_discovery_pipeline
+    - sdlc_pipeline
     - research_pipeline
     - activation_pipeline
     - operations_pipeline
     - skill_governance_pipeline
     - knowledge_memory_pipeline
-  defined_markdown_only_not_yet_packaged: []
-  candidate_not_defined:
     - content_pipeline
     - data_processing_pipeline
     - model_inference_pipeline
     - customer_support_pipeline
     - business_strategy_pipeline
+  orchestration_defined_not_yet_packaged: []
+  defined_markdown_only_not_yet_packaged: []
+  candidate_not_defined: []
   note: >-
-    Only sdlc_pipeline has a machine-readable definition (sdlc_pipeline.yaml + stages/sdlc/*.yaml)
-    and a built package. The other 5 defined pipelines must be converted from markdown
-    definition_docs to machine-readable defs before they can be packaged (then set their `package`).
+    All catalog pipelines are currently machine-readable and packaged. main_product_pipeline is
+    packaged as an orchestration-level pipeline and may delegate to specialist execution packages;
+    specialist packages may also be selected directly for standalone work.

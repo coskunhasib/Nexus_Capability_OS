@@ -1,0 +1,13 @@
+required_evidence:
+- SUPPORT_REQUEST_RECORD
+- SUPPORT_TRIAGE_REPORT
+- RESOLUTION_PLAN
+- CUSTOMER_RESPONSE_RECORD
+- ESCALATION_RECORD_IF_REQUIRED
+- SUPPORT_COMPLETION_REPORT
+required_trace:
+- support_triage_trace
+- escalation_decision_trace
+- customer_response_trace
+- learning_update_trace
+- stage_gate_decision_trace

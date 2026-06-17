@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: content_intake
+name: Content Intake
+purpose: Capture the content goal, audience, channel, risk class, and acceptance criteria.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: source_classification_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [prism, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, policy_query]
+uses_governance_profiles: [global_governance, evidence_required_policy]
+uses_audit_schemas: [memory_provenance_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [knowledge_reasoning_profile, supervisor_routing_model]
+uses_context_memory_profiles: [knowledge_run_context]
+inputs: [CONTENT_REQUEST]
+outputs: [CONTENT_BRIEF, CONTENT_RISK_CLASSIFICATION]
+evidence: [CONTENT_BRIEF]
+trace: [content_planning_trace, stage_gate_decision_trace]
+gates: [content_goal_bounded, audience_and_channel_defined]
+on_pass: content_plan
+on_fail: content_intake
+rework_route: content_intake
+blocking_conditions: [content_goal_unbounded, audience_or_channel_missing]
+conditional_required_gates: []
+max_iterations: 3

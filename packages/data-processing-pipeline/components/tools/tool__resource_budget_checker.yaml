@@ -1,0 +1,34 @@
+id: resource_budget_checker
+name: Resource Budget Checker
+type: tool
+category: tool
+status: canonical
+purpose: Verify CPU/RAM/IO/resource footprint against NFR limits and budgets.
+owner_domain: cost_resource
+provided_by_core_ability: null
+input_schema:
+  resource_usage: object
+  budgets: object
+output_schema:
+  budget_findings: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- performance_resilience_agent
+- cost_resource_agent
+allowed_usage:
+- Read-only check of resource footprint vs budgets/NFR limits.
+forbidden_usage:
+- Mutating budgets to force a pass.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - performance_resilience
+  - cost_resource_governance
+notes: Side-effect-free check; consumes RESOURCE_USAGE_DATA / NFR_CATALOG.

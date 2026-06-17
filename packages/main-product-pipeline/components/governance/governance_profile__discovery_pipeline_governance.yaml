@@ -1,0 +1,34 @@
+id: discovery_pipeline_governance
+name: Discovery Pipeline Governance
+type: governance_umbrella
+status: candidate
+purpose: 'Umbrella governance for the Product Discovery Pipeline: kill-criteria must
+  be pre-registered before evidence-gathering; every load-bearing problem claim must
+  be sourced; critical assumptions must be tested or explicitly flagged; GO may not
+  be authorized without a recorded human/owner decision and no agent may self-approve
+  the discovery decision; NO_GO is a valid, honourable terminal (its deliverable is
+  a learning report).'
+owner_domain: product_management
+allowed_usage:
+- Bind at the Product Discovery Pipeline level and re-show under each discovery stage.
+- Govern the idea -> problem-evidence -> assumption-test -> feasibility -> business-case
+  -> owner-decision invariants.
+forbidden_usage:
+- Used outside the Product Discovery Pipeline.
+- Used to authorize a GO in place of the human/owner decision (that authority is the
+  owner's).
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- discovery_evidence_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- product_discovery_pipeline
+severity_default: blocker
+used_by:
+- product_discovery_pipeline
+notes: NEW (product_discovery_pipeline plan §1a). Layered over the gate-style profiles
+  go_no_go_decision_gate / problem_evidence_gate / feasibility_gate. Bound by every
+  discovery stage's uses_governance_profiles.

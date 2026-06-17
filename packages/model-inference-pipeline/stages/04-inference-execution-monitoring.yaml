@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: inference_execution_monitoring
+name: Inference Execution Monitoring
+purpose: Execute the inference run through the selected route and capture quality, cost, latency, and monitoring trace.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: incident_response_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, OS, Memory]
+uses_skills: [calibrate, sentinel]
+uses_tools: [cost_estimator, resource_budget_checker, evidence_writer, artifact_writer, evidence_consistency_checker]
+uses_governance_profiles: [model_invocation_governance, operations_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [model_invocation_trace_schema, evidence_integrity_report_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model]
+uses_context_memory_profiles: [operations_run_context, operations_context_pack]
+inputs: [MODEL_EVALUATION_PLAN, MONITORING_CRITERIA]
+outputs: [INFERENCE_RUN_REPORT, QUALITY_COST_REPORT, MONITORING_TRACE_RECORD]
+evidence: [INFERENCE_RUN_REPORT, QUALITY_COST_REPORT]
+trace: [model_invocation_trace_schema, monitoring_trace, stage_gate_decision_trace]
+gates: [quality_threshold_met_or_exception, cost_latency_budget_respected, monitoring_trace_complete]
+on_pass: inference_completion
+on_fail: evaluation_harness_setup
+rework_route: evaluation_harness_setup
+blocking_conditions: [quality_threshold_failed_without_exception, cost_or_latency_budget_unowned, monitoring_trace_missing]
+conditional_required_gates: []
+max_iterations: 3

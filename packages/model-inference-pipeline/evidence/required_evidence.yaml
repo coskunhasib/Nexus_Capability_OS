@@ -1,0 +1,12 @@
+required_evidence:
+- INFERENCE_REQUEST
+- ROUTING_POLICY
+- MODEL_EVALUATION_PLAN
+- INFERENCE_RUN_REPORT
+- QUALITY_COST_REPORT
+- INFERENCE_COMPLETION_REPORT
+required_trace:
+- model_invocation_trace_schema
+- routing_decision_trace
+- monitoring_trace
+- stage_gate_decision_trace

@@ -1,0 +1,37 @@
+version: draft-0.1
+stage_id: verification_hardening_and_revision
+name: Verification Hardening And Revision
+purpose: >-
+  Verify, harden, and revise the built artifact or delivery handoff until
+  quality gates pass or an owner-accepted exception is recorded.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: qa_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Coder, OS, Memory]
+uses_skills: [verification-loop, sentinel, gap-audit]
+uses_tools: [test_runner, scanner_runner, evidence_consistency_checker, artifact_writer, evidence_writer]
+uses_governance_profiles: [verification_governance, security_privacy_governance, evidence_required_policy]
+uses_audit_schemas: [test_execution_evidence_schema, security_scan_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile, risk_analysis_model]
+uses_context_memory_profiles: [verification_context_pack, security_context_pack]
+inputs:
+  - BUILD_OR_IMPLEMENTATION_HANDOFF
+outputs:
+  - VERIFICATION_HARDENING_REPORT
+  - REVISION_DECISION_RECORD
+evidence:
+  - VERIFICATION_HARDENING_REPORT
+trace:
+  - stage_gate_decision_trace
+  - rework_routing_trace
+gates:
+  - verification_hardening_pass_or_owned_exception
+on_pass: release_candidate_preparation
+on_fail: build_execution
+rework_route: build_execution
+blocking_conditions:
+  - verification_hardening_report_missing
+  - unresolved_blocking_quality_or_policy_failure
+conditional_required_gates: []
+max_iterations: 3

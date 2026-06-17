@@ -1,0 +1,47 @@
+id: discovery_run_context
+name: Discovery Run Context
+type: run_context
+status: candidate
+scope: run
+purpose: 'Whole-run working context for a Product Discovery Pipeline run: the product
+  idea, the pre-registered kill-criteria, the evidence status of each load-bearing
+  problem claim and tested assumption, the discovery evidence graph spine, and which
+  stages/gates have been evaluated. Lets the owner decision and closeout confirm kill-criteria
+  were honored and the decision is grounded.'
+owner_domain: product_management
+allowed_usage:
+- read_as_run_level_backbone_by_any_discovery_stage
+- carry_the_pre_registered_kill_criteria_and_evidence_status
+forbidden_usage:
+- used_to_authorize_a_go_without_a_recorded_owner_decision
+- used_to_soften_pre_registered_kill_criteria
+- shared_across_different_discovery_runs
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_discovery_evidence_graph
+- current_run_stage_outputs
+- durable_memory_prior_discoveries
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- readable_by_all_discovery_stages
+- run_scoped_isolation: true
+- load_bearing_problem_claims_must_resolve_to_mapped_evidence
+- kill_criteria_status_must_remain_visible_at_every_stage
+redaction_rules:
+- no_raw_secrets
+- redact_confidential_market_or_user_data
+- redact_pii_from_quoted_user_research
+governance_profiles:
+- discovery_pipeline_governance
+- context_access_governance
+- no_self_approval_policy
+audit_schemas:
+- discovery_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- product_discovery_pipeline
+aliases: []
+notes: NEW (product_discovery_pipeline plan §1c). Kill-criteria pre-registration and
+  owner-decision independence are enforced via governance, not by collapsing roles
+  in this context.

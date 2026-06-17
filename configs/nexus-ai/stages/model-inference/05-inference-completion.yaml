@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: inference_completion
+name: Inference Completion
+purpose: Seal the inference completion report, residual risks, evaluation evidence, and operational handoff.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: postmortem_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [refraction, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, evidence_consistency_checker]
+uses_governance_profiles: [operations_pipeline_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [operational_learning_evidence_schema, evidence_item_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [postmortem_reasoning_model, operations_analysis_model]
+uses_context_memory_profiles: [postmortem_context_pack, learning_context_pack]
+inputs: [INFERENCE_RUN_REPORT, QUALITY_COST_REPORT, MONITORING_TRACE_RECORD]
+outputs: [INFERENCE_COMPLETION_REPORT, INFERENCE_RESIDUAL_RISK_RECORD]
+evidence: [INFERENCE_COMPLETION_REPORT]
+trace: [monitoring_trace, stage_gate_decision_trace]
+gates: [no_blocking_policy_failure]
+on_pass: done
+on_fail: inference_execution_monitoring
+rework_route: inference_execution_monitoring
+blocking_conditions: [inference_completion_report_missing, blocking_policy_failure_present]
+conditional_required_gates: []
+max_iterations: 3

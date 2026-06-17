@@ -1,0 +1,31 @@
+id: privacy_lifecycle_governance
+name: Privacy Lifecycle Governance
+type: stage_governance_profile
+status: canonical
+purpose: Governance over data lifecycle / retention / tenant-isolation privacy concerns.
+  Bound at stage 08 (security_privacy_design) and stage 19 (privacy_data_lifecycle_validation).
+owner_domain: privacy_engineering
+allowed_usage:
+- Govern privacy data-lifecycle concerns in design (08) and validation (19).
+forbidden_usage:
+- Used outside the privacy design/validation stages.
+governance_profiles:
+- sdlc_pipeline_governance
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- security_privacy_design
+- privacy_data_lifecycle_validation
+severity_default: blocker
+used_by:
+- security_privacy_design
+- privacy_data_lifecycle_validation
+- privacy_evidence_schema
+- data_lifecycle_report_schema
+aliases:
+- privacy_governance_profile
+notes: Spans stages 08 and 19. audit_schemas.yaml refers to this governance as `privacy_governance_profile`;
+  recorded under aliases so that reference resolves.

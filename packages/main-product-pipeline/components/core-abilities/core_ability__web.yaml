@@ -1,0 +1,72 @@
+id: web
+name: Web
+display_name: Web
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+default_risk_level: high
+purpose: 'External web access capability: search, fetch, and scrape external sources
+  for product/domain context, advisories, license metadata, standards, and consumer
+  interface expectations. Web is a Core Ability (K-011); its callable operations are
+  tools in the Tools Registry. External egress makes Web a higher-risk ability than
+  pure-reasoning abilities.'
+owner_domain: external_web_access
+model_provider_profiles: []
+exposed_tools:
+- web_search
+- web_fetch
+- web_scrape
+governance_profiles:
+- web_access_governance
+- no_secret_read
+audit_schemas:
+- core_ability_invocation_trace_schema
+- source_fetch_trace_schema
+allowed_callers:
+- product_requirements_agent
+- architecture_agent
+- security_privacy_agent
+- security_validation_agent
+- compliance_agent
+- contract_validation_agent
+- accessibility_ux_agent
+- operations_readiness_agent
+- research_intake_agent
+- knowledge_memory_agents
+allowed_usage:
+- search_fetch_and_scrape_external_context_advisories_standards_and_specs
+- resolve_license_metadata_and_package_reputation_sources
+- source_current_attack_techniques_and_accessibility_criteria
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- transmitting_secrets_credentials_or_pii_in_outbound_requests
+- performing_unsandboxed_or_untraced_network_egress
+- treating_fetched_content_as_trusted_without_provenance_trace
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - intake
+  - domain_risk_profile
+  - requirements
+  - architecture
+  - architecture_review
+  - security_privacy_design
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - operations_readiness
+  capability_systems:
+  - nexus_ai_capability_system
+notes: Web carries a HIGHER default risk than pure-reasoning abilities (Supervisor/Coder/Vision)
+  because it performs external network egress (task rule). Its tools require sandbox/trace
+  and a no-secret-leak posture. Web is the headline example of K-011 / D-014 (ability
+  name in the registry; web_search/web_fetch/web_scrape in the Tools Registry).

@@ -1,0 +1,52 @@
+id: model_invocation_trace_schema
+name: Model Invocation Trace Schema
+type: trace_schema
+status: candidate
+purpose: Trace record shape for a model invocation — the operation history of which
+  model/provider profile was invoked, with token/cost/latency outcome (doc 03 §12).
+  Process history, never decision proof.
+owner_domain: nexus_global_governance
+allowed_usage:
+- Record model-invocation provenance for any model_provider_profile call.
+- Serve as the trace requirement attached by every model provider profile.
+forbidden_usage:
+- Used as a decision proof (that is an evidence_schema record).
+- Merged with any evidence_schema record (Evidence != Trace).
+governance_profiles:
+- global_trace_required_policy
+- model_provider_governance
+audit_schemas:
+- stage_gate_trace_schema
+notes: 'Field set binds to configs/nexus-ai/schemas/trace_item.schema.json. Bound
+  by all 22 profiles in configs/nexus-ai/model_provider_profiles.yaml under audit_schemas
+  (that file asserts evidence_not_trace: true for exactly this id).'
+applies_to:
+- all_pipelines
+- model_invocation_provenance
+required_fields:
+- trace_id
+- type
+- actor
+- action
+- input_refs
+- output_refs
+- status
+- timestamp
+producer: invoking_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- redact_prompt_completion_secrets
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  registries:
+  - model_provider_profiles
+  agents:
+  - all_model_invoking_agents

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: content_completion
+name: Content Completion
+purpose: Seal the reviewed content package, evidence pointers, residual risks, and completion report.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: memory_curator_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [refraction, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, provenance_recorder]
+uses_governance_profiles: [memory_update_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [memory_provenance_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [knowledge_reasoning_profile]
+uses_context_memory_profiles: [knowledge_run_context, learning_context_pack]
+inputs: [CONTENT_DRAFT, CONTENT_REVIEW_REPORT]
+outputs: [CONTENT_COMPLETION_REPORT, CONTENT_PACKAGE]
+evidence: [CONTENT_COMPLETION_REPORT]
+trace: [draft_review_trace, stage_gate_decision_trace]
+gates: [completion_report_emitted, no_blocking_policy_failure]
+on_pass: done
+on_fail: draft_and_review
+rework_route: draft_and_review
+blocking_conditions: [completion_report_missing, blocking_policy_failure_present]
+conditional_required_gates: []
+max_iterations: 3

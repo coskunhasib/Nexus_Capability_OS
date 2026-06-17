@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: evidence_and_market_analysis
+name: Evidence And Market Analysis
+purpose: Source market evidence, map claims to support, and flag regulatory or weak-evidence risks.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: claim_evidence_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Web, Memory]
+uses_skills: [bayesian-update, calibrate, gap-audit]
+uses_tools: [web_search, source_reliability_checker, claim_mapper, artifact_writer, evidence_writer]
+uses_governance_profiles: [research_source_governance, problem_evidence_gate, evidence_required_policy]
+uses_audit_schemas: [source_evidence_schema, claim_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile]
+uses_context_memory_profiles: [claim_evidence_context_pack, source_corpus_context_pack]
+inputs: [OPTION_SET, DECISION_CRITERIA]
+outputs: [MARKET_EVIDENCE_REPORT, REGULATORY_APPLICABILITY_DECISION]
+evidence: [MARKET_EVIDENCE_REPORT]
+trace: [market_evidence_trace, stage_gate_decision_trace]
+gates: [market_evidence_sourced, regulatory_review_if_market_regulated]
+on_pass: risk_and_financial_assessment
+on_fail: option_framing
+rework_route: option_framing
+blocking_conditions: [unsupported_market_claim, market_evidence_missing]
+conditional_required_gates: [regulatory_review_if_market_regulated]
+max_iterations: 3

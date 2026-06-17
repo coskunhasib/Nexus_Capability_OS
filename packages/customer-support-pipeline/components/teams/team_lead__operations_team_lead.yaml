@@ -1,0 +1,81 @@
+team_lead_id: operations_team_lead
+team_id: operations_team
+pipeline_id: operations_pipeline
+mission: 'Orchestrate the live-operations incident lifecycle (intake -> severity ->
+  mitigation -> rollback/fix -> postmortem -> learning) for released capabilities:
+  assign stage owners, enforce that severity is classified before mitigation and that
+  a postmortem is completed for qualifying incidents, and ensure no actor approves
+  its own mitigation/postmortem — without executing the rollback/fix itself or bypassing
+  any gate.'
+responsibilities:
+- Intake/normalize the incident signal and assign each stage to its owner Agent.
+- Enforce mandatory severity classification before any mitigation work begins.
+- Require a mitigation plan for an active incident and runbook/rollback evidence for
+  any rollback-or-fix.
+- Ensure a postmortem is completed for major/critical incidents (lightweight record
+  otherwise) with no self-approval.
+- Route rework (e.g. mitigation_plan -> severity_classification) and confirm operational
+  learning is recorded.
+may_assign_agents:
+- incident_intake_agent
+- severity_classification_agent
+- mitigation_planning_agent
+- incident_response_agent
+- postmortem_agent
+- operational_learning_agent
+may_call_direct_sub_agents: []
+may_use_core_abilities:
+- Supervisor
+- OS
+- Memory
+may_use_skills:
+- sentinel
+- fmea
+- gap-audit
+may_call_tools:
+- evidence_reader
+- policy_query
+- artifact_writer
+- evidence_writer
+uses_governance_profiles:
+- operations_pipeline_governance
+- incident_severity_required_gate
+- mitigation_plan_required_gate
+- rollback_runbook_evidence_gate
+- postmortem_required_gate
+- no_self_approval
+- evidence_required
+uses_audit_schemas:
+- incident_evidence_schema
+- severity_classification_evidence_schema
+- mitigation_plan_evidence_schema
+- rollback_fix_evidence_schema
+- postmortem_evidence_schema
+- operational_learning_evidence_schema
+- stage_gate_trace_schema
+uses_context_memory_profiles:
+- operations_run_context
+- incident_context_pack
+- operations_context_pack
+- postmortem_context_pack
+- learning_context_pack
+forbidden_actions:
+- - cannot_author_then_approve_same_artifact
+  - cannot_bypass_a_failed_governance_gate
+  - cannot_mutate_an_artifact_it_reviews
+  - cannot_act_as_the_supervisor_core_ability
+  - cannot_be_listed_as_a_core_ability
+  - cannot_implement_or_write_product_code
+  - cannot_read_secrets
+  - cannot_perform_production_deploy_or_destructive_tool_actions
+  - cannot_reintroduce_a_plugin_concept
+- cannot_execute_a_rollback_or_fix_itself
+- cannot_self_approve_a_mitigation_or_postmortem
+- cannot_close_a_major_incident_without_a_postmortem
+blocking_limits:
+- - cannot_close_a_run_with_an_open_blocking_gate
+  - cannot_advance_past_a_stage_whose_required_evidence_is_missing
+  - cannot_skip_a_mandatory_stage_or_gate_for_the_pipeline
+  - cannot_route_rework_outside_the_pipeline_allowed_rework_routes
+- cannot_begin_mitigation_before_severity_is_classified
+- cannot_record_resolution_without_runbook_or_rollback_evidence

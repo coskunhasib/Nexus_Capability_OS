@@ -1,0 +1,80 @@
+id: evidence_writer
+name: Evidence Writer
+type: tool
+category: tool
+status: canonical
+purpose: Persist stage evidence items and gate results (evidence_item_schema shape)
+  that prove what a gate decided and on what basis — the Evidence half of the Audit
+  family (03 §11).
+owner_domain: shared_platform
+provided_by_core_ability: null
+input_schema:
+  evidence_id: string
+  artifact_id: string
+  related_gate: string
+  producer: string
+  summary: string
+  trace_refs:
+  - string
+output_schema:
+  evidence_ref: string
+  written: boolean
+side_effects: writes_evidence_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- evidence_required_policy
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- any_stage_owner_agent
+allowed_usage:
+- Persist evidence records / gate results with trace_refs back to the producing operation.
+forbidden_usage:
+- Recording a gate result without backing evidence (evidence_required_policy).
+- Storing trace history in place of evidence (Evidence != Trace).
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  sdlc_stages:
+  - intake
+  - domain_risk_profile
+  - skill_semantic_extraction
+  - requirements
+  - requirements_review
+  - architecture
+  - architecture_review
+  - security_privacy_design
+  - premortem_fmea
+  - planning
+  - implementation
+  - code_review
+  - test_generation
+  - test_execution
+  - verification_loop_bug_finding
+  - security_validation
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - privacy_data_lifecycle_validation
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - data_migration_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  - evidence_graph_build
+  - development_completion
+  - release_candidate
+  - refraction_learning
+notes: Present in all 31 SDLC stage contracts and every pipeline catalog entry.

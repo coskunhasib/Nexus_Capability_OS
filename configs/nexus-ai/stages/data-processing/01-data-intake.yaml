@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: data_intake
+name: Data Intake
+purpose: Register source data, processing goal, sensitivity, and delivery expectations.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: data_migration_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, OS, Memory]
+uses_skills: [gap-audit]
+uses_tools: [artifact_writer, evidence_writer, policy_query]
+uses_governance_profiles: [data_migration_governance, privacy_lifecycle_governance, evidence_required_policy]
+uses_audit_schemas: [migration_evidence_schema, data_lifecycle_report_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile, risk_analysis_model]
+uses_context_memory_profiles: [domain_risk_context_pack]
+inputs: [DATA_PROCESSING_GOAL, SOURCE_DATA_REFERENCE]
+outputs: [DATA_PROCESSING_REQUEST, SOURCE_DATA_REGISTER, DATA_SENSITIVITY_CLASSIFICATION]
+evidence: [DATA_PROCESSING_REQUEST]
+trace: [data_processing_trace, stage_gate_decision_trace]
+gates: [source_data_registered]
+on_pass: schema_and_quality_profile
+on_fail: data_intake
+rework_route: data_intake
+blocking_conditions: [source_data_unregistered, processing_goal_unbounded]
+conditional_required_gates: []
+max_iterations: 3

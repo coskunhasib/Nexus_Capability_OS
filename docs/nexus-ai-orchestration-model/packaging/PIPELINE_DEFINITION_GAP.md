@@ -1,36 +1,47 @@
-# Pipeline Definition Gap — markdown-only pipelines
+# Pipeline Definition Gap — resolved
 
-> Status: **RESOLVED 2026-06-07; extended 2026-06-13** — the 5 *defined* pipelines below now have machine-readable YAML defs + stage contracts + built, validated packages, and a 7th pipeline (`product_discovery_pipeline`) was since authored YAML-native (`packages/INDEX.yaml` = **7 packages**). The procedure in this doc now applies only to the 5 catalog **candidate** pipelines (content / data_processing / model_inference / customer_support / business_strategy), which remain undefined.
+> Status: **RESOLVED 2026-06-17** — all catalog pipelines now have
+> machine-readable YAML definitions, per-stage contracts, built packages, and
+> pull-catalog entries (`packages/INDEX.yaml` = **13 packages**).
 
 ## What
-Only **`sdlc_pipeline`** has a machine-readable definition (`configs/nexus-ai/sdlc_pipeline.yaml` + `configs/nexus-ai/stages/sdlc/*.yaml`) and therefore a built `.pipeline` package.
 
-The other **5 defined** pipelines exist only as **markdown** `definition_doc`s (under `docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/`), not as machine-readable YAML:
+The prior gap was that some catalog entries had no machine-readable definition
+or package. That is no longer true.
+
+Packaged catalog:
 
 | pipeline | stages | definition today |
-|---|---|---|
-| research_pipeline | 10 | markdown only |
-| activation_pipeline | 7 | markdown only |
-| operations_pipeline | 6 | markdown only |
-| skill_governance_pipeline | 7 | markdown only |
-| knowledge_memory_pipeline | 6 | markdown only |
+|---|---:|---|
+| main_product_pipeline | 9 | YAML + stage contracts + package |
+| sdlc_pipeline | 31 | YAML + stage contracts + package |
+| product_discovery_pipeline | 7 | YAML + stage contracts + package |
+| research_pipeline | 11 | YAML + stage contracts + package |
+| activation_pipeline | 8 | YAML + stage contracts + package |
+| operations_pipeline | 7 | YAML + stage contracts + package |
+| skill_governance_pipeline | 8 | YAML + stage contracts + package |
+| knowledge_memory_pipeline | 7 | YAML + stage contracts + package |
+| content_pipeline | 5 | YAML + stage contracts + package |
+| data_processing_pipeline | 5 | YAML + stage contracts + package |
+| model_inference_pipeline | 5 | YAML + stage contracts + package |
+| customer_support_pipeline | 5 | YAML + stage contracts + package |
+| business_strategy_pipeline | 5 | YAML + stage contracts + package |
 
-(5 further pipelines — content, data_processing, model_inference, customer_support, business_strategy — are catalog **candidates**, not defined at all.)
+## Why It Matters
 
-## Why it matters
-The packager (`engine/package_pipeline.py`) consumes a **machine-readable** pipeline definition (with `uses_*`, `stages`, `required_gates`, `required_evidence`/`required_trace`). It cannot package a markdown doc. So **"package the rest" is blocked** until each pipeline has a YAML definition + stage contracts like sdlc. The engine itself already generalizes — it packaged sdlc generically; the gap is **content (blueprint), not tooling.**
+The packager (`engine/package_pipeline.py`) consumes a **machine-readable**
+pipeline definition with `uses_*`, `stages`, `required_gates`,
+`required_evidence`, and `required_trace`. All catalog pipelines now satisfy
+that input contract.
 
-## Next blueprint task (before packaging the rest)
-For each of the 5 defined pipelines, author:
-1. `configs/nexus-ai/<pipeline>.yaml` — the Pipeline Definition Contract (`uses_*`, `stages`, `required_gates`, `required_evidence`/`required_trace`, entry/exit/blocking conditions, rework routes), mirroring `sdlc_pipeline.yaml`;
-2. its per-stage contracts under `configs/nexus-ai/stages/<pipeline>/*.yaml`.
+## Verification
 
-Then:
 ```bash
-python3 engine/package_pipeline.py --pipeline configs/nexus-ai/<pipeline>.yaml   # produces packages/<pipeline>/
-python3 engine/validate_package.py packages/<pipeline>                            # PASS
-python3 engine/build_catalog.py                                                   # indexes it
-# and fill the `package:` field for that pipeline in pipeline_selection_contract.yaml
+for pkg in packages/*-pipeline; do python3 engine/validate_package.py "$pkg"; done
+for pkg in packages/*-pipeline; do python3 engine/run_pipeline.py "$pkg"; done
+python3 engine/run_trials.py
 ```
 
-Tracked in `pipeline_selection_contract.yaml` → `packaging_status` (`defined_markdown_only_not_yet_packaged`).
+`pipeline_selection_contract.yaml` now has no
+`orchestration_defined_not_yet_packaged`, `defined_markdown_only_not_yet_packaged`,
+or `candidate_not_defined` entries.

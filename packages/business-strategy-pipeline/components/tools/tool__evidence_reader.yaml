@@ -1,0 +1,56 @@
+id: evidence_reader
+name: Evidence Reader
+type: tool
+category: tool
+status: canonical
+purpose: Read upstream evidence items, gate results, and prior-stage artifacts so
+  a downstream stage can adjudicate without re-producing them (read-only). Absorbs
+  the legacy scanner_report_reader.
+owner_domain: shared_platform
+provided_by_core_ability: null
+input_schema:
+  query: object
+output_schema:
+  evidence_items:
+  - object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- any_stage_owner_agent
+allowed_usage:
+- Read-only retrieval of already-persisted evidence/artifacts within the run scope.
+forbidden_usage:
+- Mutating or re-attesting evidence (that is evidence_writer under separate ownership).
+aliases:
+- scanner_report_reader
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  sdlc_stages:
+  - requirements_review
+  - architecture_review
+  - premortem_fmea
+  - planning
+  - security_validation
+  - privacy_data_lifecycle_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  - evidence_graph_build
+  - development_completion
+  - release_candidate
+  - refraction_learning
+notes: Used by 16 SDLC stages and the research/activation/operations pipelines (research
+  claim_evidence_mapping/cross_validation/synthesis/completion; activation/operations
+  evidence reviews). Read-only — no sandbox.

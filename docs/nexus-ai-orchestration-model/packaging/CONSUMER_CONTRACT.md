@@ -79,13 +79,13 @@ For each bundled part, after computing its fingerprint, the consumer **MUST** ap
 ## 6. Honor governance-in-package
 
 6.1 Governance travels **inside** the package. The consumer **MUST** load, from the package, before running:
-- the **19 always-required gates (D-016)** from `required_gates.always` in the pipeline definition, each with its bundled gate definition in `gates/`;
+- the package-declared **always-required gates** from `required_gates.always` in the pipeline definition, each with its bundled gate definition in `gates/` (for `sdlc-pipeline` this is the 19-gate D-016 set; for `research-pipeline` this is 13 always gates);
 - the **conditional gates** in `required_gates.conditional`, applied per their applicability conditions;
 - the **`required_evidence`** schemas and **`required_trace`** schemas bundled in `evidence/`.
 
 6.2 The consumer **MUST** verify that every entry in `required_gates.always` has a corresponding bundled gate definition, and that every entry in `required_evidence` and `required_trace` has a corresponding bundled schema. If **any** required gate, evidence schema, or trace schema is missing, the consumer **MUST refuse to run** the pipeline and report which item is missing.
 
-6.3 The consumer **MUST NOT** silently drop, skip, weaken, or reorder the bundled gates, evidence, or trace requirements. The 19 always-required gates are mandatory for every run produced from the package.
+6.3 The consumer **MUST NOT** silently drop, skip, weaken, or reorder the bundled gates, evidence, or trace requirements. The package-declared always-required gates are mandatory for every run produced from that package; the consumer must not hard-code a universal gate count.
 
 6.4 The consumer **MUST NOT** require the operator to supply governance externally to make the package runnable: governance is provided by the package. The consumer **MAY** layer *additional* host-level policy on top, but **MUST NOT** subtract from what the package carries.
 
@@ -120,7 +120,7 @@ A host is a **conformant consumer** of `.pipeline` packages if it satisfies all 
 - [ ] On same-`id`/different-fingerprint: **keep both, never overwrite, warn** with full detail (§4.2–§4.3).
 - [ ] Verify every `uses_*` / team reference is **bundled**; fail on dangling deps (§5.2).
 - [ ] Honor **Shared Registry** version constraints; refuse (not substitute) on incompatibility (§5.3, §5.5).
-- [ ] Load the **19 always-required gates (D-016)** + conditional gates + evidence + trace from the package (§6.1).
+- [ ] Load the package-declared always-required gates + conditional gates + evidence + trace from the package (§6.1).
 - [ ] **Refuse to run** if any required gate / evidence / trace schema is missing; never silently drop governance (§6.2–§6.3).
 - [ ] Enforce gates at run time and emit declared evidence/trace; block release candidate on failed/unevaluated mandatory gate (§6.5).
 - [ ] Import is **isolated, idempotent, and atomic** (§7.1–§7.3).

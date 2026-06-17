@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: option_framing
+name: Option Framing
+purpose: Generate and bound the decision option set, non-goals, assumptions, and decision criteria.
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: business_case_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Creative, Memory]
+uses_skills: [fermi-decompose, prism, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader]
+uses_governance_profiles: [discovery_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [discovery_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile]
+uses_context_memory_profiles: [business_case_context_pack]
+inputs: [STRATEGY_BRIEF, DECISION_HORIZON_RECORD]
+outputs: [OPTION_SET, DECISION_CRITERIA]
+evidence: [OPTION_SET]
+trace: [strategy_framing_trace, stage_gate_decision_trace]
+gates: [option_set_complete]
+on_pass: evidence_and_market_analysis
+on_fail: strategy_intake
+rework_route: strategy_intake
+blocking_conditions: [option_set_missing, decision_criteria_missing]
+conditional_required_gates: []
+max_iterations: 3

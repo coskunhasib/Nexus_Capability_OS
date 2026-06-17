@@ -1,0 +1,47 @@
+id: test_runner
+name: Test Runner
+type: tool
+category: tool
+status: canonical
+purpose: Execute build/compile/lint smoke checks and test suites; reproduce/confirm
+  suspected defects; run data-integrity/migration assertions. Executes code -> side-effecting.
+owner_domain: engineering
+provided_by_core_ability: OS
+input_schema:
+  target: string
+  config: object
+output_schema:
+  result: string
+  report_ref: string
+  logs_ref: string
+side_effects: executes_code_in_sandbox
+risk_level: high
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- high_risk_action_default_deny
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- engineering_agent
+- qa_agent
+- data_migration_agent
+allowed_usage:
+- Execute builds/tests/assertions inside the sandbox and emit results as evidence.
+forbidden_usage:
+- Executing outside the sandbox; deploying; mutating production state.
+aliases:
+- data_integrity_checker
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - implementation
+  - test_execution
+  - verification_loop_bug_finding
+  - data_migration_validation_if_applicable
+notes: Covers baseline local build (stage 11), suite execution (14), defect reproduction
+  (15), and migration/integrity assertions (22). The dropped legacy data_integrity_checker
+  is recorded as an alias (integrity assertions run via test_runner + evidence_consistency_checker).

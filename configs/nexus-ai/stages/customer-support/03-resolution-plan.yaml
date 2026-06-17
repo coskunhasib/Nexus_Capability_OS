@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: resolution_plan
+name: Resolution Plan
+purpose: Produce the answer, fix, workaround, or escalation plan and verify it against support context.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: mitigation_planning_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory, Web]
+uses_skills: [fmea, gap-audit, calibrate]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, memory_search]
+uses_governance_profiles: [operations_pipeline_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [mitigation_plan_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model]
+uses_context_memory_profiles: [incident_context_pack, knowledge_run_context]
+inputs: [SUPPORT_TRIAGE_REPORT, ESCALATION_APPLICABILITY_DECISION]
+outputs: [RESOLUTION_PLAN, RESPONSE_REVIEW_CRITERIA]
+evidence: [RESOLUTION_PLAN]
+trace: [support_triage_trace, stage_gate_decision_trace]
+gates: [resolution_plan_complete]
+on_pass: response_and_escalation
+on_fail: triage_and_classification
+rework_route: triage_and_classification
+blocking_conditions: [resolution_plan_missing, unsafe_resolution_plan]
+conditional_required_gates: []
+max_iterations: 3

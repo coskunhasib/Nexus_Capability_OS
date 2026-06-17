@@ -1,0 +1,292 @@
+# Nexus AI Orchestration Model — Main Product Pipeline
+#
+# Scope: blueprint/config only. This file defines the user-facing product work
+# pipeline; it does not authorize runtime implementation, product repo edits,
+# deploys, or activation by itself.
+#
+# Model decision:
+#   Pipeline is the main end-to-end work journey. Specialist flows such as
+#   product_discovery_pipeline, sdlc_pipeline, activation_pipeline,
+#   research_pipeline and knowledge_memory_pipeline remain reusable execution
+#   units that can be delegated to by stages of this pipeline or selected
+#   directly for standalone specialist work.
+#
+# Important boundary:
+#   This pipeline is for product-building work. The system may detect that the
+#   user is presenting a product idea and may mature it interactively BEFORE this
+#   pipeline starts. Non-product ideas (research, operations, skill governance,
+#   knowledge/memory, activation, etc.) must route through the pipeline selection
+#   contract to their matching specialist pipeline after maturation and owner
+#   approval. Once inside this pipeline, idea maturity is rechecked but not
+#   forced: a mature product idea moves forward without being pushed through
+#   extra discovery.
+
+version: draft-0.1
+pipeline_id: main_product_pipeline
+name: Main Product Pipeline
+purpose: >-
+  Take an owner-approved product intent from idea/readiness check through
+  planning, production, verification, hardening, release-candidate preparation,
+  optional activation handoff, and learning/memory update. This is the primary
+  user-facing product journey; specialist pipelines are delegated execution
+  units, not separate user-visible journeys by default.
+status: draft
+owner_domain: product_delivery_orchestration
+required_team_type: sdlc_team
+required_team_lead_role: sdlc_team_lead
+
+applicable_domains:
+  - software_product
+  - saas
+  - ai_agent_product
+  - api_service
+  - web_app
+  - internal_tool
+  - productized_capability
+
+risk_profiles:
+  - prototype
+  - internal_tool
+  - commercial_product
+  - regulated_or_high_risk
+
+pre_pipeline_interaction:
+  owned_by: mission_orchestrator
+  before_pipeline_run: true
+  purpose: >-
+    Detect when the user is discussing a product-building idea, tell the user
+    that Nexus is maturing the idea before starting the product pipeline, and
+    obtain explicit owner approval before entering main_product_pipeline.
+  idea_signal_examples:
+    - user_is_exploring_a_product_idea
+    - user_asks_whether_something_is_worth_building
+    - user_describes_a_problem_without_a_build_decision
+    - user_compares_solution_directions
+  non_product_idea_policy:
+    - do_not_route_non_product_ideas_to_main_product_pipeline_by_default
+    - research_ideas_route_via_pipeline_selection_to_research_pipeline
+    - operations_ideas_route_via_pipeline_selection_to_operations_pipeline
+    - skill_change_ideas_route_via_pipeline_selection_to_skill_governance_pipeline
+    - memory_or_knowledge_ideas_route_via_pipeline_selection_to_knowledge_memory_pipeline
+    - activation_ideas_route_via_pipeline_selection_to_activation_pipeline
+  required_behavior:
+    - infer_idea_signal_when_confident
+    - tell_user_the_current_mode_is_interactive_idea_maturation
+    - ask_targeted_questions_only_when_needed
+    - summarize_matured_intent_and_open_risks
+    - request_owner_approval_before_pipeline_entry
+    - do_not_start_main_product_pipeline_without_owner_approval
+  output_to_pipeline:
+    - OWNER_APPROVAL_RECORD
+    - IDEA_MATURITY_ASSESSMENT
+    - PRODUCT_INTENT_BRIEF
+
+entry_criteria:
+  - owner_approved_main_product_pipeline_entry
+  - product_owner_identified
+  - product_intent_brief_present
+  - idea_maturity_state_recorded
+  - constraints_and_non_goals_recorded
+
+exit_criteria:
+  - product_goal_satisfied_or_owner_accepted_terminal_recorded
+  - all_required_main_product_gates_passed
+  - all_applicable_specialist_pipeline_handoffs_complete
+  - release_candidate_or_delivery_handoff_produced
+  - activation_handoff_produced_if_requested
+  - learning_and_memory_update_complete
+  - no_blocking_policy_failure
+
+blocking_conditions:
+  - main_product_pipeline_started_without_owner_approval
+  - idea_forced_through_discovery_despite_mature_brief
+  - immature_idea_advanced_without_owner_acknowledged_risk
+  - delegated_specialist_pipeline_failed_without_rework_or_owner_decision
+  - required_evidence_missing_or_inconsistent
+  - unresolved_blocking_quality_or_policy_failure
+  - activation_attempted_without_release_candidate_evidence
+
+allowed_rework_routes:
+  - entry_approval_gap -> pre_pipeline_interaction
+  - idea_maturity_gap -> idea_shaping_if_needed
+  - discovery_evidence_gap -> product_discovery_or_brief_validation
+  - planning_gap -> production_plan_and_pipeline_routing
+  - build_failure -> build_execution
+  - verification_or_hardening_failure -> verification_hardening_and_revision
+  - release_evidence_gap -> release_candidate_preparation
+  - activation_readiness_gap -> activation_or_handoff
+  - learning_gap -> learning_memory_update
+  - owner_rescope -> entry_readiness_and_owner_approval_check
+
+required_evidence:
+  - OWNER_APPROVAL_RECORD
+  - IDEA_MATURITY_ASSESSMENT
+  - PRODUCT_INTENT_BRIEF
+  - PRODUCT_BRIEF
+  - PRODUCT_DELIVERY_PLAN
+  - SPECIALIST_PIPELINE_ROUTING_PLAN
+  - BUILD_OR_IMPLEMENTATION_HANDOFF
+  - VERIFICATION_HARDENING_REPORT
+  - RELEASE_CANDIDATE_OR_DELIVERY_HANDOFF
+  - ACTIVATION_HANDOFF_IF_REQUESTED
+  - LEARNING_MEMORY_UPDATE_REPORT
+  - MAIN_PRODUCT_COMPLETION_REPORT
+
+required_trace:
+  - owner_decision_trace
+  - stage_gate_decision_trace
+  - specialist_pipeline_routing_trace
+  - rework_routing_trace
+  - handoff_trace
+  - learning_update_trace
+
+stages:
+  - entry_readiness_and_owner_approval_check
+  - idea_shaping_if_needed
+  - product_discovery_or_brief_validation
+  - production_plan_and_pipeline_routing
+  - build_execution
+  - verification_hardening_and_revision
+  - release_candidate_preparation
+  - activation_or_handoff
+  - learning_memory_update
+
+delegated_execution_units:
+  entry_readiness_and_owner_approval_check:
+    primary_owner: sdlc_team_lead
+    may_consult:
+      - discovery_team_lead
+      - research_team_lead
+  idea_shaping_if_needed:
+    primary_owner: discovery_team_lead
+    delegated_pipeline: product_discovery_pipeline
+    skip_when:
+      - idea_maturity_assessment_is_mature
+      - owner_confirms_no_more_discovery_needed
+  product_discovery_or_brief_validation:
+    primary_owner: discovery_team_lead
+    delegated_pipeline: product_discovery_pipeline
+    behavior: >-
+      Run discovery only when the idea is immature or evidence-poor. If the
+      idea is already mature, validate the existing brief and pass forward.
+  production_plan_and_pipeline_routing:
+    primary_owner: sdlc_team_lead
+    may_delegate_to:
+      - research_team_lead
+      - skill_governance_team_lead
+      - knowledge_team_lead
+  build_execution:
+    primary_owner: sdlc_team_lead
+    delegated_pipeline: sdlc_pipeline
+  verification_hardening_and_revision:
+    primary_owner: sdlc_team_lead
+    may_delegate_to:
+      - code_reviewer_agent
+      - qa_agent
+      - security_validation_agent
+      - operations_readiness_agent
+  release_candidate_preparation:
+    primary_owner: sdlc_team_lead
+    delegated_pipeline: sdlc_pipeline
+  activation_or_handoff:
+    primary_owner: activation_team_lead
+    delegated_pipeline: activation_pipeline
+    skip_when:
+      - activation_not_requested
+      - delivery_handoff_only
+  learning_memory_update:
+    primary_owner: knowledge_team_lead
+    delegated_pipeline: knowledge_memory_pipeline
+
+uses_core_abilities:
+  - Supervisor
+  - Coder
+  - Memory
+  - Web
+  - OS
+  - Vision
+
+uses_skills:
+  - prism
+  - sentinel
+  - llm-council
+  - fmea
+  - adr-builder
+  - gap-audit
+  - prompt-fidelity
+  - calibrate
+  - refraction
+  - fermi-decompose
+  - bayesian-update
+  - handoff-designer
+
+uses_tools:
+  - artifact_writer
+  - evidence_writer
+  - evidence_reader
+  - evidence_consistency_checker
+  - policy_query
+  - requirements_trace_checker
+  - repo_diff_reader
+  - test_runner
+  - scanner_runner
+  - resource_budget_checker
+  - cost_estimator
+  - memory_search
+
+uses_governance_profiles:
+  - sdlc_pipeline_governance
+  - discovery_pipeline_governance
+  - activation_pipeline_governance
+  - no_self_approval_policy
+  - evidence_required_policy
+  - release_candidate_governance
+
+uses_audit_schemas:
+  - sdlc_pipeline_evidence_schema
+  - discovery_evidence_schema
+  - activation_evidence_schema
+  - release_evidence_schema
+  - stage_gate_trace_schema
+
+uses_model_provider_profiles:
+  - supervisor_routing_model
+  - sdlc_reasoning_profile
+  - research_reasoning_profile
+  - risk_analysis_model
+  - release_reasoning_model
+
+uses_context_memory_profiles:
+  - sdlc_run_context
+  - discovery_run_context
+  - release_context_pack
+  - activation_run_context
+  - knowledge_run_context
+
+required_gates:
+  always:
+    - owner_approved_main_product_pipeline_entry
+    - idea_maturity_state_recorded
+    - mature_idea_not_forced_through_unneeded_discovery
+    - product_brief_validated_or_discovery_completed
+    - specialist_pipeline_routing_plan_complete
+    - production_plan_approved
+    - build_or_delivery_execution_complete
+    - verification_hardening_pass_or_owned_exception
+    - release_candidate_or_delivery_handoff_complete
+    - learning_memory_update_complete
+    - no_blocking_policy_failure
+  conditional:
+    - discovery_required_if_idea_immature
+    - research_required_if_claims_or_market_questions_unresolved
+    - activation_required_if_public_or_staged_rollout_requested
+    - skill_governance_required_if_new_or_changed_skill_in_scope
+    - operations_required_if_runbook_monitoring_or_incident_scope_needed
+
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/pipeline_selection_contract.yaml
+  - configs/nexus-ai/product_discovery_pipeline.yaml
+  - configs/nexus-ai/sdlc_pipeline.yaml
+  - configs/nexus-ai/activation_pipeline.yaml
+  - configs/nexus-ai/mission_system.yaml

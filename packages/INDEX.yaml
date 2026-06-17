@@ -2,7 +2,7 @@ catalog_id: nexus_ai_pipeline_package_catalog
 catalog_schema_version: '0.1'
 purpose: 'Pull catalog: the .pipeline packages a host (Nexus) can acquire. Generated
   by engine/build_catalog.py — do not hand-edit.'
-package_count: 7
+package_count: 13
 packages:
 - pipeline_id: activation_pipeline
   name: Activation Pipeline
@@ -13,7 +13,47 @@ packages:
   gates_always: 17
   gates_conditional: 4
   stages: 8
-  source_commit: 383a28c
+  source_commit: 74e50a1
+- pipeline_id: business_strategy_pipeline
+  name: Business / Strategy Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/business-strategy-pipeline
+  components: 36
+  gates_always: 7
+  gates_conditional: 2
+  stages: 5
+  source_commit: 74e50a1
+- pipeline_id: content_pipeline
+  name: Content Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/content-pipeline
+  components: 33
+  gates_always: 7
+  gates_conditional: 2
+  stages: 5
+  source_commit: 74e50a1
+- pipeline_id: customer_support_pipeline
+  name: Customer Support Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/customer-support-pipeline
+  components: 29
+  gates_always: 7
+  gates_conditional: 2
+  stages: 5
+  source_commit: 74e50a1
+- pipeline_id: data_processing_pipeline
+  name: Data Processing Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/data-processing-pipeline
+  components: 31
+  gates_always: 7
+  gates_conditional: 2
+  stages: 5
+  source_commit: 74e50a1
 - pipeline_id: knowledge_memory_pipeline
   name: Knowledge / Memory Pipeline
   package_version: 1.0.0
@@ -23,7 +63,27 @@ packages:
   gates_always: 18
   gates_conditional: 4
   stages: 7
-  source_commit: 383a28c
+  source_commit: 74e50a1
+- pipeline_id: main_product_pipeline
+  name: Main Product Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/main-product-pipeline
+  components: 53
+  gates_always: 11
+  gates_conditional: 5
+  stages: 9
+  source_commit: 74e50a1
+- pipeline_id: model_inference_pipeline
+  name: Model / Inference Pipeline
+  package_version: 1.0.0
+  package_schema_version: '0.1'
+  path: packages/model-inference-pipeline
+  components: 30
+  gates_always: 7
+  gates_conditional: 2
+  stages: 5
+  source_commit: 74e50a1
 - pipeline_id: operations_pipeline
   name: Operations Pipeline
   package_version: 1.0.0
@@ -33,7 +93,7 @@ packages:
   gates_always: 13
   gates_conditional: 2
   stages: 7
-  source_commit: 383a28c
+  source_commit: 74e50a1
 - pipeline_id: product_discovery_pipeline
   name: Product Discovery Pipeline
   package_version: 1.0.0
@@ -43,7 +103,7 @@ packages:
   gates_always: 12
   gates_conditional: 2
   stages: 7
-  source_commit: ea122ce
+  source_commit: 74e50a1
 - pipeline_id: research_pipeline
   name: Research Pipeline
   package_version: 1.0.0
@@ -53,7 +113,7 @@ packages:
   gates_always: 13
   gates_conditional: 1
   stages: 11
-  source_commit: cf6d4a9
+  source_commit: 74e50a1
 - pipeline_id: sdlc_pipeline
   name: SDLC Pipeline
   package_version: 1.0.0
@@ -63,7 +123,7 @@ packages:
   gates_always: 19
   gates_conditional: 7
   stages: 31
-  source_commit: f3181ae
+  source_commit: 74e50a1
 - pipeline_id: skill_governance_pipeline
   name: Skill Governance Pipeline
   package_version: 1.0.0
@@ -73,4 +133,4 @@ packages:
   gates_always: 14
   gates_conditional: 2
   stages: 8
-  source_commit: 383a28c
+  source_commit: 74e50a1

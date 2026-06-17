@@ -1,0 +1,12 @@
+required_evidence:
+- CONTENT_BRIEF
+- CONTENT_PLAN
+- CONTENT_SOURCE_MAP
+- CONTENT_DRAFT
+- CONTENT_REVIEW_REPORT
+- CONTENT_COMPLETION_REPORT
+required_trace:
+- content_planning_trace
+- source_grounding_trace
+- draft_review_trace
+- stage_gate_decision_trace

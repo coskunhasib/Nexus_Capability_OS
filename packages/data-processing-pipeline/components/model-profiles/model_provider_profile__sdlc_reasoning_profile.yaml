@@ -1,0 +1,63 @@
+id: sdlc_reasoning_profile
+name: SDLC General Reasoning Profile
+type: model_provider_profile
+status: canonical
+purpose: General-purpose SDLC reasoning and gate-decision profile for stages that
+  are not code-, security-, architecture-, release-, defect- or vision-specialised.
+owner_domain: sdlc
+provider_type: reasoning_llm
+model_family: general_reasoning
+capability_scope:
+- general_reasoning
+- requirement_and_scope_analysis
+- gate_decision
+- reflection_and_calibration
+resource_limits:
+  context_window: standard
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: supervisor_routing_model
+governance_profiles:
+- sdlc_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- general SDLC stage reasoning and gate decisions
+- post-run reflection / learning (refraction_learning)
+forbidden_usage:
+- standing in for a code/security/vision-specialised profile where one is required
+- being treated as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - intake
+  - domain_risk_profile
+  - skill_semantic_extraction
+  - requirements
+  - requirements_review
+  - premortem_fmea
+  - planning
+  - code_review
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - refraction_learning
+  core_abilities: []
+aliases:
+- planning_reasoning_model
+- performance_analysis_model
+- cost_resource_analysis_model
+- contract_analysis_model
+- risk_reasoning_model
+notes: Most-used canonical profile (14 SDLC stages). Legacy finer-grained `*_analysis_model`
+  names that map cleanly to this profile are listed as aliases. Multi-target or first-class
+  colliding legacy names are recorded in the reconciliation block instead of read-time
+  aliases.

@@ -1,0 +1,169 @@
+package_schema_version: '0.1'
+pipeline_id: customer_support_pipeline
+name: Customer Support Pipeline
+description: Triage, resolve, escalate, respond, and learn from customer support work
+  with governed evidence, escalation decisions, and knowledge updates.
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 74e50a1
+  source_path: configs/nexus-ai/customer_support_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: operations_team
+  version: 1.0.0
+  path: components/teams/team__operations_team.yaml
+- kind: team_lead
+  id: operations_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__operations_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: core_ability
+  id: web
+  version: 1.0.0
+  path: components/core-abilities/core_ability__web.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: refraction
+  version: 1.0.0
+  path: components/skills/skill__refraction.yaml
+- kind: skill
+  id: handoff-designer
+  version: 1.0.0
+  path: components/skills/skill__handoff-designer.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: tool
+  id: memory_search
+  version: 1.0.0
+  path: components/tools/tool__memory_search.yaml
+- kind: tool
+  id: policy_query
+  version: 1.0.0
+  path: components/tools/tool__policy_query.yaml
+- kind: tool
+  id: provenance_recorder
+  version: 1.0.0
+  path: components/tools/tool__provenance_recorder.yaml
+- kind: governance_profile
+  id: operations_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__operations_pipeline_governance.yaml
+- kind: governance_profile
+  id: memory_update_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__memory_update_governance.yaml
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: audit_schema
+  id: incident_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__incident_evidence_schema.yaml
+- kind: audit_schema
+  id: operational_learning_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__operational_learning_evidence_schema.yaml
+- kind: audit_schema
+  id: memory_provenance_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__memory_provenance_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: operations_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__operations_analysis_model.yaml
+- kind: model_provider_profile
+  id: knowledge_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__knowledge_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: context_memory_profile
+  id: incident_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__incident_context_pack.yaml
+- kind: context_memory_profile
+  id: learning_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__learning_context_pack.yaml
+- kind: context_memory_profile
+  id: knowledge_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__knowledge_run_context.yaml
+gates:
+- id: support_request_captured
+  set: always
+- id: severity_and_account_context_classified
+  set: always
+- id: resolution_plan_complete
+  set: always
+- id: response_reviewed
+  set: always
+- id: escalation_recorded_if_required
+  set: always
+- id: learning_update_complete
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: incident_escalation_if_production_issue
+  set: conditional
+- id: knowledge_update_if_reusable_answer
+  set: conditional
+evidence:
+  required_evidence:
+  - SUPPORT_REQUEST_RECORD
+  - SUPPORT_TRIAGE_REPORT
+  - RESOLUTION_PLAN
+  - CUSTOMER_RESPONSE_RECORD
+  - ESCALATION_RECORD_IF_REQUIRED
+  - SUPPORT_COMPLETION_REPORT
+  required_trace:
+  - support_triage_trace
+  - escalation_decision_trace
+  - customer_response_trace
+  - learning_update_trace
+  - stage_gate_decision_trace
+stages:
+- support_intake
+- triage_and_classification
+- resolution_plan
+- response_and_escalation
+- support_completion_learning

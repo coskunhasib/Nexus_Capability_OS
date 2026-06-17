@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - inference_goal_bounded
+  - routing_policy_defined
+  - evaluation_harness_ready
+  - quality_threshold_met_or_exception
+  - cost_latency_budget_respected
+  - monitoring_trace_complete
+  - no_blocking_policy_failure
+  conditional:
+  - fallback_policy_if_external_provider
+  - safety_review_if_high_risk_output

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: support_intake
+name: Support Intake
+purpose: Capture the support request, requester context, account impact, and safe response constraints.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: incident_intake_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [gap-audit]
+uses_tools: [artifact_writer, evidence_writer, memory_search, policy_query]
+uses_governance_profiles: [operations_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [incident_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model]
+uses_context_memory_profiles: [incident_context_pack]
+inputs: [CUSTOMER_SUPPORT_REQUEST]
+outputs: [SUPPORT_REQUEST_RECORD, REQUESTER_CONTEXT_RECORD]
+evidence: [SUPPORT_REQUEST_RECORD]
+trace: [support_triage_trace, stage_gate_decision_trace]
+gates: [support_request_captured]
+on_pass: triage_and_classification
+on_fail: support_intake
+rework_route: support_intake
+blocking_conditions: [support_request_missing, requester_context_missing]
+conditional_required_gates: []
+max_iterations: 3

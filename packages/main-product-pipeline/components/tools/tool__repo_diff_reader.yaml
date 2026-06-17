@@ -1,0 +1,39 @@
+id: repo_diff_reader
+name: Repository Diff Reader
+type: tool
+category: tool
+status: canonical
+purpose: Read the changeset diff (changed lines/files) to target review, test generation,
+  and defect sweeps.
+owner_domain: engineering
+provided_by_core_ability: Coder
+input_schema:
+  base_ref: string
+  head_ref: string
+output_schema:
+  diff: object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- code_reviewer_agent
+- qa_agent
+- contract_validation_agent
+allowed_usage:
+- Read-only retrieval of changeset diffs.
+forbidden_usage:
+- Mutating the diff or repository.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - code_review
+  - test_generation
+  - verification_loop_bug_finding
+  - api_contract_compatibility_validation
+notes: Read-only; distinct from repo_reader (whole-file context) by targeting the
+  diff.

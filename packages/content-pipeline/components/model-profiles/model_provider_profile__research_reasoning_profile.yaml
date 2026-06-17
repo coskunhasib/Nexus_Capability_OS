@@ -1,0 +1,52 @@
+id: research_reasoning_profile
+name: Research Reasoning Profile
+type: model_provider_profile
+status: candidate
+purpose: 'General reasoning profile for the research pipeline: scope/question framing,
+  claim extraction, cross-validation, uncertainty reporting and synthesis.'
+owner_domain: research_and_knowledge
+provider_type: reasoning_llm
+model_family: general_reasoning
+capability_scope:
+- research_scope_and_question_reasoning
+- claim_extraction_and_mapping
+- cross_validation_reasoning
+- uncertainty_and_synthesis_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: large
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: supervisor_routing_model
+governance_profiles:
+- research_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- research pipeline reasoning stages
+forbidden_usage:
+- source reliability scoring where source_evaluation_model is the intended profile
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - research_pipeline
+  stages:
+  - scope_and_questions
+  - claim_extraction
+  - cross_validation
+  - uncertainty_reporting
+  - synthesis
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: sdlc_reasoning_profile
+  recommendation: Strong overlap with sdlc_reasoning_profile (both are general_reasoning).
+    Recommend consolidating onto a single shared `general_reasoning_profile` parameterised
+    per pipeline, OR keeping distinct only if research needs different resource_limits/governance.
+    Decide in Phase E.
+notes: Markdown research-pipeline.md §1 lists it under uses_model_provider_profiles.
+  Marked candidate pending ratification.

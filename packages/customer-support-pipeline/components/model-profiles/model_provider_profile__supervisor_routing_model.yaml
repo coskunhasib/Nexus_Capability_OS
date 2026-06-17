@@ -1,0 +1,49 @@
+id: supervisor_routing_model
+name: Supervisor Routing Model
+type: model_provider_profile
+status: canonical
+purpose: Routing / orchestration reasoning consumed by the Supervisor Core Ability
+  to dispatch and sequence work across pipelines and stages. Pipeline-level, not a
+  per-stage analyst profile.
+owner_domain: orchestration
+provider_type: routing_llm
+model_family: routing_orchestration
+capability_scope:
+- task_routing
+- stage_sequencing
+- delegation_decisioning
+resource_limits:
+  context_window: standard
+  max_output_tokens: small
+  tool_use: enabled
+  concurrency: high
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: conservative_routing
+  escalation: human_owner
+governance_profiles:
+- global_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- Supervisor Core Ability routing and orchestration across all pipelines
+forbidden_usage:
+- being treated as a team_lead (Supervisor is a Core Ability, NOT any *_team_lead)
+- performing domain analysis it does not own (it routes, it does not adjudicate artifacts)
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages: []
+  core_abilities:
+  - Supervisor
+aliases: []
+notes: Bound to the Supervisor Core Ability. Reused (not re-owned) by all 5 new catalog
+  pipelines — each markdown catalog entry lists it under uses_model_provider_profiles
+  as an EXISTING shared profile (research §297-300; knowledge-memory §305-309). Supervisor
+  != team_lead is preserved.

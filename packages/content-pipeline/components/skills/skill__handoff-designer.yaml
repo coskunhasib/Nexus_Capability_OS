@@ -1,0 +1,35 @@
+id: handoff-designer
+name: Handoff Designer
+type: skill
+status: candidate
+semantic_category: problem_decomposition
+primary_purpose: design executor handoff packets / work partitioning
+purpose: Design clean executor HANDOFF_PACKETS — partition planned work into well-scoped,
+  low-coupling handoffs with explicit inputs/outputs and acceptance criteria for downstream
+  executors.
+owner_domain: planning
+allowed_usage:
+- handoff_partitioning
+- work_package_boundary_design
+- executor_handoff_authoring
+forbidden_usage:
+- bug_finding
+- making_the_plan_decision_by_itself
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - sdlc:10-planning
+  agents:
+  - planning_agent
+aliases: []
+remap_candidate: fermi-decompose
+notes: NON-CANONICAL (stage 10 self-flag; review §8). Produces HANDOFF_PACKETS. Could
+  potentially be folded into fermi-decompose (problem_decomposition) + prism (option
+  divergence), but its output is a concrete handoff artifact, so recommend RATIFY
+  as a distinct candidate. Resolve stage-10 open_question.

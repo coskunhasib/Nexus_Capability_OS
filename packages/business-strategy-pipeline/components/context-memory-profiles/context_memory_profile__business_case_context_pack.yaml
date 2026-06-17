@@ -1,0 +1,45 @@
+id: business_case_context_pack
+name: Business Case Context Pack
+type: context_pack
+status: candidate
+scope: stage_pack
+purpose: 'The decision-package working view: the assembled business case, draft success
+  metrics, the complete decision option set (including a genuinely framed NO_GO),
+  residual-risk summary, and kill-criteria evaluation. Consumed by business-case assembly,
+  the GO/NO_GO decision, and closeout.'
+owner_domain: product_management
+allowed_usage:
+- read_by_business_case_assembly_go_no_go_decision_and_closeout
+- carry_the_complete_option_set_and_residual_risk_for_the_owner_decision
+forbidden_usage:
+- present_an_incomplete_option_set_to_the_owner_decision
+- drop_the_no_go_option_or_the_kill_criteria_evaluation
+- used_to_self_approve_the_discovery_decision
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_business_case
+- current_run_feasibility_and_evidence
+- discovery_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_the_decision_package
+- decision_option_set_must_be_complete_including_no_go
+- kill_criteria_evaluation_must_be_present
+redaction_rules:
+- no_raw_secrets
+- redact_confidential_market_or_user_data
+governance_profiles:
+- go_no_go_decision_gate
+- context_access_governance
+- evidence_required_policy
+audit_schemas:
+- discovery_evidence_schema
+- context_usage_trace_schema
+used_by:
+- product_discovery_pipeline
+- stage:business_case_assembly@product_discovery_pipeline
+- stage:go_no_go_decision@product_discovery_pipeline
+- stage:discovery_handoff_and_closeout@product_discovery_pipeline
+aliases: []
+notes: NEW (product_discovery_pipeline plan §1c). Feeds the go_no_go_decision_gate.

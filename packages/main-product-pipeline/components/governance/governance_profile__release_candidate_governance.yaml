@@ -1,0 +1,34 @@
+id: release_candidate_governance
+name: Release Candidate Governance
+type: pipeline_governance_profile
+status: canonical
+purpose: 'Govern the development_completion -> release_candidate boundary: a release
+  candidate may not be produced before development_completion passes, with release
+  evidence complete, no blocking policy failure, residual risk recorded, and rollback/runbook
+  present (06 §12). Bridges the operations-readiness, completion, and RC stages.'
+owner_domain: software_delivery
+allowed_usage:
+- Gate the dev-completion -> RC boundary; be re-shown under stages 27/29/30.
+- Require release evidence + no blocking policy failure before RC.
+forbidden_usage:
+- Producing a release candidate before development_completion passes (anti-pattern).
+- Used by non-SDLC pipelines.
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- sdlc_pipeline
+- operations_readiness
+- development_completion
+- release_candidate
+severity_default: blocker
+used_by:
+- operations_readiness
+- development_completion
+- release_candidate
+notes: 'Canonical. Spans three SDLC stages (27/29/30). Distinct from the global no_policy_bypass:
+  this is the specific dev-completion->RC ordering + release-evidence governance.'

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: draft_and_review
+name: Draft And Review
+purpose: Draft the content, review it against the brief and source map, and record corrections.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: memory_summarization_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory, Creative]
+uses_skills: [calibrate, prompt-fidelity, gap-audit]
+uses_tools: [summary_writer, artifact_writer, evidence_writer, evidence_reader]
+uses_governance_profiles: [memory_update_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [memory_provenance_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [summarization_model, knowledge_reasoning_profile]
+uses_context_memory_profiles: [knowledge_run_context, claim_evidence_context_pack]
+inputs: [CONTENT_SOURCE_MAP, CLAIM_GROUNDING_REPORT]
+outputs: [CONTENT_DRAFT, CONTENT_REVIEW_REPORT]
+evidence: [CONTENT_DRAFT, CONTENT_REVIEW_REPORT]
+trace: [draft_review_trace, stage_gate_decision_trace]
+gates: [draft_reviewed]
+on_pass: content_completion
+on_fail: source_and_claim_grounding
+rework_route: source_and_claim_grounding
+blocking_conditions: [draft_unreviewed, content_drift_from_brief]
+conditional_required_gates: []
+max_iterations: 3

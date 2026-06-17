@@ -1,0 +1,43 @@
+id: evidence_consistency_checker
+name: Evidence Consistency Checker
+type: tool
+category: tool
+status: canonical
+purpose: Detect hallucinated/inconsistent/contradictory evidence and verify internal
+  consistency of the evidence graph and integrity assertions.
+owner_domain: ai_safety
+provided_by_core_ability: null
+input_schema:
+  evidence_set:
+  - object
+output_schema:
+  consistency_findings:
+  - object
+side_effects: writes_artifact_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- agentic_safety_agent
+- data_migration_agent
+- evidence_graph_agent
+- release_manager_agent
+allowed_usage:
+- Cross-check evidence for contradictions/hallucination across stages 18/22/28/30.
+forbidden_usage:
+- Asserting consistency without examining the cited evidence.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - ai_agent_safety_evaluation
+  - data_migration_validation_if_applicable
+  - evidence_graph_build
+  - release_candidate
+notes: Used by 4 SDLC stages; co-covers the dropped data_integrity_checker role with
+  test_runner.

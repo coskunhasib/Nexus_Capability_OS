@@ -1,0 +1,35 @@
+id: creative
+name: Creative
+display_name: Creative
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+unused_in_current_pipelines: true
+purpose: 'Creative generation capability: produce and reason over generated creative
+  artifacts (visual, multi-format, design-oriented). Reserved as a locked Core Ability;
+  no SDLC stage or non-SDLC pipeline in the current catalog binds it yet.'
+owner_domain: creative_generation
+model_provider_profiles:
+- creative_generation_model
+exposed_tools: []
+governance_profiles:
+- creative_governance
+- no_secret_read
+audit_schemas:
+- core_ability_invocation_trace_schema
+allowed_callers: []
+allowed_usage:
+- generate_creative_and_multi_format_artifacts
+- reason_over_design_and_creative_options
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- embedding_secrets_or_pii_in_generated_artifacts
+used_by:
+  pipelines: []
+  stages: []
+  capability_systems:
+  - nexus_ai_capability_system
+notes: LOCKED canonical NAME (K-003) but currently UNUSED. used_by anchored to nexus_ai_capability_system.
+  The content_pipeline candidate (pipeline_catalog) is the likely future consumer;
+  do not ratify creative_generation_model until a pipeline binds Creative.

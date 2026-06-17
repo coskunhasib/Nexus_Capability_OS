@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: strategy_intake
+name: Strategy Intake
+purpose: Capture the strategy question, owner, decision horizon, constraints, and risk class.
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: discovery_intake_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [prism, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, policy_query]
+uses_governance_profiles: [discovery_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [discovery_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile, supervisor_routing_model]
+uses_context_memory_profiles: [discovery_run_context]
+inputs: [STRATEGY_QUESTION]
+outputs: [STRATEGY_BRIEF, DECISION_HORIZON_RECORD]
+evidence: [STRATEGY_BRIEF]
+trace: [strategy_framing_trace, stage_gate_decision_trace]
+gates: [strategy_question_bounded]
+on_pass: option_framing
+on_fail: strategy_intake
+rework_route: strategy_intake
+blocking_conditions: [strategy_question_unbounded, decision_owner_missing]
+conditional_required_gates: []
+max_iterations: 3

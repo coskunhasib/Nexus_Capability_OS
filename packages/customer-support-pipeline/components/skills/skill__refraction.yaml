@@ -1,0 +1,35 @@
+id: refraction
+name: Refraction
+type: skill
+status: canonical
+semantic_category: learning_refraction
+primary_purpose: post-hoc learning / reflection over a completed run
+purpose: 'Structured learning/reflection pass over a completed run or incident: extract
+  lessons, patterns and improvements to feed back into the system.'
+owner_domain: reasoning_methods
+allowed_usage:
+- learning_reflection
+- lesson_extraction
+- retrospective_analysis
+forbidden_usage:
+- bug_finding
+- in_run_gating
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - sdlc:31-refraction-learning
+  - operations:operational_learning
+  - knowledge_memory:memory_lifecycle
+  agents:
+  - refraction_agent
+aliases: []
+notes: SDLC learning stage; also the canonical learning skill in operations and knowledge/memory.

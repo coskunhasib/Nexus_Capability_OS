@@ -1,0 +1,45 @@
+id: domain_risk_context_pack
+name: Domain Risk Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'Domain/risk-profile working context for the early SDLC: product domain,
+  data sensitivity, security/regulatory/availability/performance/autonomy risk signals,
+  the selected risk class that calibrates pipeline rigor, and the initialized conditional-gate
+  flags that drive downstream applicability decisions. Consumed by the domain_risk_profile
+  stage.'
+owner_domain: sdlc
+allowed_usage:
+- read_during_domain_and_risk_profiling
+- seed_the_risk_class_and_conditional_gate_flags_for_the_run
+forbidden_usage:
+- used_as_general_purpose_context_outside_domain_risk_profiling
+- override_a_blocking_gate_via_risk_class
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- product_and_scope_artifacts
+- current_run_domain_risk_artifacts
+- sdlc_run_context
+- durable_memory_prior_domain_profiles
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_domain_and_risk_profiling
+- risk_class_calibrates_rigor_but_does_not_waive_blocking_gates
+redaction_rules:
+- no_raw_secrets
+- redact_customer_or_regulated_data_examples
+governance_profiles:
+- domain_risk_governance
+- context_access_governance
+audit_schemas:
+- domain_risk_evidence_schema
+- context_usage_trace_schema
+used_by:
+- stage:domain_risk_profile
+aliases: []
+notes: Canonical SDLC pack used by stage 02 (domain_risk_profile). Not named in doc
+  17 §10's pack list but canonical-referenced on disk and used as a first-class pack
+  (not reconciled away), so it is registered here to satisfy the "no category described
+  only in prose" exit criterion. Flagged in open_questions for confirmation into the
+  locked SDLC base-pack set.

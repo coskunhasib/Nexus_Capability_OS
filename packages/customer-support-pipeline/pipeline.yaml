@@ -1,0 +1,75 @@
+version: draft-0.1
+pipeline_id: customer_support_pipeline
+name: Customer Support Pipeline
+purpose: >-
+  Triage, resolve, escalate, respond, and learn from customer support work with
+  governed evidence, escalation decisions, and knowledge updates.
+status: draft
+owner_domain: customer_operations
+required_team_type: operations_team
+required_team_lead_role: operations_team_lead
+applicable_domains: [customer_support, operations, knowledge, incident_response]
+risk_profiles: [standard_support, customer_facing_incident, regulated_or_high_risk]
+entry_criteria:
+  - support_request_present
+  - requester_context_available
+  - support_scope_bounded
+exit_criteria:
+  - support_triage_complete
+  - resolution_plan_complete
+  - customer_response_recorded
+  - escalation_recorded_if_required
+  - learning_update_complete
+blocking_conditions:
+  - support_request_unclassified
+  - unresolved_customer_issue_without_owner_decision
+  - escalation_required_but_missing
+  - unsafe_or_unreviewed_customer_response
+  - reusable_learning_not_recorded
+allowed_rework_routes:
+  intake_gap: support_intake
+  triage_gap: triage_and_classification
+  plan_gap: resolution_plan
+  response_gap: response_and_escalation
+  learning_gap: support_completion_learning
+required_evidence:
+  - SUPPORT_REQUEST_RECORD
+  - SUPPORT_TRIAGE_REPORT
+  - RESOLUTION_PLAN
+  - CUSTOMER_RESPONSE_RECORD
+  - ESCALATION_RECORD_IF_REQUIRED
+  - SUPPORT_COMPLETION_REPORT
+required_trace:
+  - support_triage_trace
+  - escalation_decision_trace
+  - customer_response_trace
+  - learning_update_trace
+  - stage_gate_decision_trace
+stages:
+  - support_intake
+  - triage_and_classification
+  - resolution_plan
+  - response_and_escalation
+  - support_completion_learning
+uses_core_abilities: [Supervisor, Memory, Web]
+uses_skills: [gap-audit, calibrate, refraction, handoff-designer]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, memory_search, policy_query, provenance_recorder]
+uses_governance_profiles: [operations_pipeline_governance, memory_update_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [incident_evidence_schema, operational_learning_evidence_schema, memory_provenance_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [operations_analysis_model, knowledge_reasoning_profile, supervisor_routing_model]
+uses_context_memory_profiles: [incident_context_pack, learning_context_pack, knowledge_run_context]
+required_gates:
+  always:
+    - support_request_captured
+    - severity_and_account_context_classified
+    - resolution_plan_complete
+    - response_reviewed
+    - escalation_recorded_if_required
+    - learning_update_complete
+    - no_blocking_policy_failure
+  conditional:
+    - incident_escalation_if_production_issue
+    - knowledge_update_if_reusable_answer
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/pipeline_catalog.yaml

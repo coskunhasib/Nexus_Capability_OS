@@ -12,7 +12,7 @@ description: 'Run sourced research with no-human governance: pre-register the re
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: cf6d4a9
+  source_commit: 74e50a1
   source_path: configs/nexus-ai/research_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:

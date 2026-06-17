@@ -1,0 +1,52 @@
+id: prism
+name: Prism
+type: skill
+status: canonical
+semantic_category: divergence
+primary_purpose: brainstorming / ideation / divergent thinking
+purpose: 'Multi-lens divergent ideation: expand the option space (goal framing, requirement
+  elicitation, candidate architectures, failure-mode/abuse-case ideation, sequencing/handoff-partition
+  options). Produces options, never decisions.'
+owner_domain: reasoning_methods
+allowed_usage:
+- divergent_exploration
+- option_space_expansion
+- brainstorming
+- requirement_elicitation
+- candidate_architecture_generation
+- failure_mode_and_abuse_case_ideation
+- subskill_of_llm_council_or_sentinel
+forbidden_usage:
+- bug_finding
+- final_release_approval
+- general_readiness_gate
+- decision_making
+governance_profiles:
+- brainstorming_skill_governance
+- locked_semantics_enforcement_policy
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - skill_governance_pipeline
+  stages:
+  - sdlc:01-intake
+  - sdlc:04-requirements
+  - sdlc:06-architecture
+  - sdlc:09-premortem-fmea
+  - sdlc:10-planning
+  - research:scope_and_questions
+  - skill_governance:skill_semantic_extraction
+  - skill_governance:skill_binding_proposal
+  agents:
+  - requirements_agent
+  - architecture_agent
+  - llm_council_agent
+  - security_risk_agent
+aliases: []
+notes: Enforced by sdlc_pipeline_runtime_rules anti-pattern `prism_as_non_divergence`.
+  Correctly ABSENT from every review/validation/execution/readiness stage. In skill_governance
+  it only expands options and never adjudicates.

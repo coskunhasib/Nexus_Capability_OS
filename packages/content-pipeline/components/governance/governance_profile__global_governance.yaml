@@ -1,0 +1,38 @@
+id: global_governance
+name: Global Governance (All-Pipeline Umbrella)
+type: global_governance_policy
+status: candidate
+purpose: Aggregate global umbrella that binds the standing global policies (plugin_absent,
+  no_secret_exposure, no_policy_bypass, trace_required, raw_credential_redaction,
+  high_risk_action_default_deny, no_self_approval, evidence_required) as one reference.
+  Used where a profile wants to assert "all global governance applies" without enumerating
+  each policy (e.g. the Supervisor routing model in model_provider_profiles.yaml).
+owner_domain: nexus_global_governance
+allowed_usage:
+- Be referenced as shorthand for the full standing global policy set across pipelines/abilities.
+- Bind at the Supervisor routing/orchestration model level (model_provider_profiles.yaml).
+forbidden_usage:
+- Used to weaken any constituent global policy (it aggregates, it does not relax).
+- Treated as introducing a new scope — it remains a global-scope aggregate.
+governance_profiles:
+- plugin_absent
+- no_secret_exposure
+- no_policy_bypass
+- trace_required
+- raw_credential_redaction
+- high_risk_action_default_deny
+- no_self_approval
+- evidence_required
+audit_schemas:
+- stage_gate_trace_schema
+scope: global
+applies_to:
+- all_pipelines
+- all_core_abilities
+severity_default: blocker
+used_by:
+- supervisor_routing_model
+notes: NEW (reconciliation). Aggregate umbrella referenced by model_provider_profiles.yaml
+  as `global_governance`. Does not create a new scope or policy; it re-shows the 8
+  canonical global policies as a single binding. Ratify in Phase E alongside the model-provider
+  governance set.

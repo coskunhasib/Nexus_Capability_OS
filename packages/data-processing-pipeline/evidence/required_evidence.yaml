@@ -1,0 +1,12 @@
+required_evidence:
+- DATA_PROCESSING_REQUEST
+- DATA_QUALITY_PROFILE
+- TRANSFORMATION_PLAN
+- PROCESSING_VALIDATION_REPORT
+- DATASET_DELIVERY_PACKAGE
+- DATA_PROCESSING_COMPLETION_REPORT
+required_trace:
+- data_processing_trace
+- validation_execution_trace
+- rollback_readiness_trace
+- stage_gate_decision_trace

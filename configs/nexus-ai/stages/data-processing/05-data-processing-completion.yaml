@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: data_processing_completion
+name: Data Processing Completion
+purpose: Seal the dataset delivery package, validation evidence, residual risks, and completion report.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: release_manager_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory, OS]
+uses_skills: [gap-audit, refraction]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, evidence_consistency_checker]
+uses_governance_profiles: [release_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [release_evidence_schema, evidence_integrity_report_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [release_reasoning_model]
+uses_context_memory_profiles: [release_context_pack]
+inputs: [PROCESSING_VALIDATION_REPORT, PROCESSED_DATASET_REFERENCE]
+outputs: [DATASET_DELIVERY_PACKAGE, DATA_PROCESSING_COMPLETION_REPORT]
+evidence: [DATASET_DELIVERY_PACKAGE, DATA_PROCESSING_COMPLETION_REPORT]
+trace: [data_processing_trace, stage_gate_decision_trace]
+gates: [delivery_package_complete, no_blocking_policy_failure]
+on_pass: done
+on_fail: processing_execution
+rework_route: processing_execution
+blocking_conditions: [delivery_package_missing, completion_report_missing]
+conditional_required_gates: []
+max_iterations: 3

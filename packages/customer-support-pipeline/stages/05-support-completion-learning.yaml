@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: support_completion_learning
+name: Support Completion Learning
+purpose: Close the support run and record reusable knowledge, follow-ups, residual risk, and completion evidence.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: memory_curator_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [refraction, gap-audit, calibrate]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, provenance_recorder, memory_search]
+uses_governance_profiles: [memory_update_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [operational_learning_evidence_schema, memory_provenance_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [knowledge_reasoning_profile, postmortem_reasoning_model]
+uses_context_memory_profiles: [learning_context_pack, knowledge_run_context]
+inputs: [CUSTOMER_RESPONSE_RECORD, ESCALATION_RECORD_IF_REQUIRED]
+outputs: [SUPPORT_COMPLETION_REPORT, SUPPORT_LEARNING_UPDATE]
+evidence: [SUPPORT_COMPLETION_REPORT]
+trace: [learning_update_trace, stage_gate_decision_trace]
+gates: [learning_update_complete, knowledge_update_if_reusable_answer, no_blocking_policy_failure]
+on_pass: done
+on_fail: response_and_escalation
+rework_route: response_and_escalation
+blocking_conditions: [support_completion_report_missing, reusable_learning_not_recorded]
+conditional_required_gates: [knowledge_update_if_reusable_answer]
+max_iterations: 3

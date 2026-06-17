@@ -5,7 +5,7 @@
 # =============================================================================
 #
 # WHAT THIS FILE IS
-#   One Team Lead role per Team (6 total). A Team Lead is the pipeline-specific
+#   One Team Lead role per Team (7 total). A Team Lead is the pipeline-specific
 #   orchestration role that RUNS a pipeline: it assigns stage owners (Agents),
 #   manages handoffs, enforces routing, requests rework, and checks
 #   governance/evidence state. It is NOT a worker that owns a stage's product
@@ -52,7 +52,7 @@
 #
 # AUTHORITATIVE SOURCES (read from disk; usage mapping per doc 05)
 #   - configs/nexus-ai/stages/sdlc/*.yaml          # 31 SDLC stage contracts: owner_agent + sub_agents + team_lead (AUTHORITATIVE for SDLC roster)
-#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md    # 5 non-SDLC pipelines: per-stage owner_agent rosters (markdown authoritative over catalog YAML)
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md    # non-SDLC pipeline provenance where available
 #   - configs/nexus-ai/{core_abilities,skills_registry,tools_registry,
 #       governance_profiles,audit_schemas,context_memory_profiles}.yaml
 #                                                   # every may_*/uses_* item below resolves to a registered id
@@ -71,7 +71,7 @@ category: team_lead_role
 top_structure: nexus_ai_orchestration_model
 no_plugin: true
 purpose: >-
-  Canonical catalog of the 6 Nexus AI Team Lead roles (one per Team / pipeline),
+  Canonical catalog of the 7 Nexus AI Team Lead roles (one per Team / pipeline),
   defining what each lead may orchestrate, assign, use, and is forbidden from
   doing — with registry-resolvable usage mapping and the locked no-self-approval
   and no-gate-bypass guarantees.
@@ -100,7 +100,7 @@ sources_scanned:
 # Registry-wide invariants (enforce the locked rules from this file's data).
 # ---------------------------------------------------------------------------
 invariants:
-  - Exactly 6 team-lead roles, one per team (sdlc, research, activation, operations, skill_governance, knowledge).
+  - Exactly 7 team-lead roles, one per team (sdlc, research, discovery, activation, operations, skill_governance, knowledge).
   - No team_lead_id is a Core Ability; Supervisor is never a team_lead (D-006).
   - Every team_lead's forbidden_actions include cannot_author_then_approve_same_artifact AND cannot_bypass_a_failed_governance_gate.
   - A Core Ability never appears in may_assign_agents (those are Agent roles only).
@@ -683,16 +683,17 @@ open_questions:
       The earlier `knowledge_memory_*` spelling has been reconciled to the markdown-authoritative
       names across the catalog; no alias is needed.
   - id: OQ-TL-2
-    topic: no team-scope governance profile for 4 of 6 teams
+    topic: no team-scope governance profile for 5 of 7 teams
     detail: >-
       governance_profiles.yaml defines team-scope (scope: team) profiles ONLY for
-      sdlc_team_governance and research_team_governance. There is no activation_team_governance,
-      operations_team_governance, skill_governance_team_governance, or knowledge_team_governance.
-      For those four leads, uses_governance_profiles binds the pipeline-level umbrella
-      (activation_pipeline_governance / operations_pipeline_governance /
+      sdlc_team_governance and research_team_governance. There is no discovery_team_governance,
+      activation_team_governance, operations_team_governance, skill_governance_team_governance,
+      or knowledge_team_governance.
+      For those five leads, uses_governance_profiles binds the pipeline-level umbrella
+      (discovery_pipeline_governance / activation_pipeline_governance / operations_pipeline_governance /
       skill_governance_pipeline_governance / memory_source_governance) plus the cross-cutting
       no_self_approval + evidence_required. Phase E should decide whether dedicated team-scope
-      governance profiles are added for these four teams.
+      governance profiles are added for these five teams.
   - id: OQ-TL-3
     topic: shared agent across teams (skill_librarian_agent)
     status: RESOLVED

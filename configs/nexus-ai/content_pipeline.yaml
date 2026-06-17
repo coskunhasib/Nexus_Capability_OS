@@ -1,0 +1,74 @@
+version: draft-0.1
+pipeline_id: content_pipeline
+name: Content Pipeline
+purpose: >-
+  Plan, source, draft, review, and complete governed content work with grounded
+  claims, audience/channel fit, evidence, trace, and a completion report.
+status: draft
+owner_domain: content_operations
+required_team_type: knowledge_team
+required_team_lead_role: knowledge_team_lead
+applicable_domains: [content, documentation, marketing_content, knowledge_article, customer_education]
+risk_profiles: [low_risk_internal, public_content, regulated_or_high_risk]
+entry_criteria:
+  - content_goal_present
+  - target_audience_identified
+  - output_channel_known
+exit_criteria:
+  - content_plan_approved
+  - load_bearing_claims_grounded
+  - draft_reviewed
+  - completion_report_emitted
+  - no_blocking_policy_failure
+blocking_conditions:
+  - content_goal_unbounded
+  - audience_or_channel_missing
+  - unsupported_load_bearing_claim
+  - draft_unreviewed
+  - completion_report_missing
+allowed_rework_routes:
+  content_goal_gap: content_intake
+  plan_gap: content_plan
+  grounding_gap: source_and_claim_grounding
+  review_gap: draft_and_review
+  completion_gap: content_completion
+required_evidence:
+  - CONTENT_BRIEF
+  - CONTENT_PLAN
+  - CONTENT_SOURCE_MAP
+  - CONTENT_DRAFT
+  - CONTENT_REVIEW_REPORT
+  - CONTENT_COMPLETION_REPORT
+required_trace:
+  - content_planning_trace
+  - source_grounding_trace
+  - draft_review_trace
+  - stage_gate_decision_trace
+stages:
+  - content_intake
+  - content_plan
+  - source_and_claim_grounding
+  - draft_and_review
+  - content_completion
+uses_core_abilities: [Supervisor, Memory, Web, Creative]
+uses_skills: [prism, gap-audit, calibrate, handoff-designer]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, web_search, source_reliability_checker, claim_mapper, summary_writer, provenance_recorder]
+uses_governance_profiles: [global_governance, research_source_governance, memory_update_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [source_evidence_schema, claim_evidence_schema, memory_provenance_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile, summarization_model, supervisor_routing_model]
+uses_context_memory_profiles: [knowledge_run_context, source_corpus_context_pack, claim_evidence_context_pack]
+required_gates:
+  always:
+    - content_goal_bounded
+    - audience_and_channel_defined
+    - content_plan_approved
+    - sources_or_claims_grounded
+    - draft_reviewed
+    - completion_report_emitted
+    - no_blocking_policy_failure
+  conditional:
+    - legal_or_regulatory_review_if_high_risk
+    - localization_review_if_requested
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/pipeline_catalog.yaml

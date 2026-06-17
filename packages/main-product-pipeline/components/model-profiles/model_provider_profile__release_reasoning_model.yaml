@@ -1,0 +1,50 @@
+id: release_reasoning_model
+name: Release Reasoning Model
+type: model_provider_profile
+status: canonical
+purpose: Release-readiness, operations-readiness, DR/backup-restore and evidence-graph
+  assembly reasoning ahead of development completion and release candidate.
+owner_domain: release
+provider_type: reasoning_llm
+model_family: release_reasoning
+capability_scope:
+- release_readiness_reasoning
+- operations_readiness_reasoning
+- dr_and_backup_restore_reasoning
+- evidence_chain_assembly
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: pipeline_default
+fallback_policy:
+  on_unavailable: queue_and_retry
+  degraded_mode: none
+  escalation: human_owner
+governance_profiles:
+- sdlc_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- DR/backup-restore validation, operations readiness, evidence-graph build, development
+  completion, release candidate reasoning
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  - evidence_graph_build
+  - development_completion
+  - release_candidate
+  core_abilities: []
+aliases:
+- evidence_graph_model
+notes: Used by the five release/operations-readiness SDLC stages. The legacy SDLC
+  name `operations_analysis_model` was reconciled here as historical metadata (stages
+  26/27), but the operations pipeline introduces a distinct candidate profile of the
+  same name. It is therefore recorded in reconciliation/open_questions rather than
+  as a read-time alias.

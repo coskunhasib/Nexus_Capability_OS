@@ -34,7 +34,7 @@ Each component below is described as a reference design. Data flow is sketched a
 
 **2.4 Dependency resolver.** Confirms the package is truly self-contained and registry-consistent. It walks the pipeline definition's `uses_*` fields plus `required_team_type` / `required_team_lead_role` and checks each referenced `id` is present in the bundled `components` of the right `kind` (dangling reference → fail). Where an `id` also lives in the Shared Registry with version constraints, it checks compatibility; on an incompatible bundled `version` it refuses and reports rather than substituting or auto-upgrading.
 
-**2.5 Gate / evidence loader.** Reads governance straight from the package: the **19 always-required gates (D-016)** from `required_gates.always` (+ conditional gates), and the `required_evidence` / `required_trace` schemas from `evidence/`. It verifies each required gate has a bundled definition and each required evidence/trace entry has a bundled schema; any gap means the package is registered as **non-runnable** and the reason is reported. It hands the loaded gate set + schemas to the runner; it never drops or weakens them.
+**2.5 Gate / evidence loader.** Reads governance straight from the package: the package-declared always-required gates from `required_gates.always` (+ conditional gates), and the `required_evidence` / `required_trace` schemas from `evidence/`. It verifies each required gate has a bundled definition and each required evidence/trace entry has a bundled schema; any gap means the package is registered as **non-runnable** and the reason is reported. It hands the loaded gate set + schemas to the runner; it never drops or weakens them. The loader must not hard-code a universal gate count: `sdlc-pipeline` carries 19 always gates, while `research-pipeline` carries 13.
 
 **2.6 Runner hook.** The bridge from an imported package to the existing Nexus runner. Before a run starts it asserts the gate/evidence/trace set is complete; during the run it enforces each gate at its producing stage (a failed or unevaluated mandatory gate becomes a blocking condition) and emits the declared evidence and trace records through Nexus's observability path. It enforces the release-candidate rule: no release candidate while a mandatory gate is failed or unevaluated.
 
@@ -71,7 +71,7 @@ A staged path so value lands early and risk stays contained.
             │   │ DEPENDENCY RESOLVER  │ ◄────────────────────────┘                      │
             │   └──────────┬───────────┘ missing/incompatible ──► fail + report          │
             │              ▼                                                              │
-            │   ┌──────────────────────┐  load 19 gates (D-016) + evidence + trace       │
+            │   ┌──────────────────────┐  load package gates + evidence + trace          │
             │   │ GATE / EVIDENCE LOADER│ ── any missing ──► mark NON-RUNNABLE + report   │
             │   └──────────┬───────────┘                                                  │
             │              ▼                                                              │
@@ -98,7 +98,7 @@ A staged path so value lands early and risk stays contained.
 - [ ] Fingerprinter applies a documented canonicalization + uniform hash; `version` never feeds the hash.
 - [ ] Shared-store/dedup implements **same / different / new** exactly; coexistence + warning on conflict; idempotent re-import.
 - [ ] Dependency resolver fails on dangling deps and on registry version-incompatibility (refuse, don't substitute).
-- [ ] Gate/evidence loader loads the 19 gates (D-016) + conditional + evidence + trace; marks packages non-runnable on any gap.
+- [ ] Gate/evidence loader loads package-declared always gates + conditional gates + evidence + trace; marks packages non-runnable on any gap.
 - [ ] Runner hook enforces gates, emits evidence/trace, blocks release candidate on failed/unevaluated mandatory gate.
 - [ ] `sdlc_pipeline` package imports, dedups, and runs end-to-end through Phases 1–3.
 - [ ] Phase 4 pulls a published package via the marketplace with provenance recorded.

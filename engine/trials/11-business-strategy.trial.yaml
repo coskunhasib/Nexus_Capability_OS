@@ -1,0 +1,7 @@
+id: business-strategy-pricing
+intent: "pricing strategy ve market strategy için business case karar önerisi hazırla"
+expected:
+  pipeline_id: business_strategy_pipeline
+  package: packages/business-strategy-pipeline
+  gates_always: 7
+  stages: 5

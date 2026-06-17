@@ -4,15 +4,16 @@ The local **workbench** for authoring, validating, and test-running `.pipeline` 
 
 > **Stays here — not shipped to Nexus.** This is producer-side dev tooling. The production
 > runtime (import, content-fingerprint, dedup/share, marketplace pull) is **Nexus's** job —
-> see [`../docs/nexus-ai-orchestration-model/packaging/CONSUMER_CONTRACT.md`](../docs/nexus-ai-orchestration-model/packaging/CONSUMER_CONTRACT.md)
-> and [`NEXUS_INTEGRATION_PLAN.md`](../docs/nexus-ai-orchestration-model/packaging/NEXUS_INTEGRATION_PLAN.md).
+> see [`../docs/nexus-ai-orchestration-model/packaging/CONSUMER_CONTRACT.md`](../docs/nexus-ai-orchestration-model/packaging/CONSUMER_CONTRACT.md),
+> [`../docs/nexus-ai-orchestration-model/packaging/CONSUMER_RUNTIME_DESIGN_LOCK.md`](../docs/nexus-ai-orchestration-model/packaging/CONSUMER_RUNTIME_DESIGN_LOCK.md)
+> and [`../docs/nexus-ai-orchestration-model/packaging/NEXUS_INTEGRATION_PLAN.md`](../docs/nexus-ai-orchestration-model/packaging/NEXUS_INTEGRATION_PLAN.md).
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
 | `package_pipeline.py` | Reads a pipeline def + the Shared Registry → emits a self-contained `.pipeline` package (manifest + components + gates + evidence + stages). |
-| `validate_package.py` | Checks a package conforms to the format (manifest, contract fields, all parts present, D-016 19 gates, evidence/trace, every stage). |
+| `validate_package.py` | Checks a package conforms to the format (manifest, contract fields, all parts present, package-declared gates, evidence/trace, every stage). |
 | `run_pipeline.py` | Loads a package and runs it end-to-end with a **mock** agent loop (observe→think→act), enforces the gates, emits evidence + trace, prints a verdict. |
 | `run_chain.py` | **(chain)** Runs a multi-pipeline handoff chain (`chains/*.chain.yaml`) and asserts each handoff artifact is produced upstream **and** declared as an input downstream — proves the orchestration model is whole end-to-end, not just per-pipeline. |
 | `select_pipeline.py` | **(T1)** Deterministic intent→pipeline selector via `configs/nexus-ai/pipeline_selection_contract.yaml`; ambiguous → defer to orchestrator/owner. |
@@ -29,14 +30,14 @@ python3 engine/run_pipeline.py    packages/sdlc-pipeline --skip requirements   #
 python3 engine/run_chain.py                                     # prove the discovery->sdlc handoff chain
 python3 engine/select_pipeline.py --intent "bir SaaS MVP yap"   # T1: intent -> pipeline + package
 python3 engine/build_catalog.py                                 # build the pull catalog (packages/INDEX.yaml)
-python3 engine/run_trials.py                                    # T2: run acceptance fixtures (6/6)
+python3 engine/run_trials.py                                    # T2: run acceptance fixtures (11/11)
 ```
 
 Requires Python 3 + PyYAML. Run outputs go to `engine/runs/` (gitignored).
 
 ## Real vs mock (v0)
 
-- **Real:** the orchestration loop (stages in order, all 7 pipelines); **gate enforcement for every pipeline** via its explicit gate→producer map (sdlc's is the D-016 19), with a derived fallback from each package's stage contracts (skip a producing stage → its gate FAILs); **cross-pipeline handoff proof** (`run_chain.py`: discovery GO → sdlc); evidence/trace emission; package self-containment + **coherence validation** (required-evidence coverage + gate-producer coverage).
+- **Real:** the orchestration loop (stages in order, all 13 catalog pipelines); **gate enforcement for every pipeline** via its explicit gate→producer map where present and derived fallback from each package's stage contracts (skip a producing stage → its gate FAILs); **cross-pipeline handoff proof** (`run_chain.py`: discovery GO → sdlc); evidence/trace emission; package self-containment + **coherence validation** (required-evidence coverage + gate-producer coverage).
 - **Mock:** the agent "work" itself (deterministic stubs — no LLM, no network).
 
 ## The MetaGPT transfer
@@ -47,7 +48,9 @@ Requires Python 3 + PyYAML. Run outputs go to `engine/runs/` (gitignored).
 
 ## Latest run state
 
-**7 pipelines packaged** (sdlc, product-discovery, research, activation, operations, skill-governance, knowledge-memory) — all **validate + run PASS**.
+**13 catalog pipelines packaged** (main-product, sdlc, product-discovery, research, activation, operations, skill-governance, knowledge-memory, content, data-processing, model-inference, customer-support, business-strategy) — all **validate + run PASS**.
 - `sdlc_pipeline` → 31/31 stages · 19/19 always-gates.
+- `main_product_pipeline` → 9/9 stages · 11/11 always-gates.
 - `product_discovery_pipeline` → 7/7 · 12/12 — front-runs sdlc: a raw idea enters discovery first; a GO hands off PRODUCT_BRIEF (verify-fidelity at sdlc intake).
-- Chain `discovery→sdlc` **PASS** · trials **6/6**.
+- New specialist packages (`content`, `data_processing`, `model_inference`, `customer_support`, `business_strategy`) each validate/run with 5 stages and 7 always-gates.
+- Chain `discovery→sdlc` **PASS** · trials **11/11**.

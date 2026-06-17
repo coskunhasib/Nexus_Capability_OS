@@ -1,0 +1,45 @@
+id: requirements_trace_checker
+name: Requirements Trace Checker
+type: tool
+category: tool
+status: canonical
+purpose: Seed and validate requirement->artifact->test traceability (REQUIREMENTS_TRACE_START
+  linkage, tasks_trace_to_requirements, obligation->requirement->control coverage).
+owner_domain: requirements
+provided_by_core_ability: null
+input_schema:
+  trace_graph: object
+  requirements: object
+output_schema:
+  trace_coverage: object
+  gaps:
+  - object
+side_effects: none
+risk_level: low
+requires_sandbox: false
+governance_profiles:
+- tool_call_governance
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- product_requirements_agent
+- sdlc_team_lead
+- planning_agent
+- code_reviewer_agent
+- compliance_agent
+- evidence_graph_agent
+allowed_usage:
+- Read-only traceability validation supporting trace-coverage gates.
+forbidden_usage:
+- Fabricating trace links not backed by artifacts.
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  sdlc_stages:
+  - requirements
+  - requirements_review
+  - planning
+  - code_review
+  - domain_regulatory_compliance_validation_if_applicable
+  - evidence_graph_build
+notes: Used across 6 SDLC stages. Side-effect-free.

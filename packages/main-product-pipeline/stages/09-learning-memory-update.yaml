@@ -1,0 +1,43 @@
+version: draft-0.1
+stage_id: learning_memory_update
+name: Learning Memory Update
+purpose: >-
+  Close the main product journey by recording learning, memory updates,
+  completion state, residual risks, and no-blocking-policy status.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: memory_curator_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [refraction, gap-audit, calibrate]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, memory_search, provenance_recorder]
+uses_governance_profiles: [memory_update_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [memory_provenance_schema, learning_record_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [knowledge_reasoning_profile, summarization_model]
+uses_context_memory_profiles: [knowledge_run_context, learning_context_pack]
+inputs:
+  - RELEASE_CANDIDATE_OR_DELIVERY_HANDOFF
+  - ACTIVATION_HANDOFF_IF_REQUESTED
+outputs:
+  - LEARNING_MEMORY_UPDATE_REPORT
+  - MAIN_PRODUCT_COMPLETION_REPORT
+  - MAIN_PRODUCT_RESIDUAL_RISK_RECORD
+evidence:
+  - LEARNING_MEMORY_UPDATE_REPORT
+  - MAIN_PRODUCT_COMPLETION_REPORT
+trace:
+  - learning_update_trace
+  - memory_update_trace_schema
+  - stage_gate_decision_trace
+gates:
+  - learning_memory_update_complete
+  - no_blocking_policy_failure
+on_pass: done
+on_fail: release_candidate_preparation
+rework_route: release_candidate_preparation
+blocking_conditions:
+  - learning_memory_update_missing
+  - main_product_completion_report_missing
+  - blocking_policy_failure_present
+conditional_required_gates: []
+max_iterations: 3

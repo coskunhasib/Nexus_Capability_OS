@@ -1,0 +1,51 @@
+id: knowledge_run_context
+name: Knowledge Run Context
+type: run_context
+status: candidate
+scope: run
+purpose: 'Whole-run working context for a Knowledge / Memory Pipeline run: the candidate
+  memory item, its origin reference and target knowledge scope, source classification,
+  validity window, and which lifecycle gates (intake / classification / redaction
+  / validity / retrieval) have been satisfied. Governs WHAT the Memory Core Ability
+  is allowed to remember — it does not make Memory an agent.'
+owner_domain: knowledge_management
+allowed_usage:
+- read_as_run_level_backbone_by_any_knowledge_memory_stage
+- govern_what_the_memory_core_ability_may_remember_and_for_how_long
+forbidden_usage:
+- promote_the_memory_core_ability_into_an_agent
+- update_a_retrieval_profile_for_a_memory_with_no_validity_window
+- store_unredacted_sensitive_content
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- candidate_memory_item
+- current_run_knowledge_artifacts
+- durable_memory_existing_knowledge
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- readable_by_all_knowledge_stages
+- run_scoped_isolation: true
+- retrieval_profile_update_requires_validity_window
+redaction_rules:
+- no_raw_secrets
+- redact_sensitive_content_before_summarization_or_storage
+governance_profiles:
+- memory_source_governance
+- validity_window_required_gate
+- redaction_required_gate
+- context_access_governance
+audit_schemas:
+- memory_provenance_schema
+- stage_gate_trace_schema
+used_by:
+- knowledge_memory_pipeline
+aliases:
+- knowledge_memory_run_context
+notes: New (draft-0.1, knowledge-memory-pipeline.md §1, name authoritative). Memory
+  stays a Core Ability; this run context curates the knowledge lifecycle (ingest->classify->summarize->
+  validity->retrieval->expiry). The pre-R9 pipeline_catalog.yaml definition_contract
+  used `knowledge_memory_run_context`; markdown `knowledge_run_context` is canonical.
+  After R9 collapsed pipeline_catalog.yaml into a summary-only catalog, the authoritative
+  per-pipeline source is the markdown definition_doc and the YAML name is retained
+  as an alias only (review F-1).

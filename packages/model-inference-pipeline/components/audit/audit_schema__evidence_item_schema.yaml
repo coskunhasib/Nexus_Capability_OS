@@ -1,0 +1,59 @@
+id: evidence_item_schema
+name: Evidence Item Schema
+type: evidence_schema
+status: candidate
+purpose: Generic Evidence record shape for a stage evidence item / gate result emitted
+  directly by a side-effecting tool (e.g. evidence_writer). The base decision-proof
+  shape; field set is the locked Evidence Contract.
+owner_domain: nexus_global_governance
+allowed_usage:
+- Record a generic stage evidence item / gate result attached by a side-effecting
+  tool that emits gate-relevant evidence.
+- Serve as the evidence-record shape referenced by configs/nexus-ai/ artifact_registry.yaml.
+forbidden_usage:
+- Used to record operation/process history (that is tool_call_trace_schema).
+- Merged with tool_call_trace_schema (Decision-Evidence != Tool-Trace).
+governance_profiles:
+- evidence_required
+audit_schemas:
+- tool_call_trace_schema
+notes: Field set is the locked Evidence Contract — configs/nexus-ai/schemas/ evidence_item.schema.json
+  (07 §11) and the evidence_item_schema field block in configs/nexus-ai/artifact_registry.yaml.
+  Generic base; specific SDLC/ pipeline stages use their stage-specific evidence schemas
+  above.
+applies_to:
+- all_pipelines
+- generic_tool_emitted_evidence
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_pipeline
+- related_run
+- related_stage
+- related_agent
+- related_sub_agent
+- related_gate
+- source_artifacts
+- summary
+- status
+- created_at
+producer: evidence_writer_invoking_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- raw_credential_redaction
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  registries:
+  - tools_registry
+  - artifact_registry
+  agents:
+  - all_evidence_emitting_agents

@@ -2,7 +2,7 @@
 # =============================================================================
 # Phase D / doc 18 — Team / Agent / Sub-agent Catalog.
 # Conforms to: docs/nexus-ai-orchestration-model/legacy/18-team-agent-subagent-catalog-plan.md §4
-#   (Team Template Contract). One team_template per team; all 6 teams present.
+#   (Team Template Contract). One team_template per team; all 7 teams present.
 #
 # A Team is a PASSIVE ownership / policy boundary (04-team-agent-subagent-model.md §4,
 #   §9) — NOT a runtime-active object. It declares which agents/sub-agents it owns and
@@ -12,7 +12,7 @@
 #
 # AUTHORITATIVE SOURCES (read from disk, reconciled):
 #   - configs/nexus-ai/stages/sdlc/*.yaml          — 31 SDLC stage contracts (owner_agent + sub_agents).
-#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md    — 5 non-SDLC pipeline definitions (rosters + uses_*).
+#   - docs/nexus-ai-orchestration-model/legacy/pipeline-catalog/*.md    — non-SDLC pipeline provenance where available.
 #   - configs/nexus-ai/{core_abilities,skills_registry,tools_registry,governance_profiles,
 #       audit_schemas,model_provider_profiles,context_memory_profiles}.yaml — Shared Registry.
 #
@@ -45,18 +45,18 @@
 # REGISTRY VERIFICATION (performed against the 7 registries on disk):
 #   - All SDLC uses_* items resolve: 18 skills, 45 tools, 68 governance profiles, 47 audit
 #     schemas, 7 model/provider profiles, 10 context/memory profiles.
-#   - All 5 non-SDLC pipelines' uses_* items resolve against the registries.
+#   - All non-SDLC pipeline uses_* items resolve against the registries.
 #   - `no_self_approval_policy` and `evidence_required_policy` are NAMING VARIANTS of the
 #     canonical governance ids `no_self_approval` / `evidence_required`; the registry records
 #     them under each policy's `aliases:` field (governance_profiles.yaml). The `_policy` spelling
-#     used here matches every SDLC stage file and all 5 pipeline contracts. See open_questions.
+#     used here matches every SDLC stage file and specialist pipeline contracts. See open_questions.
 #   - Core Abilities are referenced by their canonical NAME (Supervisor, Coder, ...); the registry
 #     `id` is lowercase (supervisor, coder, ...). Names match the stage/pipeline contracts.
 
 version: draft-0.1
 registry_name: Nexus AI Orchestration Model — Team Templates
 status: draft
-total_teams: 6
+total_teams: 7
 
 # -----------------------------------------------------------------------------
 # Cross-team invariants (apply to every team_template below).

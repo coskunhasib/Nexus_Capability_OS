@@ -1,0 +1,47 @@
+id: verification_context_pack
+name: Verification Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'Test/verification/bug-finding working context: TEST_PLAN, GENERATED_TESTS_SUMMARY,
+  TEST_EXECUTION_REPORT, COVERAGE_REPORT, BUG_FINDING_REPORT and the defect/verification
+  lineage shared from test generation through execution, the verification-loop bug-finding
+  sweep, agentic-safety defect sweep, and data-migration defect finding.'
+owner_domain: sdlc
+allowed_usage:
+- read_by_test_generation_execution_and_bug_finding_lineage
+- carry_the_defect_verification_lineage_between_stages
+forbidden_usage:
+- used_as_a_readiness_or_coverage_checklist
+- used_to_replace_test_execution_evidence
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_test_and_bug_artifacts
+- implementation_context_pack
+- sdlc_run_context
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_test_and_defect_lineage
+- bug_findings_link_to_changeset_and_test_results
+redaction_rules:
+- no_raw_secrets
+- redact_secrets_from_test_fixtures_and_failure_logs
+governance_profiles:
+- verification_governance
+- context_access_governance
+audit_schemas:
+- bug_finding_evidence_schema
+- test_result_evidence_schema
+- context_usage_trace_schema
+used_by:
+- stage:test_generation
+- stage:test_execution
+- stage:verification_loop_bug_finding
+- stage:ai_agent_safety_evaluation
+- stage:data_migration_validation_if_applicable
+aliases: []
+notes: Canonical verification pack. Carries the defect/verification lineage. verification-loop
+  is a bug/defect-finding skill ONLY (locked); this pack is its working context, not
+  a readiness checklist. Split legacy verification pack names are recorded in reconciliation
+  notes rather than as read-time aliases.

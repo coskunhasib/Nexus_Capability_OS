@@ -1,0 +1,71 @@
+id: sdlc_run_context
+name: SDLC Run Context
+type: run_context
+status: canonical
+scope: run
+purpose: 'Always-on, whole-run working context for an SDLC pipeline run: run id, domain/risk
+  profile, active conditional-gate flags, the evidence-graph spine, and which stages/gates
+  have been evaluated so far. Every SDLC stage may read it; it is the run-level backbone
+  that lets late stages (development_completion, release_candidate, refraction) confirm
+  the whole run.'
+owner_domain: sdlc
+allowed_usage:
+- read_as_run_level_backbone_by_any_sdlc_stage
+- confirm_which_stages_and_gates_were_evaluated_this_run
+- carry_domain_risk_profile_and_conditional_gate_flags
+forbidden_usage:
+- used_as_a_substitute_for_the_memory_core_ability
+- shared_across_different_runs
+- auto_satisfy_a_gate_from_prior_run_memory
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_evidence_graph
+- current_run_stage_outputs
+- domain_risk_profile
+- durable_memory_prior_runs
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- readable_by_all_sdlc_stages
+- run_scoped_isolation: true
+- prior_run_memory_is_advisory_only
+redaction_rules:
+- no_raw_secrets
+- redact_pii_per_domain_risk_profile
+governance_profiles:
+- sdlc_pipeline_governance
+- context_access_governance
+- no_silent_mutation_policy
+audit_schemas:
+- context_usage_trace_schema
+- stage_gate_trace_schema
+used_by:
+- sdlc_pipeline
+- stage:intake
+- stage:domain_risk_profile
+- stage:requirements
+- stage:planning
+- stage:code_review
+- stage:test_execution
+- stage:verification_loop_bug_finding
+- stage:security_validation
+- stage:supply_chain_sbom_license
+- stage:ai_agent_safety_evaluation
+- stage:privacy_data_lifecycle_validation
+- stage:api_contract_compatibility_validation
+- stage:domain_regulatory_compliance_validation_if_applicable
+- stage:data_migration_validation_if_applicable
+- stage:accessibility_ux_validation_if_applicable
+- stage:performance_resilience
+- stage:cost_resource_governance
+- stage:backup_restore_dr_validation_if_applicable
+- stage:operations_readiness
+- stage:evidence_graph_build
+- stage:development_completion
+- stage:release_candidate
+- stage:refraction_learning
+aliases: []
+notes: 'The single most-referenced context item (base run context for ~all 31 SDLC
+  stages). It is run context (scope: run), NOT the Memory Core Ability. Stages 12/14/16/17/18/19/20/21/
+  22/23/24/25 added it explicitly during legacy-context reconciliation (see those
+  stage headers).'

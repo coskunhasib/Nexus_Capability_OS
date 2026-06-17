@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - strategy_question_bounded
+  - option_set_complete
+  - market_evidence_sourced
+  - risks_and_tradeoffs_recorded
+  - recommendation_reviewed
+  - decision_recorded_or_owner_deferred
+  - no_blocking_policy_failure
+  conditional:
+  - regulatory_review_if_market_regulated
+  - financial_model_if_investment_decision

@@ -1,0 +1,74 @@
+version: draft-0.1
+pipeline_id: data_processing_pipeline
+name: Data Processing Pipeline
+purpose: >-
+  Ingest, profile, transform, validate, and deliver governed datasets with
+  quality thresholds, rollback awareness, privacy controls, and evidence.
+status: draft
+owner_domain: data_engineering
+required_team_type: sdlc_team
+required_team_lead_role: sdlc_team_lead
+applicable_domains: [data_processing, analytics, data_migration, internal_tool, regulated_data]
+risk_profiles: [internal_dataset, commercial_dataset, regulated_or_high_risk]
+entry_criteria:
+  - dataset_request_present
+  - source_data_identified
+  - processing_goal_bounded
+exit_criteria:
+  - source_data_registered
+  - schema_profile_complete
+  - transformation_plan_reviewed
+  - processing_validation_passed
+  - delivery_package_complete
+blocking_conditions:
+  - source_data_unregistered
+  - schema_profile_missing
+  - destructive_transform_without_rollback_plan
+  - validation_failed
+  - delivery_package_missing
+allowed_rework_routes:
+  intake_gap: data_intake
+  schema_or_quality_gap: schema_and_quality_profile
+  transform_plan_gap: transform_and_validation_plan
+  execution_gap: processing_execution
+  completion_gap: data_processing_completion
+required_evidence:
+  - DATA_PROCESSING_REQUEST
+  - DATA_QUALITY_PROFILE
+  - TRANSFORMATION_PLAN
+  - PROCESSING_VALIDATION_REPORT
+  - DATASET_DELIVERY_PACKAGE
+  - DATA_PROCESSING_COMPLETION_REPORT
+required_trace:
+  - data_processing_trace
+  - validation_execution_trace
+  - rollback_readiness_trace
+  - stage_gate_decision_trace
+stages:
+  - data_intake
+  - schema_and_quality_profile
+  - transform_and_validation_plan
+  - processing_execution
+  - data_processing_completion
+uses_core_abilities: [Supervisor, Coder, OS, Memory]
+uses_skills: [gap-audit, fmea, verification-loop, calibrate]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, policy_query, test_runner, evidence_consistency_checker, resource_budget_checker]
+uses_governance_profiles: [sdlc_pipeline_governance, data_migration_governance, privacy_lifecycle_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [migration_evidence_schema, data_lifecycle_report_schema, evidence_integrity_report_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile, risk_analysis_model]
+uses_context_memory_profiles: [implementation_context_pack, verification_context_pack, domain_risk_context_pack]
+required_gates:
+  always:
+    - source_data_registered
+    - schema_profile_complete
+    - quality_thresholds_defined
+    - transformation_plan_reviewed
+    - processing_validation_passed
+    - delivery_package_complete
+    - no_blocking_policy_failure
+  conditional:
+    - privacy_redaction_if_sensitive_data
+    - rollback_plan_if_destructive_transform
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/pipeline_catalog.yaml

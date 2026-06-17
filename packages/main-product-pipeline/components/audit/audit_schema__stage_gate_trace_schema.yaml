@@ -1,0 +1,64 @@
+id: stage_gate_trace_schema
+name: Stage Gate Trace Schema
+type: trace_schema
+status: canonical
+purpose: Canonical Trace record shape for gate-evaluation provenance — the operation
+  history of how a stage gate was evaluated. Process history, never decision proof.
+owner_domain: sdlc
+allowed_usage:
+- Record the operation history of a stage gate evaluation (who/what ran, inputs, outputs,
+  status, timestamp).
+- Reused cross-pipeline by every pipeline for gate-decision traces.
+forbidden_usage:
+- Used as the decision proof itself (that is a gate_result_schema / evidence_schema).
+- Merged with any evidence_schema record.
+governance_profiles:
+- global_trace_required_policy
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+notes: 'Field set from configs/nexus-ai/schemas/trace_item.schema.json (07 §12). The
+  single most widely reused schema in the system: every SDLC stage and all 5 non-SDLC
+  pipelines reuse it for gate-decision traces.'
+aliases:
+- stage_gate_decision_trace
+- decision_trace_schema
+- research_trace_schema
+- operations_trace_schema
+- memory_trace_schema
+applies_to:
+- all_pipelines
+- gate_evaluation
+required_fields:
+- trace_id
+- type
+- actor
+- action
+- related_pipeline
+- related_run
+- related_stage
+- related_skill
+- related_tool
+- related_core_ability
+- input_refs
+- output_refs
+- status
+- timestamp
+producer: stage_owner_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- raw_credential_redaction
+- redact_tool_call_arguments_containing_secrets
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - ALL_SDLC_STAGES
+  agents:
+  - all_stage_owner_agents

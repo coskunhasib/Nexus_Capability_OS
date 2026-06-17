@@ -1,0 +1,7 @@
+id: model-inference-routing
+intent: "model inference için provider routing, latency ve kalite eval planı çıkar"
+expected:
+  pipeline_id: model_inference_pipeline
+  package: packages/model-inference-pipeline
+  gates_always: 7
+  stages: 5

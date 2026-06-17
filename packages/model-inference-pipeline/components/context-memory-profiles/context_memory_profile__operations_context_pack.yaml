@@ -1,0 +1,47 @@
+id: operations_context_pack
+name: Operations Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'Operations-readiness working context within SDLC: RUNBOOK, ROLLBACK_PLAN,
+  OBSERVABILITY_PLAN, INCIDENT_RESPONSE_PLAN drafts, backup/restore/DR readiness,
+  and cost/resource governance context. Consumed by operations-readiness, backup/restore/DR
+  validation, and cost/resource governance (an operations-domain concern).'
+owner_domain: sdlc
+allowed_usage:
+- read_by_operations_readiness_backup_dr_and_cost_resource_stages
+- reused_by_the_live_operations_pipeline_as_ops_working_context
+forbidden_usage:
+- used_as_the_release_decision_context
+- expose_infra_credentials
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_operations_artifacts
+- architecture_context_pack
+- sdlc_run_context
+- durable_memory_operational_baselines
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_operations_readiness_domain
+- runbook_and_rollback_references_must_resolve
+redaction_rules:
+- no_raw_secrets
+- redact_infra_credentials_and_endpoints
+governance_profiles:
+- operations_readiness_governance
+- context_access_governance
+audit_schemas:
+- operations_evidence_schema
+- context_usage_trace_schema
+used_by:
+- stage:operations_readiness
+- stage:backup_restore_dr_validation_if_applicable
+- stage:cost_resource_governance
+aliases:
+- cost_resource_context_pack
+- backup_restore_context_pack
+notes: Canonical SDLC operations-readiness pack (pre-release). DISTINCT from operations_run_context
+  and operations_context_pack-as-used-by the live Operations Pipeline section — note
+  the Operations Pipeline (Section D) reuses this same canonical id for its live-ops
+  working context; see that pipeline's catalog doc.

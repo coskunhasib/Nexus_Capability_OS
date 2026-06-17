@@ -1,0 +1,19 @@
+required_gates:
+  always:
+  - owner_approved_main_product_pipeline_entry
+  - idea_maturity_state_recorded
+  - mature_idea_not_forced_through_unneeded_discovery
+  - product_brief_validated_or_discovery_completed
+  - specialist_pipeline_routing_plan_complete
+  - production_plan_approved
+  - build_or_delivery_execution_complete
+  - verification_hardening_pass_or_owned_exception
+  - release_candidate_or_delivery_handoff_complete
+  - learning_memory_update_complete
+  - no_blocking_policy_failure
+  conditional:
+  - discovery_required_if_idea_immature
+  - research_required_if_claims_or_market_questions_unresolved
+  - activation_required_if_public_or_staged_rollout_requested
+  - skill_governance_required_if_new_or_changed_skill_in_scope
+  - operations_required_if_runbook_monitoring_or_incident_scope_needed

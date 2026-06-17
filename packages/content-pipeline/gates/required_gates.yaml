@@ -1,0 +1,12 @@
+required_gates:
+  always:
+  - content_goal_bounded
+  - audience_and_channel_defined
+  - content_plan_approved
+  - sources_or_claims_grounded
+  - draft_reviewed
+  - completion_report_emitted
+  - no_blocking_policy_failure
+  conditional:
+  - legal_or_regulatory_review_if_high_risk
+  - localization_review_if_requested

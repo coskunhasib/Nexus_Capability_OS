@@ -1,0 +1,42 @@
+id: migration_evidence_schema
+name: Data Migration Evidence Schema
+type: evidence_schema
+status: canonical
+purpose: Decision-proof record for data-migration validation (MIGRATION_VALIDATION_REPORT,
+  ROLLBACK_VALIDATION_REPORT, DATA_INTEGRITY_REPORT).
+owner_domain: sdlc
+allowed_usage:
+- Record data-migration validation decision-proof evidence (lossy/ irreversible/ordering/idempotency
+  defects found).
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required
+audit_schemas:
+- stage_gate_trace_schema
+notes: Stage 22 evidence schema (conditional stage). Owner data_migration_agent reviews
+  engineering_agent's migration files (reviewer != author).
+applies_to:
+- sdlc_stage:data_migration_validation_if_applicable
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- source_artifacts
+- summary
+- status
+- created_at
+producer: data_migration_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- redact_pii_in_migration_samples
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - data_migration_validation_if_applicable
+  agents:
+  - data_migration_agent

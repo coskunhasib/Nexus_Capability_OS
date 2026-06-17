@@ -1,0 +1,7 @@
+id: data-processing-transform
+intent: "dataset ingest et, transform uygula ve data quality validation raporu üret"
+expected:
+  pipeline_id: data_processing_pipeline
+  package: packages/data-processing-pipeline
+  gates_always: 7
+  stages: 5

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: risk_and_financial_assessment
+name: Risk And Financial Assessment
+purpose: Stress-test options, financial assumptions, tradeoffs, and owner-visible residual risks.
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: business_case_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [sentinel, fmea, llm-council, calibrate]
+uses_tools: [cost_estimator, resource_budget_checker, artifact_writer, evidence_writer, evidence_reader]
+uses_governance_profiles: [feasibility_gate, discovery_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [discovery_evidence_schema, risk_register_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [risk_analysis_model, research_reasoning_profile]
+uses_context_memory_profiles: [business_case_context_pack]
+inputs: [MARKET_EVIDENCE_REPORT, REGULATORY_APPLICABILITY_DECISION]
+outputs: [STRATEGY_RISK_REGISTER, FINANCIAL_MODEL_IF_REQUIRED]
+evidence: [STRATEGY_RISK_REGISTER]
+trace: [risk_tradeoff_trace, stage_gate_decision_trace]
+gates: [risks_and_tradeoffs_recorded, financial_model_if_investment_decision]
+on_pass: strategy_decision_closeout
+on_fail: evidence_and_market_analysis
+rework_route: evidence_and_market_analysis
+blocking_conditions: [risk_tradeoff_unrecorded, financial_model_required_but_missing]
+conditional_required_gates: [financial_model_if_investment_decision]
+max_iterations: 3

@@ -1,0 +1,62 @@
+id: sdlc_pipeline_governance
+name: SDLC Pipeline Governance
+type: pipeline_governance_profile
+status: canonical
+purpose: 'Pipeline-wide governance for the 31-stage SDLC pipeline: no development_completion
+  without code review; no release_candidate with an open blocker bug; no progression
+  with high/critical security findings (03 §4). The umbrella under which every SDLC
+  stage-scope gate sits.'
+owner_domain: software_delivery
+allowed_usage:
+- Bind at the SDLC pipeline level and be re-shown under each SDLC stage (usage mapping).
+- Govern the cross-stage SDLC invariants (code-review-before-completion, blocker-bug-zero,
+  etc.).
+forbidden_usage:
+- Applied to non-SDLC pipelines (each pipeline has its own umbrella profile).
+- Used to override a blocking stage gate (see global no_policy_bypass).
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- sdlc_pipeline
+- all_31_sdlc_stages
+severity_default: blocker
+used_by:
+- sdlc_pipeline
+- intake
+- domain_risk_profile
+- requirements
+- requirements_review
+- architecture
+- architecture_review
+- security_privacy_design
+- premortem_fmea
+- planning
+- implementation
+- code_review
+- test_generation
+- test_execution
+- verification_loop_bug_finding
+- security_validation
+- supply_chain_sbom_license
+- ai_agent_safety_evaluation
+- privacy_data_lifecycle_validation
+- api_contract_compatibility_validation
+- domain_regulatory_compliance_validation_if_applicable
+- data_migration_validation_if_applicable
+- accessibility_ux_validation_if_applicable
+- performance_resilience
+- cost_resource_governance
+- backup_restore_dr_validation_if_applicable
+- operations_readiness
+- evidence_graph_build
+- development_completion
+- release_candidate
+- refraction_learning
+notes: SDLC pipeline-level umbrella (sdlc_pipeline.yaml uses_governance_profiles).
+  Stages 01/02 list sdlc_pipeline_governance / domain_risk_governance explicitly;
+  all other stages list it directly.

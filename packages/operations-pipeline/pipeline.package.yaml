@@ -10,7 +10,7 @@ description: 'Live-operations lifecycle for released Nexus AI capabilities: dete
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: 383a28c
+  source_commit: 74e50a1
   source_path: configs/nexus-ai/operations_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:

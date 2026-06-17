@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: routing_and_provider_plan
+name: Routing And Provider Plan
+purpose: Select provider/routing policy, fallback behavior, safety constraints, and budget controls.
+owner_team: operations_team
+team_lead: operations_team_lead
+owner_agent: severity_classification_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [sentinel, fmea, gap-audit]
+uses_tools: [policy_query, resource_budget_checker, cost_estimator, artifact_writer, evidence_writer]
+uses_governance_profiles: [model_invocation_governance, operations_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [model_invocation_trace_schema, evidence_item_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [supervisor_routing_model, risk_analysis_model]
+uses_context_memory_profiles: [operations_context_pack]
+inputs: [INFERENCE_REQUEST, QUALITY_COST_LATENCY_TARGETS]
+outputs: [ROUTING_POLICY, FALLBACK_POLICY, SAFETY_APPLICABILITY_DECISION]
+evidence: [ROUTING_POLICY]
+trace: [routing_decision_trace, stage_gate_decision_trace]
+gates: [routing_policy_defined, fallback_policy_if_external_provider, safety_review_if_high_risk_output]
+on_pass: evaluation_harness_setup
+on_fail: inference_request_intake
+rework_route: inference_request_intake
+blocking_conditions: [routing_policy_missing, fallback_required_but_missing]
+conditional_required_gates: [fallback_policy_if_external_provider, safety_review_if_high_risk_output]
+max_iterations: 3

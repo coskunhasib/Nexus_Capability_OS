@@ -1,7 +1,7 @@
-id: sdlc-saas-mvp
+id: main-product-saas-mvp
 intent: "bir SaaS MVP yap (web app + API)"
 expected:
-  pipeline_id: sdlc_pipeline
-  package: packages/sdlc-pipeline
-  gates_always: 19
-  stages: 31
+  pipeline_id: main_product_pipeline
+  package: packages/main-product-pipeline
+  gates_always: 11
+  stages: 9

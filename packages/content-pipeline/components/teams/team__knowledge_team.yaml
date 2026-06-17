@@ -1,0 +1,74 @@
+team_id: knowledge_team
+team_type: knowledge_team
+pipeline_id: knowledge_memory_pipeline
+purpose: 'Govern the knowledge/memory lifecycle: ingest candidate memory with provenance,
+  classify its source (trust tier, sensitivity, redaction need), summarize it grounded
+  in the source, assign an explicit validity window, update the affected retrieval
+  profile bounded by sensitivity and validity, and review expiration so knowledge
+  does not silently rot. Memory remains a Core Ability that agents USE; this pipeline
+  curates what may be remembered, for how long, and how it is retrieved — it never
+  turns Memory into an agent.'
+team_lead_role: knowledge_team_lead
+agents:
+- knowledge_intake_agent
+- source_classification_agent
+- memory_summarization_agent
+- knowledge_reconciliation_agent
+- validity_window_agent
+- retrieval_profile_agent
+- memory_expiration_agent
+direct_sub_agents: []
+uses_core_abilities:
+- Memory
+- Supervisor
+- Web
+uses_skills:
+- gap-audit
+- calibrate
+- refraction
+- bayesian-update
+uses_tools:
+- memory_ingestor
+- source_classifier
+- summary_writer
+- validity_window_calculator
+- retrieval_profile_writer
+- expiration_scanner
+- redaction_tool
+- provenance_recorder
+- artifact_writer
+- evidence_writer
+uses_governance_profiles:
+- memory_source_governance
+- validity_window_required_gate
+- redaction_required_gate
+uses_audit_schemas:
+- memory_provenance_schema
+- stage_gate_trace_schema
+uses_model_provider_profiles:
+- knowledge_reasoning_profile
+- summarization_model
+- supervisor_routing_model
+uses_context_memory_profiles:
+- knowledge_run_context
+- memory_candidate_context_pack
+- retrieval_profile_context_pack
+permissions:
+- own_and_execute_knowledge_memory_stages
+- assign_stage_owner_agents
+- ingest_classify_and_summarize_memory_with_provenance
+- assign_validity_windows
+- update_retrieval_profiles_bound_to_validity_and_sensitivity
+- review_and_record_expiration_outcomes
+- request_rework_along_allowed_routes
+forbidden_actions:
+- core_ability_as_team_member
+- memory_core_ability_promoted_to_agent
+- supervisor_as_team_lead
+- retrieval_profile_update_without_validity_window
+- unredacted_sensitive_content_exposed
+- agent_approves_own_work
+- team_lead_bypasses_blocking_gate
+- team_lead_owns_a_stage
+- orphan_sub_agent_without_parent_or_direct_call_flag
+- introduce_plugin

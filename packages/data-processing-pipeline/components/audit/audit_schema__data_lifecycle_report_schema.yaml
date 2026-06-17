@@ -1,0 +1,43 @@
+id: data_lifecycle_report_schema
+name: Data Lifecycle Report Schema
+type: evidence_schema
+status: canonical
+purpose: Decision-proof record for data-lifecycle / retention validation (DATA_LIFECYCLE_REPORT,
+  RETENTION_POLICY_REPORT).
+owner_domain: sdlc
+allowed_usage:
+- Record data-lifecycle and retention-policy decision-proof evidence.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required
+- privacy_governance_profile
+audit_schemas:
+- privacy_evidence_schema
+- tenant_isolation_report_schema
+- stage_gate_trace_schema
+notes: Stage 19 evidence schema (conditional stage).
+applies_to:
+- sdlc_stage:privacy_data_lifecycle_validation
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- source_artifacts
+- summary
+- status
+- created_at
+producer: privacy_agent
+consumer: evidence_graph_agent
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- redact_pii
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - privacy_data_lifecycle_validation
+  agents:
+  - privacy_agent

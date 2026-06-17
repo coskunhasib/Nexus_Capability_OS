@@ -1,0 +1,52 @@
+id: operations_analysis_model
+name: Operations Analysis Model
+type: model_provider_profile
+status: candidate
+purpose: 'General operations reasoning for the operations pipeline: monitoring/alert
+  correlation and mitigation-plan reasoning for live/already-released capabilities.'
+owner_domain: operations_reliability
+provider_type: reasoning_llm
+model_family: operations_reasoning
+capability_scope:
+- monitoring_and_alert_correlation
+- mitigation_plan_reasoning
+- operational_state_reasoning
+resource_limits:
+  context_window: large
+  max_output_tokens: standard
+  tool_use: enabled
+  concurrency: high
+fallback_policy:
+  on_unavailable: escalate_immediately
+  degraded_mode: none
+  escalation: human_owner
+governance_profiles:
+- operations_pipeline_governance
+- model_invocation_governance
+audit_schemas:
+- model_invocation_trace_schema
+allowed_usage:
+- operations pipeline monitoring/mitigation reasoning
+forbidden_usage:
+- being listed/used as a Core Ability, Agent, Skill or Tool
+used_by:
+  pipelines:
+  - operations_pipeline
+  stages:
+  - rollback_or_fix
+  - mitigation
+  core_abilities: []
+aliases: []
+overlap:
+  overlaps_with: release_reasoning_model
+  recommendation: NAME COLLISION + overlap. `operations_analysis_model` is ALSO the
+    legacy SDLC name that was reconciled onto canonical release_reasoning_model at
+    SDLC stages 26 (backup_restore_dr) and 27 (operations_readiness). The operations
+    pipeline now re-introduces the same name as a live-ops reasoning profile. Recommend
+    EITHER (a) rename this operations-pipeline profile to avoid colliding with the
+    reconciled-away SDLC alias, OR (b) formally split SDLC release-time readiness
+    (release_reasoning_model) from live-incident operations reasoning and let this
+    profile own the latter unambiguously. MUST be resolved in Phase E to keep the
+    registry unambiguous. See open_questions.
+notes: Same id appears as a legacy alias under release_reasoning_model (SDLC stages
+  26/27) — this is the central de-duplication finding for this registry.

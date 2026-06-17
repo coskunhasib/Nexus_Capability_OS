@@ -4,8 +4,8 @@ run_pipeline.py — Nexus AI Orchestration Model :: .pipeline mock runner (workb
 
 Loads a .pipeline package and runs it end-to-end with a DETERMINISTIC MOCK agent loop
 (observe -> think -> act, ActionNode-style structured output — the MetaGPT transfer), then
-ENFORCES the governance gates (D-016 19 always-required) using the gate->producer map, and
-EMITS evidence + trace. No LLM, no network: it proves the orchestration + governance loop.
+ENFORCES the package-declared governance gates using the gate->producer map, and EMITS
+evidence + trace. No LLM, no network: it proves the orchestration + governance loop.
 Real-LLM execution + a code sandbox come in later phases.
 
 Usage:
@@ -102,7 +102,7 @@ def execute(pkg, skip=None):
         completed.add(sid)
         passed_stage_gates[sid] = set(r["stage_gates_passed"])
 
-    # 2. enforce rollup gates (D-016 always + conditional) via the gate->producer map
+    # 2. enforce package-declared rollup gates (always + conditional) via the gate->producer map
     producers = derive_producers(stage_by_id)          # from the package's own stage contracts
     producers.update(load_gate_producers(pid))          # explicit runtime-rules map (sdlc) overrides derived
     req_gates = pdef.get("required_gates", {}) or {}

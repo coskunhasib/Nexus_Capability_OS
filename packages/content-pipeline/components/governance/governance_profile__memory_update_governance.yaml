@@ -1,0 +1,25 @@
+id: memory_update_governance
+name: Memory Update Governance
+type: stage_governance_profile
+status: canonical
+purpose: Stage-31 governance enforcing proposal-not-direct-mutation of project memory
+  (MEMORY_UPDATE_PROPOSAL). Memory is updated by proposal, never silently mutated.
+owner_domain: software_delivery
+allowed_usage:
+- Govern that refraction_learning proposes memory updates rather than directly mutating
+  memory.
+forbidden_usage:
+- Direct silent mutation of project memory (use a proposal).
+governance_profiles:
+- sdlc_pipeline_governance
+- evidence_required
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- refraction_learning
+severity_default: major
+used_by:
+- refraction_learning
+notes: Stage 31 sub-profile (proposal-not-mutation rule).

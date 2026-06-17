@@ -1,0 +1,47 @@
+id: source_evidence_schema
+name: Source Evidence Schema
+type: evidence_schema
+status: candidate
+purpose: Decision-proof record for a scored research source (provenance, reliability
+  score + rationale, related claims).
+owner_domain: research_and_knowledge
+allowed_usage:
+- Record source-reliability decision-proof evidence in the research pipeline.
+forbidden_usage:
+- Used to record process history (trace_schema).
+governance_profiles:
+- evidence_required_policy
+- research_source_governance
+- citation_required_gate
+audit_schemas:
+- claim_evidence_schema
+- stage_gate_trace_schema
+notes: NEW (research). Reliability score must carry a rationale (advisory confidence_calibrated).
+applies_to:
+- research_pipeline
+- research_stage:source_reliability_assessment
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_stage
+- source_id
+- provenance
+- reliability_score
+- reliability_rationale
+- related_claims
+- status
+- created_at
+producer: source_reliability_agent
+consumer: cross_validation_agent
+retention: retain_with_research_report
+redaction_rules:
+- no_raw_secret_exposure
+- redact_paywalled_source_content
+used_by:
+  pipelines:
+  - research_pipeline
+  stages:
+  - source_reliability_assessment
+  agents:
+  - source_reliability_agent

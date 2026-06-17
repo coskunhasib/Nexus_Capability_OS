@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: schema_and_quality_profile
+name: Schema And Quality Profile
+purpose: Profile schema, quality thresholds, privacy constraints, and validation expectations.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: data_migration_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, OS, Coder]
+uses_skills: [gap-audit, calibrate]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, test_runner]
+uses_governance_profiles: [data_migration_governance, privacy_lifecycle_governance, evidence_required_policy]
+uses_audit_schemas: [data_lifecycle_report_schema, migration_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile]
+uses_context_memory_profiles: [verification_context_pack]
+inputs: [SOURCE_DATA_REGISTER, DATA_SENSITIVITY_CLASSIFICATION]
+outputs: [DATA_QUALITY_PROFILE, DATA_VALIDATION_THRESHOLDS]
+evidence: [DATA_QUALITY_PROFILE]
+trace: [data_processing_trace, stage_gate_decision_trace]
+gates: [schema_profile_complete, quality_thresholds_defined, privacy_redaction_if_sensitive_data]
+on_pass: transform_and_validation_plan
+on_fail: data_intake
+rework_route: data_intake
+blocking_conditions: [schema_profile_missing, quality_thresholds_missing]
+conditional_required_gates: [privacy_redaction_if_sensitive_data]
+max_iterations: 3

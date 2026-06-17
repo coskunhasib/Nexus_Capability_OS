@@ -1,0 +1,44 @@
+id: operations_run_context
+name: Operations Run Context
+type: run_context
+status: candidate
+scope: run
+purpose: 'Whole-run working context for an Operations Pipeline run (live incident
+  lifecycle): the active incident record, severity, affected released capability,
+  the SDLC operations artifacts consumed (RUNBOOK / ROLLBACK_PLAN / OBSERVABILITY_PLAN
+  / INCIDENT_RESPONSE_PLAN), and which operations gates have been satisfied.'
+owner_domain: operations_reliability
+allowed_usage:
+- read_as_incident_level_backbone_by_any_operations_stage
+- carry_the_consumed_sdlc_operations_artifacts_for_one_incident
+forbidden_usage:
+- begin_mitigation_without_a_recorded_severity
+- regenerate_the_sdlc_pipeline
+- shared_across_unrelated_incidents
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_incident_record
+- sdlc_operations_artifacts
+- durable_memory_prior_incidents
+retention: incident_scoped
+validity_window: single_incident_lifecycle
+retrieval_rules:
+- readable_by_all_operations_stages
+- incident_scoped_isolation: true
+- severity_classification_required_before_mitigation
+redaction_rules:
+- no_raw_secrets
+- redact_customer_pii_from_incident_signals
+- mask_infra_credentials_in_runbook_refs
+governance_profiles:
+- operations_pipeline_governance
+- context_access_governance
+- no_self_approval_policy
+audit_schemas:
+- incident_evidence_schema
+- stage_gate_trace_schema
+used_by:
+- operations_pipeline
+aliases: []
+notes: New (draft-0.1, operations-pipeline.md §1). Consumes SDLC operations-readiness
+  artifacts; does not regenerate SDLC. retention is incident_scoped rather than run-of-a-build.

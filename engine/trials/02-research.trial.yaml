@@ -2,4 +2,6 @@ id: research-sourced
 intent: "vLLM üzerine kaynaklı bir araştırma raporu hazırla"
 expected:
   pipeline_id: research_pipeline
-  # package: null — research pipeline is markdown-only, not yet packaged
+  package: packages/research-pipeline
+  gates_always: 13
+  stages: 11

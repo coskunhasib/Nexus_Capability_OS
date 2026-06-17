@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: processing_execution
+name: Processing Execution
+purpose: Execute the processing plan in a controlled environment and validate outputs.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: qa_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Coder, OS]
+uses_skills: [verification-loop, gap-audit]
+uses_tools: [test_runner, evidence_consistency_checker, artifact_writer, evidence_writer]
+uses_governance_profiles: [verification_governance, data_migration_governance, evidence_required_policy]
+uses_audit_schemas: [migration_evidence_schema, evidence_integrity_report_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile]
+uses_context_memory_profiles: [verification_context_pack]
+inputs: [TRANSFORMATION_PLAN, ROLLBACK_OR_REPLAY_PLAN]
+outputs: [PROCESSING_VALIDATION_REPORT, PROCESSED_DATASET_REFERENCE]
+evidence: [PROCESSING_VALIDATION_REPORT]
+trace: [validation_execution_trace, stage_gate_decision_trace]
+gates: [processing_validation_passed]
+on_pass: data_processing_completion
+on_fail: transform_and_validation_plan
+rework_route: transform_and_validation_plan
+blocking_conditions: [processing_validation_failed, processed_dataset_missing]
+conditional_required_gates: []
+max_iterations: 3

@@ -14,7 +14,7 @@ description: 'Run cheap, kill-friendly product discovery under no-human governan
 package_version: 1.0.0
 provenance:
   produced_by: nexus-capability-os
-  source_commit: ea122ce
+  source_commit: 74e50a1
   source_path: configs/nexus-ai/product_discovery_pipeline.yaml
 pipeline_def: pipeline.yaml
 components:

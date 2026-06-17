@@ -1,0 +1,38 @@
+id: source_reliability_checker
+name: Source Reliability Checker
+type: tool
+category: tool
+status: candidate
+purpose: Score a source's reliability (authority, independence, recency, corroboration,
+  bias signals) with rationale.
+owner_domain: research_and_knowledge
+provided_by_core_ability: null
+input_schema:
+  source: object
+  scoring_criteria: object
+output_schema:
+  reliability_score: object
+side_effects: writes_evidence_store
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+audit_schemas:
+- tool_call_trace_schema
+- evidence_item_schema
+allowed_callers:
+- source_reliability_agent
+- cross_validation_agent
+allowed_usage:
+- Score sources (source_reliability_assessment) and re-check scores (cross_validation
+- distinct role).
+forbidden_usage:
+- Asserting a score without rationale; sole self-validation of one's own source (no_self_approval_policy).
+used_by:
+  pipelines:
+  - research_pipeline
+  pipeline_stages:
+  - research_pipeline.source_reliability_assessment
+  - research_pipeline.cross_validation
+notes: NEW (research) per review §4.3 and research-pipeline.md. Trace source_reliability_checker_tool_trace.

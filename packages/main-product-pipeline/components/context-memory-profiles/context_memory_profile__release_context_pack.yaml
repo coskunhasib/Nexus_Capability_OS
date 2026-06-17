@@ -1,0 +1,52 @@
+id: release_context_pack
+name: Release Context Pack
+type: context_pack
+status: canonical
+scope: stage_pack
+purpose: 'Release-decision working context: the assembled EVIDENCE_GRAPH, TRACEABILITY_MATRIX,
+  DEVELOPMENT_COMPLETION_REPORT, RELEASE_CANDIDATE_REPORT and RELEASE_EVIDENCE. Consumed
+  by evidence-graph build, development completion, release candidate, and refraction/learning
+  (the just-produced release evidence to reflect over).'
+owner_domain: sdlc
+allowed_usage:
+- read_by_evidence_graph_completion_release_and_refraction_stages
+- carry_the_assembled_evidence_graph_for_the_release_decision
+forbidden_usage:
+- used_to_pass_a_release_gate_without_linked_evidence
+- used_to_self_approve_the_release_candidate_stage
+- exposed_as_an_agent_team_skill_or_tool
+source_priority:
+- current_run_evidence_graph
+- current_run_completion_artifacts
+- sdlc_run_context
+- durable_memory_prior_release_lessons
+retention: run_scoped
+validity_window: single_pipeline_run
+retrieval_rules:
+- scoped_to_release_decision
+- every_release_gate_must_have_linked_evidence
+redaction_rules:
+- no_raw_secrets
+- redact_pii_from_evidence_summaries
+governance_profiles:
+- release_governance
+- context_access_governance
+- evidence_required_policy
+audit_schemas:
+- release_evidence_schema
+- decision_trace_schema
+- context_usage_trace_schema
+used_by:
+- sdlc_pipeline
+- stage:evidence_graph_build
+- stage:development_completion
+- stage:release_candidate
+- stage:refraction_learning
+aliases:
+- development_completion_context_pack
+- evidence_graph_context_pack
+notes: Canonical release-decision pack. The SDLC stage-31 legacy name `learning_context_pack`
+  is recorded as reconciliation metadata only because the Operations Pipeline introduces
+  a distinct candidate item with the same id for live-ops learning. Phase E should
+  confirm whether to keep the operations learning pack under a disambiguated id (e.g.
+  operations_learning_context_pack).

@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: strategy_decision_closeout
+name: Strategy Decision Closeout
+purpose: Produce the recommendation, owner decision or deferral, completion report, and learning trace.
+owner_team: discovery_team
+team_lead: discovery_team_lead
+owner_agent: discovery_decision_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Memory]
+uses_skills: [calibrate, refraction, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, provenance_recorder]
+uses_governance_profiles: [go_no_go_decision_gate, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [discovery_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [risk_analysis_model, supervisor_routing_model]
+uses_context_memory_profiles: [business_case_context_pack, learning_context_pack]
+inputs: [STRATEGY_RISK_REGISTER, FINANCIAL_MODEL_IF_REQUIRED]
+outputs: [DECISION_RECOMMENDATION, STRATEGY_COMPLETION_REPORT, OWNER_STRATEGY_DECISION_RECORD]
+evidence: [DECISION_RECOMMENDATION, STRATEGY_COMPLETION_REPORT]
+trace: [owner_decision_trace, stage_gate_decision_trace]
+gates: [recommendation_reviewed, decision_recorded_or_owner_deferred, no_blocking_policy_failure]
+on_pass: done
+on_fail: risk_and_financial_assessment
+rework_route: risk_and_financial_assessment
+blocking_conditions: [recommendation_missing, owner_decision_missing_without_deferral]
+conditional_required_gates: []
+max_iterations: 3

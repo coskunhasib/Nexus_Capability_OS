@@ -1,0 +1,38 @@
+version: draft-0.1
+stage_id: build_execution
+name: Build Execution
+purpose: >-
+  Execute or delegate the approved build/delivery work and produce the governed
+  build or implementation handoff.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: engineering_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Coder, OS, Memory]
+uses_skills: [verification-loop, gap-audit, prompt-fidelity]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, test_runner, repo_diff_reader]
+uses_governance_profiles: [implementation_governance, sdlc_pipeline_governance, evidence_required_policy]
+uses_audit_schemas: [implementation_evidence_schema, code_change_trace_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile]
+uses_context_memory_profiles: [implementation_context_pack, sdlc_run_context]
+inputs:
+  - PRODUCT_DELIVERY_PLAN
+  - SPECIALIST_PIPELINE_ROUTING_PLAN
+outputs:
+  - BUILD_OR_IMPLEMENTATION_HANDOFF
+  - BUILD_EXECUTION_GATE_RESULT
+evidence:
+  - BUILD_OR_IMPLEMENTATION_HANDOFF
+trace:
+  - handoff_trace
+  - stage_gate_decision_trace
+gates:
+  - build_or_delivery_execution_complete
+on_pass: verification_hardening_and_revision
+on_fail: production_plan_and_pipeline_routing
+rework_route: production_plan_and_pipeline_routing
+blocking_conditions:
+  - build_handoff_missing
+  - delegated_specialist_pipeline_failed_without_rework_or_owner_decision
+conditional_required_gates: []
+max_iterations: 3

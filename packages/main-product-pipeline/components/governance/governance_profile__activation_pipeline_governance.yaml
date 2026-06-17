@@ -1,0 +1,38 @@
+id: activation_pipeline_governance
+name: Activation Pipeline Governance
+type: pipeline_governance_profile
+status: candidate
+purpose: 'Umbrella governance for the Activation Pipeline: no pilot activation without
+  a passing superadmin preview; no public activation without sufficient pilot evidence;
+  a validated rollback plan is mandatory before public completion; public activation
+  is a human/owner gate that cannot be self-approved (activation-pipeline.md §3; 03
+  §4).'
+owner_domain: activation_and_release_operations
+allowed_usage:
+- Bind at the Activation Pipeline level and re-show under each activation stage.
+- Govern the preview -> pilot -> public staged-activation invariants.
+forbidden_usage:
+- Used outside the Activation Pipeline.
+- Used to bypass the owner/human activation decision (that gate is human authority).
+governance_profiles:
+- no_self_approval
+- evidence_required
+audit_schemas:
+- activation_evidence_schema
+- stage_gate_trace_schema
+scope: pipeline
+applies_to:
+- activation_pipeline
+- activation_intake
+- superadmin_preview
+- pilot_activation
+- pilot_evidence_review
+- public_activation_decision
+- rollback_readiness
+- activation_completion
+severity_default: blocker
+used_by:
+- activation_pipeline
+notes: NEW (pipeline-catalog-review.md §4.1). Markdown authoritative. Layered over
+  the gate-style profiles preview_required_gate / pilot_evidence_gate / rollback_required_gate
+  / owner_activation_decision_gate.

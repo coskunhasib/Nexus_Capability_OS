@@ -1,0 +1,55 @@
+id: model_invocation_governance
+name: Model Invocation Governance
+type: global_governance_policy
+status: candidate
+purpose: 'Cross-cutting governance for any model-provider invocation: every model
+  call is bounded by the invoking layer''s permissions, must not exfiltrate secrets,
+  must not silently downgrade a required specialised model, and must emit a model-invocation
+  trace. The governance dimension paired with the model_invocation_trace_schema (Governance
+  != Audit: this MANDATES, the schema RECORDS).'
+owner_domain: nexus_model_providers
+allowed_usage:
+- Bind to every model_provider_profile so model invocations are governed + traced.
+- Enforce the fallback_policy (no silent downgrade of a required specialised model).
+forbidden_usage:
+- Treating a model provider profile as a Core Ability, Agent, Skill, or Tool.
+- Used as the trace schema itself (it requires the trace; audit_schemas defines it).
+governance_profiles:
+- trace_required
+- no_secret_exposure
+audit_schemas:
+- stage_gate_trace_schema
+scope: global
+applies_to:
+- all_model_provider_profiles
+severity_default: blocker
+used_by:
+- sdlc_reasoning_profile
+- supervisor_routing_model
+- coder_engineering_model
+- architecture_reasoning_model
+- security_analysis_model
+- risk_analysis_model
+- defect_analysis_model
+- vision_model
+- research_reasoning_profile
+- source_evaluation_model
+- knowledge_reasoning_profile
+- summarization_model
+- activation_reasoning_model
+- operations_analysis_model
+- incident_triage_model
+- postmortem_reasoning_model
+- skill_governance_reasoning_profile
+- script_safety_analysis_model
+- skill_semantic_extraction_model
+- learning_reflection_model
+- release_reasoning_model
+- model_invocation_trace_schema
+aliases:
+- model_provider_governance
+notes: NEW (reconciliation). The 7-layer governance scope taxonomy (03 §3–§9) has
+  no dedicated "model" layer; model invocation is a cross-cutting dimension (mirroring
+  the "model invocation trace" in 03 §12). Registered at global scope as the standing
+  model-invocation policy. audit_schemas.yaml spells it `model_provider_governance`
+  on the model-invocation trace schema; recorded as an alias. Ratify in Phase E.

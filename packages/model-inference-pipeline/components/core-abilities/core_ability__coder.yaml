@@ -1,0 +1,79 @@
+id: coder
+name: Coder
+display_name: Coder
+type: core_ability
+category: core_ability
+status: canonical
+never_agent: true
+purpose: 'Software-engineering reasoning capability: read/diff/reason over code changesets,
+  decompose implementation tasks, synthesize tests, and interpret scanner/coverage/contract
+  output. The Coder ability supplies engineering judgement; the actual filesystem/shell/test
+  execution is performed by the OS ability''s tools (no_silent_mutation: every repo
+  mutation goes through an OS tool with trace).'
+owner_domain: software_engineering
+model_provider_profiles:
+- coder_engineering_model
+exposed_tools: []
+governance_profiles:
+- code_generation_governance
+- no_secret_read
+- no_silent_mutation
+audit_schemas:
+- core_ability_invocation_trace_schema
+- code_change_trace_schema
+- implementation_evidence_schema
+allowed_callers:
+- engineering_agent
+- code_reviewer_agent
+- qa_agent
+- security_validation_agent
+- contract_validation_agent
+- data_migration_agent
+- performance_resilience_agent
+- operations_readiness_agent
+- compliance_agent
+- privacy_agent
+- architecture_agent
+allowed_usage:
+- read_and_reason_over_code_changesets_and_diffs
+- implementation_task_decomposition
+- test_synthesis_and_failure_triage
+- interpret_scanner_coverage_and_contract_output
+forbidden_usage:
+- being_declared_as_an_agent_owner_agent_or_sub_agent
+- mutating_the_repository_or_environment_without_an_explicit_os_tool_and_trace
+- reading_or_emitting_raw_secrets
+- approving_a_changeset_authored_under_the_same_owner_role
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  stages:
+  - architecture
+  - security_privacy_design
+  - planning
+  - implementation
+  - code_review
+  - test_generation
+  - test_execution
+  - verification_loop_bug_finding
+  - security_validation
+  - supply_chain_sbom_license
+  - ai_agent_safety_evaluation
+  - privacy_data_lifecycle_validation
+  - api_contract_compatibility_validation
+  - domain_regulatory_compliance_validation_if_applicable
+  - data_migration_validation_if_applicable
+  - accessibility_ux_validation_if_applicable
+  - performance_resilience
+  - cost_resource_governance
+  - backup_restore_dr_validation_if_applicable
+  - operations_readiness
+  capability_systems:
+  - nexus_ai_capability_system
+notes: Coder is the single most broadly-used ability across SDLC (20 stages). It is
+  a reasoning capability; it owns no I/O tools. Filesystem/shell/test tools belong
+  to OS so tool ownership stays unambiguous in the Tools Registry (provided_by_core_ability).
+  It is also bound by the operations and skill-governance pipeline definitions where
+  code/config reasoning is required.

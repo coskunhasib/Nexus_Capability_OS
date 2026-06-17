@@ -37,6 +37,13 @@ term_map:
   mission_analytics: Çalışma Özeti
   continuous_learning: Öğrenme ve İyileştirme
   pipeline: Yolculuk / İş Akışı
+  main_product_pipeline: Ana Ürün Yolculuğu
+  content_pipeline: İçerik Yolculuğu
+  data_processing_pipeline: Veri İşleme Yolculuğu
+  model_inference_pipeline: Model Çıkarım Yolculuğu
+  customer_support_pipeline: Müşteri Destek Yolculuğu
+  business_strategy_pipeline: Strateji Yolculuğu
+  pre_pipeline_idea_maturation: Fikir Olgunlaştırma
   pipeline_run: Aktif Çalışma
   stage: Aşama
   agent: Uzman
@@ -51,6 +58,7 @@ term_map:
   runtime: Çalışma Altyapısı
   release_candidate: Yayına Hazır Aday
   owner_decision: Yetkili Onayı
+  owner_approval: Yetkili Onayı
   policy: Kural
   permission: İzin
   risk_acceptance: Risk Kabulü

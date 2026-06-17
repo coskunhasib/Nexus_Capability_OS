@@ -12,6 +12,8 @@ no_plugin: true
 purpose: >-
   Define Mission as the user-facing managed work container that can own one or more Pipeline Runs,
   teams, shared state, validation contracts, handoffs, Mission Control and analytics.
+  Product delivery lifecycle is owned by main_product_pipeline; Mission is the container that
+  holds the conversation, approvals, selected pipeline runs, evidence and trace.
 
 position_in_model:
   top_structure: nexus_ai_orchestration_model
@@ -19,7 +21,8 @@ position_in_model:
   mission_is_not_pipeline_run: true
   mission_is_not_single_agent_session: true
   plain_language: >-
-    A Mission is the managed work created from a user goal. Pipeline Runs execute inside it.
+    A Mission is the managed work created from a user goal. Product work follows
+    main_product_pipeline after owner-approved entry; Pipeline Runs execute inside the Mission.
 
 user_facing_names:
   mission: Çalışma
@@ -34,6 +37,13 @@ user_facing_names:
   parallel_execution: Paralel Yardımcı Çalışma
   mission_analytics: Çalışma Özeti
   continuous_learning: Öğrenme ve İyileştirme
+
+pipeline_lifecycle_boundary:
+  product_lifecycle_owner: main_product_pipeline
+  mission_role: managed_user_work_container
+  note: >-
+    Do not introduce a separate Mission Lifecycle as the product journey. Mission lifecycle below is
+    container state only: conversation, approval, execution tracking, validation, completion and learning.
 
 mission_lifecycle:
   - mission_intake
@@ -52,6 +62,55 @@ mission_user_flow:
   - scope_through_conversation
   - approve_plan
   - mission_handles_execution
+
+pre_pipeline_idea_handling:
+  owner: mission_orchestrator
+  before_pipeline_run: true
+  applies_when:
+    - user_appears_to_be_discussing_a_raw_or_partially_mature_idea_or_work_intent
+    - user_asks_whether_an_idea_is_worth_building
+    - user_compares_solution_directions_before_committing_to_build
+  required_behavior:
+    - inform_user_that_nexus_detected_an_idea_and_is_maturing_it_before_pipeline_entry
+    - interactively_mature_the_idea_until_problem_scope_value_risk_and_success_criteria_are_clear_enough
+    - summarize_the_matured_intent_and_remaining_risks
+    - recommend_the_best_matching_pipeline_for_the_matured_intent
+    - ask_for_owner_approval_before_starting_the_selected_pipeline
+  handoff_to_pipeline:
+    pipeline_id: selected_pipeline_after_maturation
+    allowed_pipeline_ids:
+      - main_product_pipeline
+      - product_discovery_pipeline
+      - research_pipeline
+      - activation_pipeline
+      - operations_pipeline
+      - skill_governance_pipeline
+      - knowledge_memory_pipeline
+      - sdlc_pipeline
+      - content_pipeline
+      - data_processing_pipeline
+      - model_inference_pipeline
+      - customer_support_pipeline
+      - business_strategy_pipeline
+    required_inputs:
+      - OWNER_APPROVAL_RECORD
+      - IDEA_MATURITY_ASSESSMENT
+      - MATURED_INTENT_BRIEF
+  mature_idea_policy:
+    - selected_pipeline_may_recheck_maturity
+    - mature_idea_must_not_be_forced_through_extra_discovery
+    - product_building_idea_routes_to_main_product_pipeline
+    - research_idea_routes_to_research_pipeline
+    - operations_idea_routes_to_operations_pipeline
+    - activation_idea_routes_to_activation_pipeline
+    - skill_change_idea_routes_to_skill_governance_pipeline
+    - memory_or_knowledge_idea_routes_to_knowledge_memory_pipeline
+    - content_idea_routes_to_content_pipeline
+    - data_processing_idea_routes_to_data_processing_pipeline
+    - model_inference_idea_routes_to_model_inference_pipeline
+    - customer_support_idea_routes_to_customer_support_pipeline
+    - business_strategy_idea_routes_to_business_strategy_pipeline
+    - ambiguous_idea_returns_to_owner_choice_with_candidates
 
 mission_required_fields:
   - mission_id
@@ -90,6 +149,8 @@ three_role_architecture:
     responsibilities:
       - scope_goal
       - create_plan
+      - know_available_main_specialist_and_blueprint_pipelines_after_integration
+      - route_or_redirect_work_to_the_best_matching_pipeline_when_needed
       - maintain_validation_contract
       - spawn_workers_and_validators
       - review_handoffs
@@ -98,6 +159,18 @@ three_role_architecture:
       - request_owner_decisions
       - protect_serial_first_scheduling
       - summarize_progress
+    post_integration_pipeline_routing_rule:
+      status: post_integration_required
+      catalog_source: configs/nexus-ai/pipeline_catalog.yaml
+      selection_contract: configs/nexus-ai/pipeline_selection_contract.yaml
+      required_behavior:
+        - know_all_available_main_specialist_and_blueprint_pipeline_ids
+        - evaluate_matured_intent_against_pipeline_selection_rules
+        - redirect_to_the_more_appropriate_pipeline_when_needed
+        - preserve_owner_visible_rationale_and_required_owner_approval
+      forbidden_behavior:
+        - assume_every_idea_belongs_to_main_product_pipeline
+        - silently_route_or_switch_pipeline_without_trace
   workers:
     user_facing_name: Üreten Uzmanlar
     responsibilities:
@@ -160,11 +233,17 @@ pipeline_relationship:
   examples:
     - mission: Build AI-assisted decision-tracking SaaS
       pipeline_runs:
-        - research_pipeline_run
-        - sdlc_pipeline_run
-        - activation_pipeline_run
-        - operations_pipeline_run
-        - knowledge_memory_pipeline_run
+        - main_product_pipeline_run
+        - delegated_research_pipeline_run_if_needed
+        - delegated_sdlc_pipeline_run
+        - delegated_activation_pipeline_run_if_requested
+        - delegated_operations_pipeline_run_if_needed
+        - delegated_knowledge_memory_pipeline_run
+        - delegated_content_pipeline_run_if_needed
+        - delegated_data_processing_pipeline_run_if_needed
+        - delegated_model_inference_pipeline_run_if_needed
+        - delegated_customer_support_pipeline_run_if_needed
+        - delegated_business_strategy_pipeline_run_if_needed
 
 stop_rule:
   runtime_implementation_requires_separate_owner_approval: true

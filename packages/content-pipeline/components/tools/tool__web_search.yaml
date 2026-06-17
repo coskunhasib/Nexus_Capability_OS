@@ -1,0 +1,38 @@
+id: web_search
+name: Web Search
+type: tool
+category: tool
+status: canonical
+purpose: Search the web for candidate sources/information for a query.
+owner_domain: web_access
+provided_by_core_ability: Web
+input_schema:
+  query: string
+  filters: object
+output_schema:
+  results:
+  - object
+side_effects: external_network_read
+risk_level: medium
+requires_sandbox: true
+governance_profiles:
+- tool_call_governance
+- sandbox_execution_governance
+- global_no_secret_policy
+audit_schemas:
+- tool_call_trace_schema
+allowed_callers:
+- source_discovery_agent
+allowed_usage:
+- Discover candidate sources during research source_discovery.
+forbidden_usage:
+- Sending secrets in queries; treating results as evidence without reliability scoring.
+used_by:
+  pipelines:
+  - research_pipeline
+  pipeline_stages:
+  - research_pipeline.source_discovery
+notes: Sub-operation of the Web Core Ability (D-014); Web exposes web_search as an
+  exposed_tool in core_abilities.yaml, and Web is locked-canonical (K-003/K-011),
+  so web_search is canonical for the same reason web_scrape is (R7). Required trace
+  web_search_tool_trace is declared in research-pipeline.md.

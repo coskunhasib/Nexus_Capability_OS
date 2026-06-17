@@ -6,7 +6,8 @@ Checks a package conforms to PIPELINE_PACKAGE_FORMAT.md:
  - manifest present + required keys
  - pipeline_def present + parses + has the pipeline_contract_standard required fields
  - every bundled component path exists + parses
- - gates present (incl. the 19 always-required D-016 gates) + consistent with the def
+ - package-declared gates present + consistent with the def
+   (D-016's 19-gate set is asserted only for sdlc_pipeline)
  - evidence/trace present
  - every listed stage has a bundled contract
 
@@ -27,6 +28,18 @@ from package_pipeline import load_yaml, stage_key  # reuse helpers
 
 MANIFEST_REQUIRED = ["package_schema_version", "pipeline_id", "name", "package_version",
                      "pipeline_def", "components", "gates", "evidence", "stages"]
+
+KNOWN_EXTERNAL_INPUTS = {
+    # Entry artifacts supplied by the mission owner, host runtime, or upstream
+    # product repo rather than a stage inside the same package.
+    "SKILL_PACKAGES",
+    "DELETION_REQUEST",
+    "RUNBOOK",
+    "ROLLBACK_PLAN",
+    "REWORK_HISTORY",
+    # Aggregate materialized by the runner from upstream stage gate outcomes.
+    "ALL_STAGE_GATE_RESULTS",
+}
 
 D016_ALWAYS = [
     "requirements_complete", "nfr_coverage_complete", "architecture_complete", "adr_coverage_complete",
@@ -233,7 +246,7 @@ def main():
         stranded = []
         for sid, sc in stage_docs.items():
             for inp in (sc.get("inputs") or []):
-                if inp not in produced_out and inp not in entry_artifacts:
+                if inp not in produced_out and inp not in entry_artifacts and inp not in KNOWN_EXTERNAL_INPUTS:
                     stranded.append(f"{sid}<-{inp}")
         if stranded:
             warn(f"{len(stranded)} stage input(s) not produced by any stage (confirm external/entry): {stranded[:8]}")

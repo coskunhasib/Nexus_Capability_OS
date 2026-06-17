@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: source_and_claim_grounding
+name: Source And Claim Grounding
+purpose: Ground load-bearing claims in sources or explicitly mark the content as opinion/creative.
+owner_team: research_team
+team_lead: research_team_lead
+owner_agent: claim_evidence_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Web, Memory]
+uses_skills: [calibrate, gap-audit]
+uses_tools: [web_search, source_reliability_checker, claim_mapper, artifact_writer, evidence_writer]
+uses_governance_profiles: [research_source_governance, evidence_required_policy]
+uses_audit_schemas: [source_evidence_schema, claim_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile]
+uses_context_memory_profiles: [source_corpus_context_pack, claim_evidence_context_pack]
+inputs: [CONTENT_PLAN, CONTENT_REVIEW_CRITERIA]
+outputs: [CONTENT_SOURCE_MAP, CLAIM_GROUNDING_REPORT]
+evidence: [CONTENT_SOURCE_MAP]
+trace: [source_grounding_trace, stage_gate_decision_trace]
+gates: [sources_or_claims_grounded]
+on_pass: draft_and_review
+on_fail: content_plan
+rework_route: content_plan
+blocking_conditions: [unsupported_load_bearing_claim, source_reliability_unchecked]
+conditional_required_gates: []
+max_iterations: 3

@@ -1,0 +1,74 @@
+id: gap-audit
+name: Gap Audit
+type: skill
+status: canonical
+semantic_category: completeness_audit
+primary_purpose: coverage / completeness gap detection
+purpose: Detect missing required/applicable elements (scope, requirements, test coverage,
+  evidence, gates) before a handoff or gate decision. The broad coverage helper; it
+  does NOT stand in for defect finding.
+owner_domain: reasoning_methods
+allowed_usage:
+- completeness_audit
+- coverage_gap_detection
+- missing_evidence_detection
+- missing_gate_detection
+forbidden_usage:
+- defect_finding
+- decision_making
+governance_profiles:
+- skill_governance
+- skill_must_have_semantic_extraction_before_binding
+audit_schemas:
+- skill_activation_trace_schema
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  - research_pipeline
+  - activation_pipeline
+  - operations_pipeline
+  - skill_governance_pipeline
+  - knowledge_memory_pipeline
+  stages:
+  - sdlc:01-intake
+  - sdlc:02-domain-risk-profile
+  - sdlc:03-skill-semantic-extraction
+  - sdlc:04-requirements
+  - sdlc:05-requirements-review
+  - sdlc:06-architecture
+  - sdlc:07-architecture-review
+  - sdlc:08-security-privacy-design
+  - sdlc:09-premortem-fmea
+  - sdlc:10-planning
+  - sdlc:11-implementation
+  - sdlc:12-code-review
+  - sdlc:13-test-generation
+  - sdlc:14-test-execution
+  - sdlc:16-security-validation
+  - sdlc:17-supply-chain-sbom-license
+  - sdlc:18-ai-agent-safety-evaluation
+  - sdlc:19-privacy-data-lifecycle-validation
+  - sdlc:20-api-contract-compatibility-validation
+  - sdlc:21-domain-regulatory-compliance-validation-if-applicable
+  - sdlc:22-data-migration-validation-if-applicable
+  - sdlc:23-accessibility-ux-validation-if-applicable
+  - sdlc:24-performance-resilience
+  - sdlc:25-cost-resource-governance
+  - sdlc:26-backup-restore-dr-validation-if-applicable
+  - sdlc:27-operations-readiness
+  - sdlc:28-evidence-graph-build
+  - sdlc:29-development-completion
+  - sdlc:30-release-candidate
+  - research:intake
+  - research:claim_extraction
+  - research:synthesis
+  - operations:incident_intake
+  - skill_governance:skill_semantic_extraction
+  - knowledge_memory:memory_intake
+  agents:
+  - sdlc_team_lead
+  - '(broad: most sdlc_team agent roles)'
+aliases: []
+notes: 29 SDLC stages — the most broadly used skill. Used as a coverage helper only;
+  review §3 confirms it never stands in for verification-loop. (Pipeline-doc stage
+  names are illustrative; SDLC stage ids are authoritative.)

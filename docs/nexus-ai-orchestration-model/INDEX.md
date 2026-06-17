@@ -1,12 +1,13 @@
 # Blueprint Index — Nexus AI Orchestration Model
 
-Navigable index of the whole **Nexus AI Orchestration Model** blueprint and its single
-**SDLC Pipeline** contract corpus. This is documentation/blueprint only — no runtime code, no
+Navigable index of the whole **Nexus AI Orchestration Model** blueprint, including the
+**Main Product Pipeline** and the specialist **SDLC Pipeline** contract corpus. This is documentation/blueprint only — no runtime code, no
 merge, no deploy. Every link below is repo-relative to this file's directory
 (`docs/nexus-ai-orchestration-model/`) unless it points into `configs/` (then it is repo-relative from root).
 
-**Top structure is the Nexus AI Orchestration Model.** The SDLC Pipeline is ONE pipeline under
-it, not the top of the model. The Core Abilities (Supervisor, Coder, Vision, Audio, Creative,
+**Top structure is the Nexus AI Orchestration Model.** The Main Product Pipeline is the primary
+user-facing product journey. The SDLC Pipeline is ONE specialist pipeline under it, not the top of
+the model. The Core Abilities (Supervisor, Coder, Vision, Audio, Creative,
 Memory, Web, OS) are a shared capability layer — they are NOT agents and NOT team members, and
 never appear as an `owner_agent`. Plugin is cancelled and appears nowhere as a concept/field.
 
@@ -183,10 +184,18 @@ enforcement rules in
 
 | File | Role |
 |------|------|
+| [`configs/nexus-ai/main_product_pipeline.yaml`](../../configs/nexus-ai/main_product_pipeline.yaml) | Primary user-facing product journey — owner-approved entry, idea maturity check, specialist pipeline delegation, verification/hardening, release/delivery handoff and learning |
 | [`configs/nexus-ai/sdlc_pipeline.yaml`](../../configs/nexus-ai/sdlc_pipeline.yaml) | Canonical SDLC pipeline definition — 31-stage list, pipeline-level shared-registry usage, `required_gates.always` / `required_gates.conditional` |
+| [`configs/nexus-ai/pipeline_catalog.yaml`](../../configs/nexus-ai/pipeline_catalog.yaml) | Summary catalog for all 13 packaged catalog pipelines |
+| [`configs/nexus-ai/pipeline_selection_contract.yaml`](../../configs/nexus-ai/pipeline_selection_contract.yaml) | Intent selection and pre-entry idea maturation rule before main product pipeline entry |
 | [`configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml`](../../configs/nexus-ai/sdlc_pipeline_runtime_rules.yaml) | Cross-stage runtime rules: rework routing table, iteration policy, anti-patterns (generated from legacy `05-pipeline-model.md` §5–§7) |
 | [`configs/nexus-ai/pipeline_contract_standard.yaml`](../../configs/nexus-ai/pipeline_contract_standard.yaml) | Machine-readable baseline contract for all Nexus AI pipelines (required fields + shared-usage fields) |
 | [`configs/nexus-ai/artifact_registry.yaml`](../../configs/nexus-ai/artifact_registry.yaml) | Canonical UPPER_SNAKE artifact/evidence names + naming rules + release-evidence-required sets |
+
+Packaging and Nexus handoff docs live in
+[`packaging/README.md`](./packaging/README.md), including the Phase 4
+[`CONSUMER_RUNTIME_DESIGN_LOCK.md`](./packaging/CONSUMER_RUNTIME_DESIGN_LOCK.md)
+and the owner-gated [`PRE_INTEGRATION_PHASE_PLAN.md`](./packaging/PRE_INTEGRATION_PHASE_PLAN.md).
 
 ---
 

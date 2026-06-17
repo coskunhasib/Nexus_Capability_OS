@@ -1,0 +1,176 @@
+package_schema_version: '0.1'
+pipeline_id: data_processing_pipeline
+name: Data Processing Pipeline
+description: Ingest, profile, transform, validate, and deliver governed datasets with
+  quality thresholds, rollback awareness, privacy controls, and evidence.
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 74e50a1
+  source_path: configs/nexus-ai/data_processing_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: sdlc_team
+  version: 1.0.0
+  path: components/teams/team__sdlc_team.yaml
+- kind: team_lead
+  id: sdlc_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__sdlc_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: coder
+  version: 1.0.0
+  path: components/core-abilities/core_ability__coder.yaml
+- kind: core_ability
+  id: os
+  version: 1.0.0
+  path: components/core-abilities/core_ability__os.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: skill
+  id: fmea
+  version: 1.0.0
+  path: components/skills/skill__fmea.yaml
+- kind: skill
+  id: verification-loop
+  version: 1.0.0
+  path: components/skills/skill__verification-loop.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: tool
+  id: policy_query
+  version: 1.0.0
+  path: components/tools/tool__policy_query.yaml
+- kind: tool
+  id: test_runner
+  version: 1.0.0
+  path: components/tools/tool__test_runner.yaml
+- kind: tool
+  id: evidence_consistency_checker
+  version: 1.0.0
+  path: components/tools/tool__evidence_consistency_checker.yaml
+- kind: tool
+  id: resource_budget_checker
+  version: 1.0.0
+  path: components/tools/tool__resource_budget_checker.yaml
+- kind: governance_profile
+  id: sdlc_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__sdlc_pipeline_governance.yaml
+- kind: governance_profile
+  id: data_migration_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__data_migration_governance.yaml
+- kind: governance_profile
+  id: privacy_lifecycle_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__privacy_lifecycle_governance.yaml
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: audit_schema
+  id: migration_evidence_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__migration_evidence_schema.yaml
+- kind: audit_schema
+  id: data_lifecycle_report_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__data_lifecycle_report_schema.yaml
+- kind: audit_schema
+  id: evidence_integrity_report_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__evidence_integrity_report_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: sdlc_reasoning_profile
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__sdlc_reasoning_profile.yaml
+- kind: model_provider_profile
+  id: risk_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__risk_analysis_model.yaml
+- kind: context_memory_profile
+  id: implementation_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__implementation_context_pack.yaml
+- kind: context_memory_profile
+  id: verification_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__verification_context_pack.yaml
+- kind: context_memory_profile
+  id: domain_risk_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__domain_risk_context_pack.yaml
+gates:
+- id: source_data_registered
+  set: always
+- id: schema_profile_complete
+  set: always
+- id: quality_thresholds_defined
+  set: always
+- id: transformation_plan_reviewed
+  set: always
+- id: processing_validation_passed
+  set: always
+- id: delivery_package_complete
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: privacy_redaction_if_sensitive_data
+  set: conditional
+- id: rollback_plan_if_destructive_transform
+  set: conditional
+evidence:
+  required_evidence:
+  - DATA_PROCESSING_REQUEST
+  - DATA_QUALITY_PROFILE
+  - TRANSFORMATION_PLAN
+  - PROCESSING_VALIDATION_REPORT
+  - DATASET_DELIVERY_PACKAGE
+  - DATA_PROCESSING_COMPLETION_REPORT
+  required_trace:
+  - data_processing_trace
+  - validation_execution_trace
+  - rollback_readiness_trace
+  - stage_gate_decision_trace
+stages:
+- data_intake
+- schema_and_quality_profile
+- transform_and_validation_plan
+- processing_execution
+- data_processing_completion

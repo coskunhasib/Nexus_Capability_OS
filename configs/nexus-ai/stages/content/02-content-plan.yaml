@@ -1,0 +1,26 @@
+version: draft-0.1
+stage_id: content_plan
+name: Content Plan
+purpose: Produce the outline, source plan, review path, and publication constraints.
+owner_team: knowledge_team
+team_lead: knowledge_team_lead
+owner_agent: research_scoping_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Web, Memory]
+uses_skills: [handoff-designer, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader]
+uses_governance_profiles: [research_source_governance, evidence_required_policy]
+uses_audit_schemas: [source_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [research_reasoning_profile]
+uses_context_memory_profiles: [source_corpus_context_pack]
+inputs: [CONTENT_BRIEF, CONTENT_RISK_CLASSIFICATION]
+outputs: [CONTENT_PLAN, CONTENT_REVIEW_CRITERIA]
+evidence: [CONTENT_PLAN]
+trace: [content_planning_trace, stage_gate_decision_trace]
+gates: [content_plan_approved, legal_or_regulatory_review_if_high_risk, localization_review_if_requested]
+on_pass: source_and_claim_grounding
+on_fail: content_intake
+rework_route: content_intake
+blocking_conditions: [content_plan_missing, review_criteria_missing]
+conditional_required_gates: [legal_or_regulatory_review_if_high_risk, localization_review_if_requested]
+max_iterations: 3

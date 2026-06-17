@@ -1,0 +1,172 @@
+package_schema_version: '0.1'
+pipeline_id: model_inference_pipeline
+name: Model / Inference Pipeline
+description: Plan, route, execute, evaluate, and monitor model inference work under
+  quality, cost, latency, safety, trace, and fallback controls.
+package_version: 1.0.0
+provenance:
+  produced_by: nexus-capability-os
+  source_commit: 74e50a1
+  source_path: configs/nexus-ai/model_inference_pipeline.yaml
+pipeline_def: pipeline.yaml
+components:
+- kind: team
+  id: operations_team
+  version: 1.0.0
+  path: components/teams/team__operations_team.yaml
+- kind: team_lead
+  id: operations_team_lead
+  version: 1.0.0
+  path: components/teams/team_lead__operations_team_lead.yaml
+- kind: core_ability
+  id: supervisor
+  version: 1.0.0
+  path: components/core-abilities/core_ability__supervisor.yaml
+- kind: core_ability
+  id: coder
+  version: 1.0.0
+  path: components/core-abilities/core_ability__coder.yaml
+- kind: core_ability
+  id: os
+  version: 1.0.0
+  path: components/core-abilities/core_ability__os.yaml
+- kind: core_ability
+  id: memory
+  version: 1.0.0
+  path: components/core-abilities/core_ability__memory.yaml
+- kind: skill
+  id: sentinel
+  version: 1.0.0
+  path: components/skills/skill__sentinel.yaml
+- kind: skill
+  id: fmea
+  version: 1.0.0
+  path: components/skills/skill__fmea.yaml
+- kind: skill
+  id: calibrate
+  version: 1.0.0
+  path: components/skills/skill__calibrate.yaml
+- kind: skill
+  id: gap-audit
+  version: 1.0.0
+  path: components/skills/skill__gap-audit.yaml
+- kind: tool
+  id: artifact_writer
+  version: 1.0.0
+  path: components/tools/tool__artifact_writer.yaml
+- kind: tool
+  id: evidence_writer
+  version: 1.0.0
+  path: components/tools/tool__evidence_writer.yaml
+- kind: tool
+  id: evidence_reader
+  version: 1.0.0
+  path: components/tools/tool__evidence_reader.yaml
+- kind: tool
+  id: policy_query
+  version: 1.0.0
+  path: components/tools/tool__policy_query.yaml
+- kind: tool
+  id: resource_budget_checker
+  version: 1.0.0
+  path: components/tools/tool__resource_budget_checker.yaml
+- kind: tool
+  id: cost_estimator
+  version: 1.0.0
+  path: components/tools/tool__cost_estimator.yaml
+- kind: tool
+  id: evidence_consistency_checker
+  version: 1.0.0
+  path: components/tools/tool__evidence_consistency_checker.yaml
+- kind: governance_profile
+  id: model_invocation_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__model_invocation_governance.yaml
+- kind: governance_profile
+  id: operations_pipeline_governance
+  version: 1.0.0
+  path: components/governance/governance_profile__operations_pipeline_governance.yaml
+- kind: governance_profile
+  id: evidence_required
+  version: 1.0.0
+  path: components/governance/governance_profile__evidence_required.yaml
+  requested_as: evidence_required_policy
+- kind: governance_profile
+  id: no_self_approval
+  version: 1.0.0
+  path: components/governance/governance_profile__no_self_approval.yaml
+  requested_as: no_self_approval_policy
+- kind: audit_schema
+  id: model_invocation_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__model_invocation_trace_schema.yaml
+- kind: audit_schema
+  id: evidence_item_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__evidence_item_schema.yaml
+- kind: audit_schema
+  id: stage_gate_trace_schema
+  version: 1.0.0
+  path: components/audit/audit_schema__stage_gate_trace_schema.yaml
+- kind: model_provider_profile
+  id: supervisor_routing_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__supervisor_routing_model.yaml
+- kind: model_provider_profile
+  id: operations_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__operations_analysis_model.yaml
+- kind: model_provider_profile
+  id: risk_analysis_model
+  version: 1.0.0
+  path: components/model-profiles/model_provider_profile__risk_analysis_model.yaml
+- kind: context_memory_profile
+  id: operations_run_context
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__operations_run_context.yaml
+- kind: context_memory_profile
+  id: operations_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__operations_context_pack.yaml
+- kind: context_memory_profile
+  id: verification_context_pack
+  version: 1.0.0
+  path: components/context-memory-profiles/context_memory_profile__verification_context_pack.yaml
+gates:
+- id: inference_goal_bounded
+  set: always
+- id: routing_policy_defined
+  set: always
+- id: evaluation_harness_ready
+  set: always
+- id: quality_threshold_met_or_exception
+  set: always
+- id: cost_latency_budget_respected
+  set: always
+- id: monitoring_trace_complete
+  set: always
+- id: no_blocking_policy_failure
+  set: always
+- id: fallback_policy_if_external_provider
+  set: conditional
+- id: safety_review_if_high_risk_output
+  set: conditional
+evidence:
+  required_evidence:
+  - INFERENCE_REQUEST
+  - ROUTING_POLICY
+  - MODEL_EVALUATION_PLAN
+  - INFERENCE_RUN_REPORT
+  - QUALITY_COST_REPORT
+  - INFERENCE_COMPLETION_REPORT
+  required_trace:
+  - model_invocation_trace_schema
+  - routing_decision_trace
+  - monitoring_trace
+  - stage_gate_decision_trace
+stages:
+- inference_request_intake
+- routing_and_provider_plan
+- evaluation_harness_setup
+- inference_execution_monitoring
+- inference_completion

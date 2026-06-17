@@ -1,0 +1,33 @@
+id: go_no_go_decision_gate
+name: Go / No-Go Decision Gate (HUMAN/OWNER)
+type: stage_gate_profile
+status: candidate
+purpose: 'Discovery decision gate: a GO may not be issued without a recorded human/owner
+  decision; the producing agent may not self-approve the discovery decision. NO_GO
+  and PIVOT are valid recorded outcomes. The owner reviews the business case + residual
+  risk + kill-criteria status and explicitly records GO/NO_GO/PIVOT before the run
+  may proceed to closeout.'
+owner_domain: product_management
+allowed_usage:
+- Gate the go_no_go_decision stage so a valid owner decision is recorded before closeout.
+- Re-show no_self_approval at the discovery decision (proposer != authorizer of GO).
+forbidden_usage:
+- Used to authorize a GO autonomously without a human/owner decision.
+- Confused with owner_activation_decision_gate (that is the activation public-launch
+  gate).
+governance_profiles:
+- discovery_pipeline_governance
+- no_self_approval
+- evidence_required
+audit_schemas:
+- discovery_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- go_no_go_decision
+severity_default: blocker
+used_by:
+- go_no_go_decision
+notes: NEW (product_discovery_pipeline plan §1a). Human/owner authority gate; NO_GO
+  is a valid, honourable terminal. No GO without a recorded owner decision; no self-approval
+  of the decision.

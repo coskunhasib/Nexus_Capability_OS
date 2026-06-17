@@ -87,7 +87,7 @@ components:
   # ... every entry referenced by the pipeline's uses_* fields
 gates:
   - { id: tests_pass,        path: gates/tests_pass.yaml }
-  # ... 19 always (D-016) + 7 conditional  (gate entries are {id, set}; defs in gates/required_gates.yaml)
+  # ... package-declared always + conditional gates (for sdlc: 19 always D-016 + 7 conditional)
 evidence:                  # governance/audit payload, bundled under evidence/
   required_evidence: [REQUIREMENTS_SPEC, ARCHITECTURE_DOC, "… (19 artifacts)"]
   required_trace:    [stage_gate_trace_schema, "… (5 records)"]
@@ -112,7 +112,7 @@ stages: [intake, requirements, "… (ordered ids; contracts bundled under stages
 ## 6. The pipeline definition — `pipeline.yaml`
 
 This is the existing pipeline definition, conforming to `configs/nexus-ai/pipeline_contract_standard.yaml`
-(`pipeline_definition_required_fields`, `stage_required_fields`, …). For the `sdlc` package it is a copy of
+(`pipeline_definition_required_fields`, `stage_required_fields`, ...). For the `sdlc` package it is a copy of
 `configs/nexus-ai/sdlc_pipeline.yaml`, including:
 - `stages` (ordered),
 - `required_gates.always` = the **canonical 19-gate set (D-016)** + `conditional`,
@@ -138,9 +138,14 @@ This gives the owner's model: *everything is in the package (portable), yet comm
 ## 8. What this format guarantees (NCO's edge)
 
 A `.pipeline` package always carries, inside the bundle:
-- the **19 always-required gates (D-016)** the pipeline must pass,
+- the package-declared mandatory gates the pipeline must pass,
 - the **required evidence + trace** it must emit,
 - its full governance/audit references.
+
+For example, `sdlc-pipeline` carries the 19 always-required D-016 gates plus 7
+conditional gates, while `research-pipeline` carries 13 always gates plus 1
+conditional gate. Consumers must load the package declaration, not hard-code a
+global gate count.
 
 So governance is **not** something the host adds later — it travels *with* the pipeline. This is the differentiator MetaGPT/Atoms lack.
 

@@ -1,0 +1,7 @@
+id: customer-support-ticket
+intent: "customer support ticket için escalation ve resolution plan hazırla"
+expected:
+  pipeline_id: customer_support_pipeline
+  package: packages/customer-support-pipeline
+  gates_always: 7
+  stages: 5

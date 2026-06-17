@@ -1,0 +1,74 @@
+version: draft-0.1
+pipeline_id: model_inference_pipeline
+name: Model / Inference Pipeline
+purpose: >-
+  Plan, route, execute, evaluate, and monitor model inference work under quality,
+  cost, latency, safety, trace, and fallback controls.
+status: draft
+owner_domain: model_operations
+required_team_type: operations_team
+required_team_lead_role: operations_team_lead
+applicable_domains: [model_inference, ai_agent_product, internal_tool, api_service]
+risk_profiles: [prototype, production_inference, regulated_or_high_risk]
+entry_criteria:
+  - inference_goal_present
+  - model_or_provider_scope_identified
+  - quality_cost_latency_targets_present
+exit_criteria:
+  - routing_policy_defined
+  - evaluation_harness_ready
+  - inference_run_report_emitted
+  - quality_cost_report_complete
+  - monitoring_trace_complete
+blocking_conditions:
+  - inference_goal_unbounded
+  - routing_policy_missing
+  - evaluation_harness_missing
+  - quality_threshold_failed_without_exception
+  - cost_or_latency_budget_unowned
+allowed_rework_routes:
+  intake_gap: inference_request_intake
+  routing_gap: routing_and_provider_plan
+  evaluation_gap: evaluation_harness_setup
+  execution_gap: inference_execution_monitoring
+  completion_gap: inference_completion
+required_evidence:
+  - INFERENCE_REQUEST
+  - ROUTING_POLICY
+  - MODEL_EVALUATION_PLAN
+  - INFERENCE_RUN_REPORT
+  - QUALITY_COST_REPORT
+  - INFERENCE_COMPLETION_REPORT
+required_trace:
+  - model_invocation_trace_schema
+  - routing_decision_trace
+  - monitoring_trace
+  - stage_gate_decision_trace
+stages:
+  - inference_request_intake
+  - routing_and_provider_plan
+  - evaluation_harness_setup
+  - inference_execution_monitoring
+  - inference_completion
+uses_core_abilities: [Supervisor, Coder, OS, Memory]
+uses_skills: [sentinel, fmea, calibrate, gap-audit]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, policy_query, resource_budget_checker, cost_estimator, evidence_consistency_checker]
+uses_governance_profiles: [model_invocation_governance, operations_pipeline_governance, evidence_required_policy, no_self_approval_policy]
+uses_audit_schemas: [model_invocation_trace_schema, evidence_item_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [supervisor_routing_model, operations_analysis_model, risk_analysis_model]
+uses_context_memory_profiles: [operations_run_context, operations_context_pack, verification_context_pack]
+required_gates:
+  always:
+    - inference_goal_bounded
+    - routing_policy_defined
+    - evaluation_harness_ready
+    - quality_threshold_met_or_exception
+    - cost_latency_budget_respected
+    - monitoring_trace_complete
+    - no_blocking_policy_failure
+  conditional:
+    - fallback_policy_if_external_provider
+    - safety_review_if_high_risk_output
+canonical_docs:
+  - configs/nexus-ai/pipeline_contract_standard.yaml
+  - configs/nexus-ai/pipeline_catalog.yaml

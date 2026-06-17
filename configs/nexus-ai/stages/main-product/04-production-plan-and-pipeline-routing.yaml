@@ -1,0 +1,49 @@
+version: draft-0.1
+stage_id: production_plan_and_pipeline_routing
+name: Production Plan And Pipeline Routing
+purpose: >-
+  Convert the product brief into an approved delivery plan and explicit
+  specialist pipeline routing plan.
+owner_team: sdlc_team
+team_lead: sdlc_team_lead
+owner_agent: architecture_agent
+sub_agents: []
+uses_core_abilities: [Supervisor, Coder, Memory]
+uses_skills: [prism, sentinel, fmea, handoff-designer]
+uses_tools: [artifact_writer, evidence_writer, evidence_reader, cost_estimator, resource_budget_checker]
+uses_governance_profiles: [sdlc_pipeline_governance, orchestration_governance, evidence_required_policy]
+uses_audit_schemas: [sdlc_pipeline_evidence_schema, stage_gate_trace_schema]
+uses_model_provider_profiles: [sdlc_reasoning_profile, risk_analysis_model, supervisor_routing_model]
+uses_context_memory_profiles: [sdlc_run_context, architecture_context_pack, implementation_context_pack]
+inputs:
+  - PRODUCT_BRIEF
+  - PRODUCT_BRIEF_VALIDATION_REPORT
+outputs:
+  - PRODUCT_DELIVERY_PLAN
+  - SPECIALIST_PIPELINE_ROUTING_PLAN
+  - PRODUCTION_PLAN_APPROVAL_RECORD
+evidence:
+  - PRODUCT_DELIVERY_PLAN
+  - SPECIALIST_PIPELINE_ROUTING_PLAN
+trace:
+  - specialist_pipeline_routing_trace
+  - owner_decision_trace
+  - stage_gate_decision_trace
+gates:
+  - specialist_pipeline_routing_plan_complete
+  - production_plan_approved
+  - research_required_if_claims_or_market_questions_unresolved
+  - skill_governance_required_if_new_or_changed_skill_in_scope
+  - operations_required_if_runbook_monitoring_or_incident_scope_needed
+on_pass: build_execution
+on_fail: product_discovery_or_brief_validation
+rework_route: product_discovery_or_brief_validation
+blocking_conditions:
+  - production_plan_missing
+  - routing_plan_missing
+  - owner_rejected_production_plan
+conditional_required_gates:
+  - research_required_if_claims_or_market_questions_unresolved
+  - skill_governance_required_if_new_or_changed_skill_in_scope
+  - operations_required_if_runbook_monitoring_or_incident_scope_needed
+max_iterations: 3

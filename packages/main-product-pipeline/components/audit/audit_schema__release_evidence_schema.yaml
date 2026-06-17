@@ -1,0 +1,66 @@
+id: release_evidence_schema
+name: Release Evidence Schema
+type: evidence_schema
+status: canonical
+purpose: LOCKED canonical Evidence record for the sealed release package (RELEASE_EVIDENCE)
+  and the development-completion / operations-readiness decision proofs. The top-level
+  release decision proof.
+owner_domain: sdlc
+allowed_usage:
+- Record the sealed release-candidate evidence package (stage 30).
+- Record operations-readiness (stage 27) and development-completion (stage 29) decision-proof
+  evidence.
+forbidden_usage:
+- Used to record process history (trace_schema).
+- Sealed without development_completion_pass (release_after_development_completion).
+governance_profiles:
+- evidence_required
+- release_candidate_governance
+- release_after_development_completion
+- residual_risk_recorded
+audit_schemas:
+- sdlc_pipeline_evidence_schema
+- gate_decision_trace_schema
+- release_decision_trace_schema
+- stage_gate_trace_schema
+notes: Reused by stages 27, 29, 30 and declared at SDLC pipeline level (sdlc_pipeline.yaml
+  uses_audit_schemas). The release decision proof; the go/no-go process history lives
+  in release_decision_trace_schema (kept distinct).
+aliases:
+- operations_evidence_schema
+- operations_readiness_evidence_schema
+applies_to:
+- sdlc_pipeline
+- sdlc_stage:operations_readiness
+- sdlc_stage:development_completion
+- sdlc_stage:release_candidate
+required_fields:
+- evidence_id
+- type
+- produced_by
+- related_pipeline
+- related_run
+- related_stage
+- related_gate
+- source_artifacts
+- residual_risks
+- rollback_plan_present
+- runbook_present
+- summary
+- status
+- created_at
+producer: release_manager_agent
+consumer: policy_and_evidence_engine
+retention: retain_with_release_evidence
+redaction_rules:
+- no_raw_secret_exposure
+- raw_credential_redaction
+used_by:
+  pipelines:
+  - sdlc_pipeline
+  stages:
+  - operations_readiness
+  - development_completion
+  - release_candidate
+  agents:
+  - release_manager_agent

@@ -1,0 +1,32 @@
+id: problem_evidence_gate
+name: Problem Evidence Gate
+type: stage_gate_profile
+status: candidate
+purpose: 'Discovery evidence gate: every load-bearing problem claim must be backed
+  by a source, the target user segment must be evidenced, and critical assumptions
+  must be tested or explicitly flagged before the run advances. Blocks unsourced problem
+  framing and untested critical assumptions.'
+owner_domain: product_management
+allowed_usage:
+- Gate the problem_evidence_validation and assumption_and_demand_testing stages.
+- Require a source for every load-bearing problem claim and evidence for the target
+  segment.
+forbidden_usage:
+- Used outside the Product Discovery Pipeline.
+- Used to wave through an untested critical assumption without a flag.
+governance_profiles:
+- discovery_pipeline_governance
+- evidence_required
+audit_schemas:
+- discovery_evidence_schema
+- stage_gate_trace_schema
+scope: stage
+applies_to:
+- problem_evidence_validation
+- assumption_and_demand_testing
+severity_default: blocker
+used_by:
+- problem_evidence_validation
+- assumption_and_demand_testing
+notes: NEW (product_discovery_pipeline plan §1a). Spans the two problem-validation
+  stages; pairs with the discovery_pipeline_governance umbrella.
